@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup/Teardown 编辑 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    .edit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+    .edit-header .actions{display:flex;gap:8px;}
+    /* 上下文信息条 */
+    .context-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#f0f5ff;border:1px solid #adc6ff;border-radius:var(--border-radius);margin-bottom:14px;font-size:13px;color:#1d39c4;}
+    .context-bar .ctx-icon{font-size:16px;}
+    /* 三面板编排器 */
+    .orchestrator{display:flex;height:420px;border:1px solid var(--border-color);border-radius:var(--border-radius);overflow:hidden;}
+    .node-panel{width:180px;background:#fafafa;border-right:1px solid var(--border-color);padding:10px;overflow-y:auto;}
+    .node-panel h4{font-size:12px;color:var(--text-tertiary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;}
+    .node-drag{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff;border:1px solid var(--border-color);border-radius:4px;margin-bottom:6px;cursor:grab;font-size:13px;transition:all .15s;}
+    .node-drag:hover{border-color:var(--primary);box-shadow:0 1px 4px rgba(24,144,255,.15);}
+    .node-drag .nd-icon{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+    .canvas{flex:1;background:#fff;padding:16px;overflow:auto;position:relative;}
+    .canvas-tree{padding:8px;}
+    .tree-node{border:1px solid var(--border-color);border-radius:4px;padding:8px 12px;margin-bottom:6px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;position:relative;transition:all .15s;}
+    .tree-node:hover{border-color:var(--primary);background:var(--primary-bg);}
+    .tree-node.selected{border-color:var(--primary);background:var(--primary-bg);box-shadow:0 0 0 2px rgba(24,144,255,.15);}
+    .tree-node .tn-icon{width:20px;text-align:center;font-size:12px;}
+    .tree-node .tn-del{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:none;background:none;border:none;color:var(--error);cursor:pointer;font-size:14px;}
+    .tree-node:hover .tn-del{display:block;}
+    .tree-node-child{margin-left:28px;border-left:1px dashed var(--border-color);padding-left:12px;}
+    .prop-panel{width:280px;border-left:1px solid var(--border-color);background:#fff;overflow-y:auto;padding:12px;}
+    .prop-panel h4{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text-primary);}
+    .prop-panel .form-group{margin-bottom:10px;}
+    .prop-panel .form-label{font-size:12px;margin-bottom:4px;}
+    .prop-panel .input,.prop-panel .select{height:28px;font-size:12px;width:100%;}
+    .canvas-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-tertiary);font-size:13px;gap:8px;}
+    .canvas-empty span{font-size:28px;}
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span><a href="suite-list.html">测试套件</a></span>
+      <span class="sep">&#8250;</span>
+      <span>冒烟测试套件</span>
+      <span class="sep">&#8250;</span>
+      <span class="current" id="breadcrumbTitle">Setup/Teardown 配置</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group open">
+        <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item active"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+  <main class="layout-main">
+
+    <div class="edit-header">
+      <h1 style="font-size:18px;" id="pageTitle">Setup/Teardown 配置</h1>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="handleSave()">保存</button>
+        <button class="btn" onclick="location.href='suite-list.html'">取消</button>
+      </div>
+    </div>
+
+    <!-- 上下文信息条 -->
+    <div class="context-bar" id="contextBar">
+      <span class="ctx-icon">ℹ</span>
+      <span id="contextText">套件级 · 整体 — 整个套件执行前后各调用一次</span>
+    </div>
+
+    <!-- Tabs: Setup / Teardown -->
+    <div class="tabs" id="stTabs">
+      <div class="tab-item active" onclick="switchSTTab('setup', this)">Setup</div>
+      <div class="tab-item" onclick="switchSTTab('teardown', this)">Teardown</div>
+    </div>
+
+    <!-- Tab: Setup -->
+    <div class="tab-content active" id="tab-setup">
+      <div class="card"><div class="card-header">Setup 节点编排</div><div class="card-body" style="padding:0;">
+        <div class="orchestrator">
+          <div class="node-panel">
+            <h4>节点类型</h4>
+            <div class="node-drag" onclick="addNode('setup','api')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> 接口关键字</div>
+            <div class="node-drag" onclick="addNode('setup','tool')"><div class="nd-icon" style="background:#fff7e6;color:#fa8c16;">T</div> 工具方法</div>
+            <div class="node-drag" onclick="addNode('setup','action')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> Action 关键字</div>
+            <div class="node-drag" onclick="addNode('setup','wait')"><div class="nd-icon" style="background:#fff1f0;color:#f5222d;">⏱</div> 等待节点</div>
+            <div class="node-drag" onclick="addNode('setup','condition')"><div class="nd-icon" style="background:#f9f0ff;color:#722ed1;">?</div> 条件节点</div>
+          </div>
+          <div class="canvas" id="setupCanvas"></div>
+          <div class="prop-panel" id="setupPropPanel"><h4>节点属性</h4><p style="font-size:12px;color:var(--text-tertiary);">请在画布中选择一个节点查看属性</p></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: Teardown -->
+    <div class="tab-content" id="tab-teardown">
+      <div class="card"><div class="card-header">Teardown 节点编排</div><div class="card-body" style="padding:0;">
+        <div class="orchestrator">
+          <div class="node-panel">
+            <h4>节点类型</h4>
+            <div class="node-drag" onclick="addNode('teardown','api')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> 接口关键字</div>
+            <div class="node-drag" onclick="addNode('teardown','tool')"><div class="nd-icon" style="background:#fff7e6;color:#fa8c16;">T</div> 工具方法</div>
+            <div class="node-drag" onclick="addNode('teardown','action')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> Action 关键字</div>
+            <div class="node-drag" onclick="addNode('teardown','wait')"><div class="nd-icon" style="background:#fff1f0;color:#f5222d;">⏱</div> 等待节点</div>
+            <div class="node-drag" onclick="addNode('teardown','condition')"><div class="nd-icon" style="background:#f9f0ff;color:#722ed1;">?</div> 条件节点</div>
+          </div>
+          <div class="canvas" id="teardownCanvas"></div>
+          <div class="prop-panel" id="teardownPropPanel"><h4>节点属性</h4><p style="font-size:12px;color:var(--text-tertiary);">请在画布中选择一个节点查看属性</p></div>
+        </div>
+      </div></div>
+    </div>
+
+  </main>
+
+  <script src="../common/nav.js"></script>
+  <script>
+    /* ===== URL 参数解析 ===== */
+    var params = new URLSearchParams(location.search);
+    var editType = params.get('type') || 'once';
+    var caseName = params.get('case') || '';
+
+    /* ===== 上下文初始化 ===== */
+    var contextMap = {
+      once: { title: '套件级 · 整体 Setup/Teardown', text: '套件级 · 整体 — 整个套件执行前后各调用一次' },
+      per:  { title: '套件级 · 每条用例 Setup/Teardown', text: '套件级 · 每条用例 — 每条用例执行前后各调用一次' },
+      'case': { title: '差异化 Setup/Teardown', text: '用例级差异化 — 仅在当前套件中生效，不影响用例自身的配置' }
+    };
+    var ctx = contextMap[editType] || contextMap.once;
+    document.getElementById('pageTitle').textContent = ctx.title;
+    document.getElementById('breadcrumbTitle').textContent = ctx.title;
+    document.getElementById('contextText').textContent = ctx.text;
+    if (editType === 'case' && caseName) {
+      document.getElementById('contextText').textContent = '用例「' + caseName + '」差异化配置 — 仅在当前套件（冒烟测试套件）中生效';
+    }
+
+    /* ===== Tab 切换 ===== */
+    function switchSTTab(name, el) {
+      document.querySelectorAll('#stTabs .tab-item').forEach(function(t) { t.classList.remove('active'); });
+      el.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+      document.getElementById('tab-' + name).classList.add('active');
+    }
+
+    /* ===== 节点配置 ===== */
+    var kwConfigs = {
+      api:    { icon: 'A', color: '#1890ff', bg: '#e6f7ff', badge: 'tag-blue',   label: 'API' },
+      tool:   { icon: 'T', color: '#fa8c16', bg: '#fff7e6', badge: 'tag-orange', label: 'TOOL' },
+      action: { icon: 'A', color: '#1890ff', bg: '#e6f7ff', badge: 'tag-blue',   label: 'Action' }
+    };
+    var logicConfigs = {
+      wait:      { icon: '⏱', color: '#f5222d', bg: '#fff1f0', badge: 'tag-red',    label: '等待' },
+      condition: { icon: '?',  color: '#722ed1', bg: '#f9f0ff', badge: 'tag-purple', label: '条件' },
+      serial:    { icon: '▶', color: '#52c41a', bg: '#f6ffed', badge: 'tag-green',  label: '串行' },
+      parallel:  { icon: '⫸', color: '#fa8c16', bg: '#fff7e6', badge: 'tag-orange', label: '并行' }
+    };
+    var sampleKw = {
+      api:    [{ id: 101, name: '用户登录接口' }, { id: 102, name: '查询电池状态' }],
+      tool:   [{ id: 201, name: '等待指定毫秒' }, { id: 203, name: '断言校验' }],
+      action: [{ id: 1, name: '用户登录并获取令牌' }, { id: 5, name: '初始化测试仓位' }, { id: 8, name: '环境初始化检查' }, { id: 6, name: '清理测试数据' }, { id: 7, name: '释放测试资源' }]
+    };
+
+    /* ===== 数据（模拟） ===== */
+    var setupData = {
+      type: 'serial', name: '串行执行',
+      children: [
+        { type: 'keyword', kwType: 'action', id: 1, name: '用户登录并获取令牌' },
+        { type: 'wait', name: '等待 2000ms', duration: 2000 }
+      ]
+    };
+    var teardownData = { type: 'serial', name: '串行执行', children: [] };
+    var selMap = { setup: null, teardown: null };
+
+    function getData(tab) { return tab === 'setup' ? setupData : teardownData; }
+
+    /* ===== 画布渲染 ===== */
+    function renderCanvas(tab) {
+      var data = getData(tab);
+      var canvas = document.getElementById(tab + 'Canvas');
+      var childCount = data.children.length;
+      var isRoot = selMap[tab] === null;
+      var html = '<div class="canvas-tree">';
+      html += '<div class="tree-node' + (isRoot ? ' selected' : '') + '" onclick="selectNode(\'' + tab + '\',-1)">';
+      html += '<span class="tn-icon" style="color:#52c41a;">▶</span>';
+      html += '<span>' + data.name + '</span>';
+      html += '<span style="font-size:11px;color:var(--text-tertiary);margin-left:auto;">' + childCount + ' 个子节点</span>';
+      html += '</div>';
+      if (childCount > 0) {
+        html += '<div class="tree-node-child">';
+        for (var i = 0; i < data.children.length; i++) {
+          var node = data.children[i];
+          var isSel = selMap[tab] === i;
+          html += renderTreeNode(node, i, tab, isSel);
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+      if (childCount === 0) {
+        html += '<div class="canvas-empty"><span>📭</span>暂无节点，点击左侧节点类型添加</div>';
+      }
+      canvas.innerHTML = html;
+    }
+
+    function renderTreeNode(node, idx, tab, selected) {
+      var icon, color, badge, extra = '';
+      if (node.type === 'keyword') {
+        var cfg = kwConfigs[node.kwType] || kwConfigs.action;
+        icon = cfg.icon; color = cfg.color;
+        badge = '<span class="tag ' + cfg.badge + '" style="margin-left:4px;font-size:10px;">' + cfg.label + '</span>';
+      } else {
+        var lc = logicConfigs[node.type] || logicConfigs.wait;
+        icon = lc.icon; color = lc.color;
+        badge = '<span class="tag ' + lc.badge + '" style="margin-left:4px;font-size:10px;">' + lc.label + '</span>';
+        if (node.type === 'wait') extra = '<span style="font-size:11px;color:var(--text-tertiary);margin-left:4px;">' + (node.duration || 2000) + 'ms</span>';
+        if (node.type === 'condition') extra = '<span style="font-size:11px;color:var(--text-tertiary);margin-left:4px;">' + (node.expr || '') + '</span>';
+      }
+      return '<div class="tree-node' + (selected ? ' selected' : '') + '" onclick="selectNode(\'' + tab + '\',' + idx + ')">' +
+        '<span class="tn-icon" style="color:' + color + ';">' + icon + '</span>' +
+        '<span>' + node.name + '</span>' + badge + extra +
+        '<button class="tn-del" onclick="event.stopPropagation();deleteNode(\'' + tab + '\',' + idx + ')">×</button></div>';
+    }
+
+    /* ===== 节点选择 ===== */
+    function selectNode(tab, idx) {
+      selMap[tab] = idx === -1 ? null : idx;
+      renderCanvas(tab);
+      updatePropPanel(tab);
+    }
+
+    /* ===== 添加节点 ===== */
+    function addNode(tab, type) {
+      var data = getData(tab);
+      if (type === 'api' || type === 'tool' || type === 'action') {
+        var kws = sampleKw[type];
+        var usedIds = data.children.filter(function(c) { return c.type === 'keyword' && c.kwType === type; }).map(function(c) { return c.id; });
+        var kw = kws.find(function(k) { return usedIds.indexOf(k.id) === -1; }) || kws[0];
+        data.children.push({ type: 'keyword', kwType: type, id: kw.id, name: kw.name });
+        selMap[tab] = data.children.length - 1;
+      } else if (type === 'wait') {
+        data.children.push({ type: 'wait', name: '等待 2000ms', duration: 2000 });
+        selMap[tab] = data.children.length - 1;
+      } else if (type === 'condition') {
+        data.children.push({ type: 'condition', name: '条件判断', expr: '${var} == "value"' });
+        selMap[tab] = data.children.length - 1;
+      }
+      renderCanvas(tab);
+      updatePropPanel(tab);
+    }
+
+    /* ===== 删除节点 ===== */
+    function deleteNode(tab, idx) {
+      getData(tab).children.splice(idx, 1);
+      if (selMap[tab] === idx) selMap[tab] = null;
+      else if (selMap[tab] !== null && selMap[tab] > idx) selMap[tab]--;
+      renderCanvas(tab);
+      updatePropPanel(tab);
+    }
+
+    /* ===== 属性面板更新 ===== */
+    function updatePropPanel(tab) {
+      var panel = document.getElementById(tab + 'PropPanel');
+      var sel = selMap[tab];
+      if (sel === null) {
+        var data = getData(tab);
+        var list = '';
+        for (var i = 0; i < data.children.length; i++) list += (i + 1) + '. ' + data.children[i].name + '<br>';
+        panel.innerHTML = '<h4>节点属性：串行执行</h4>' +
+          '<p style="font-size:12px;color:var(--text-tertiary);">串行节点按顺序依次执行子节点，无需额外配置。</p>' +
+          (data.children.length > 0 ? '<div style="margin-top:12px;"><h4 style="font-size:12px;color:var(--text-secondary);">子节点列表</h4><div style="font-size:12px;color:var(--text-secondary);line-height:2;">' + list + '</div></div>' : '');
+        return;
+      }
+      var node = getData(tab).children[sel];
+      if (!node) { panel.innerHTML = '<h4>节点属性</h4>'; return; }
+      if (node.type === 'keyword') {
+        var cfg = kwConfigs[node.kwType] || kwConfigs.action;
+        var labels = { api: '接口关键字', tool: '工具方法关键字', action: 'Action 关键字' };
+        panel.innerHTML =
+          '<h4>节点属性：关键字</h4>' +
+          '<div class="form-group"><label class="form-label">关键字名称</label><input class="input" value="' + node.name + '" readonly></div>' +
+          '<div class="form-group"><label class="form-label">类型</label><div style="margin-top:4px;"><span class="tag ' + cfg.badge + '">' + cfg.label + '</span></div></div>' +
+          '<div class="form-group"><label class="form-label">分类</label><select class="select"><option selected>' + labels[node.kwType] + '</option></select></div>' +
+          '<h4 style="font-size:12px;margin-top:12px;">参数映射</h4>' +
+          '<p style="font-size:12px;color:var(--text-tertiary);margin-top:4px;">该关键字无需额外参数映射</p>';
+      } else if (node.type === 'wait') {
+        panel.innerHTML =
+          '<h4>节点属性：等待</h4>' +
+          '<div class="form-group"><label class="form-label">等待时长</label>' +
+          '<div style="display:flex;gap:4px;align-items:center;"><input class="input" value="' + (node.duration || 2000) + '" style="width:100px;font-size:12px;" onchange="updateNodeProp(\'' + tab + '\',\'duration\',this.value)"> <span style="font-size:12px;color:var(--text-tertiary);">毫秒</span></div></div>';
+      } else if (node.type === 'condition') {
+        panel.innerHTML =
+          '<h4>节点属性：条件</h4>' +
+          '<div class="form-group"><label class="form-label">条件表达式</label><input class="input" value="' + (node.expr || '') + '" style="font-family:monospace;font-size:12px;" onchange="updateNodeProp(\'' + tab + '\',\'expr\',this.value)"></div>' +
+          '<div class="form-group"><label class="form-label">then 分支</label><p style="font-size:12px;color:var(--text-tertiary);">条件为真时执行（继续后续节点）</p></div>' +
+          '<div class="form-group"><label class="form-label">else 分支</label><p style="font-size:12px;color:var(--text-tertiary);">条件为假时执行（跳过后续节点）</p></div>';
+      }
+    }
+
+    /* ===== 节点属性更新 ===== */
+    function updateNodeProp(tab, prop, value) {
+      var sel = selMap[tab];
+      if (sel === null) return;
+      var node = getData(tab).children[sel];
+      if (!node) return;
+      if (prop === 'duration') {
+        node.duration = parseInt(value) || 2000;
+        node.name = '等待 ' + node.duration + 'ms';
+      } else if (prop === 'expr') {
+        node.expr = value;
+      }
+      renderCanvas(tab);
+    }
+
+    /* ===== 保存 ===== */
+    function handleSave() {
+      showToast('保存成功', 'success');
+      setTimeout(function() { location.href = 'suite-list.html'; }, 1500);
+    }
+
+    /* ===== 初始化渲染 ===== */
+    renderCanvas('setup');
+    updatePropPanel('setup');
+    renderCanvas('teardown');
+    updatePropPanel('teardown');
+  </script>
+</body>
+</html>

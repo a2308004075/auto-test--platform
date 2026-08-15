@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>编辑测试计划 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span>测试管理</span>
+      <span class="sep">&#8250;</span>
+      <span class="current">计划编辑</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group open">
+        <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item active"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+  <main class="layout-main">
+
+    <div class="page-header">
+      <h1>编辑测试计划：每日冒烟测试</h1>
+      <div class="flex gap-8"><button class="btn" onclick="window.location.href='plan-list.html'">取消</button><button class="btn btn-primary" onclick="alert('保存成功！')">保存</button></div>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">基础信息</div>
+      <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
+        <div class="form-group"><label class="form-label">计划名称 <span class="required">*</span></label><input type="text" class="input w-full" value="每日冒烟测试"></div>
+        <div class="form-group"><label class="form-label">绑定环境</label><select class="select w-full"><option selected>开发环境</option><option>测试环境</option><option>预发布环境</option></select></div>
+        <div class="form-group" style="grid-column:1/-1;"><label class="form-label">描述</label><textarea class="textarea w-full" rows="2">每日自动执行冒烟用例，确保核心功能正常</textarea></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">关联测试套件</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+          <label class="checkbox-label" style="padding:8px 10px;border:1px solid var(--primary);border-radius:4px;background:var(--primary-bg);"><input type="checkbox" checked> 冒烟测试套件 (12)</label>
+          <label class="checkbox-label" style="padding:8px 10px;border:1px solid var(--border-color);border-radius:4px;"><input type="checkbox"> 回归测试套件 (28)</label>
+          <label class="checkbox-label" style="padding:8px 10px;border:1px solid var(--border-color);border-radius:4px;"><input type="checkbox"> 电池管理测试 (35)</label>
+          <label class="checkbox-label" style="padding:8px 10px;border:1px solid var(--border-color);border-radius:4px;"><input type="checkbox"> 性能压力测试 (15)</label>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">执行策略</div>
+      <div class="card-body">
+        <div style="display:flex;gap:12px;margin-bottom:16px;">
+          <label class="checkbox-label" style="padding:6px 12px;border:1px solid var(--border-color);border-radius:4px;"><input type="radio" name="strategy"> 手动触发</label>
+          <label class="checkbox-label" style="padding:6px 12px;border:1px solid var(--primary);border-radius:4px;background:var(--primary-bg);"><input type="radio" name="strategy" checked> 定时执行</label>
+          <label class="checkbox-label" style="padding:6px 12px;border:1px solid var(--border-color);border-radius:4px;"><input type="radio" name="strategy"> CI 触发</label>
+        </div>
+        <div style="padding:12px;background:#fafafa;border-radius:4px;">
+          <div class="form-group"><label class="form-label">Cron 表达式</label><div style="display:flex;gap:8px;align-items:center;"><input type="text" class="input" value="0 8 * * *" style="width:200px;font-family:monospace;"><span style="font-size:12px;color:var(--text-tertiary);">每天 08:00 执行</span></div></div>
+          <div style="display:flex;gap:12px;margin-top:8px;">
+            <div class="form-group" style="margin:0;"><label class="form-label">启停</label><div class="switch on"></div></div>
+          </div>
+          <div style="margin-top:12px;font-size:12px;color:var(--text-tertiary);">
+            <b>最近 5 次执行时间预览：</b><br>
+            2024-01-16 08:00 · 2024-01-17 08:00 · 2024-01-18 08:00 · 2024-01-19 08:00 · 2024-01-20 08:00
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="../common/nav.js"></script>
+</body>
+</html>

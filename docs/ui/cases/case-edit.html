@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="pageTitle">编辑用例 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    .orchestrator{display:flex;height:380px;border:1px solid var(--border-color);border-radius:var(--border-radius);overflow:hidden;}
+    .node-panel{width:180px;background:#fafafa;border-right:1px solid var(--border-color);padding:10px;overflow-y:auto;}
+    .node-panel h4{font-size:12px;color:var(--text-tertiary);margin-bottom:8px;}
+    .node-drag{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#fff;border:1px solid var(--border-color);border-radius:4px;margin-bottom:5px;cursor:grab;font-size:12px;}
+    .node-drag:hover{border-color:var(--primary);}
+    .node-drag .nd-icon{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;}
+    .canvas{flex:1;background:#fff;padding:12px;overflow:auto;}
+    .step-node{border:1px solid var(--border-color);border-radius:4px;padding:7px 10px;margin-bottom:5px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:12px;transition:all .15s;}
+    .step-node:hover{border-color:var(--primary);background:var(--primary-bg);}
+    .step-node.selected{border-color:var(--primary);background:var(--primary-bg);}
+    .step-child{margin-left:24px;border-left:1px dashed var(--border-color);padding-left:10px;}
+    .prop-panel{width:260px;border-left:1px solid var(--border-color);background:#fff;overflow-y:auto;padding:10px;}
+    .prop-panel h4{font-size:12px;font-weight:600;margin-bottom:8px;}
+    .prop-panel .form-group{margin-bottom:8px;}
+    .prop-panel .form-label{font-size:11px;margin-bottom:3px;}
+    .prop-panel .input,.prop-panel .select{height:26px;font-size:12px;width:100%;}
+    .st-section{border-bottom:1px solid var(--border-color);background:#fafbfc;}
+    .st-section-header{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;cursor:pointer;font-size:12px;font-weight:500;color:var(--text-secondary);}
+    .st-section-header .st-arrow{transition:transform .2s;font-size:10px;color:var(--text-tertiary);}
+    .st-section-header.open .st-arrow{transform:rotate(90deg);}
+    .st-section-body{display:none;padding:8px 12px 10px;border-top:1px solid var(--border-color);}
+    .st-section-body.open{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+    .st-step-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:#fff;border:1px solid var(--border-color);border-radius:3px;font-size:11px;cursor:pointer;transition:all .15s;}
+    .st-step-tag:hover{border-color:var(--primary);background:var(--primary-bg);}
+    .st-step-tag .st-remove{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;font-size:9px;color:var(--text-tertiary);cursor:pointer;margin-left:2px;transition:all .15s;line-height:1;}
+    .st-step-tag .st-remove:hover{background:var(--error);color:#fff;}
+    .st-empty{font-size:11px;color:var(--text-tertiary);padding:2px 0;}
+    /* Action 关键字选择器 */
+    .st-add-wrapper{position:relative;display:inline-flex;}
+    .st-add-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#fff;border:1px dashed var(--primary);border-radius:3px;font-size:11px;color:var(--primary);cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .st-add-btn:hover{background:var(--primary-bg);}
+    .st-picker{display:none;position:absolute;top:calc(100% + 4px);left:0;width:260px;background:#fff;border:1px solid var(--border-color);border-radius:var(--border-radius);box-shadow:var(--shadow);z-index:200;overflow:hidden;}
+    .st-picker.open{display:block;}
+    .st-picker-header{padding:8px;border-bottom:1px solid var(--border-color);}
+    .st-picker-header input{width:100%;height:28px;border:1px solid var(--border-color);border-radius:3px;padding:0 8px;font-size:12px;outline:none;}
+    .st-picker-header input:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(24,144,255,.1);}
+    .st-picker-body{max-height:200px;overflow-y:auto;}
+    .st-picker-group{padding:4px 8px 2px;font-size:10px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+    .st-picker-item{display:flex;align-items:center;gap:6px;padding:6px 12px;font-size:12px;cursor:pointer;transition:background .1s;}
+    .st-picker-item:hover{background:var(--primary-bg);}
+    .st-picker-item .pi-icon{width:18px;height:18px;border-radius:3px;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+    .st-picker-item .pi-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .st-picker-item .pi-desc{font-size:10px;color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px;}
+    .st-picker-empty{padding:16px;text-align:center;font-size:12px;color:var(--text-tertiary);}
+    .st-picker-tabs{display:flex;border-bottom:1px solid var(--border-color);}
+    .st-picker-tab{padding:6px 12px;font-size:11px;color:var(--text-tertiary);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
+    .st-picker-tab:hover{color:var(--text-primary);}
+    .st-picker-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:500;}
+    .tab-content{display:none;}
+    .tab-content.active{display:block;}
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span>测试管理</span>
+      <span class="sep">&#8250;</span>
+      <span class="current" id="breadcrumbCurrent">编辑用例</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group open">
+        <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item active"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+  <main class="layout-main">
+
+    <div class="page-header">
+      <h1 id="pageHeading">编辑用例</h1>
+      <div class="flex gap-8"><button class="btn" onclick="window.location.href='case-list.html'">返回</button><button class="btn btn-primary" id="btnSave" onclick="alert('保存成功！')">保存</button></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" id="caseTabs">
+      <div class="tab-item active" onclick="switchTab('basic', this)">基础信息</div>
+      <div class="tab-item" onclick="switchTab('orchestrator', this)">步骤编排器</div>
+      <div class="tab-item" onclick="switchTab('params', this)">参数化</div>
+    </div>
+
+    <!-- Tab: 基础信息 -->
+    <div class="tab-content active" id="tab-basic">
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 20px;">
+        <div class="form-group"><label class="form-label">用例名称 <span class="required">*</span></label><input type="text" class="input w-full" id="caseName" value="电池入仓测试"></div>
+        <div class="form-group"><label class="form-label">优先级</label><select class="select w-full" id="casePriority"><option>P0</option><option selected>P1</option><option>P2</option><option>P3</option></select></div>
+        <div class="form-group"><label class="form-label">标签</label><div id="caseTags" style="display:flex;gap:4px;"><span class="tag tag-purple">电池</span><span class="tag tag-blue">核心</span><input type="text" class="input" placeholder="+" style="width:50px;height:30px;font-size:12px;"></div></div>
+        <div class="form-group" style="grid-column:1/-1;"><label class="form-label">前置条件</label><input type="text" class="input w-full" id="casePrecondition" value="用户已登录，系统有可用空仓位" style="font-size:12px;"></div>
+      </div>
+    </div>
+    </div>
+    <!-- Tab: 步骤编排器 -->
+    <div class="tab-content" id="tab-orchestrator">
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-header">步骤编排器</div>
+      <div class="card-body" style="padding:0;">
+        <!-- Test Setup -->
+        <div class="st-section">
+          <div class="st-section-header open" onclick="toggleCaseST(this)">
+            <span><span style="color:#52c41a;margin-right:4px;">&#9654;</span> Test Setup <span style="font-size:11px;color:var(--text-tertiary);font-weight:400;margin-left:4px;">用例执行前调用的关键字与逻辑控制序列</span></span>
+            <span class="st-arrow">&#9654;</span>
+          </div>
+          <div class="st-section-body open" id="setupBody">
+            <!-- 步骤标签由 JS 动态渲染 -->
+          </div>
+        </div>
+        <div class="orchestrator">
+          <div class="node-panel">
+            <h4>步骤类型</h4>
+            <div class="node-drag"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">K</div> 关键字步骤</div>
+            <div class="node-drag"><div class="nd-icon" style="background:#f6ffed;color:#52c41a;">▶</div> 串行步骤</div>
+            <div class="node-drag"><div class="nd-icon" style="background:#fff7e6;color:#fa8c16;">⫸</div> 并行步骤</div>
+            <div class="node-drag"><div class="nd-icon" style="background:#f9f0ff;color:#722ed1;">?</div> 条件步骤</div>
+            <div class="node-drag"><div class="nd-icon" style="background:#fff1f0;color:#f5222d;">⏱</div> 等待步骤</div>
+          </div>
+          <div class="canvas">
+            <div class="step-node selected" style="border-left:3px solid #52c41a;">
+              <span style="color:#52c41a;">▶</span> 串行执行
+            </div>
+            <div class="step-child">
+              <div class="step-node"><span style="color:#1890ff;">K</span> 用户登录并获取令牌 <span class="tag tag-blue" style="margin-left:auto;font-size:10px;">Action</span></div>
+              <div class="step-node"><span style="color:#1890ff;">K</span> 查询电池状态 <span class="tag tag-blue" style="margin-left:auto;font-size:10px;">API</span></div>
+              <div class="step-node"><span style="color:#722ed1;">?</span> 判断电池是否可用 <span style="font-size:10px;color:var(--text-tertiary);margin-left:auto;">${battery_status}=="normal"</span></div>
+              <div class="step-child">
+                <div class="step-node" style="border-left:2px solid var(--success);padding-left:8px;"><span style="font-size:10px;color:var(--success);">✓</span> then: 电池入仓操作</div>
+                <div class="step-node" style="border-left:2px solid var(--error);padding-left:8px;"><span style="font-size:10px;color:var(--error);">✗</span> else: 记录异常日志</div>
+              </div>
+              <div class="step-node"><span style="color:#f5222d;">⏱</span> 等待 2000ms</div>
+              <div class="step-node"><span style="color:#1890ff;">K</span> 验证仓位状态 <span class="tag tag-blue" style="margin-left:auto;font-size:10px;">API</span></div>
+            </div>
+          </div>
+          <div class="prop-panel">
+            <h4>步骤属性：用户登录并获取令牌</h4>
+            <div class="form-group"><label class="form-label">关键字</label><select class="select"><option selected>用户登录并获取令牌</option><option>电池入仓操作</option></select></div>
+            <div class="form-group"><label class="form-label">类型</label><select class="select"><option>全部</option><option>API</option><option>TOOL</option><option selected>Action</option></select></div>
+            <h4 style="margin-top:10px;">args 参数映射</h4>
+            <table style="font-size:11px;margin-top:4px;width:100%;">
+              <tr><td style="padding:3px 0;"><code>username</code></td><td><input class="input" value="admin" style="width:100%;height:24px;font-size:11px;"></td></tr>
+              <tr><td style="padding:3px 0;"><code>password</code></td><td><input class="input" value="${env_pwd}" style="width:100%;height:24px;font-size:11px;"></td></tr>
+            </table>
+            <div class="form-group" style="margin-top:10px;"><label class="form-label">save_as</label><input class="input" value="login_result" style="font-size:11px;"></div>
+            <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border-color);">
+              <h4>校验配置</h4>
+              <div class="form-group"><label class="form-label">状态码断言</label><input class="input" value="200" style="font-size:11px;"></div>
+              <div class="form-group"><label class="form-label">字段断言</label><div style="font-size:11px;color:var(--text-tertiary);">code == 200</div></div>
+            </div>
+          </div>
+        </div>
+        <!-- Test Teardown -->
+        <div class="st-section" style="border-bottom:none;border-top:1px solid var(--border-color);">
+          <div class="st-section-header" onclick="toggleCaseST(this)">
+            <span><span style="color:#f5222d;margin-right:4px;">&#9632;</span> Test Teardown <span style="font-size:11px;color:var(--text-tertiary);font-weight:400;margin-left:4px;">用例执行后调用的关键字与逻辑控制序列</span></span>
+            <span class="st-arrow">&#9654;</span>
+          </div>
+          <div class="st-section-body" id="teardownBody">
+            <!-- 步骤标签由 JS 动态渲染 -->
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+    <!-- Tab: 参数化 -->
+    <div class="tab-content" id="tab-params">
+    <div class="card" id="paramCard">
+      <div class="card-header">参数化 <span style="display:flex;gap:6px;align-items:center;margin-left:8px;font-size:12px;font-weight:400;">数据驱动：<div class="switch" style="width:34px;height:18px;" onclick="this.classList.toggle('on')"></div></span></div>
+      <div class="card-body">
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button class="btn btn-sm active" onclick="switchParamMode(this,'manual')">手动输入</button>
+          <button class="btn btn-sm" onclick="switchParamMode(this,'csv')">CSV 导入</button>
+        </div>
+        <table>
+          <thead><tr><th>#</th><th>battery_sn</th><th>target_slot</th><th>expected_status</th></tr></thead>
+          <tbody id="paramTableBody">
+            <tr><td>1</td><td><input class="input" value="BAT001" style="width:130px;font-size:12px;"></td><td><input class="input" value="3" style="width:80px;font-size:12px;"></td><td><input class="input" value="charging" style="width:130px;font-size:12px;"></td></tr>
+            <tr><td>2</td><td><input class="input" value="BAT002" style="width:130px;font-size:12px;"></td><td><input class="input" value="5" style="width:80px;font-size:12px;"></td><td><input class="input" value="charging" style="width:130px;font-size:12px;"></td></tr>
+          </tbody>
+        </table>
+        <button class="btn btn-sm mt-8" onclick="addParamRow()">+ 添加数据行</button>
+      </div>
+    </div>
+    </div>
+  </main>
+  <script src="../common/nav.js"></script>
+  <script>
+    /* ===== Tab 切换 ===== */
+    function switchTab(name, el) {
+      document.querySelectorAll('#caseTabs .tab-item').forEach(function(t) { t.classList.remove('active'); });
+      el.classList.add('active');
+      document.querySelectorAll('#caseTabs ~ .tab-content').forEach(function(c) { c.classList.remove('active'); });
+      document.getElementById('tab-' + name).classList.add('active');
+      if (location.hash !== '#' + name) {
+        history.replaceState(null, '', '#' + name);
+      }
+    }
+
+    /* ===== 页面模式检测：create / edit ===== */
+    var pageMode = (new URLSearchParams(window.location.search).get('mode') === 'create') ? 'create' : 'edit';
+
+    function initPageMode() {
+      if (pageMode === 'create') {
+        document.title = '新建用例 - Postman Platform';
+        document.getElementById('pageTitle').textContent = '新建用例 - Postman Platform';
+        document.getElementById('breadcrumbCurrent').textContent = '新建用例';
+        document.getElementById('pageHeading').textContent = '新建用例';
+        document.getElementById('btnSave').textContent = '创建';
+        // 清空表单
+        document.getElementById('caseName').value = '';
+        document.getElementById('caseName').placeholder = '请输入用例名称';
+        var prioritySelect = document.getElementById('casePriority');
+        if (prioritySelect) prioritySelect.selectedIndex = 1; // 默认 P1
+        var tagsContainer = document.getElementById('caseTags');
+        if (tagsContainer) {
+          var tagSpans = tagsContainer.querySelectorAll('.tag');
+          tagSpans.forEach(function(t) { t.remove(); });
+        }
+        document.getElementById('casePrecondition').value = '';
+        document.getElementById('casePrecondition').placeholder = '可选，描述用例执行的前置条件';
+        // 清空编排器画布（静态展示区）
+        var canvas = document.querySelector('.canvas');
+        if (canvas) canvas.innerHTML = '<div style="text-align:center;color:var(--text-tertiary);padding:80px 20px;font-size:13px;">从左侧拖拽步骤类型到此处开始编排</div>';
+        // 清空属性面板
+        var propPanel = document.querySelector('.prop-panel');
+        if (propPanel) propPanel.innerHTML = '<div style="text-align:center;color:var(--text-tertiary);padding:40px 10px;font-size:12px;">选中步骤后在此处配置属性</div>';
+        // 清空参数化表格
+        var paramTable = document.getElementById('paramTableBody');
+        if (paramTable) paramTable.innerHTML = '';
+        // 清空 setup/teardown 步骤数据
+        setupSteps.length = 0;
+        teardownSteps.length = 0;
+      }
+    }
+
+    /* ===== 关键字数据源 ===== */
+    var apiKeywords = [
+      { id: 101, name: '用户登录接口', desc: 'POST /api/auth/login', group: '登录认证' },
+      { id: 102, name: '查询电池状态', desc: 'GET /api/battery/{sn}/status', group: '电池管理' },
+      { id: 103, name: '创建订单接口', desc: 'POST /api/orders', group: '订单处理' },
+      { id: 104, name: '查询仓位信息', desc: 'GET /api/slots/{id}', group: '仓位管理' },
+      { id: 105, name: '更新电池状态', desc: 'PUT /api/battery/{sn}/status', group: '电池管理' }
+    ];
+    var toolKeywords = [
+      { id: 201, name: '等待指定毫秒', desc: '等待指定时长', group: '通用工具' },
+      { id: 202, name: '打印日志', desc: '输出日志信息到控制台', group: '通用工具' },
+      { id: 203, name: '断言校验', desc: '校验表达式是否为真', group: '断言工具' },
+      { id: 204, name: 'JSON 解析', desc: '解析 JSON 字符串为对象', group: '数据工具' },
+      { id: 205, name: '生成随机数据', desc: '生成随机字符串或数字', group: '数据工具' }
+    ];
+    var actionKeywords = [
+      { id: 1, name: '用户登录并获取令牌', desc: '完成用户登录并将Token存入变量', group: '登录认证' },
+      { id: 2, name: '创建订单完整流程', desc: '登录→选商品→创建订单→确认', group: '订单处理' },
+      { id: 3, name: '电池入仓操作', desc: '一键入仓→确认仓位→启动充电', group: '电池管理' },
+      { id: 4, name: '电池状态检查', desc: '查询电池SOC/温度/故障状态', group: '电池管理' },
+      { id: 5, name: '初始化测试仓位', desc: '清空仓位数据并设置初始状态', group: '电池管理' },
+      { id: 6, name: '清理测试数据', desc: '清除测试产生的临时数据', group: '数据清理' },
+      { id: 7, name: '释放测试资源', desc: '释放锁定的测试资源和连接', group: '数据清理' }
+    ];
+
+    /* ===== 逻辑控制节点类型 ===== */
+    var logicTypes = [
+      { type: 'serial',    icon: '▶', color: '#52c41a', name: '串行执行',  desc: '子节点按顺序依次执行' },
+      { type: 'parallel',  icon: '⫸', color: '#fa8c16', name: '并行执行',  desc: '子节点同时执行，全部完成后继续' },
+      { type: 'condition', icon: '?', color: '#722ed1', name: '条件判断',  desc: '根据表达式判断走 then/else 分支' },
+      { type: 'wait',      icon: '⏱', color: '#f5222d', name: '等待',      desc: '固定等待指定时长（毫秒）' }
+    ];
+
+    /* ===== Setup/Teardown 步骤数据 ===== */
+    var setupSteps = [
+      { stepType: 'keyword', keywordType: 'action', keywordId: 1, name: '用户登录并获取令牌' },
+      { stepType: 'keyword', keywordType: 'action', keywordId: 5, name: '初始化测试仓位' }
+    ];
+    var teardownSteps = [];
+
+    /* ===== 当前 Tab 状态 ===== */
+    var pickerTab = {};
+
+    function escapeHtml(text) {
+      var d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML;
+    }
+
+    /* ===== 步骤标签渲染 ===== */
+    function renderStepTag(step, index, type) {
+      if (step.stepType === 'keyword') {
+        var kwConfig = {
+          api:    { icon: 'A', color: '#1890ff', badge: 'tag-blue',   label: 'API' },
+          tool:   { icon: 'T', color: '#fa8c16', badge: 'tag-orange', label: 'TOOL' },
+          action: { icon: 'A', color: '#1890ff', badge: 'tag-blue',   label: 'Action' }
+        };
+        var cfg = kwConfig[step.keywordType] || kwConfig.action;
+        return '<span class="st-step-tag">' +
+          '<span style="color:' + cfg.color + ';font-weight:600;">' + cfg.icon + '</span> ' +
+          escapeHtml(step.name) +
+          ' <span class="tag ' + cfg.badge + '" style="font-size:9px;margin:0;">' + cfg.label + '</span>' +
+          '<span class="st-remove" onclick="removeSTStep(\'' + type + '\',' + index + ')" title="移除">&#10005;</span>' +
+          '</span>';
+      }
+      var lt = logicTypes.find(function(l) { return l.type === step.stepType; });
+      if (!lt) return '';
+      var badgeColors = { serial: 'tag-green', parallel: 'tag-orange', condition: 'tag-purple', wait: 'tag-red' };
+      return '<span class="st-step-tag">' +
+        '<span style="color:' + lt.color + ';font-weight:600;">' + lt.icon + '</span> ' +
+        escapeHtml(step.name || lt.name) +
+        ' <span class="tag ' + (badgeColors[lt.type] || '') + '" style="font-size:9px;margin:0;">' + lt.name + '</span>' +
+        '<span class="st-remove" onclick="removeSTStep(\'' + type + '\',' + index + ')" title="移除">&#10005;</span>' +
+        '</span>';
+    }
+
+    /* ===== 渲染 Setup/Teardown 步骤 ===== */
+    function renderSTSteps(containerId, steps, type) {
+      var container = document.getElementById(containerId);
+      var html = '';
+      if (steps.length === 0) {
+        var label = type === 'setup' ? 'Setup' : 'Teardown';
+        html += '<span class="st-empty">暂无 ' + label + ' 步骤，请点击下方按钮添加关键字或逻辑控制</span>';
+      } else {
+        for (var i = 0; i < steps.length; i++) {
+          html += renderStepTag(steps[i], i, type);
+        }
+      }
+      var curTab = getTab(type);
+      var tabDefs = [
+        { key: 'api',    label: '接口关键字' },
+        { key: 'tool',   label: '工具方法' },
+        { key: 'action', label: 'Action' },
+        { key: 'logic',  label: '逻辑控制' }
+      ];
+      var tabsHtml = '';
+      for (var t = 0; t < tabDefs.length; t++) {
+        tabsHtml += '<div class="st-picker-tab' + (curTab === tabDefs[t].key ? ' active' : '') + '" onclick="switchPickerTab(\'' + type + '\',\'' + tabDefs[t].key + '\')">' + tabDefs[t].label + '</div>';
+      }
+      var placeholder = curTab === 'logic' ? '' : '搜索 ' + ({api:'接口',tool:'工具方法',action:'Action'}[curTab] || 'Action') + ' 关键字...';
+      html += '<div class="st-add-wrapper" id="' + type + 'AddWrapper">' +
+        '<button class="st-add-btn" onclick="togglePicker(\'' + type + '\')">+ 添加步骤</button>' +
+        '<div class="st-picker" id="' + type + 'Picker">' +
+        '<div class="st-picker-tabs">' + tabsHtml + '</div>' +
+        '<div class="st-picker-header"' + (curTab === 'logic' ? ' style="display:none"' : '') + '><input type="text" placeholder="' + placeholder + '" oninput="filterPicker(\'' + type + '\',this.value)"></div>' +
+        '<div class="st-picker-body" id="' + type + 'PickerBody"></div>' +
+        '</div></div>';
+      container.innerHTML = html;
+      renderPickerBody(type, '');
+    }
+
+    function getTab(type) { return pickerTab[type] || 'action'; }
+
+    function renderPickerBody(type, keyword) {
+      var tab = getTab(type);
+      if (tab === 'logic') renderLogicItems(type);
+      else renderKeywordItems(type, keyword);
+    }
+
+    /* ===== 获取关键字数据源 ===== */
+    function getKeywordSource(keywordType) {
+      if (keywordType === 'api') return apiKeywords;
+      if (keywordType === 'tool') return toolKeywords;
+      return actionKeywords;
+    }
+
+    /* ===== 关键字列表 ===== */
+    function renderKeywordItems(type, keyword) {
+      var body = document.getElementById(type + 'PickerBody');
+      if (!body) return;
+      var kwType = getTab(type);
+      var source = getKeywordSource(kwType);
+      var steps = type === 'setup' ? setupSteps : teardownSteps;
+      var usedIds = steps.filter(function(s) { return s.stepType === 'keyword' && s.keywordType === kwType; }).map(function(s) { return s.keywordId; });
+      var kw = (keyword || '').toLowerCase();
+      var filtered = source.filter(function(a) {
+        if (usedIds.indexOf(a.id) !== -1) return false;
+        if (kw && a.name.toLowerCase().indexOf(kw) === -1 && a.desc.toLowerCase().indexOf(kw) === -1) return false;
+        return true;
+      });
+      var labels = { api: '接口关键字', tool: '工具方法关键字', action: 'Action 关键字' };
+      if (filtered.length === 0) {
+        body.innerHTML = '<div class="st-picker-empty">无匹配的' + (labels[kwType] || '关键字') + '</div>';
+        return;
+      }
+      var icons = { api: 'A', tool: 'T', action: 'A' };
+      var icon = icons[kwType] || 'A';
+      var groupMap = {}, groupOrder = [];
+      for (var i = 0; i < filtered.length; i++) {
+        var g = filtered[i].group;
+        if (!groupMap[g]) { groupMap[g] = []; groupOrder.push(g); }
+        groupMap[g].push(filtered[i]);
+      }
+      var html = '';
+      for (var gi = 0; gi < groupOrder.length; gi++) {
+        html += '<div class="st-picker-group">' + escapeHtml(groupOrder[gi]) + '</div>';
+        var items = groupMap[groupOrder[gi]];
+        for (var j = 0; j < items.length; j++) {
+          html += '<div class="st-picker-item" onclick="addKeywordStep(\'' + type + '\',\'' + kwType + '\',' + items[j].id + ')">' +
+            '<span class="pi-icon">' + icon + '</span>' +
+            '<span class="pi-name">' + escapeHtml(items[j].name) + '</span>' +
+            '<span class="pi-desc" title="' + escapeHtml(items[j].desc) + '">' + escapeHtml(items[j].desc) + '</span></div>';
+        }
+      }
+      body.innerHTML = html;
+    }
+
+    /* ===== 逻辑控制节点列表 ===== */
+    function renderLogicItems(type) {
+      var body = document.getElementById(type + 'PickerBody');
+      if (!body) return;
+      var html = '';
+      for (var i = 0; i < logicTypes.length; i++) {
+        var lt = logicTypes[i];
+        html += '<div class="st-picker-item" onclick="addLogicStep(\'' + type + '\',\'' + lt.type + '\')">' +
+          '<span class="pi-icon" style="background:' + lt.color + '15;color:' + lt.color + ';">' + lt.icon + '</span>' +
+          '<span class="pi-name">' + lt.name + '</span>' +
+          '<span class="pi-desc" title="' + lt.desc + '">' + lt.desc + '</span></div>';
+      }
+      body.innerHTML = html;
+    }
+
+    /* ===== Tab 切换 ===== */
+    function switchPickerTab(type, tab) {
+      pickerTab[type] = tab;
+      var containerId = type === 'setup' ? 'setupBody' : 'teardownBody';
+      var steps = type === 'setup' ? setupSteps : teardownSteps;
+      renderSTSteps(containerId, steps, type);
+      var picker = document.getElementById(type + 'Picker');
+      picker.classList.add('open');
+      var searchHeader = picker.querySelector('.st-picker-header');
+      var inp = picker.querySelector('input');
+      if (tab === 'logic') {
+        searchHeader.style.display = 'none';
+        renderLogicItems(type);
+      } else {
+        searchHeader.style.display = '';
+        inp.value = ''; inp.focus();
+        renderKeywordItems(type, '');
+      }
+    }
+
+    /* ===== 交互操作 ===== */
+    function togglePicker(type) {
+      var picker = document.getElementById(type + 'Picker');
+      document.querySelectorAll('.st-picker.open').forEach(function(p) { if (p !== picker) p.classList.remove('open'); });
+      picker.classList.toggle('open');
+      if (picker.classList.contains('open')) {
+        if (!pickerTab[type]) pickerTab[type] = 'action';
+        var searchHeader = picker.querySelector('.st-picker-header');
+        var inp = picker.querySelector('input');
+        if (pickerTab[type] === 'logic') {
+          searchHeader.style.display = 'none';
+          renderLogicItems(type);
+        } else {
+          searchHeader.style.display = '';
+          inp.value = ''; inp.focus();
+          renderKeywordItems(type, '');
+        }
+      }
+    }
+
+    function filterPicker(type, keyword) {
+      if (getTab(type) !== 'logic') renderKeywordItems(type, keyword);
+    }
+
+    function addKeywordStep(type, keywordType, keywordId) {
+      var source = getKeywordSource(keywordType);
+      var kw = source.find(function(a) { return a.id === keywordId; });
+      if (!kw) return;
+      var steps = type === 'setup' ? setupSteps : teardownSteps;
+      steps.push({ stepType: 'keyword', keywordType: keywordType, keywordId: kw.id, name: kw.name });
+      renderSTSteps(type === 'setup' ? 'setupBody' : 'teardownBody', steps, type);
+    }
+
+    function addLogicStep(type, logicType) {
+      var lt = logicTypes.find(function(l) { return l.type === logicType; });
+      if (!lt) return;
+      var steps = type === 'setup' ? setupSteps : teardownSteps;
+      var step = { stepType: logicType, name: lt.name };
+      if (logicType === 'wait') step.name = '等待 2000ms';
+      if (logicType === 'condition') step.name = '条件：${var} == "value"';
+      steps.push(step);
+      renderSTSteps(type === 'setup' ? 'setupBody' : 'teardownBody', steps, type);
+    }
+
+    function removeSTStep(type, index) {
+      var steps = type === 'setup' ? setupSteps : teardownSteps;
+      steps.splice(index, 1);
+      renderSTSteps(type === 'setup' ? 'setupBody' : 'teardownBody', steps, type);
+    }
+
+    /* 点击外部关闭选择器 */
+    document.addEventListener('click', function(e) {
+      document.querySelectorAll('.st-add-wrapper').forEach(function(w) {
+        if (!w.contains(e.target)) w.querySelector('.st-picker').classList.remove('open');
+      });
+    });
+
+    /* ===== 折叠控制 ===== */
+    function toggleCaseST(header) {
+      header.classList.toggle('open');
+      var body = header.nextElementSibling;
+      body.classList.toggle('open');
+    }
+
+    /* ===== 参数化 ===== */
+    function switchParamMode(btn, mode) {
+      btn.parentNode.querySelectorAll('.btn').forEach(function(b) {
+        b.classList.remove('active');
+        b.style.opacity = '';
+      });
+      btn.classList.add('active');
+      btn.style.opacity = '1';
+      if (mode === 'csv') alert('CSV 导入功能：请选择 CSV 文件');
+    }
+
+    function addParamRow() {
+      var tbody = document.getElementById('paramTableBody');
+      var rowCount = tbody.querySelectorAll('tr').length + 1;
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + rowCount + '</td><td><input class="input" style="width:130px;font-size:12px;"></td><td><input class="input" style="width:80px;font-size:12px;"></td><td><input class="input" style="width:130px;font-size:12px;"></td>';
+      tbody.appendChild(tr);
+    }
+
+    /* ===== 初始化渲染 ===== */
+    initPageMode();
+    renderSTSteps('setupBody', setupSteps, 'setup');
+    renderSTSteps('teardownBody', teardownSteps, 'teardown');
+
+    /* 页面加载时根据 URL hash 恢复上次选中的 tab */
+    (function restoreTab() {
+      var hash = (location.hash || '').replace(/^#/, '');
+      var validTabs = ['basic', 'orchestrator', 'params'];
+      var tabName = validTabs.indexOf(hash) !== -1 ? hash : 'basic';
+      var tabEl = Array.prototype.find.call(document.querySelectorAll('#caseTabs .tab-item'), function(t) {
+        var onclick = t.getAttribute('onclick') || '';
+        return onclick.indexOf("'" + tabName + "'") !== -1;
+      });
+      if (tabEl) switchTab(tabName, tabEl);
+    })();
+  </script>
+</body>
+</html>

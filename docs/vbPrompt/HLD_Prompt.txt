@@ -1,0 +1,13 @@
+目标：
+	生成概要设计文档
+输入：
+	docs/SRS.md
+	docs/PRD.md
+	docs/ui
+输出：
+	概要设计文档docs/HLD.md
+步骤：
+	1、根据docs/SRS.md、docs/PRD.md、docs/ui，划分出模块，识别模块与模块之间的关系。
+	2、生成概要设计文档。
+
+	不要猜测我的意图，任何不明确的地方都必须向我提问。

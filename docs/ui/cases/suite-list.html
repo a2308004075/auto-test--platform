@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试套件 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    .batch-dropdown{position:relative;display:inline-block;}
+    .batch-dropdown-menu{
+      display:none;position:absolute;right:0;top:100%;margin-top:4px;
+      background:#fff;border:1px solid var(--border-color-secondary);
+      border-radius:var(--border-radius);box-shadow:0 4px 12px rgba(0,0,0,0.1);
+      min-width:160px;z-index:100;padding:4px 0;
+    }
+    .batch-dropdown-menu.open{display:block;}
+    .batch-dropdown-item{
+      padding:8px 14px;font-size:13px;color:var(--text-primary);cursor:pointer;
+      display:flex;align-items:center;gap:6px;white-space:nowrap;
+    }
+    .batch-dropdown-item:hover{background:var(--bg-body);}
+    .batch-dropdown-item.danger{color:var(--error);}
+    .batch-dropdown-item.danger:hover{background:#fff5f5;}
+    .table-scroll{max-height:800px;overflow-y:auto;}
+    .tree-item.system { color: var(--text-secondary); cursor: default; }
+    .tree-item.system .system-icon { font-size: 12px; margin-left: 6px; color: var(--text-tertiary); }
+    .tree-item.system.active { background: var(--primary-bg); color: var(--primary); }
+    .tree-divider { height: 1px; background: var(--border-color-secondary); margin: 8px 12px; }
+    .context-menu { position: fixed; background: #fff; border: 1px solid var(--border-color-secondary); border-radius: var(--border-radius); box-shadow: 0 2px 8px rgba(0,0,0,0.12); padding: 4px 0; min-width: 120px; z-index: 1000; display: none; }
+    .context-menu-item { padding: 6px 12px; font-size: 13px; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+    .context-menu-item:hover { background: #fafafa; }
+    .context-menu-item.danger { color: var(--error); }
+    .context-menu-divider { height: 1px; background: var(--border-color-secondary); margin: 4px 0; }
+    .tree-arrow { display: inline-block; width: 14px; font-size: 9px; color: var(--text-tertiary); cursor: pointer; flex-shrink: 0; text-align: center; transition: transform .15s; }
+    .tree-arrow.expanded { transform: rotate(90deg); }
+    .tree-arrow-placeholder { display: inline-block; width: 14px; flex-shrink: 0; }
+    .tree-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span>测试管理</span>
+      <span class="sep">&#8250;</span>
+      <span class="current">测试套件</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group open">
+        <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item active"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+  <main class="layout-main">
+
+    <div class="page-header"><h1>测试套件</h1><button class="btn btn-primary" onclick="openNewSuiteModal()">+ 新建套件</button></div>
+    <div style="display:flex;gap:0;height:calc(100vh - 240px);">
+      <!-- Left: Group Tree -->
+      <div class="tree-panel" id="treePanel" style="border:1px solid var(--border-color);border-radius:var(--border-radius) 0 0 var(--border-radius);" oncontextmenu="showBlankContextMenu(event)">
+        <div class="tree-search"><input type="text" class="input input-search w-full" placeholder="搜索分组..." style="height:28px;font-size:12px;"></div>
+        <div id="groupTree"></div>
+      </div>
+      <!-- Right: Suite List -->
+      <div style="flex:1;border:1px solid var(--border-color);border-left:none;border-radius:0 var(--border-radius) var(--border-radius) 0;background:#fff;padding:16px;overflow-y:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <h3 style="font-size:15px;" id="suiteListTitle">全部套件</h3>
+        </div>
+        <!-- 批量操作栏 -->
+        <div class="batch-bar" id="batchBar">
+          <span>已选中 <span class="batch-count" id="selectedCount">0</span> 条记录</span>
+          <div class="batch-actions">
+            <div class="batch-dropdown" id="batchDropdown">
+              <button class="btn btn-sm btn-primary" onclick="toggleBatchDropdown()">批量操作 &#9662;</button>
+              <div class="batch-dropdown-menu" id="batchDropdownMenu">
+                <div class="batch-dropdown-item" onclick="openBatchGroupModal()">批量修改分组</div>
+                <div class="batch-dropdown-item danger" onclick="batchDelete()">批量删除</div>
+              </div>
+            </div>
+            <button class="btn btn-sm" onclick="clearSelection()">取消选择</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+        <table>
+          <thead><tr><th style="width:40px;"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)"></th><th>套件名称</th><th style="width:90px;">用例数</th><th style="width:90px;">分组</th><th style="width:120px;">最近执行通过率</th><th style="width:140px;">操作</th></tr></thead>
+          <tbody id="suiteTableBody"></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+  </main>
+  <!-- New Suite Modal -->
+  <div class="modal-overlay" id="newSuiteModal" style="display:none;">
+    <div class="modal" style="width:420px;">
+      <div class="modal-header"><h3>新建测试套件</h3><button class="modal-close" onclick="this.closest('.modal-overlay').style.display='none'">×</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">套件名称 <span class="required">*</span></label><input type="text" class="input w-full" id="newSuiteName" placeholder="例如：冒烟测试套件"></div>
+        <div class="form-group"><label class="form-label">描述</label><textarea class="textarea w-full" id="newSuiteDesc" rows="2" placeholder="套件描述"></textarea></div>
+        <div class="form-group"><label class="form-label">所属分组</label><select class="select w-full" id="newSuiteGroup"></select></div>
+      </div>
+      <div class="modal-footer"><button class="btn" onclick="this.closest('.modal-overlay').style.display='none'">取消</button><button class="btn btn-primary" onclick="confirmNewSuite()">确定</button></div>
+    </div>
+  </div>
+  <!-- Batch Change Group Modal -->
+  <div class="modal-overlay" id="batchGroupModal" style="display:none;">
+    <div class="modal" style="width:400px;">
+      <div class="modal-header"><h3>批量修改分组</h3><button class="modal-close" onclick="closeBatchGroupModal()">&#10005;</button></div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">将已选中的 <b id="batchGroupCount" style="color:var(--primary);">0</b> 个套件的分组修改为：</p>
+        <div class="form-group">
+          <label class="form-label">目标分组 <span class="required">*</span></label>
+          <select class="select w-full" id="batchGroupSelect"></select>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn" onclick="closeBatchGroupModal()">取消</button><button class="btn btn-primary" onclick="applyBatchGroup()">确认修改</button></div>
+    </div>
+  </div>
+  <!-- Group Create/Edit Modal -->
+  <div class="modal-overlay" id="sgGroupModal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header"><h3 id="groupModalTitle">新建分组</h3><button class="modal-close" onclick="closeGroupModal()">&#10005;</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">分组名称 <span class="required">*</span></label><input type="text" class="input w-full" id="sgGroupName" placeholder="请输入分组名称"></div>
+      </div>
+      <div class="modal-footer"><button class="btn" onclick="closeGroupModal()">取消</button><button class="btn btn-primary" onclick="confirmGroupModal()">确认</button></div>
+    </div>
+  </div>
+  <!-- Group Delete Modal -->
+  <div class="modal-overlay" id="deleteGroupModal" style="display:none;">
+    <div class="modal" style="width:360px;">
+      <div class="modal-header"><h3>删除分组</h3><button class="modal-close" onclick="closeDeleteGroupModal()">&#10005;</button></div>
+      <div class="modal-body"><p style="font-size:14px;color:var(--text-secondary);line-height:1.6;">确定删除分组 <strong id="delGroupName"></strong> 吗？<br><span style="color:var(--text-tertiary);">删除后，该分组下的套件将自动归入「未分组」。</span></p></div>
+      <div class="modal-footer"><button class="btn" onclick="closeDeleteGroupModal()">取消</button><button class="btn btn-primary" style="background:var(--error);border-color:var(--error);" onclick="confirmDeleteGroup()">确认删除</button></div>
+    </div>
+  </div>
+  <!-- Blank area context menu -->
+  <div class="context-menu" id="blankCtxMenu"><div class="context-menu-item" onclick="handleBlankCreate()">新建分组</div></div>
+  <!-- Group context menu -->
+  <div class="context-menu" id="groupCtxMenu">
+    <div class="context-menu-item" onclick="handleCtxCreateChild()">新建子分组</div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" onclick="handleCtxEdit()">编辑</div>
+    <div class="context-menu-item danger" onclick="handleCtxDelete()">删除</div>
+  </div>
+  <script>
+    /* ===== Data ===== */
+    function escapeHtml(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+    var suiteGroups = [
+      { id: 'all', name: '全部', count: 0, isSystem: true, icon: '📂' },
+      { id: 'ungrouped', name: '未分组', count: 0, isSystem: true, icon: '📁' },
+      { id: '1', name: '核心功能', count: 0, isSystem: false, parentId: null },
+      { id: '1-1', name: '登录认证', count: 0, isSystem: false, parentId: '1' },
+      { id: '1-2', name: '订单流程', count: 0, isSystem: false, parentId: '1' },
+      { id: '2', name: '性能测试', count: 0, isSystem: false, parentId: null },
+      { id: '2-1', name: '基准测试', count: 0, isSystem: false, parentId: '2' },
+      { id: '3', name: '安全测试', count: 0, isSystem: false, parentId: null },
+      { id: '4', name: '集成测试', count: 0, isSystem: false, parentId: null },
+      { id: '5', name: '接口测试', count: 0, isSystem: false, parentId: null },
+      { id: '5-1', name: '用户服务', count: 0, isSystem: false, parentId: '5' },
+      { id: '5-2', name: '设备服务', count: 0, isSystem: false, parentId: '5' },
+      { id: '6', name: '回归验证', count: 0, isSystem: false, parentId: null }
+    ];
+    var suites = [
+      // 核心功能
+      { id: 's1', name: '冒烟测试套件', desc: '核心流程快速验证', caseCount: 12, passRate: 95, groupId: '1' },
+      { id: 's2', name: '回归测试套件', desc: '版本回归全覆盖', caseCount: 28, passRate: 88, groupId: '1' },
+      { id: 's3', name: '电池管理测试', desc: '电池增删改查及状态流转', caseCount: 35, passRate: 92, groupId: '1' },
+      // 核心功能 > 登录认证
+      { id: 's4', name: '登录认证套件', desc: '登录、注册、Token 校验', caseCount: 8, passRate: 100, groupId: '1-1' },
+      { id: 's51', name: 'OAuth2 授权测试', desc: '第三方授权码与刷新令牌流程', caseCount: 6, passRate: 83, groupId: '1-1' },
+      { id: 's52', name: '多因子认证测试', desc: '短信验证码与邮箱验证双因子校验', caseCount: 5, passRate: 90, groupId: '1-1' },
+      // 核心功能 > 订单流程
+      { id: 's53', name: '订单创建流程', desc: '普通订单与批量订单创建验证', caseCount: 14, passRate: 93, groupId: '1-2' },
+      { id: 's54', name: '订单支付流程', desc: '微信/支付宝/银行卡多渠道支付', caseCount: 11, passRate: 87, groupId: '1-2' },
+      { id: 's55', name: '订单退款与取消', desc: '退款申请、审批与自动取消流程', caseCount: 9, passRate: 78, groupId: '1-2' },
+      // 性能测试
+      { id: 's5', name: '性能压力测试', desc: '高并发场景压测', caseCount: 15, passRate: 76, groupId: '2' },
+      { id: 's6', name: '响应时间测试', desc: '各接口响应时间基准测试', caseCount: 20, passRate: 82, groupId: '2' },
+      { id: 's56', name: '吞吐量极限测试', desc: '系统在最大负载下的 TPS 表现', caseCount: 8, passRate: 68, groupId: '2' },
+      // 性能测试 > 基准测试
+      { id: 's57', name: '单接口基准测试', desc: '核心接口单用户响应时间基准', caseCount: 18, passRate: 96, groupId: '2-1' },
+      { id: 's58', name: '混合场景基准', desc: '多接口混合调用场景基准数据', caseCount: 10, passRate: 89, groupId: '2-1' },
+      // 安全测试
+      { id: 's7', name: '权限校验套件', desc: '角色权限与越权测试', caseCount: 18, passRate: 90, groupId: '3' },
+      { id: 's8', name: 'XSS/SQL注入防护', desc: '安全漏洞扫描', caseCount: 10, passRate: 85, groupId: '3' },
+      { id: 's59', name: 'CSRF 防护验证', desc: '跨站请求伪造防护与令牌校验', caseCount: 7, passRate: 94, groupId: '3' },
+      { id: 's60', name: '敏感数据脱敏', desc: '手机号、身份证、银行卡等脱敏校验', caseCount: 12, passRate: 91, groupId: '3' },
+      // 集成测试
+      { id: 's9', name: '换电流程集成', desc: '端到端换电流程验证', caseCount: 22, passRate: 91, groupId: '4' },
+      { id: 's10', name: '设备管理集成', desc: '设备注册与状态同步', caseCount: 14, passRate: 78, groupId: 'ungrouped' },
+      { id: 's61', name: '消息通知集成', desc: '短信、邮件、站内信通知发送验证', caseCount: 16, passRate: 86, groupId: '4' },
+      { id: 's62', name: '文件上传集成', desc: 'OSS 文件上传、下载与权限校验', caseCount: 9, passRate: 92, groupId: '4' },
+      // 接口测试 > 用户服务
+      { id: 's63', name: '用户 CRUD 接口', desc: '用户创建、查询、修改、删除全量验证', caseCount: 24, passRate: 97, groupId: '5-1' },
+      { id: 's64', name: '用户角色权限接口', desc: '角色分配、权限查询、菜单树接口', caseCount: 15, passRate: 88, groupId: '5-1' },
+      { id: 's65', name: '用户搜索与导出', desc: '分页搜索、关键字过滤、Excel 导出', caseCount: 11, passRate: 84, groupId: '5-1' },
+      // 接口测试 > 设备服务
+      { id: 's66', name: '设备注册与配置', desc: '设备入网、参数下发与固件升级', caseCount: 13, passRate: 79, groupId: '5-2' },
+      { id: 's67', name: '设备状态监控', desc: '在线/离线/告警状态实时查询', caseCount: 10, passRate: 93, groupId: '5-2' },
+      // 回归验证
+      { id: 's68', name: 'v2.1 版本回归', desc: 'v2.1 全量功能回归验证', caseCount: 45, passRate: 94, groupId: '6' },
+      { id: 's69', name: 'v2.0 版本回归', desc: 'v2.0 基线功能回归验证', caseCount: 38, passRate: 98, groupId: '6' },
+      { id: 's70', name: '热修复验证套件', desc: '线上 Bug 热修复后快速验证', caseCount: 6, passRate: 100, groupId: '6' }
+    ];
+    var activeGroupId = 'all';
+    var contextGroupId = null;
+    var treeExpandedIds = { '1': true, '5': true };
+    var nextGroupId = 100;
+    var nextSuiteId = 100;
+    var selectedSuiteIds = {};
+
+    /* ===== Group helpers ===== */
+    function getTreeChildren(pid) { return suiteGroups.filter(function(g) { return g.parentId === pid; }); }
+    function getDescendantIds(gid) {
+      var ids = [gid];
+      getTreeChildren(gid).forEach(function(c) { ids = ids.concat(getDescendantIds(c.id)); });
+      return ids;
+    }
+    function getFilteredSuites() {
+      if (activeGroupId === 'all') return suites.slice();
+      if (activeGroupId === 'ungrouped') return suites.filter(function(s) { return !s.groupId || s.groupId === 'ungrouped'; });
+      var ids = getDescendantIds(activeGroupId);
+      return suites.filter(function(s) { return ids.indexOf(s.groupId) !== -1; });
+    }
+
+    /* ===== Group Tree (groups only, no suite leaves) ===== */
+    function renderGroupTree() {
+      var container = document.getElementById('groupTree');
+      var systemGroups = suiteGroups.filter(function(g) { return g.isSystem; });
+      var html = renderTreeNodes(systemGroups, 0);
+      html += '<div class="tree-divider"></div>';
+      var userGroups = suiteGroups.filter(function(g) { return !g.isSystem && g.parentId === null; });
+      html += renderTreeNodes(userGroups, 0);
+      container.innerHTML = html;
+    }
+
+    function computeGroupCount(gid) {
+      var direct = suites.filter(function(s) { return s.groupId === gid; }).length;
+      getTreeChildren(gid).forEach(function(c) { direct += computeGroupCount(c.id); });
+      return direct;
+    }
+    function updateGroupCounts() {
+      suiteGroups.forEach(function(g) {
+        if (g.id === 'all') g.count = suites.length;
+        else if (g.id === 'ungrouped') g.count = suites.filter(function(s) { return !s.groupId || s.groupId === 'ungrouped'; }).length;
+        else g.count = computeGroupCount(g.id);
+      });
+    }
+
+    function renderTreeNodes(items, depth) {
+      var html = '';
+      items.forEach(function(g) {
+        var isActive = g.id === activeGroupId ? 'active' : '';
+        var childGroups = getTreeChildren(g.id);
+        var hasChildren = childGroups.length > 0;
+        var arrowHtml = '';
+        if (!g.isSystem && hasChildren) {
+          var expanded = treeExpandedIds[g.id];
+          arrowHtml = '<span class="tree-arrow' + (expanded ? ' expanded' : '') + '" onclick="toggleTreeExpand(event,\'' + g.id + '\')">&#9654;</span>';
+        } else if (!g.isSystem) {
+          arrowHtml = '<span class="tree-arrow-placeholder"></span>';
+        }
+        var systemCls = g.isSystem ? 'system' : '';
+        var lockIcon = g.isSystem ? '<span class="system-icon" title="系统默认分组">🔒</span>' : '';
+        var icon = g.icon || '📁';
+        var padding = g.isSystem ? 16 : (16 + depth * 16);
+        html += '<div class="tree-item ' + isActive + ' ' + systemCls + '" style="padding-left:' + padding + 'px" onclick="selectGroup(\'' + g.id + '\')" oncontextmenu="showGroupContextMenu(event,\'' + g.id + '\')">' +
+          arrowHtml + '<span>' + icon + '</span><span class="tree-name">' + escapeHtml(g.name) + '</span>' + lockIcon + '<span class="count">' + g.count + '</span></div>';
+        if (!g.isSystem && hasChildren && treeExpandedIds[g.id]) {
+          html += renderTreeNodes(childGroups, depth + 1);
+        }
+      });
+      return html;
+    }
+
+    function toggleTreeExpand(e, id) { e.stopPropagation(); treeExpandedIds[id] = !treeExpandedIds[id]; updateGroupCounts(); renderGroupTree(); }
+
+    function selectGroup(id) {
+      activeGroupId = id;
+      selectedSuiteIds = {};
+      updateGroupCounts();
+      renderGroupTree();
+      renderSuiteTable();
+    }
+
+    /* ===== Suite Table ===== */
+    function renderSuiteTable() {
+      var filtered = getFilteredSuites();
+      var tbody = document.getElementById('suiteTableBody');
+      var title = document.getElementById('suiteListTitle');
+      var group = suiteGroups.find(function(g) { return g.id === activeGroupId; });
+      title.textContent = (group ? group.name : '全部') + ' — ' + filtered.length + ' 个套件';
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:48px 20px;color:var(--text-tertiary);">' +
+          '<div style="font-size:32px;margin-bottom:8px;opacity:.4;">📋</div><div>该分组下暂无测试套件</div></td></tr>';
+        updateBatchBar();
+        return;
+      }
+      var html = '';
+      filtered.forEach(function(s) {
+        var checked = selectedSuiteIds[s.id] ? 'checked' : '';
+        var sGroup = suiteGroups.find(function(g) { return g.id === s.groupId; });
+        var gName = sGroup ? sGroup.name : '未分组';
+        var passTag = s.passRate >= 90 ? 'tag-green' : s.passRate >= 70 ? 'tag-orange' : 'tag-red';
+        html += '<tr>' +
+          '<td><input type="checkbox" onchange="toggleSuiteSelect(\'' + s.id + '\')" ' + checked + '></td>' +
+          '<td><a href="#" onclick="alert(\'进入套件详情：' + escapeHtml(s.name) + '\');return false;" style="font-weight:500;">' + escapeHtml(s.name) + '</a>' +
+            '<div style="font-size:12px;color:var(--text-tertiary);margin-top:2px;">' + escapeHtml(s.desc) + '</div></td>' +
+          '<td>' + s.caseCount + '</td>' +
+          '<td><span class="tag tag-gray">' + escapeHtml(gName) + '</span></td>' +
+          '<td><span class="tag ' + passTag + '">' + s.passRate + '%</span></td>' +
+          '<td style="white-space:nowrap">' +
+            '<button class="btn-link" onclick="alert(\'编辑套件：' + escapeHtml(s.name) + '\')">编辑</button> ' +
+            '<button class="btn-link" style="color:var(--error);" onclick="deleteSuite(\'' + s.id + '\')">删除</button>' +
+          '</td></tr>';
+      });
+      tbody.innerHTML = html;
+      updateBatchBar();
+    }
+
+    /* ===== Selection ===== */
+    function toggleSuiteSelect(id) {
+      if (selectedSuiteIds[id]) delete selectedSuiteIds[id]; else selectedSuiteIds[id] = true;
+      updateBatchBar();
+    }
+    function toggleSelectAll(cb) {
+      var filtered = getFilteredSuites();
+      if (cb.checked) {
+        filtered.forEach(function(s) { selectedSuiteIds[s.id] = true; });
+      } else {
+        selectedSuiteIds = {};
+      }
+      renderSuiteTable();
+    }
+    function clearSelection() {
+      selectedSuiteIds = {};
+      var allCb = document.getElementById('selectAllCheckbox');
+      if (allCb) { allCb.checked = false; allCb.indeterminate = false; }
+      renderSuiteTable();
+    }
+    function updateBatchBar() {
+      var count = Object.keys(selectedSuiteIds).length;
+      document.getElementById('selectedCount').textContent = count;
+      var bar = document.getElementById('batchBar');
+      if (count > 0) bar.classList.add('visible'); else bar.classList.remove('visible');
+      var allCb = document.getElementById('selectAllCheckbox');
+      var filtered = getFilteredSuites();
+      if (allCb) {
+        allCb.checked = count === filtered.length && filtered.length > 0;
+        allCb.indeterminate = count > 0 && count < filtered.length;
+      }
+    }
+
+    /* ===== Batch Dropdown ===== */
+    function toggleBatchDropdown() { document.getElementById('batchDropdownMenu').classList.toggle('open'); }
+    document.addEventListener('click', function(e) {
+      var dd = document.getElementById('batchDropdown');
+      if (dd && !dd.contains(e.target)) document.getElementById('batchDropdownMenu').classList.remove('open');
+    });
+
+    function batchDelete() {
+      document.getElementById('batchDropdownMenu').classList.remove('open');
+      var ids = Object.keys(selectedSuiteIds);
+      if (ids.length === 0) { alert('请先选择要删除的套件'); return; }
+      var names = ids.map(function(id) { var s = suites.find(function(x) { return x.id === id; }); return s ? s.name : ''; });
+      if (!confirm('确定删除以下 ' + ids.length + ' 个套件？\n' + names.join('、'))) return;
+      suites = suites.filter(function(s) { return !selectedSuiteIds[s.id]; });
+      selectedSuiteIds = {};
+      updateGroupCounts(); renderGroupTree(); renderSuiteTable();
+    }
+
+    /* ===== Delete single suite ===== */
+    function deleteSuite(id) {
+      var s = suites.find(function(x) { return x.id === id; });
+      if (!s) return;
+      if (!confirm('确定删除套件「' + s.name + '」？')) return;
+      suites = suites.filter(function(x) { return x.id !== id; });
+      delete selectedSuiteIds[id];
+      updateGroupCounts(); renderGroupTree(); renderSuiteTable();
+    }
+
+    /* ===== Batch change group modal ===== */
+    function openBatchGroupModal() {
+      document.getElementById('batchDropdownMenu').classList.remove('open');
+      var ids = Object.keys(selectedSuiteIds);
+      if (ids.length === 0) { alert('请先选择要操作的套件'); return; }
+      document.getElementById('batchGroupCount').textContent = ids.length;
+      var sel = document.getElementById('batchGroupSelect');
+      sel.value = '';
+      // populate options
+      var opts = '<option value="">请选择目标分组</option>';
+      suiteGroups.forEach(function(g) {
+        if (g.isSystem) return;
+        opts += '<option value="' + g.id + '">' + escapeHtml(g.name) + '</option>';
+      });
+      opts += '<option value="ungrouped">未分组</option>';
+      sel.innerHTML = opts;
+      document.getElementById('batchGroupModal').style.display = 'flex';
+    }
+    function closeBatchGroupModal() { document.getElementById('batchGroupModal').style.display = 'none'; }
+    function applyBatchGroup() {
+      var targetId = document.getElementById('batchGroupSelect').value;
+      if (!targetId) { alert('请选择目标分组'); return; }
+      var ids = Object.keys(selectedSuiteIds);
+      ids.forEach(function(id) {
+        var s = suites.find(function(x) { return x.id === id; });
+        if (s) s.groupId = targetId;
+      });
+      selectedSuiteIds = {};
+      closeBatchGroupModal();
+      updateGroupCounts(); renderGroupTree(); renderSuiteTable();
+    }
+
+    /* ===== New Suite Modal ===== */
+    function openNewSuiteModal() {
+      document.getElementById('newSuiteName').value = '';
+      document.getElementById('newSuiteDesc').value = '';
+      var sel = document.getElementById('newSuiteGroup');
+      var opts = '';
+      suiteGroups.forEach(function(g) {
+        if (g.isSystem) return;
+        opts += '<option value="' + g.id + '">' + escapeHtml(g.name) + '</option>';
+      });
+      opts += '<option value="ungrouped">未分组</option>';
+      sel.innerHTML = opts;
+      // default to active group if it's a user group
+      if (activeGroupId !== 'all' && activeGroupId !== 'ungrouped') sel.value = activeGroupId;
+      document.getElementById('newSuiteModal').style.display = 'flex';
+    }
+    function confirmNewSuite() {
+      var name = document.getElementById('newSuiteName').value.trim();
+      if (!name) { document.getElementById('newSuiteName').style.borderColor = 'var(--error)'; return; }
+      var desc = document.getElementById('newSuiteDesc').value.trim();
+      var gid = document.getElementById('newSuiteGroup').value || 'ungrouped';
+      suites.push({ id: 's' + (nextSuiteId++), name: name, desc: desc || '暂无描述', caseCount: 0, passRate: 0, groupId: gid });
+      document.getElementById('newSuiteModal').style.display = 'none';
+      updateGroupCounts(); renderGroupTree(); renderSuiteTable();
+    }
+
+    /* ===== Group Context Menu ===== */
+    function showBlankContextMenu(e) {
+      var t = e.target; while (t && t !== e.currentTarget) { if (t.classList && t.classList.contains('tree-item')) return; t = t.parentElement; }
+      e.preventDefault(); hideAllMenus();
+      var menu = document.getElementById('blankCtxMenu'); menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
+    }
+    function showGroupContextMenu(e, id) {
+      e.preventDefault(); e.stopPropagation(); hideAllMenus();
+      contextGroupId = id;
+      var group = suiteGroups.find(function(g) { return g.id === id; });
+      if (group && group.isSystem) return;
+      var menu = document.getElementById('groupCtxMenu'); menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
+    }
+    function hideAllMenus() {
+      document.getElementById('groupCtxMenu').style.display = 'none';
+      document.getElementById('blankCtxMenu').style.display = 'none';
+      contextGroupId = null;
+    }
+    function handleBlankCreate() { hideAllMenus(); openGroupModal('create', null); }
+    function handleCtxCreateChild() { if (!contextGroupId) return; hideAllMenus(); openGroupModal('create', contextGroupId); }
+    function handleCtxEdit() {
+      if (!contextGroupId) return;
+      var group = suiteGroups.find(function(g) { return g.id === contextGroupId; });
+      if (!group || group.isSystem) { hideAllMenus(); return; }
+      hideAllMenus(); openGroupModal('edit', contextGroupId);
+    }
+    function handleCtxDelete() {
+      if (!contextGroupId) return;
+      var group = suiteGroups.find(function(g) { return g.id === contextGroupId; });
+      if (!group || group.isSystem) { hideAllMenus(); return; }
+      hideAllMenus();
+      document.getElementById('delGroupName').textContent = group.name;
+      document.getElementById('deleteGroupModal').style.display = 'flex';
+    }
+
+    /* ===== Group Modal ===== */
+    var groupModalMode = 'create';
+    var groupModalParentId = null;
+    var groupModalEditId = null;
+    function openGroupModal(mode, refId) {
+      groupModalMode = mode;
+      if (mode === 'create') {
+        groupModalParentId = refId;
+        document.getElementById('groupModalTitle').textContent = refId ? '新建子分组' : '新建分组';
+        document.getElementById('sgGroupName').value = '';
+      } else {
+        groupModalEditId = refId;
+        var group = suiteGroups.find(function(g) { return g.id === refId; });
+        document.getElementById('groupModalTitle').textContent = '编辑分组';
+        document.getElementById('sgGroupName').value = group ? group.name : '';
+      }
+      document.getElementById('sgGroupName').style.borderColor = '';
+      document.getElementById('sgGroupModal').style.display = 'flex';
+      document.getElementById('sgGroupName').focus();
+    }
+    function closeGroupModal() { document.getElementById('sgGroupModal').style.display = 'none'; }
+    function confirmGroupModal() {
+      var name = document.getElementById('sgGroupName').value.trim();
+      if (!name) { document.getElementById('sgGroupName').style.borderColor = 'var(--error)'; document.getElementById('sgGroupName').focus(); return; }
+      if (name === '全部' || name === '未分组') { alert('「全部」和「未分组」为系统默认分组，不能使用该名称'); return; }
+      if (groupModalMode === 'create') {
+        suiteGroups.push({ id: String(nextGroupId++), name: name, count: 0, isSystem: false, parentId: groupModalParentId });
+        if (groupModalParentId) treeExpandedIds[groupModalParentId] = true;
+      } else {
+        var group = suiteGroups.find(function(g) { return g.id === groupModalEditId; });
+        if (group) group.name = name;
+      }
+      updateGroupCounts(); renderGroupTree(); closeGroupModal();
+    }
+    function confirmDeleteGroup() {
+      if (!contextGroupId) return;
+      suiteGroups = suiteGroups.filter(function(g) { return g.id !== contextGroupId; });
+      suites.forEach(function(s) { if (s.groupId === contextGroupId) s.groupId = 'ungrouped'; });
+      updateGroupCounts(); renderGroupTree(); renderSuiteTable(); closeDeleteGroupModal();
+    }
+    function closeDeleteGroupModal() { document.getElementById('deleteGroupModal').style.display = 'none'; }
+
+    document.getElementById('sgGroupModal').addEventListener('click', function(e) { if (e.target === this) closeGroupModal(); });
+    document.getElementById('deleteGroupModal').addEventListener('click', function(e) { if (e.target === this) closeDeleteGroupModal(); });
+    document.getElementById('batchGroupModal').addEventListener('click', function(e) { if (e.target === this) closeBatchGroupModal(); });
+    document.addEventListener('click', function() { hideAllMenus(); });
+
+    /* ===== Init ===== */
+    updateGroupCounts();
+    renderGroupTree();
+    renderSuiteTable();
+  </script>
+  <script src="../common/nav.js"></script>
+</body>
+</html>

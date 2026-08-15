@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Action 编辑器 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <script src="../common/lib/x6.js"></script>
+  <script src="../common/lib/x6-plugin-selection.js"></script>
+  <script src="../common/lib/x6-plugin-snapline.js"></script>
+  <style>
+    .edit-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .edit-header .actions { display: flex; gap: 8px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .orchestrator{display:flex;height:640px;border:1px solid var(--border-color);border-radius:var(--border-radius);overflow:auto;position:relative;resize:none;min-width:600px;min-height:360px;max-height:85vh;}
+    .orch-resize-handle{position:absolute;right:0;bottom:0;width:16px;height:16px;cursor:nwse-resize;z-index:20;background:linear-gradient(135deg,transparent 45%,var(--border-color) 45%);border-radius:0 0 var(--border-radius) 0;opacity:.55;transition:opacity .15s,background .15s;pointer-events:auto;}
+    .orch-resize-handle:hover{opacity:1;background:linear-gradient(135deg,transparent 45%,var(--primary) 45%);}
+    .node-panel{width:180px;background:#fafafa;border-right:1px solid var(--border-color);padding:10px;overflow-y:auto;}
+    .node-panel h4{font-size:12px;color:var(--text-tertiary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;}
+    .node-drag{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff;border:1px solid var(--border-color);border-radius:4px;margin-bottom:6px;cursor:grab;font-size:13px;transition:all .15s;user-select:none;}
+    .node-drag:hover{border-color:var(--primary);box-shadow:0 1px 4px rgba(24,144,255,.15);}
+    .node-drag:active{cursor:grabbing;}
+    .node-drag.el-selected{border-color:var(--primary);background:#f0f5ff;box-shadow:0 0 0 2px rgba(24,144,255,.15);}
+    .el-section{margin-bottom:2px;}
+    .el-section:last-child{margin-bottom:0;}
+    .el-header{display:flex;align-items:center;gap:4px;padding:6px 8px;cursor:pointer;border-radius:4px;font-size:12px;font-weight:500;color:var(--text-primary);user-select:none;transition:background .15s;}
+    .el-header:hover{background:#f0f0f0;}
+    .el-arrow{font-size:9px;color:var(--text-tertiary);transition:transform .2s;display:inline-block;width:10px;text-align:center;}
+    .el-section.el-open .el-arrow{transform:rotate(90deg);}
+    .el-badge{margin-left:auto;font-size:10px;color:var(--text-tertiary);background:#f0f0f0;border-radius:8px;padding:0 5px;min-width:16px;text-align:center;line-height:16px;}
+    .el-body{display:none;padding:0 2px 4px;}
+    .el-section.el-open .el-body{display:block;}
+    .el-search{width:100%;height:24px;border:1px solid var(--border-color);border-radius:3px;padding:0 6px;font-size:11px;margin-bottom:4px;outline:none;box-sizing:border-box;background:#fff;}
+    .el-search:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(24,144,255,.1);}
+    .el-items{max-height:150px;overflow-y:auto;}
+    .node-drag .nd-icon{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-weight:700;}
+    .canvas-wrap{flex:1;display:flex;flex-direction:column;position:relative;background:#fff;overflow:hidden;}
+    .canvas-toolbar{position:relative;display:flex;align-items:center;gap:4px;padding:4px 8px;border-bottom:1px solid var(--border-color-secondary);background:#fafafa;flex-shrink:0;}
+    .canvas-size-popover{position:absolute;top:100%;right:6px;margin-top:6px;background:#fff;border:1px solid var(--border-color);border-radius:var(--border-radius);box-shadow:0 4px 16px rgba(0,0,0,.12);padding:12px;z-index:100;display:none;min-width:180px;}
+    .canvas-size-popover.active{display:block;}
+    .canvas-size-popover .form-group{margin-bottom:10px;}
+    .canvas-size-popover .form-group:last-child{margin-bottom:0;}
+    .canvas-size-popover .form-label{font-size:12px;margin-bottom:4px;display:block;color:var(--text-secondary);}
+    .canvas-size-popover .input{width:100%;height:28px;font-size:12px;box-sizing:border-box;}
+    .canvas-size-popover .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;}
+    .canvas-size-popover .btn-sm{height:24px;font-size:11px;padding:0 10px;}
+    .canvas-toolbar .tb-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid var(--border-color);border-radius:4px;background:#fff;cursor:pointer;font-size:14px;color:var(--text-secondary);transition:all .15s;}
+    .canvas-toolbar .tb-btn:hover{border-color:var(--primary);color:var(--primary);}
+    .canvas-toolbar .tb-sep{width:1px;height:18px;background:var(--border-color);margin:0 4px;}
+    .canvas-toolbar .tb-label{font-size:12px;color:var(--text-secondary);min-width:40px;text-align:center;}
+    .canvas-toolbar .tb-btn.danger:hover{border-color:var(--error);color:var(--error);}
+    #flowGraph{flex:1;overflow:hidden;background-color:#fff;background-image:linear-gradient(rgba(0,0,0,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.07) 1px,transparent 1px);background-size:20px 20px;}
+    .prop-panel{width:280px;border-left:1px solid var(--border-color);background:#fff;overflow-y:auto;padding:12px;}
+    .prop-panel h4{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text-primary);}
+    .prop-panel .form-group{margin-bottom:10px;}
+    .prop-panel .form-label{font-size:12px;margin-bottom:4px;}
+    .prop-panel .input,.prop-panel .select{height:28px;font-size:12px;width:100%;}
+    .prop-empty{text-align:center;padding:60px 16px;color:var(--text-tertiary);font-size:13px;}
+    .prop-empty .pe-icon{font-size:28px;margin-bottom:8px;opacity:.4;}
+    /* -- 全屏模式 -- */
+    .orchestrator.orchestrator-fullscreen{
+      position:fixed;top:0;left:0;width:100vw!important;height:100vh!important;
+      z-index:10000;border-radius:0;border:none;margin:0;
+      box-shadow:0 0 0 1px var(--border-color);
+      resize:none;max-height:none;
+    }
+    .orchestrator.orchestrator-fullscreen .orch-resize-handle{display:none;}
+    /* -- 右键菜单 -- */
+    .ctx-menu{position:fixed;z-index:10001;background:#fff;border:1px solid var(--border-color);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);padding:4px 0;min-width:190px;display:none;}
+    .ctx-menu-title{font-size:11px;color:var(--text-tertiary);padding:6px 12px 4px;border-bottom:1px solid var(--border-color-secondary);margin-bottom:2px;}
+    .ctx-menu-search{padding:4px 8px;}
+    .ctx-menu-search input{width:100%;height:24px;border:1px solid var(--border-color);border-radius:3px;padding:0 6px;font-size:11px;outline:none;box-sizing:border-box;}
+    .ctx-menu-search input:focus{border-color:var(--primary);}
+    .ctx-menu-item{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;font-size:12px;transition:background .1s;}
+    .ctx-menu-item:hover{background:#f0f5ff;}
+    .ctx-menu-item .ctx-icon{width:20px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;font-weight:700;}
+    /* -- foreignObject 节点样式（CSS 强制覆盖，确保 X6 markup 解析器不影响） -- */
+    [data-node-root]{margin:0;padding:0;width:100%;height:100%;display:flex;align-items:center;gap:8px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;border-radius:6px;overflow:hidden;cursor:pointer;white-space:nowrap;}
+    [data-label]{font-size:13px;color:rgba(0,0,0,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;min-width:0;}
+    foreignObject{overflow:visible;}
+    /* 连接点默认隐藏，仅选中节点时显示 */
+    .flow-port { display: none; }
+    .is-selected .flow-port { display: inline; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span><a href="action-list.html">Action 关键字</a></span>
+      <span class="sep">&#8250;</span>
+      <span class="current">编辑 Action 关键字</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item active"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+  <main class="layout-main">
+
+    <div class="edit-header">
+      <h1 style="font-size: 18px;">编辑 Action 关键字</h1>
+      <div class="actions">
+        <button class="btn" onclick="window.location.href='action-debug.html'">调试</button>
+        <button class="btn btn-primary" onclick="handleSave()">保存</button>
+        <button class="btn" onclick="location.href='action-list.html'">取消</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" id="editTabs">
+      <div class="tab-item active" onclick="switchTab('basic', this)">基础信息</div>
+      <div class="tab-item" onclick="switchTab('params', this)">I/O 参数</div>
+      <div class="tab-item" onclick="switchTab('orchestrator', this)">节点编排器</div>
+    </div>
+
+    <!-- Tab: 基础信息 -->
+    <div class="tab-content active" id="tab-basic">
+      <div class="card"><div class="card-body">
+        <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="form-group" style="margin:0;flex:1;min-width:200px;"><label class="form-label">名称 <span class="required">*</span></label><input type="text" class="input w-full" value="电池入仓操作"></div>
+          <div class="form-group" style="margin:0;width:140px;"><label class="form-label">分类</label><select class="select w-full"><option selected>电池管理</option><option>登录认证</option></select></div>
+          <div class="form-group" style="margin:0;width:180px;"><label class="form-label">标签</label><div style="display:flex;gap:4px;"><span class="tag tag-blue">核心</span><input type="text" class="input" placeholder="+" style="width:50px;height:28px;font-size:12px;"></div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: I/O 参数 -->
+    <div class="tab-content" id="tab-params">
+      <div class="card">
+        <div class="tabs" style="margin-bottom:0;padding:0 12px;">
+          <div class="tab-item active">输入参数</div>
+          <div class="tab-item">输出参数</div>
+        </div>
+        <div class="card-body" style="padding:8px 12px;">
+          <table>
+            <thead><tr><th>名称</th><th>类型</th><th>必填</th><th>默认值</th><th>说明</th><th style="width:50px;"></th></tr></thead>
+            <tbody>
+              <tr><td><input type="text" class="input" value="battery_sn" style="width:130px;font-size:12px;"></td><td><select class="select" style="width:80px;font-size:12px;"><option>str</option></select></td><td><div class="switch on" style="width:34px;height:18px;"></div></td><td><input type="text" class="input" placeholder="无" style="width:100px;font-size:12px;"></td><td><input type="text" class="input" value="电池SN编码" style="width:120px;font-size:12px;"></td><td><button class="btn-link" style="color:var(--error);">×</button></td></tr>
+              <tr><td><input type="text" class="input" value="target_slot" style="width:130px;font-size:12px;"></td><td><select class="select" style="width:80px;font-size:12px;"><option>int</option></select></td><td><div class="switch on" style="width:34px;height:18px;"></div></td><td><input type="text" class="input" placeholder="无" style="width:100px;font-size:12px;"></td><td><input type="text" class="input" value="目标仓位号" style="width:120px;font-size:12px;"></td><td><button class="btn-link" style="color:var(--error);">×</button></td></tr>
+            </tbody>
+          </table>
+          <button class="btn btn-sm" style="margin-top:6px;">+ 添加参数</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: 节点编排器 -->
+    <div class="tab-content" id="tab-orchestrator">
+      <div class="card">
+        <div class="card-header">节点编排器</div>
+        <div class="card-body" style="padding:0;">
+          <div class="orchestrator">
+          <!-- Left: Node Panel -->
+          <div class="node-panel">
+            <h4>元素类型</h4>
+            <div class="el-section el-open">
+              <div class="el-header" onclick="toggleSection(this)">
+                <span class="el-arrow">▸</span>
+                <span>接口关键字</span>
+                <span class="el-badge">3</span>
+              </div>
+              <div class="el-body">
+                <input class="el-search" type="text" placeholder="搜索接口关键字…" oninput="filterElItems(this)">
+                <div class="el-items">
+                  <div class="node-drag" data-node-shape="node-api" data-node-type="api" data-node-name="查询仓位状态"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">K</div>查询仓位状态</div>
+                  <div class="node-drag" data-node-shape="node-api" data-node-type="api" data-node-name="创建用户"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">K</div>创建用户</div>
+                  <div class="node-drag" data-node-shape="node-api" data-node-type="api" data-node-name="获取Token"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">K</div>获取Token</div>
+                </div>
+              </div>
+            </div>
+            <div class="el-section">
+              <div class="el-header" onclick="toggleSection(this)">
+                <span class="el-arrow">▸</span>
+                <span>工具方法关键字</span>
+                <span class="el-badge">3</span>
+              </div>
+              <div class="el-body">
+                <input class="el-search" type="text" placeholder="搜索工具方法关键字…" oninput="filterElItems(this)">
+                <div class="el-items">
+                  <div class="node-drag" data-node-shape="node-tool" data-node-type="tool" data-node-name="格式化电池编号"><div class="nd-icon" style="background:#f6ffed;color:#52c41a;">T</div>格式化电池编号</div>
+                  <div class="node-drag" data-node-shape="node-tool" data-node-type="tool" data-node-name="MD5加密"><div class="nd-icon" style="background:#f6ffed;color:#52c41a;">T</div>MD5加密</div>
+                  <div class="node-drag" data-node-shape="node-tool" data-node-type="tool" data-node-name="时间戳转换"><div class="nd-icon" style="background:#f6ffed;color:#52c41a;">T</div>时间戳转换</div>
+                </div>
+              </div>
+            </div>
+            <div class="el-section">
+              <div class="el-header" onclick="toggleSection(this)">
+                <span class="el-arrow">▸</span>
+                <span>Action 关键字</span>
+                <span class="el-badge">3</span>
+              </div>
+              <div class="el-body">
+                <input class="el-search" type="text" placeholder="搜索 Action 关键字…" oninput="filterElItems(this)">
+                <div class="el-items">
+                  <div class="node-drag" data-node-shape="node-action" data-node-type="action" data-node-name="电池入仓操作"><div class="nd-icon" style="background:#fff7e6;color:#fa8c16;">A</div>电池入仓操作</div>
+                  <div class="node-drag" data-node-shape="node-action" data-node-type="action" data-node-name="用户登录流程"><div class="nd-icon" style="background:#fff7e6;color:#fa8c16;">A</div>用户登录流程</div>
+                  <div class="node-drag" data-node-shape="node-action" data-node-type="action" data-node-name="订单处理流程"><div class="nd-icon" style="background:#fff7e6;color:#fa8c16;">A</div>订单处理流程</div>
+                </div>
+              </div>
+            </div>
+            <div class="el-section">
+              <div class="el-header" onclick="toggleSection(this)">
+                <span class="el-arrow">▸</span>
+                <span>监听器</span>
+                <span class="el-badge">2</span>
+              </div>
+              <div class="el-body">
+                <input class="el-search" type="text" placeholder="搜索监听器…" oninput="filterElItems(this)">
+                <div class="el-items">
+                  <div class="node-drag" data-node-shape="node-listener" data-node-type="listener" data-node-name="执行前监听"><div class="nd-icon" style="background:#f5f5f5;color:#999;">♪</div>执行前监听</div>
+                  <div class="node-drag" data-node-shape="node-listener" data-node-type="listener" data-node-name="执行后监听"><div class="nd-icon" style="background:#f5f5f5;color:#999;">♪</div>执行后监听</div>
+                </div>
+              </div>
+            </div>
+            <div class="el-section">
+              <div class="el-header" onclick="toggleSection(this)">
+                <span class="el-arrow">▸</span>
+                <span>断言</span>
+                <span class="el-badge">3</span>
+              </div>
+              <div class="el-body">
+                <input class="el-search" type="text" placeholder="搜索断言…" oninput="filterElItems(this)">
+                <div class="el-items">
+                  <div class="node-drag" data-node-shape="node-assert" data-node-type="assert" data-node-name="状态码等于200"><div class="nd-icon" style="background:#fff1f0;color:#f5222d;">断</div>状态码等于200</div>
+                  <div class="node-drag" data-node-shape="node-assert" data-node-type="assert" data-node-name="响应包含字段"><div class="nd-icon" style="background:#fff1f0;color:#f5222d;">断</div>响应包含字段</div>
+                  <div class="node-drag" data-node-shape="node-assert" data-node-type="assert" data-node-name="响应时间校验"><div class="nd-icon" style="background:#fff1f0;color:#f5222d;">断</div>响应时间校验</div>
+                </div>
+              </div>
+            </div>
+            <div class="el-section">
+              <div class="el-header" onclick="toggleSection(this)">
+                <span class="el-arrow">▸</span>
+                <span>逻辑判断</span>
+                <span class="el-badge">3</span>
+              </div>
+              <div class="el-body">
+                <input class="el-search" type="text" placeholder="搜索逻辑判断…" oninput="filterElItems(this)">
+                <div class="el-items">
+                  <div class="node-drag" data-node-shape="node-logic" data-node-type="logic" data-node-name="状态是否为空"><div class="nd-icon" style="background:#f9f0ff;color:#722ed1;">◇</div>状态是否为空</div>
+                  <div class="node-drag" data-node-shape="node-logic" data-node-type="logic" data-node-name="返回值是否成功"><div class="nd-icon" style="background:#f9f0ff;color:#722ed1;">◇</div>返回值是否成功</div>
+                  <div class="node-drag" data-node-shape="node-logic" data-node-type="logic" data-node-name="数量是否大于0"><div class="nd-icon" style="background:#f9f0ff;color:#722ed1;">◇</div>数量是否大于0</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Center: Flow Canvas -->
+          <div class="canvas-wrap">
+            <div class="canvas-toolbar">
+              <button class="tb-btn" id="zoomInBtn" title="放大">+</button>
+              <button class="tb-btn" id="zoomOutBtn" title="缩小">&minus;</button>
+              <span class="tb-label" id="zoomLabel">100%</span>
+              <button class="tb-btn" id="fitBtn" title="适应画布">⊡</button>
+              <div class="tb-sep"></div>
+              <button class="tb-btn danger" id="deleteBtn" title="删除选中">✕</button>
+              <div class="tb-sep"></div>
+              <button class="tb-btn" id="formatBtn" title="一键美化">⊞</button>
+              <button class="tb-btn" id="clearBtn" title="一键清空">⌀</button>
+              <div class="tb-sep"></div>
+              <button class="tb-btn" id="sizeBtn" title="画布尺寸">⌖</button>
+              <button class="tb-btn" id="fullscreenBtn" title="全屏编辑">⛶</button>
+              <!-- 画布尺寸设置面板 -->
+              <div class="canvas-size-popover" id="sizePopover">
+                <div class="form-group">
+                  <label class="form-label">宽度 (px)</label>
+                  <input type="number" class="input" id="sizeWidthInput" min="600" max="3000" step="10">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">高度 (px)</label>
+                  <input type="number" class="input" id="sizeHeightInput" min="360" max="1200" step="10">
+                </div>
+                <div class="actions">
+                  <button class="btn btn-sm" id="sizeApplyBtn">应用</button>
+                  <button class="btn btn-sm" id="sizeCancelBtn">取消</button>
+                </div>
+              </div>
+            </div>
+            <div id="flowGraph"></div>
+          </div>
+          <!-- Right: Property Panel -->
+          <div class="prop-panel" id="propPanel">
+            <div class="prop-empty">
+              <div class="pe-icon">⊞</div>
+              <p>点击流程图中的节点查看和编辑属性</p>
+              <p style="font-size:11px;margin-top:4px;">从左侧拖拽或双击元素添加到画布</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </main>
+
+  <script>
+    /* ===== Tab 切换 ===== */
+    var graphInitialized = false;
+    function switchTab(name, el) {
+      document.querySelectorAll('#editTabs .tab-item').forEach(function(t) { t.classList.remove('active'); });
+      el.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+      document.getElementById('tab-' + name).classList.add('active');
+      /* 同步地址栏 hash，刷新后保持当前 tab */
+      if (location.hash !== '#' + name) {
+        history.replaceState(null, '', '#' + name);
+      }
+      /* 延迟初始化：节点编排器 Tab 首次可见时才初始化画布 */
+      if (name === 'orchestrator') {
+        if (typeof X6 === 'undefined') {
+          document.getElementById('flowGraph').innerHTML =
+            '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-tertiary);font-size:14px;">' +
+            '流程图画布加载失败，请检查 common/lib/ 目录下库文件是否完整</div>';
+        } else if (!graphInitialized) {
+          graphInitialized = true;
+          try {
+            initFlowEditor();
+          } catch (err) {
+            graphInitialized = false;
+            console.error('流程图画布初始化失败:', err);
+            document.getElementById('flowGraph').innerHTML =
+              '<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:6px;">' +
+              '<span style="color:var(--error);font-size:14px;">流程图画布初始化失败</span>' +
+              '<span style="color:var(--text-tertiary);font-size:12px;">' + (err.message || err) + '</span>' +
+              '</div>';
+          }
+        } else if (graph) {
+          setTimeout(function() { graph.resize(); }, 60);
+        }
+      }
+    }
+
+    /* ===== 元素面板：折叠与搜索 ===== */
+    window.toggleSection = function(headerEl) {
+      headerEl.parentElement.classList.toggle('el-open');
+    };
+    window.filterElItems = function(inputEl) {
+      var keyword = inputEl.value.toLowerCase();
+      var items = inputEl.parentElement.querySelectorAll('.node-drag');
+      items.forEach(function(item) {
+        var name = (item.dataset.nodeName || '').toLowerCase();
+        item.style.display = name.indexOf(keyword) !== -1 ? '' : 'none';
+      });
+    };
+
+    /* ===== 节点属性配置模板 ===== */
+    /* 已替换为动态渲染函数 renderNodeProps(node)，见 initFlowEditor 内部 */
+
+    /* ===== AntV X6 流程图编辑器 ===== */
+    var graph = null;
+    var nodeCounter = 0;
+
+    function initFlowEditor() {
+      var Graph = X6.Graph;
+
+      /* -- 准备插件实例（本地 X6 库无 registerPlugin，必须通过 graph.use() 挂载实例） -- */
+      var selectionPlugin = null;
+      var snaplinePlugin = null;
+      try {
+        if (typeof X6PluginSelection !== 'undefined' && typeof X6PluginSelection.Selection === 'function') {
+          try {
+            selectionPlugin = new X6PluginSelection.Selection({
+              enabled: true,
+              multiple: true,
+              rubberband: {
+                enabled: true
+              }
+            });
+            console.log('[flow] Selection plugin created with rubberband');
+          } catch (e) {
+            console.warn('[flow] rubberband selection not supported, fallback to default', e);
+            selectionPlugin = new X6PluginSelection.Selection();
+          }
+        }
+        if (typeof X6PluginSnapline !== 'undefined' && typeof X6PluginSnapline.Snapline === 'function') {
+          snaplinePlugin = new X6PluginSnapline.Snapline({ enabled: true, sharp: true });
+          console.log('[flow] Snapline plugin created');
+        }
+      } catch (e) {
+        console.warn('[flow] plugin create warning:', e);
+      }
+
+      /* -- 通用节点 HTML 模板 --
+       * foreignObject 内不能使用 <body> 标签（会被浏览器剥离），改用 <div data-node-root>。
+       * 标签元素添加 data-label 属性，作为 DOM 查找的可靠锚点。
+       * 节点仅显示元素名，不显示分类标签。
+       */
+      function nodeMarkup(color, icon, iconBg) {
+        return [
+          { tagName: 'rect', selector: 'body' },
+          {
+            tagName: 'foreignObject',
+            selector: 'fo',
+            attrs: { width: 200, height: 54 },
+            children: [{
+              ns: 'http://www.w3.org/1999/xhtml',
+              tagName: 'div',
+              attrs: { 'data-node-root': '1', 'data-border': color, width: 200, height: 54 },
+              style:
+                'margin:0;padding:0;width:100%;height:100%;display:flex;' +
+                'align-items:center;gap:8px;box-sizing:border-box;' +
+                'font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;' +
+                'border-radius:6px;overflow:hidden;' +
+                'border:1.5px solid transparent;cursor:pointer;' +
+                'transition:border-color .2s,box-shadow .2s;',
+              children: [
+                { tagName: 'div', style: 'width:4px;align-self:stretch;background:' + color + ';flex-shrink:0;' },
+                {
+                  tagName: 'div',
+                  style: 'width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:' + iconBg + ';color:' + color + ';font-size:12px;font-weight:700;',
+                  textContent: icon
+                },
+                { tagName: 'strong', style: 'font-size:13px;color:rgba(0,0,0,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;min-width:0;', selector: 'label', attrs: { 'data-label': '1' } }
+              ]
+            }]
+          }
+        ];
+      }
+
+      /* -- 方形节点注册：Action/接口/工具方法关键字 -- */
+      function registerKeywordNode(name, color, icon, iconBg) {
+        Graph.registerNode(name, {
+          inherit: 'rect',
+          width: 200,
+          height: 54,
+          markup: nodeMarkup(color, icon, iconBg),
+          attrs: { body: { fill: iconBg, stroke: 'none', strokeWidth: 0, rx: 6, ry: 6 } },
+          ports: {
+            groups: {
+              top:    { position: 'top',    attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5, class: 'flow-port' } } },
+              bottom: { position: 'bottom', attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5, class: 'flow-port' } } },
+              left:   { position: 'left',   attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5, class: 'flow-port' } } },
+              right:  { position: 'right',  attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5, class: 'flow-port' } } }
+            },
+            items: [{ group: 'top' }, { group: 'bottom' }, { group: 'left' }, { group: 'right' }]
+          }
+        });
+      }
+
+      try {
+        registerKeywordNode('node-action', '#fa8c16', 'A', '#fff7e6');
+        registerKeywordNode('node-api',    '#1890ff', 'K', '#e6f7ff');
+        registerKeywordNode('node-tool',   '#52c41a', 'T', '#f6ffed');
+        console.log('[flow] keyword nodes registered');
+      } catch (e) {
+        throw new Error('注册方形节点失败: ' + (e.message || e));
+      }
+
+      /* -- 菱形节点通用注册函数 -- */
+      function registerDiamondNode(name, fillColor, strokeColor, labelColor) {
+        Graph.registerNode(name, {
+          inherit: 'polygon',
+          width: 160,
+          height: 80,
+          markup: [
+            { tagName: 'polygon', selector: 'body' },
+            {
+              tagName: 'foreignObject', selector: 'fo',
+              attrs: { x: 10, y: 22, width: 140, height: 36 },
+              children: [{
+                ns: 'http://www.w3.org/1999/xhtml', tagName: 'div',
+                attrs: { 'data-node-root': '1', 'data-border': strokeColor, width: 140, height: 36 },
+                style: 'margin:0;padding:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;cursor:pointer;',
+                children: [{
+                  tagName: 'div',
+                  style: 'width:100%;height:100%;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);display:flex;align-items:center;justify-content:center;background:' + fillColor + ';',
+                  children: [{ tagName: 'span', style: 'font-size:11px;color:' + labelColor + ';font-weight:600;max-width:70%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;padding:0 4px;', selector: 'label', attrs: { 'data-label': '1' } }]
+                }]
+              }]
+            }
+          ],
+          attrs: {
+            body: {
+              refPoints: '0.5,0 1,0.5 0.5,1 0,0.5',
+              fill: fillColor, stroke: 'none', strokeWidth: 0
+            }
+          },
+          ports: {
+            groups: {
+              top:    { position: 'top',    attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5, class: 'flow-port' } } },
+              bottom: { position: 'bottom', attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5, class: 'flow-port' } } },
+              left:   { position: 'left',   attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5, class: 'flow-port' } } },
+              right:  { position: 'right',  attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5, class: 'flow-port' } } }
+            },
+            items: [{ group: 'top' }, { group: 'bottom' }, { group: 'left' }, { group: 'right' }]
+          }
+        });
+      }
+
+      /* -- 菱形节点：断言 -- */
+      try {
+        registerDiamondNode('node-assert', '#fff1f0', '#f5222d', '#f5222d');
+        console.log('[flow] assert diamond registered');
+      } catch (e) {
+        throw new Error('注册断言菱形节点失败: ' + (e.message || e));
+      }
+
+      /* -- 菱形节点：逻辑判断 -- */
+      try {
+      Graph.registerNode('node-logic', {
+        inherit: 'polygon',
+        width: 160,
+        height: 80,
+        markup: [
+          { tagName: 'polygon', selector: 'body' },
+          {
+            tagName: 'foreignObject', selector: 'fo',
+            attrs: { x: 10, y: 22, width: 140, height: 36 },
+            children: [{
+              ns: 'http://www.w3.org/1999/xhtml', tagName: 'div',
+              attrs: { 'data-node-root': '1', 'data-border': '#722ed1', width: 140, height: 36 },
+              style: 'margin:0;padding:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;cursor:pointer;',
+              children: [{
+                tagName: 'div',
+                style: 'width:100%;height:100%;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);display:flex;align-items:center;justify-content:center;background:#f9f0ff;',
+                children: [{ tagName: 'span', style: 'font-size:11px;color:#722ed1;font-weight:600;max-width:70%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;padding:0 4px;', selector: 'label', attrs: { 'data-label': '1' } }]
+              }]
+            }]
+          }
+        ],
+        attrs: {
+          body: {
+            refPoints: '0.5,0 1,0.5 0.5,1 0,0.5',
+            fill: '#f9f0ff', stroke: 'none', strokeWidth: 0
+          }
+        },
+        ports: {
+          groups: {
+            yes:  { position: 'right',  attrs: { circle: { r: 5, magnet: true, stroke: '#52c41a', fill: '#fff', strokeWidth: 1.5, class: 'flow-port' } } },
+            no:   { position: 'bottom', attrs: { circle: { r: 5, magnet: true, stroke: '#ff4d4f', fill: '#fff', strokeWidth: 1.5, class: 'flow-port' } } }
+          },
+          items: [{ id: 'yes', group: 'yes' }, { id: 'no', group: 'no' }]
+        }
+      });
+        console.log('[flow] logic diamond registered');
+      } catch (e) {
+        throw new Error('注册逻辑判断菱形节点失败: ' + (e.message || e));
+      }
+
+      /* -- 监听器节点（占位） -- */
+      try {
+        Graph.registerNode('node-listener', {
+          inherit: 'rect',
+          width: 200,
+          height: 54,
+          markup: nodeMarkup('#bfbfbf', '♪', '#f5f5f5'),
+          attrs: { body: { fill: '#f5f5f5', stroke: 'none', strokeWidth: 0, rx: 6, ry: 6 } },
+          ports: {
+            groups: {
+              top:    { position: 'top',    attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5, class: 'flow-port' } } },
+              bottom: { position: 'bottom', attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5, class: 'flow-port' } } },
+              left:   { position: 'left',   attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5, class: 'flow-port' } } },
+              right:  { position: 'right',  attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5, class: 'flow-port' } } }
+            },
+            items: [{ group: 'top' }, { group: 'bottom' }, { group: 'left' }, { group: 'right' }]
+          },
+          data: { disabled: true }
+        });
+        console.log('[flow] listener node registered');
+      } catch (e) {
+        throw new Error('注册特殊节点失败: ' + (e.message || e));
+      }
+
+      /* -- 网格吸附辅助 -- */
+      var GRID = 20;
+      function snap(v) { return Math.round(v / GRID) * GRID; }
+
+      /* -- 初始化画布 -- */
+      try {
+        graph = new Graph({
+          container: document.getElementById('flowGraph'),
+          grid: {
+            visible: false
+          },
+          translating: {
+            /* 只有被选中的节点才允许拖动 */
+            enable: function(args) {
+              return graph && typeof graph.isSelected === 'function' && graph.isSelected(args.cell);
+            },
+            snap: function(pos) {
+              return { x: snap(pos.x), y: snap(pos.y) };
+            }
+          },
+          mousewheel: { enabled: true, modifiers: null },
+          /* 画布平移仅在按住空格键时启用，避免空白处默认出现抓手光标 */
+          panning: { enabled: true, modifiers: 'space' },
+          connecting: {
+            snap: true,
+            router: 'manhattan',
+            connector: { name: 'rounded', args: { radius: 8 } },
+            allowBlank: false,
+            validateConnection: function(args) {
+              if (args.targetPort === args.sourcePort) return false;
+              /* 逻辑判断节点仅有 2 个输出端口（是/否），允许连入节点本体（无需指定目标端口） */
+              if (!args.targetPort && args.targetCell && args.targetCell.getData) {
+                var td = args.targetCell.getData() || {};
+                return td.nodeType === 'logic';
+              }
+              return true;
+            }
+          }
+        });
+        console.log('[flow] graph created');
+
+        /* 插件通过 graph.use() 挂载实例（本地库唯一可用方式） */
+        if (selectionPlugin && typeof graph.use === 'function') {
+          try { graph.use(selectionPlugin); console.log('[flow] Selection enabled'); } catch (pe) { console.warn('[flow] Selection warning:', pe); }
+        }
+        if (snaplinePlugin && typeof graph.use === 'function') {
+          try { graph.use(snaplinePlugin); console.log('[flow] Snapline enabled'); } catch (pe) { console.warn('[flow] Snapline warning:', pe); }
+        }
+      } catch (e) {
+        throw new Error('创建画布失败: ' + (e.message || e));
+      }
+
+      /* -- 流程线标签读写 -- */
+      function getEdgeLabel(edge) {
+        if (!edge) return '';
+        var labels = edge.getLabels ? edge.getLabels() : (edge.labels || []);
+        return labels.length > 0 ? (labels[0].attrs.label.text || '') : '';
+      }
+
+      function setEdgeLabel(edge, text) {
+        if (!edge) return;
+        if (!text) {
+          if (edge.setLabels) edge.setLabels([]);
+          else edge.labels = [];
+          return;
+        }
+        var color = text === '是' ? '#52c41a' : (text === '否' ? '#ff4d4f' : '#595959');
+        var labelObj = {
+          attrs: {
+            label: {
+              text: text,
+              fontSize: 11,
+              fill: color,
+              fontWeight: 'bold'
+            }
+          }
+        };
+        if (edge.setLabels) edge.setLabels([labelObj]);
+        else edge.labels = [labelObj];
+      }
+
+      function renderEdgeProps(edge) {
+        var label = getEdgeLabel(edge);
+        var src = edge.getSourceCell();
+        var srcType = src ? ((src.getData() || {}).nodeType || '') : '';
+        var isLogic = srcType === 'logic';
+        var html = '<h4>流程线属性</h4>';
+        html += '<div class="form-group"><label class="form-label">标签</label><input type="text" class="input" id="edgeLabelInput" value="' + label + '" placeholder="如：是 / 否"></div>';
+        if (isLogic) {
+          html += '<p style="font-size:11px;color:var(--text-tertiary);margin-top:6px;line-height:1.6;">' +
+            '输入“是”表示源节点返回值为真时走该分支；输入“否”表示为假时走该分支。' +
+            '</p>';
+        }
+        html += '<div class="actions" style="margin-top:12px;"><button class="btn btn-sm" id="edgeLabelSaveBtn">保存</button></div>';
+        document.getElementById('propPanel').innerHTML = html;
+
+        document.getElementById('edgeLabelSaveBtn').onclick = function() {
+          var newLabel = document.getElementById('edgeLabelInput').value.trim();
+          setEdgeLabel(edge, newLabel);
+          showToast('流程线标签已更新', 'success');
+        };
+      }
+
+      /* -- 判断是否为有效 DOM 元素 -- */
+      function isDomElement(obj) {
+        return obj && typeof obj === 'object' && obj.nodeType === 1;
+      }
+
+      /* -- 从 view 或 view.el 中提取可靠的 DOM 元素 -- */
+      function resolveEl(viewOrEl) {
+        if (!viewOrEl) return null;
+        /* 如果本身就是 DOM 元素 */
+        if (isDomElement(viewOrEl)) return viewOrEl;
+        /* 如果是 X6 view 对象，取 .el 或 .container */
+        if (viewOrEl.el && isDomElement(viewOrEl.el)) return viewOrEl.el;
+        if (viewOrEl.container && isDomElement(viewOrEl.container)) return viewOrEl.container;
+        return null;
+      }
+
+      /* -- 获取节点 view（兼容 findViewByCell 可能不存在的情况） -- */
+      function getCellView(cell) {
+        if (!graph || !cell) return null;
+        /* 优先使用 findViewByCell */
+        if (typeof graph.findViewByCell === 'function') {
+          try { var v = graph.findViewByCell(cell); if (v) return v; } catch (e) { /* fallback */ }
+        }
+        /* 兼容：尝试 renderer */
+        if (graph.renderer && typeof graph.renderer.findViewByCell === 'function') {
+          try { var v = graph.renderer.findViewByCell(cell); if (v) return v; } catch (e) { /* fallback */ }
+        }
+        /* 兜底：通过 data-cell-id 查找 */
+        var container = graph.container;
+        if (!container) return null;
+        var cellId = cell.id;
+        var views = container.querySelectorAll('[data-cell-id]');
+        for (var i = 0; i < views.length; i++) {
+          if (views[i].getAttribute('data-cell-id') === cellId) return views[i];
+        }
+        /* 再兜底：遍历所有 .x6-node 查找 */
+        var nodes = container.querySelectorAll('.x6-node');
+        for (var i = 0; i < nodes.length; i++) {
+          var cid = nodes[i].getAttribute('data-cell-id');
+          if (cid === cellId) return nodes[i];
+        }
+        return null;
+      }
+
+      /* -- 通过 view 元素控制连接点显隐 -- */
+      function togglePortsByView(view, visible) {
+        var el = resolveEl(view);
+        if (!el) return;
+        var cls = 'is-selected';
+        if (el.classList) {
+          if (visible) { if (!el.classList.contains(cls)) el.classList.add(cls); }
+          else { if (el.classList.contains(cls)) el.classList.remove(cls); }
+        }
+        try {
+          var ports = el.querySelectorAll('.flow-port, [magnet="true"], circle[port], circle[data-port]');
+          for (var i = 0; i < ports.length; i++) {
+            ports[i].style.display = visible ? '' : 'none';
+          }
+        } catch (e) { /* DOM 查询失败时静默忽略 */ }
+      }
+
+      /* -- 连接点显隐：仅选中节点时显示 -- */
+      function togglePorts(cell, visible, view) {
+        if (!cell || !cell.isNode || !cell.isNode()) return;
+        var viewEl = view || getCellView(cell);
+        togglePortsByView(viewEl, visible);
+      }
+      function hideAllPorts() {
+        if (!graph) return;
+        var nodes = graph.getNodes();
+        for (var i = 0; i < nodes.length; i++) {
+          togglePorts(nodes[i], false);
+        }
+      }
+
+      /* -- 选中高亮（已禁用） -- */
+      /* highlightCell 保留空函数以兼容已有调用 */
+      function highlightCell(cell, active, view) { /* no-op */ }
+
+      /* -- 动态节点属性面板（读取节点实际数据，包含保存按钮） -- */
+      var SAVE_BTN_HTML = '<div class="actions" style="margin-top:14px;"><button class="btn btn-sm" id="propSaveBtn">保存</button></div>';
+
+      function escAttr(s) { return (s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+      function renderNodeProps(node) {
+        if (!node) return;
+        var data = node.getData() || {};
+        var type = data.nodeType || 'keyword';
+        var label = data.label || '';
+        var html = '';
+
+        switch (type) {
+          case 'action':
+            html = '<h4>节点属性：Action 关键字</h4>' +
+              '<div class="form-group"><label class="form-label">Action 关键字</label>' +
+              '<select class="select" id="propKeyword"><option>电池入仓操作</option><option>用户登录流程</option><option>订单处理流程</option></select></div>' +
+              '<h4 style="font-size:12px;margin-top:12px;">args 参数映射</h4>' +
+              '<table style="font-size:12px;margin-top:6px;"><tr><td style="padding:4px;"><code>battery_sn</code></td><td><input class="input" id="propArg0" value="' + escAttr(data.args && data.args[0] || '${battery_sn}') + '" style="width:120px;height:24px;font-size:12px;"></td></tr></table>' +
+              '<div class="form-group" style="margin-top:12px;"><label class="form-label">save_as 变量名</label><input class="input" id="propSaveAs" value="' + escAttr(data.save_as || 'action_result') + '" style="font-size:12px;"></div>';
+            break;
+          case 'api':
+            html = '<h4>节点属性：接口关键字</h4>' +
+              '<div class="form-group"><label class="form-label">接口关键字</label>' +
+              '<select class="select" id="propKeyword"><option>查询仓位状态</option><option>创建用户</option><option>获取Token</option></select></div>' +
+              '<h4 style="font-size:12px;margin-top:12px;">args 参数映射</h4>' +
+              '<table style="font-size:12px;margin-top:6px;"><tr><td style="padding:4px;"><code>slot_id</code></td><td><input class="input" id="propArg0" value="' + escAttr(data.args && data.args[0] || '${target_slot}') + '" style="width:120px;height:24px;font-size:12px;"></td></tr></table>' +
+              '<div class="form-group" style="margin-top:12px;"><label class="form-label">save_as 变量名</label><input class="input" id="propSaveAs" value="' + escAttr(data.save_as || 'api_result') + '" style="font-size:12px;"></div>';
+            break;
+          case 'tool':
+            html = '<h4>节点属性：工具方法关键字</h4>' +
+              '<div class="form-group"><label class="form-label">工具方法关键字</label>' +
+              '<select class="select" id="propKeyword"><option>格式化电池编号</option><option>MD5加密</option><option>时间戳转换</option></select></div>' +
+              '<h4 style="font-size:12px;margin-top:12px;">参数映射</h4>' +
+              '<table style="font-size:12px;margin-top:6px;"><tr><td style="padding:4px;"><code>raw_sn</code></td><td><input class="input" id="propArg0" value="' + escAttr(data.args && data.args[0] || '${battery_sn}') + '" style="width:120px;height:24px;font-size:12px;"></td></tr></table>' +
+              '<div class="form-group" style="margin-top:12px;"><label class="form-label">save_as 变量名</label><input class="input" id="propSaveAs" value="' + escAttr(data.save_as || 'tool_result') + '" style="font-size:12px;"></div>';
+            break;
+          case 'logic':
+            html = '<h4>节点属性：逻辑判断</h4>' +
+              '<div class="form-group"><label class="form-label">条件表达式（Python 语法）</label>' +
+              '<input class="input" id="propCondition" value="' + escAttr(label) + '" style="font-family:Consolas,Monaco,monospace;font-size:12px;background:#fafafa;"></div>' +
+              '<p style="font-size:11px;color:var(--text-tertiary);margin-top:6px;line-height:1.6;">支持 Python 语法：==, !=, &gt;, &lt;, &gt;=, &lt;=, and, or, not, in, len(), isinstance() 等</p>' +
+              '<div style="margin-top:12px;padding:10px;background:#fafafa;border-radius:4px;font-size:12px;">' +
+              '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#52c41a;"></span><strong>是（满足条件）</strong><span style="color:var(--text-tertiary);">→ 右侧分支</span></div>' +
+              '<div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff4d4f;"></span><strong>否（不满足条件）</strong><span style="color:var(--text-tertiary);">→ 下方分支</span></div>' +
+              '</div>';
+            break;
+          case 'assert':
+            html = '<h4>节点属性：断言</h4>' +
+              '<div class="form-group"><label class="form-label">断言模板</label><select class="select"><option>状态码等于200</option><option>响应包含字段</option><option>响应时间校验</option></select></div>' +
+              '<div class="form-group"><label class="form-label">断言类型</label><select class="select" id="propAssertType"><option value="equal">equal（等于）</option><option value="not_equal">not_equal（不等于）</option><option value="include">include（包含）</option><option value="not_include">不包含</option><option value="true">true（为真）</option><option value="not_true">not_true（为假）</option></select></div>' +
+              '<div class="form-group"><label class="form-label">实际值表达式</label><input class="input" id="propActual" value="' + escAttr(data.actual || '${response.status_code}') + '" style="font-family:Consolas,Monaco,monospace;font-size:12px;background:#fafafa;"></div>' +
+              '<div class="form-group"><label class="form-label">预期值</label><input class="input" id="propExpected" value="' + escAttr(data.expected || '200') + '" style="font-size:12px;"></div>' +
+              '<div class="form-group"><label class="form-label">描述（可选）</label><input class="input" id="propDesc" value="' + escAttr(data.description || '') + '" style="font-size:12px;"></div>' +
+              '<p style="font-size:11px;color:var(--text-tertiary);margin-top:6px;line-height:1.6;">断言节点在执行时对上游节点的结果进行校验，校验失败则标记该节点为失败状态</p>';
+            break;
+          case 'listener':
+            html = '<h4>节点属性：监听器</h4>' +
+              '<p style="font-size:12px;color:var(--text-tertiary);">监听器功能待定义，敬请期待。</p>';
+            break;
+          default:
+            html = '<div class="prop-empty"><p>未知节点类型</p></div>';
+        }
+
+        html += SAVE_BTN_HTML;
+        document.getElementById('propPanel').innerHTML = html;
+
+        /* 预选当前值 */
+        var kwSel = document.getElementById('propKeyword');
+        if (kwSel && label) { for (var i = 0; i < kwSel.options.length; i++) { if (kwSel.options[i].value === label || kwSel.options[i].text === label) { kwSel.selectedIndex = i; break; } } }
+        var atSel = document.getElementById('propAssertType');
+        if (atSel && data.assertType) { atSel.value = data.assertType; }
+
+        /* 保存按钮事件 */
+        document.getElementById('propSaveBtn').onclick = function() {
+          var d = node.getData() || {};
+          var newLabel = label;
+          switch (type) {
+            case 'action': case 'api': case 'tool':
+              var kw = document.getElementById('propKeyword');
+              newLabel = kw ? kw.value : label;
+              d.keyword = newLabel;
+              var argEl = document.getElementById('propArg0');
+              if (argEl) d.args = [argEl.value];
+              var saEl = document.getElementById('propSaveAs');
+              if (saEl) d.save_as = saEl.value;
+              break;
+            case 'logic':
+              var condEl = document.getElementById('propCondition');
+              newLabel = condEl ? condEl.value : label;
+              d.condition = newLabel;
+              break;
+            case 'assert':
+              var at = document.getElementById('propAssertType');
+              if (at) d.assertType = at.value;
+              var ac = document.getElementById('propActual');
+              if (ac) d.actual = ac.value;
+              var ex = document.getElementById('propExpected');
+              if (ex) d.expected = ex.value;
+              var de = document.getElementById('propDesc');
+              if (de) d.description = de.value;
+              newLabel = d.description || label;
+              break;
+          }
+          node.setData(d, { silent: true });
+          setNodeLabel(node, newLabel);
+          showToast('节点属性已保存', 'success');
+        };
+      }
+
+      /* -- 节点选中 → 属性面板联动 -- */
+      graph.on('cell:selected', function(args) {
+        var cell = args.cell;
+        var view = args.view;
+        togglePorts(cell, true, view);
+        if (cell.isNode()) {
+          renderNodeProps(cell);
+        } else if (cell.isEdge && cell.isEdge()) {
+          renderEdgeProps(cell);
+        }
+      });
+      graph.on('cell:unselected', function(args) {
+        var cell = args.cell;
+        var view = args.view;
+        togglePorts(cell, false, view);
+        document.getElementById('propPanel').innerHTML =
+          '<div class="prop-empty"><div class="pe-icon">⊞</div>' +
+          '<p>点击流程图中的节点查看和编辑属性</p>' +
+          '<p style="font-size:11px;margin-top:4px;">从左侧拖拽或双击元素添加到画布</p></div>';
+      });
+
+      /* -- 点击空白处取消选中 -- */
+      graph.on('blank:click', function() {
+        graph.cleanSelection();
+      });
+
+      /* -- 节点 hover 样式（已禁用） -- */
+
+      /* -- 文字测量与节点自适应 -- */
+      var _measureSpan = null;
+      function measureTextWidth(text) {
+        if (!_measureSpan) {
+          _measureSpan = document.createElement('span');
+          _measureSpan.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font-size:13px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;';
+          document.body.appendChild(_measureSpan);
+        }
+        _measureSpan.textContent = text;
+        return _measureSpan.offsetWidth;
+      }
+
+      /* 缓存已计算的节点宽度，避免重复测量导致尺寸抖动 */
+      var _nodeWidthCache = {};
+      var MAX_LABEL_CHARS = 20;
+
+      /* 截断标签文字，超过上限用 ... 表示 */
+      function truncateLabel(text) {
+        if (!text) return '';
+        return text.length > MAX_LABEL_CHARS ? text.substring(0, MAX_LABEL_CHARS) + '…' : text;
+      }
+
+      function autoSizeNode(node, text) {
+        if (!node || !text) return;
+        var shape = node.shape;
+        if (shape === 'node-assert' || shape === 'node-logic') return; /* 菱形节点固定尺寸 */
+        /* 宽度计算仅取前 MAX_LABEL_CHARS 个字符 */
+        var sizeText = truncateLabel(text);
+        var cacheKey = node.id + ':' + sizeText;
+        var newW;
+        if (_nodeWidthCache[cacheKey] !== undefined) {
+          newW = _nodeWidthCache[cacheKey];
+        } else {
+          var textW = measureTextWidth(sizeText);
+          newW = Math.max(100, Math.min(400, Math.ceil(textW + 52)));
+          _nodeWidthCache[cacheKey] = newW;
+        }
+        var curSize = node.size();
+        if (Math.abs(curSize.width - newW) > 2) {
+          node.resize(newW, 54);
+        }
+      }
+
+      function updateFoSize(node, view) {
+        try {
+          var el = resolveEl(view) || resolveEl(getCellView(node));
+          if (!el) return;
+          var fo = el.querySelector('foreignObject');
+          if (!fo) return;
+          var size = node.size();
+          fo.setAttribute('width', size.width);
+          fo.setAttribute('height', size.height);
+        } catch (e) { /* 忽略非关键错误 */ }
+      }
+
+      /* -- 节点尺寸变更时同步 foreignObject 尺寸 -- */
+      graph.on('node:change:size', function(args) {
+        updateFoSize(args.cell, args.view);
+      });
+
+      /* -- foreignObject 节点标签设置 --
+       * <body> 在 foreignObject 内被浏览器 HTML 解析器剥离，已改用 <div data-node-root>。
+       * view.selectors.label 对 foreignObject 内嵌 XHTML 不稳定，
+       * 采用 data-label 属性 + querySelector('[data-label]') 作为可靠的 DOM 锚点。
+       * 标签名持久化到 node.data.label，供 refreshAllLabels 批量刷新。
+       */
+      function findLabelEl(view) {
+        if (!view) return null;
+        /* 策略1：X6 selectors 映射 */
+        if (view.selectors && view.selectors.label) return view.selectors.label;
+        /* 策略2：通过 resolveEl 获取 DOM 元素后用 data-label 查找 */
+        var domEl = resolveEl(view);
+        if (domEl) {
+          try {
+            var el = domEl.querySelector('[data-label]');
+            if (el) return el;
+          } catch (e) { /* ignore */ }
+        }
+        return null;
+      }
+
+      function setNodeLabel(node, text) {
+        if (!node || !text) return;
+        var curData = node.getData() || {};
+        curData.label = text; /* 存储完整文字 */
+        node.setData(curData, { silent: true });
+        /* 根据文字长度自动调整节点宽度（已截断） */
+        autoSizeNode(node, text);
+        var displayText = truncateLabel(text);
+        setTimeout(function() {
+          try {
+            var el = resolveEl(getCellView(node));
+            if (el) {
+              var labelEl = el.querySelector('[data-label]');
+              if (labelEl) {
+                labelEl.textContent = displayText; /* 显示截断文字 */
+                labelEl.title = text; /* 悬浮提示完整文字 */
+              } else {
+                console.warn('[flow] setNodeLabel: label element not found for', node.id);
+              }
+            }
+          } catch (e) {
+            console.warn('[flow] setNodeLabel error:', e);
+          }
+        }, 200);
+      }
+
+      /* 批量刷新所有节点标签（兜底机制，处理初始渲染时序问题） */
+      function refreshAllLabels() {
+        graph.getNodes().forEach(function(node) {
+          var label = ((node.getData() || {}).label);
+          if (!label) return;
+          autoSizeNode(node, label);
+          var displayText = truncateLabel(label);
+          try {
+            var el = resolveEl(getCellView(node));
+            if (el) {
+              var labelEl = el.querySelector('[data-label]');
+              if (labelEl) {
+                labelEl.textContent = displayText;
+                labelEl.title = label;
+              }
+            }
+          } catch (e) { /* ignore */ }
+        });
+      }
+
+      /* -- 示例流程图数据 -- */
+      try {
+        var n1 = graph.addNode({ shape: 'node-api',    x: 220, y: 10,  data: { nodeType: 'api'     } }); setNodeLabel(n1, '查询仓位状态'); autoSizeNode(n1, '查询仓位状态');
+        var n2 = graph.addNode({ shape: 'node-logic',  x: 240, y: 110, data: { nodeType: 'logic'   } }); setNodeLabel(n2, 'status=="empty"');
+        var n3 = graph.addNode({ shape: 'node-tool',   x: 80,  y: 240, data: { nodeType: 'tool'    } }); setNodeLabel(n3, '格式化电池编号'); autoSizeNode(n3, '格式化电池编号');
+        var n4 = graph.addNode({ shape: 'node-action', x: 380, y: 240, data: { nodeType: 'action'  } }); setNodeLabel(n4, '电池入仓操作'); autoSizeNode(n4, '电池入仓操作');
+        var n5 = graph.addNode({ shape: 'node-api',    x: 220, y: 370, data: { nodeType: 'api'     } }); setNodeLabel(n5, '更新仓位记录'); autoSizeNode(n5, '更新仓位记录');
+        console.log('[flow] sample nodes added:', n1 && n2 && n3 && n4 && n5);
+      } catch (e) {
+        console.error('[flow] 示例节点添加失败:', e);
+        throw new Error('添加示例节点失败: ' + (e.message || e));
+      }
+
+      var eAttrs = { stroke: '#c0c0c0', strokeWidth: 1.5, targetMarker: { name: 'classic', size: 7 } };
+      var rConn  = { name: 'rounded', args: { radius: 8 } };
+      
+      /* 示例节点添加完毕后，延迟 300ms 批量刷新标签（兜底初始渲染时序） */
+      setTimeout(refreshAllLabels, 300);
+
+      try {
+        /* 串行：查询仓位 → 逻辑判断（逻辑判断无输入端口，连入节点本体） */
+        graph.addEdge({ source: { cell: n1, port: n1.getPorts()[1].id }, target: { cell: n2 }, attrs: eAttrs, router: 'manhattan', connector: rConn });
+        /* 逻辑判断「是」分支 → 电池入仓操作 */
+        var yesEdge = graph.addEdge({ source: { cell: n2, port: n2.getPorts()[0].id }, target: { cell: n4, port: n4.getPorts()[0].id }, attrs: eAttrs, router: 'manhattan', connector: rConn });
+        setEdgeLabel(yesEdge, '是');
+        /* 逻辑判断「否」分支 → 格式化电池编号 */
+        var noEdge = graph.addEdge({ source: { cell: n2, port: n2.getPorts()[1].id }, target: { cell: n3, port: n3.getPorts()[0].id }, attrs: eAttrs, router: 'manhattan', connector: rConn });
+        setEdgeLabel(noEdge, '否');
+        /* 汇合：格式化 → 更新仓位记录 */
+        graph.addEdge({ source: { cell: n3, port: n3.getPorts()[1].id }, target: { cell: n5, port: n5.getPorts()[0].id }, attrs: eAttrs, router: 'manhattan', connector: rConn });
+        /* 汇合：电池入仓 → 更新仓位记录 */
+        graph.addEdge({ source: { cell: n4, port: n4.getPorts()[1].id }, target: { cell: n5, port: n5.getPorts()[0].id }, attrs: eAttrs, router: 'manhattan', connector: rConn });
+        console.log('[flow] sample edges added');
+      } catch (e) {
+        throw new Error('添加示例连线失败: ' + (e.message || e));
+      }
+
+      try {
+        graph.zoomToFit({ padding: 40, maxScale: 1 });
+        console.log('[flow] zoom fitted');
+      } catch (e) {
+        throw new Error('适应画布失败: ' + (e.message || e));
+      }
+
+      /* 初始状态：所有节点连接点默认隐藏 */
+      hideAllPorts();
+
+      /* -- 缩放级别跟踪 -- */
+      function updateZoom() {
+        document.getElementById('zoomLabel').textContent = Math.round(graph.zoom() * 100) + '%';
+      }
+      graph.on('scale', updateZoom);
+      graph.on('zoom', updateZoom);
+
+      /* -- 工具栏 -- */
+      document.getElementById('zoomInBtn').onclick = function() { graph.zoom(0.1); };
+      document.getElementById('zoomOutBtn').onclick = function() { graph.zoom(-0.1); };
+      document.getElementById('fitBtn').onclick = function() { graph.zoomToFit({ padding: 40, maxScale: 1 }); };
+      document.getElementById('deleteBtn').onclick = function() {
+        var sel = graph.getSelectedCells();
+        if (sel.length > 0) { graph.removeCells(sel); showToast('已删除 ' + sel.length + ' 个元素', 'info'); }
+      };
+
+      /* 新添加节点默认隐藏连接点 */
+      graph.on('node:added', function(args) {
+        var node = args.node || args.cell;
+        if (node) togglePorts(node, false);
+      });
+
+      /* 从逻辑判断节点连出边时，根据端口自动预置“是/否”标签（用户仍可后续修改） */
+      graph.on('edge:connected', function(args) {
+        var edge = args.edge;
+        if (!edge) return;
+        var srcCell = edge.getSourceCell();
+        if (!srcCell || !srcCell.isNode()) return;
+        var srcData = srcCell.getData() || {};
+        if (srcData.nodeType !== 'logic') return;
+        var srcPort = (edge.getSourcePortId() || '').toLowerCase();
+        if (srcPort === 'yes' && !getEdgeLabel(edge)) setEdgeLabel(edge, '是');
+        if (srcPort === 'no' && !getEdgeLabel(edge)) setEdgeLabel(edge, '否');
+      });
+
+      /* 键盘 Delete / Backspace 删除选中元素（输入框内不触发） */
+      document.addEventListener('keydown', function(e) {
+        var tag = (document.activeElement && document.activeElement.tagName) || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || (document.activeElement && document.activeElement.isContentEditable)) return;
+        if ((e.key === 'Delete' || e.key === 'Backspace') && graph) {
+          var sel = graph.getSelectedCells();
+          if (sel.length > 0) {
+            e.preventDefault();
+            graph.removeCells(sel);
+            showToast('已删除 ' + sel.length + ' 个元素', 'info');
+          }
+        }
+      });
+
+      /* -- 一键美化（拓扑分层 + 重心法减少连线交叉） -- */
+      function autoLayout() {
+        var nodes = graph.getNodes();
+        var edges = graph.getEdges();
+        if (nodes.length === 0) { showToast('画布为空，无需美化', 'info'); return; }
+        if (nodes.length === 1) {
+          nodes[0].position(80, 40);
+          graph.zoomToFit({ padding: 40, maxScale: 1 });
+          showToast('美化完成', 'success');
+          return;
+        }
+
+        /* 构建邻接表与入度 */
+        var outMap = {}, inDeg = {}, inMap = {};
+        nodes.forEach(function(n) { outMap[n.id] = []; inDeg[n.id] = 0; inMap[n.id] = []; });
+        edges.forEach(function(e) {
+          var src = e.getSourceCellId(), tgt = e.getTargetCellId();
+          if (outMap[src]) { outMap[src].push(tgt); inDeg[tgt] = (inDeg[tgt] || 0) + 1; }
+          if (inMap[tgt])  { inMap[tgt].push(src); }
+        });
+
+        /* 根节点：入度为 0 */
+        var roots = nodes.filter(function(n) { return inDeg[n.id] === 0; }).map(function(n) { return n.id; });
+        if (roots.length === 0) roots = [nodes[0].id];
+
+        /* 最长路径层级（Kahn 算法变体） */
+        var level = {};
+        nodes.forEach(function(n) { level[n.id] = 0; });
+        var deg = {}; nodes.forEach(function(n) { deg[n.id] = inDeg[n.id]; });
+        var queue = roots.slice();
+        while (queue.length > 0) {
+          var nid = queue.shift();
+          (outMap[nid] || []).forEach(function(tid) {
+            level[tid] = Math.max(level[tid], level[nid] + 1);
+            deg[tid]--;
+            if (deg[tid] === 0) queue.push(tid);
+          });
+        }
+
+        /* 按层级分组 */
+        var groups = {};
+        nodes.forEach(function(n) {
+          var lv = level[n.id];
+          if (!groups[lv]) groups[lv] = [];
+          groups[lv].push(n);
+        });
+
+        /* 逻辑判断分支排序：「是」目标放右侧，「否」目标放左侧 */
+        var nodeOrder = {};
+        nodes.forEach(function(n, i) { nodeOrder[n.id] = i; });
+        edges.forEach(function(e) {
+          var srcCell = e.getSourceCell();
+          if (!srcCell || !srcCell.isNode()) return;
+          var srcData = srcCell.getData() || {};
+          if (srcData.nodeType !== 'logic') return;
+          var srcPort = (e.getSourcePortId() || '').toLowerCase();
+          var tgtId = e.getTargetCellId();
+          if (srcPort === 'yes') nodeOrder[tgtId] = (nodeOrder[tgtId] || 0) + 1000;
+          if (srcPort === 'no')  nodeOrder[tgtId] = (nodeOrder[tgtId] || 0) - 1000;
+        });
+
+        /* 使用重心法（barycenter）减少层间连线交叉 */
+        function sortByBarycenter(levelNodes, prevLevelNodes) {
+          var prevIndex = {};
+          prevLevelNodes.forEach(function(n, i) { prevIndex[n.id] = i; });
+          return levelNodes.slice().sort(function(a, b) {
+            var orderDiff = (nodeOrder[a.id] || 0) - (nodeOrder[b.id] || 0);
+            if (Math.abs(orderDiff) >= 1000) return orderDiff;
+            var srcA = inMap[a.id] || [];
+            var srcB = inMap[b.id] || [];
+            var avgA = srcA.length ? srcA.reduce(function(s, id) { return s + (prevIndex[id] !== undefined ? prevIndex[id] : prevLevelNodes.length); }, 0) / srcA.length : prevLevelNodes.length;
+            var avgB = srcB.length ? srcB.reduce(function(s, id) { return s + (prevIndex[id] !== undefined ? prevIndex[id] : prevLevelNodes.length); }, 0) / srcB.length : prevLevelNodes.length;
+            return avgA - avgB || orderDiff;
+          });
+        }
+
+        var sortedLevels = Object.keys(groups).map(Number).sort(function(a, b) { return a - b; });
+        sortedLevels.forEach(function(lv) {
+          if (lv === 0) {
+            groups[lv].sort(function(a, b) { return (nodeOrder[a.id] || 0) - (nodeOrder[b.id] || 0); });
+          } else {
+            groups[lv] = sortByBarycenter(groups[lv], groups[lv - 1]);
+          }
+        });
+
+        /* 定位：按节点实际宽度计算每层总宽，顶部对齐 */
+        var gapX = 100, gapY = 100, paddingX = 80, paddingY = 40;
+        var levelWidth = {};
+        sortedLevels.forEach(function(lv) {
+          var totalW = 0;
+          groups[lv].forEach(function(n, i) {
+            totalW += n.size().width + (i > 0 ? gapX : 0);
+          });
+          levelWidth[lv] = totalW;
+        });
+
+        var maxLevelW = Math.max.apply(null, sortedLevels.map(function(lv) { return levelWidth[lv]; }).concat([0]));
+        var canvasW = Math.max(600, maxLevelW + paddingX * 2);
+
+        var currentY = paddingY;
+        sortedLevels.forEach(function(lv) {
+          var g = groups[lv];
+          var startX = (canvasW - levelWidth[lv]) / 2;
+          var x = startX;
+          var maxH = 0;
+          g.forEach(function(n) {
+            var size = n.size();
+            n.position(snap(x), snap(currentY));
+            x += size.width + gapX;
+            maxH = Math.max(maxH, size.height);
+          });
+          currentY += maxH + gapY;
+        });
+
+        /* 刷新所有边的 Manhattan 路由，根据新位置重新计算路径，避免重叠、交叉 */
+        edges.forEach(function(edge) {
+          try {
+            if (edge.setRouter) edge.setRouter('manhattan');
+            else if (edge.router) edge.router('manhattan');
+            else if (edge.prop) edge.prop('router', { name: 'manhattan' });
+            if (edge.setVertices) edge.setVertices([]);
+            else if (edge.vertices) edge.vertices([]);
+            else if (edge.prop) edge.prop('vertices', []);
+          } catch (e) { /* ignore */ }
+        });
+
+        graph.zoomToFit({ padding: 40, maxScale: 1 });
+        showToast('美化完成', 'success');
+      }
+      document.getElementById('formatBtn').onclick = autoLayout;
+
+      /* -- 一键清空 -- */
+      function clearAll() {
+        if (graph.getNodes().length === 0 && graph.getEdges().length === 0) {
+          showToast('画布已为空', 'info');
+          return;
+        }
+        if (!confirm('确定要清空画布中的所有节点和连线吗？此操作不可撤销。')) return;
+        graph.clearCells();
+        document.getElementById('propPanel').innerHTML =
+          '<div class="prop-empty"><div class="pe-icon">⊞</div>' +
+          '<p>点击流程图中的节点查看和编辑属性</p>' +
+          '<p style="font-size:11px;margin-top:4px;">从左侧拖拽或双击元素添加到画布</p></div>';
+        showToast('画布已清空', 'info');
+      }
+      document.getElementById('clearBtn').onclick = clearAll;
+
+      /* -- 全屏切换 -- */
+      var orchEl = document.querySelector('.orchestrator');
+      var fsBtn = document.getElementById('fullscreenBtn');
+      function toggleFullscreen() {
+        var isFull = orchEl.classList.toggle('orchestrator-fullscreen');
+        fsBtn.title = isFull ? '退出全屏 (Esc)' : '全屏编辑';
+        fsBtn.innerHTML = isFull ? '⛶' : '⛶';
+        fsBtn.style.background = isFull ? 'var(--primary)' : '';
+        fsBtn.style.color = isFull ? '#fff' : '';
+        fsBtn.style.borderColor = isFull ? 'var(--primary)' : '';
+        setTimeout(function() { if (graph) graph.resize(); }, 60);
+      }
+      fsBtn.onclick = toggleFullscreen;
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && orchEl.classList.contains('orchestrator-fullscreen')) {
+          toggleFullscreen();
+        }
+      });
+
+      /* -- 画布尺寸设置 -- */
+      var sizeBtn = document.getElementById('sizeBtn');
+      var sizePopover = document.getElementById('sizePopover');
+      var sizeWidthInput = document.getElementById('sizeWidthInput');
+      var sizeHeightInput = document.getElementById('sizeHeightInput');
+
+      function getMaxCanvasWidth() {
+        var parent = orchEl.parentElement;
+        if (!parent) return window.innerWidth;
+        return Math.max(600, Math.floor(parent.getBoundingClientRect().width));
+      }
+
+      function updateSizeInputs() {
+        sizeWidthInput.value = orchEl.offsetWidth;
+        sizeHeightInput.value = orchEl.offsetHeight;
+      }
+
+      function applyCanvasSize() {
+        var w = parseInt(sizeWidthInput.value, 10) || 600;
+        var h = parseInt(sizeHeightInput.value, 10) || 360;
+        var minW = 600, minH = 360;
+        var maxW = getMaxCanvasWidth();
+        var maxH = Math.min(window.innerHeight * 0.85, 1200);
+        w = Math.max(minW, Math.min(maxW, w));
+        h = Math.max(minH, Math.min(maxH, h));
+        orchEl.style.width = w + 'px';
+        orchEl.style.height = h + 'px';
+        sizePopover.classList.remove('active');
+        showToast('画布尺寸已调整为 ' + w + ' × ' + h, 'success');
+      }
+
+      sizeBtn.onclick = function(e) {
+        e.stopPropagation();
+        if (sizePopover.classList.contains('active')) {
+          sizePopover.classList.remove('active');
+        } else {
+          updateSizeInputs();
+          sizePopover.classList.add('active');
+        }
+      };
+
+      document.getElementById('sizeApplyBtn').onclick = function(e) {
+        e.stopPropagation();
+        applyCanvasSize();
+      };
+      document.getElementById('sizeCancelBtn').onclick = function(e) {
+        e.stopPropagation();
+        sizePopover.classList.remove('active');
+      };
+
+      /* 点击画布区域关闭尺寸面板 */
+      document.addEventListener('click', function(e) {
+        if (!sizePopover.contains(e.target) && e.target !== sizeBtn) {
+          sizePopover.classList.remove('active');
+        }
+      });
+
+      /* -- 自定义拖拽调整画布尺寸 -- */
+      (function initOrchestratorResize() {
+        var resizeHandle = document.createElement('div');
+        resizeHandle.className = 'orch-resize-handle';
+        resizeHandle.title = '拖拽调整画布尺寸';
+        orchEl.appendChild(resizeHandle);
+
+        var isResizing = false;
+        var startX = 0, startY = 0, startW = 0, startH = 0;
+
+        resizeHandle.addEventListener('mousedown', function(e) {
+          if (orchEl.classList.contains('orchestrator-fullscreen')) return;
+          isResizing = true;
+          startX = e.clientX;
+          startY = e.clientY;
+          startW = orchEl.offsetWidth;
+          startH = orchEl.offsetHeight;
+          document.body.style.userSelect = 'none';
+          e.preventDefault();
+          e.stopPropagation();
+        });
+
+        document.addEventListener('mousemove', function(e) {
+          if (!isResizing) return;
+          var minW = 600, minH = 360;
+          var maxW = getMaxCanvasWidth();
+          var maxH = Math.min(window.innerHeight * 0.85, 1200);
+          var newW = Math.max(minW, Math.min(maxW, startW + (e.clientX - startX)));
+          var newH = Math.max(minH, Math.min(maxH, startH + (e.clientY - startY)));
+          orchEl.style.width = newW + 'px';
+          orchEl.style.height = newH + 'px';
+        });
+
+        document.addEventListener('mouseup', function() {
+          if (!isResizing) return;
+          isResizing = false;
+          document.body.style.userSelect = '';
+        });
+      })();
+
+      /* 窗口缩小时自动收缩画布，避免横向滚动条 */
+      window.addEventListener('resize', function() {
+        var maxW = getMaxCanvasWidth();
+        if (orchEl.offsetWidth > maxW) {
+          orchEl.style.width = maxW + 'px';
+        }
+      });
+
+      /* -- 画布容器尺寸变化自适应（用户拖拽调整编排器尺寸时，X6 画布自动重新计算尺寸） -- */
+      if (typeof ResizeObserver !== 'undefined') {
+        var _orchResizeTimer = null;
+        var _orchObserver = new ResizeObserver(function() {
+          clearTimeout(_orchResizeTimer);
+          _orchResizeTimer = setTimeout(function() {
+            if (graph) graph.resize();
+          }, 100);
+        });
+        _orchObserver.observe(orchEl);
+      }
+
+      /* -- 右键菜单插入元素 -- */
+      var ctxMenu = document.createElement('div');
+      ctxMenu.className = 'ctx-menu';
+      document.body.appendChild(ctxMenu);
+      var ctxInsertPos = null;
+
+      function hideContextMenu() { ctxMenu.style.display = 'none'; }
+      document.addEventListener('click', hideContextMenu);
+      document.addEventListener('scroll', hideContextMenu, true);
+
+      window.filterCtxItems = function(inputEl) {
+        var kw = inputEl.value.toLowerCase();
+        ctxMenu.querySelectorAll('.ctx-menu-item').forEach(function(item) {
+          var name = (item.dataset.name || '').toLowerCase();
+          item.style.display = name.indexOf(kw) !== -1 ? '' : 'none';
+        });
+      }
+
+      var ctxCategories = [
+        { title: '接口关键字',     items: ['查询仓位状态','创建用户','获取Token'],       shape: 'node-api',    type: 'api',    icon: 'K', iconBg: '#e6f7ff', color: '#1890ff' },
+        { title: '工具方法关键字', items: ['格式化电池编号','MD5加密','时间戳转换'],     shape: 'node-tool',   type: 'tool',   icon: 'T', iconBg: '#f6ffed', color: '#52c41a' },
+        { title: 'Action 关键字',  items: ['电池入仓操作','用户登录流程','订单处理流程'], shape: 'node-action', type: 'action', icon: 'A', iconBg: '#fff7e6', color: '#fa8c16' },
+        { title: '监听器',         items: ['执行前监听','执行后监听'],                  shape: 'node-listener', type: 'listener', icon: '♪', iconBg: '#f5f5f5', color: '#999' },
+        { title: '断言',           items: ['状态码等于200','响应包含字段','响应时间校验'], shape: 'node-assert',   type: 'assert',   icon: '断', iconBg: '#fff1f0', color: '#f5222d' },
+        { title: '逻辑判断',       items: ['状态是否为空','返回值是否成功','数量是否大于0'], shape: 'node-logic',   type: 'logic',    icon: '◇', iconBg: '#f9f0ff', color: '#722ed1' }
+      ];
+
+      function buildCtxMenuHTML() {
+        var html = '<div class="ctx-menu-title">插入元素</div>';
+        html += '<div class="ctx-menu-search"><input type="text" placeholder="搜索关键字…" oninput="filterCtxItems(this)" onclick="event.stopPropagation()"></div>';
+        ctxCategories.forEach(function(cat) {
+          html += '<div class="ctx-menu-group">';
+          html += '<div style="font-size:10px;color:var(--text-tertiary);padding:4px 12px 2px;">' + cat.title + '</div>';
+          cat.items.forEach(function(name) {
+            html += '<div class="ctx-menu-item" data-name="' + name + '" data-shape="' + cat.shape + '" data-type="' + cat.type + '" onclick="insertFromCtxMenu(this)">';
+            html += '<div class="ctx-icon" style="background:' + cat.iconBg + ';color:' + cat.color + ';">' + cat.icon + '</div>';
+            html += '<span>' + name + '</span></div>';
+          });
+          html += '</div>';
+        });
+        return html;
+      }
+      ctxMenu.innerHTML = buildCtxMenuHTML();
+
+      window.insertFromCtxMenu = function(itemEl) {
+        if (!ctxInsertPos) return;
+        var newNode = graph.addNode({
+          shape: itemEl.dataset.shape,
+          x: snap(ctxInsertPos.x - 100),
+          y: snap(ctxInsertPos.y - 27),
+          data: { nodeType: itemEl.dataset.type, label: itemEl.dataset.name }
+        });
+        setNodeLabel(newNode, itemEl.dataset.name);
+        autoSizeNode(newNode, itemEl.dataset.name);
+        hideContextMenu();
+      };
+
+      graph.on('blank:contextmenu', function(args) {
+        args.e.preventDefault();
+        var e = args.e;
+        var local = graph.clientToLocal(e.clientX, e.clientY);
+        ctxInsertPos = { x: local.x, y: local.y };
+        ctxMenu.innerHTML = buildCtxMenuHTML();
+        ctxMenu.style.display = 'block';
+        ctxMenu.style.left = e.clientX + 'px';
+        ctxMenu.style.top = e.clientY + 'px';
+        var menuRect = ctxMenu.getBoundingClientRect();
+        if (menuRect.right > window.innerWidth) ctxMenu.style.left = (e.clientX - menuRect.width) + 'px';
+        if (menuRect.bottom > window.innerHeight) ctxMenu.style.top = (e.clientY - menuRect.height) + 'px';
+        var searchInput = ctxMenu.querySelector('.ctx-menu-search input');
+        if (searchInput) setTimeout(function() { searchInput.focus(); }, 50);
+      });
+
+      graph.on('node:contextmenu', function(args) {
+        args.e.preventDefault();
+      });
+
+      /* -- 拖拽 & 双击添加节点 -- */
+      document.querySelectorAll('.node-drag').forEach(function(el) {
+        /* 双击：直接在画布中央放置 */
+        el.addEventListener('dblclick', function(e) {
+          e.preventDefault();
+          var container = document.getElementById('flowGraph');
+          var rect = container.getBoundingClientRect();
+          var center = graph.clientToLocal(rect.left + rect.width / 2, rect.top + rect.height / 2);
+          var existing = graph.getNodes().filter(function(n) {
+            var p = n.position();
+            return Math.abs(p.x - snap(center.x - 100)) < 20 && Math.abs(p.y - snap(center.y - 27)) < 20;
+          });
+          var offX = existing.length > 0 ? existing.length * 40 : 0;
+          var newNode = graph.addNode({
+            shape: el.dataset.nodeShape,
+            x: snap(center.x - 100) + offX,
+            y: snap(center.y - 27) + offX,
+            data: { nodeType: el.dataset.nodeType, label: el.dataset.nodeName }
+          });
+          setNodeLabel(newNode, el.dataset.nodeName);
+          autoSizeNode(newNode, el.dataset.nodeName);
+          /* 新增元素默认不选中，符合画布默认状态规范 */
+          showToast('已添加节点：' + el.dataset.nodeName, 'success');
+        });
+        /* 拖拽：按住拖动到画布指定位置 */
+        el.addEventListener('mousedown', function(e) {
+          if (e.detail >= 2) return; /* 避免双击时触发拖拽 */
+          e.preventDefault();
+          var nodeShape = el.dataset.nodeShape;
+          var nodeType  = el.dataset.nodeType;
+          var nodeName  = el.dataset.nodeName;
+          var ghost = el.cloneNode(true);
+          ghost.style.cssText = 'position:fixed;z-index:9999;opacity:.75;pointer-events:none;width:' + el.offsetWidth + 'px;';
+          document.body.appendChild(ghost);
+
+          function onMove(ev) { ghost.style.left = (ev.clientX - 40) + 'px'; ghost.style.top = (ev.clientY - 16) + 'px'; }
+          function onUp(ev) {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            ghost.remove();
+            var rect = document.getElementById('flowGraph').getBoundingClientRect();
+            if (ev.clientX >= rect.left && ev.clientX <= rect.right && ev.clientY >= rect.top && ev.clientY <= rect.bottom) {
+              var local = graph.clientToLocal(ev.clientX, ev.clientY);
+              var addedNode = graph.addNode({
+                shape: nodeShape,
+                x: snap(local.x - 100),
+                y: snap(local.y - 27),
+                data: { nodeType: nodeType, label: nodeName }
+              });
+              setNodeLabel(addedNode, nodeName);
+              autoSizeNode(addedNode, nodeName);
+            }
+          }
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+          onMove(e);
+        });
+      });
+    }
+
+    /* ===== 保存 ===== */
+    function handleSave() {
+      if (graph) {
+        var graphData = graph.toJSON();
+        var rootNodes = graph.getNodes().filter(function(n) {
+          return graph.getConnectedEdges(n, { incoming: true }).length === 0;
+        });
+        var nodeTree = rootNodes.map(function buildTree(node) {
+          var data = node.getData() || {};
+          var result = { type: data.nodeType || 'keyword', id: node.id, label: data.label || '' };
+          var outEdges = graph.getConnectedEdges(node, { outgoing: true });
+          if (outEdges.length > 0) {
+            result.children = outEdges.map(function(edge) {
+              var target = edge.getTargetCell();
+              if (!target || !target.isNode()) return null;
+              var child = buildTree(target);
+              var label = getEdgeLabel(edge);
+              if (label) child.condition = label;
+              return child;
+            }).filter(Boolean);
+          }
+          return result;
+        });
+        console.log('Action nodes:', JSON.stringify(nodeTree, null, 2));
+      }
+      showToast('保存成功', 'success');
+      setTimeout(function() { location.href = 'action-list.html'; }, 1500);
+    }
+
+    /* ===== 启动 ===== */
+    /* 不再在 window.load 时初始化画布，改为在切换到「节点编排器」Tab 时延迟初始化（见 switchTab） */
+
+    /* 页面加载时根据 URL hash 恢复上次选中的 tab */
+    (function restoreTab() {
+      var hash = (location.hash || '').replace(/^#/, '');
+      var validTabs = ['basic', 'params', 'orchestrator'];
+      var tabName = validTabs.indexOf(hash) !== -1 ? hash : 'basic';
+      var tabEl = Array.prototype.find.call(document.querySelectorAll('#editTabs .tab-item'), function(t) {
+        var onclick = t.getAttribute('onclick') || '';
+        return onclick.indexOf("'" + tabName + "'") !== -1;
+      });
+      if (tabEl) switchTab(tabName, tabEl);
+    })();
+  </script>
+  <script src="../common/nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>全局配置 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span>系统管理</span>
+      <span class="sep">&#8250;</span>
+      <span class="current">全局配置</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <div class="menu-group open">
+        <div class="menu-group-header open"><span class="icon">&#9881;</span><span class="label">系统管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="profile.html">个人资料</a></li>
+            <li class="menu-item"><a href="user-management.html">用户列表</a></li>
+            <li class="menu-item active"><a href="global-config.html">全局设置</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+  <main class="layout-main">
+
+    <div class="page-header"><h1>全局配置</h1></div>
+    <!-- Retention Policy -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">保留策略</div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 32px;">
+          <div class="form-group">
+            <label class="form-label">日志保留天数</label>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="number" class="input" value="30" style="width:120px;">
+              <span style="font-size:13px;color:var(--text-tertiary);">天</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">报告保留天数</label>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="number" class="input" value="90" style="width:120px;">
+              <span style="font-size:13px;color:var(--text-tertiary);">天</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:12px;"><button class="btn btn-primary" onclick="handleSave(this,'保留策略')">保存</button></div>
+      </div>
+    </div>
+    <!-- Notification Config -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">通知配置</div>
+      <div class="card-body">
+        <h4 style="font-size:13px;font-weight:600;margin-bottom:10px;">邮件通知 (SMTP)</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
+          <div class="form-group"><label class="form-label">SMTP 服务器地址</label><input type="text" class="input w-full" id="smtpHost" placeholder="smtp.example.com"></div>
+          <div class="form-group"><label class="form-label">端口</label><input type="number" class="input" id="smtpPort" placeholder="587" min="0" max="65535" style="width:120px;"></div>
+          <div class="form-group"><label class="form-label">账号</label><input type="text" class="input w-full" id="smtpUser" placeholder="notify@example.com"></div>
+          <div class="form-group"><label class="form-label">密码</label><input type="password" class="input w-full" id="smtpPass" placeholder="****"></div>
+          <div class="form-group"><label class="form-label">加密方式</label><select class="select w-full" id="smtpEncrypt"><option value="tls">TLS</option><option value="ssl">SSL</option><option value="none">无</option></select></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:12px;">
+          <button class="btn btn-sm" onclick="handleTestSend('smtp')">测试发送</button>
+          <span class="form-hint" id="smtpTestStatus" style="display:none;"></span>
+        </div>
+        <div style="border-top:1px solid var(--border);margin:20px 0;"></div>
+        <h4 style="font-size:13px;font-weight:600;margin-bottom:10px;">Webhook 通知</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
+          <div class="form-group"><label class="form-label">Webhook URL</label><input type="text" class="input w-full" id="webhookUrl" placeholder="https://hooks.example.com/notify"></div>
+          <div class="form-group"><label class="form-label">密钥</label><input type="password" class="input w-full" id="webhookSecret" placeholder="Webhook Secret"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:12px;">
+          <button class="btn btn-sm" onclick="handleTestSend('webhook')">测试发送</button>
+          <span class="form-hint" id="webhookTestStatus" style="display:none;"></span>
+        </div>
+        <div style="margin-top:16px;"><button class="btn btn-primary" onclick="handleSave(this,'通知配置')">保存</button></div>
+      </div>
+    </div>
+  </main>
+  <!-- Test Send Modal -->
+  <div class="modal-overlay" id="testSendModal" style="display:none;">
+    <div class="modal" style="width:440px;">
+      <div class="modal-header"><h3 id="testSendTitle">测试发送</h3><button class="modal-close" onclick="closeTestSendModal()">×</button></div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">接收地址</label>
+          <input type="text" class="input w-full" id="testRecipient" placeholder="">
+        </div>
+        <div class="form-group">
+          <label class="form-label">通知内容</label>
+          <textarea class="input w-full" id="testContent" rows="3" style="resize:vertical;" placeholder="这是一条测试通知消息">这是一条测试通知消息，如果您收到此消息说明通知配置正确。</textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeTestSendModal()">取消</button>
+        <button class="btn btn-primary" id="testSendBtn" onclick="confirmTestSend()">发送</button>
+      </div>
+    </div>
+  </div>
+  <script src="../common/nav.js"></script>
+  <script>
+    /* ---- Save Handler with loading state ---- */
+    function handleSave(btn, sectionName) {
+      if (btn.disabled) return;
+      var originalText = btn.textContent;
+      btn.disabled = true;
+      btn.style.opacity = '0.65';
+      btn.style.cursor = 'not-allowed';
+      btn.textContent = '保存中...';
+
+      // Validate inputs in the same card
+      var card = btn.closest('.card');
+      var inputs = card.querySelectorAll('input[type="number"]');
+      var valid = true;
+      for (var i = 0; i < inputs.length; i++) {
+        var val = parseInt(inputs[i].value, 10);
+        var isPort = inputs[i].id === 'smtpPort';
+        if (isNaN(val) || val < 0 || (isPort && val > 65535)) {
+          valid = false;
+          inputs[i].style.borderColor = 'var(--error)';
+        } else {
+          inputs[i].style.borderColor = '';
+        }
+      }
+
+      setTimeout(function() {
+        btn.disabled = false;
+        btn.style.opacity = '';
+        btn.style.cursor = '';
+        btn.textContent = originalText;
+        if (valid) {
+          showToast(sectionName + ' 保存成功', 'success');
+        } else {
+          showToast(sectionName + ' 保存失败，请检查输入值', 'error');
+        }
+      }, 600);
+    }
+
+    /* ---- Test Send ---- */
+    var _testSendType = '';
+
+    function handleTestSend(type) {
+      _testSendType = type;
+      var titleEl = document.getElementById('testSendTitle');
+      var recipientInput = document.getElementById('testRecipient');
+      if (type === 'smtp') {
+        titleEl.textContent = '测试邮件发送';
+        recipientInput.placeholder = '请输入收件人邮箱地址';
+      } else {
+        titleEl.textContent = '测试 Webhook 发送';
+        recipientInput.placeholder = '请输入 Webhook 回调地址（可选，留空使用配置值）';
+      }
+      recipientInput.value = '';
+      document.getElementById('testSendModal').style.display = 'flex';
+    }
+
+    function closeTestSendModal() {
+      document.getElementById('testSendModal').style.display = 'none';
+      _testSendType = '';
+    }
+
+    function confirmTestSend() {
+      var recipient = document.getElementById('testRecipient').value.trim();
+      var btn = document.getElementById('testSendBtn');
+
+      // Validate
+      if (_testSendType === 'smtp' && !recipient) {
+        showToast('请输入收件人邮箱地址', 'error');
+        return;
+      }
+
+      // Check SMTP config
+      if (_testSendType === 'smtp') {
+        var host = document.getElementById('smtpHost').value.trim();
+        var port = document.getElementById('smtpPort').value.trim();
+        var user = document.getElementById('smtpUser').value.trim();
+        if (!host || !port || !user) {
+          showToast('请先完善 SMTP 服务器配置', 'error');
+          return;
+        }
+        var portNum = parseInt(port, 10);
+        if (isNaN(portNum) || portNum < 0 || portNum > 65535) {
+          showToast('端口号必须在 0 ~ 65535 之间', 'error');
+          document.getElementById('smtpPort').style.borderColor = 'var(--error)';
+          return;
+        }
+        document.getElementById('smtpPort').style.borderColor = '';
+      }
+
+      // Check Webhook config
+      if (_testSendType === 'webhook') {
+        var url = document.getElementById('webhookUrl').value.trim();
+        var overrideUrl = recipient;
+        if (!url && !overrideUrl) {
+          showToast('请输入 Webhook URL', 'error');
+          return;
+        }
+      }
+
+      // Disable button, show loading
+      btn.disabled = true;
+      btn.textContent = '发送中...';
+      btn.style.opacity = '0.65';
+
+      var statusEl = document.getElementById(_testSendType === 'smtp' ? 'smtpTestStatus' : 'webhookTestStatus');
+
+      setTimeout(function() {
+        btn.disabled = false;
+        btn.textContent = '发送';
+        btn.style.opacity = '';
+        closeTestSendModal();
+
+        // Simulate success
+        var label = _testSendType === 'smtp' ? '测试邮件' : 'Webhook 通知';
+        showToast(label + ' 发送成功', 'success');
+
+        // Show inline status
+        if (statusEl) {
+          statusEl.textContent = '✓ 上次发送成功';
+          statusEl.style.color = 'var(--success)';
+          statusEl.style.display = 'inline';
+        }
+      }, 1200);
+    }
+  </script>
+</body>
+</html>

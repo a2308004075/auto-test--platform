@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    body {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; min-width: 0;
+      background: #001529;
+      position: relative; overflow: hidden;
+    }
+    body::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(24,144,255,.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(24,144,255,.06) 0%, transparent 50%);
+    }
+    .login-wrapper {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .login-brand {
+      text-align: center; margin-bottom: 40px;
+    }
+    .login-brand .logo {
+      display: flex; align-items: center; gap: 14px;
+      justify-content: center; margin-bottom: 10px;
+    }
+    .login-brand .logo-icon {
+      width: 44px; height: 44px; background: #1890ff;
+      border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; color: #fff; font-size: 18px;
+      font-weight: 700; letter-spacing: 1px;
+    }
+    .login-brand .logo-text {
+      font-size: 26px; font-weight: 600; color: #fff;
+      letter-spacing: .5px;
+    }
+    .login-brand .subtitle {
+      font-size: 14px; color: rgba(255,255,255,.35);
+      letter-spacing: 2px;
+    }
+    .login-card {
+      width: 400px; background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.35);
+      padding: 40px;
+    }
+    .login-card h2 {
+      font-size: 20px; font-weight: 600; color: rgba(0,0,0,.88);
+      margin-bottom: 32px; text-align: center;
+    }
+    .login-card .form-group { margin-bottom: 20px; }
+    .login-card .form-label {
+      font-size: 14px; font-weight: 500; color: rgba(0,0,0,.88);
+      margin-bottom: 8px;
+    }
+    .login-card .input-wrapper {
+      position: relative;
+    }
+    .login-card .input-wrapper .icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: rgba(0,0,0,.25); font-size: 16px;
+    }
+    .login-card .input {
+      width: 100%; height: 40px; padding: 4px 11px 4px 40px;
+      border: 1px solid #d9d9d9; border-radius: 4px;
+      font-size: 14px; color: rgba(0,0,0,.88);
+      background: #fff; outline: none; transition: all .2s;
+    }
+    .login-card .input:focus {
+      border-color: #1890ff;
+      box-shadow: 0 0 0 2px rgba(24,144,255,.1);
+    }
+    .login-card .input::placeholder { color: rgba(0,0,0,.25); }
+    .login-card .password-toggle {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: rgba(0,0,0,.25); font-size: 16px;
+    }
+    .login-card .password-toggle:hover { color: rgba(0,0,0,.45); }
+    .login-card .remember-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .login-card .remember-row label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 14px; color: rgba(0,0,0,.65); cursor: pointer;
+    }
+    .login-card .btn-login {
+      width: 100%; height: 40px; border-radius: 4px;
+      background: #1890ff; color: #fff; border: none;
+      font-size: 16px; font-weight: 500; cursor: pointer;
+      transition: all .2s;
+    }
+    .login-card .btn-login:hover {
+      background: #40a9ff;
+    }
+    .login-card .btn-login:active {
+      background: #096dd9;
+    }
+    .login-card .btn-login:disabled {
+      background: #91caff; cursor: not-allowed;
+    }
+    .login-card .error-msg {
+      font-size: 12px; color: #ff4d4f;
+      margin-top: 4px; display: none;
+    }
+    .login-card .form-group.has-error .input {
+      border-color: #ff4d4f;
+    }
+    .login-card .form-group.has-error .error-msg {
+      display: block;
+    }
+    .login-card .form-group.has-error .input:focus {
+      box-shadow: 0 0 0 2px rgba(255,77,79,.1);
+    }
+    .toast {
+      position: fixed; top: 60px; right: 24px;
+      padding: 10px 20px; border-radius: 4px;
+      font-size: 14px; color: #fff; z-index: 9999;
+      box-shadow: 0 6px 16px rgba(0,0,0,.15);
+      opacity: 0; transform: translateX(40px);
+      transition: opacity .3s, transform .3s;
+      pointer-events: none;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toast.show { opacity: 1; transform: translateX(0); pointer-events: auto; }
+    .toast-success { background: #52c41a; }
+    .toast-error { background: #ff4d4f; }
+    .toast-info { background: #1677ff; }
+    .toast-icon { font-weight: 600; font-size: 14px; flex-shrink: 0; }
+    .login-footer {
+      text-align: center; margin-top: 24px;
+      font-size: 12px; color: rgba(255,255,255,.25);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-brand">
+      <div class="logo">
+        <div class="logo-icon">PT</div>
+        <span class="logo-text">Postman Platform</span>
+      </div>
+      <p class="subtitle">自动化测试管理平台</p>
+    </div>
+    <div class="login-card">
+      <h2>系统登录</h2>
+      <form id="loginForm" onsubmit="handleLogin(event)" novalidate>
+        <div class="form-group" id="usernameGroup">
+          <label class="form-label">用户名</label>
+          <div class="input-wrapper">
+            <span class="icon">&#128100;</span>
+            <input type="text" id="usernameInput" class="input" placeholder="请输入用户名"
+                   oninput="clearError('usernameGroup')" maxlength="50">
+          </div>
+          <div class="error-msg" id="usernameError">请输入用户名</div>
+        </div>
+        <div class="form-group" id="passwordGroup">
+          <label class="form-label">密码</label>
+          <div class="input-wrapper">
+            <span class="icon">&#128274;</span>
+            <input type="password" id="passwordInput" class="input" placeholder="请输入密码"
+                   oninput="clearError('passwordGroup')" maxlength="100">
+            <button type="button" class="password-toggle" onclick="togglePassword()">&#128065;</button>
+          </div>
+          <div class="error-msg" id="passwordError">请输入密码</div>
+        </div>
+        <div class="remember-row">
+          <label>
+            <input type="checkbox">
+            <span>记住我</span>
+          </label>
+        </div>
+        <button type="submit" class="btn-login">登 录</button>
+      </form>
+    </div>
+    <div class="login-footer">Postman Platform v1.0</div>
+  </div>
+
+  <div class="toast toast-info" id="toast"></div>
+
+  <script>
+    function showToast(msg, type) {
+      var icons = { success: '\u2713', error: '\u2717', info: '\u2139' };
+      var toast = document.getElementById('toast');
+      toast.innerHTML = '<span class="toast-icon">' + (icons[type || 'info'] || '') + '</span><span>' + msg + '</span>';
+      toast.className = 'toast toast-' + (type || 'info') + ' show';
+      setTimeout(function() { toast.classList.remove('show'); }, 3000);
+    }
+
+    function showError(groupId, msg) {
+      var group = document.getElementById(groupId);
+      group.classList.add('has-error');
+      var errEl = group.querySelector('.error-msg');
+      if (errEl && msg) errEl.textContent = msg;
+    }
+
+    function clearError(groupId) {
+      document.getElementById(groupId).classList.remove('has-error');
+    }
+
+    function togglePassword() {
+      var input = document.getElementById('passwordInput');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      var username = document.getElementById('usernameInput').value.trim();
+      var password = document.getElementById('passwordInput').value;
+      var valid = true;
+
+      if (!username) {
+        showError('usernameGroup', '请输入用户名');
+        valid = false;
+      }
+      if (!password) {
+        showError('passwordGroup', '请输入密码');
+        valid = false;
+      }
+      if (password && password.length < 6) {
+        showError('passwordGroup', '密码长度不能少于6位');
+        valid = false;
+      }
+      if (!valid) return;
+
+      // Store current user info so the header shows the real username across pages
+      var userInfo = {
+        username: username,
+        displayName: username.toLowerCase() === 'admin' ? '管理员' : username,
+        role: username.toLowerCase() === 'admin' ? 'admin' : 'user'
+      };
+      localStorage.setItem('user', JSON.stringify(userInfo));
+
+      showToast('登录成功，正在跳转...', 'success');
+      setTimeout(function() {
+        window.location.href = '../project/project-list.html';
+      }, 800);
+    }
+  </script>
+</body>
+</html>

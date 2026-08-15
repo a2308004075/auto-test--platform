@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>编辑接口关键字 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    .edit-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .edit-header .actions { display: flex; gap: 8px; }
+    .edit-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .params-section { margin-bottom: 24px; }
+    .params-section h4 { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .api-info-bar { padding: 10px 12px; background: #fafafa; border-radius: 4px; display: flex; gap: 16px; font-size: 13px; align-items: center; }
+    .response-field-header { display: grid; grid-template-columns: 180px 120px 1fr 60px; gap: 8px; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; padding: 0 2px; }
+    .response-field-row { display: grid; grid-template-columns: 180px 120px 1fr 60px; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .response-field-row .input, .response-field-row .select { height: 28px; font-size: 13px; }
+    .status-code-section { margin-bottom: 20px; }
+    .status-code-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .status-code-header .code-input { width: 80px; }
+    .empty-hint { text-align: center; padding: 24px 16px; color: var(--text-tertiary); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span><a href="keyword-list.html">接口关键字</a></span>
+      <span class="sep">&#8250;</span>
+      <span class="current">用户登录</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item active"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+
+  <main class="layout-main">
+
+    <div class="edit-header">
+      <h1 style="font-size: 18px;">编辑接口关键字</h1>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="handleSave()">保存</button>
+        <button class="btn" onclick="location.href='keyword-list.html'">取消保存</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" id="editTabs">
+      <div class="tab-item active" onclick="switchTab('basic', this)">基础信息</div>
+      <div class="tab-item" onclick="switchTab('api', this)">关联接口</div>
+      <div class="tab-item" onclick="switchTab('testdata', this)">测试数据</div>
+      <div class="tab-item" onclick="switchTab('response', this)">预期响应</div>
+      <div class="tab-item" onclick="switchTab('refs', this)">引用关系</div>
+    </div>
+
+    <!-- Tab: 基础信息 -->
+    <div class="tab-content active" id="tab-basic">
+      <div class="card"><div class="card-body">
+        <div class="edit-form-row">
+          <div class="form-group">
+            <label class="form-label">关键字 ID</label>
+            <input type="text" class="input w-full font-mono" value="KA-1" readonly style="background:#f5f5f5;color:var(--text-tertiary);cursor:not-allowed;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">关键字名称</label>
+            <input type="text" class="input w-full" id="kwName" value="用户登录">
+          </div>
+        </div>
+        <div class="edit-form-row">
+          <div class="form-group">
+            <label class="form-label">分类</label>
+            <select class="select w-full" id="kwCategory">
+              <option selected>用户管理</option>
+              <option>电池管理</option>
+              <option>订单管理</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">标签</label>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
+              <span class="tag tag-blue">认证</span>
+              <span class="tag tag-blue">JWT</span>
+              <input type="text" class="input" placeholder="+ 添加" style="width:80px;height:24px;font-size:12px;">
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">描述</label>
+          <textarea class="textarea w-full" rows="2">用户登录认证，返回 JWT Token</textarea>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: 关联接口 -->
+    <div class="tab-content" id="tab-api">
+      <div class="card"><div class="card-body">
+        <div class="api-info-bar">
+          <span class="method-badge method-post">POST</span>
+          <code style="font-size:13px;">/api/v1/auth/login</code>
+          <span class="tag tag-gray">用户管理</span>
+          <span style="color:var(--text-tertiary);">用户登录认证接口</span>
+          <a href="../api/api-edit.html" class="btn-link" style="margin-left:auto;">查看接口 →</a>
+        </div>
+        <div style="margin-top:16px;">
+          <div class="form-group">
+            <label class="form-label">切换关联接口</label>
+            <select class="select w-full">
+              <option selected>POST /api/v1/auth/login - 用户登录</option>
+              <option>POST /api/v1/users - 创建用户</option>
+              <option>GET /api/v1/users/{id} - 获取用户信息</option>
+            </select>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: 测试数据 -->
+    <div class="tab-content" id="tab-testdata">
+      <div class="card"><div class="card-body">
+        <div class="params-section">
+          <h4>请求参数 <span class="tag tag-gray" style="margin-left:4px;">application/json</span></h4>
+          <table>
+            <thead><tr><th style="width:160px">参数名</th><th style="width:120px">类型</th><th style="width:200px">预设值</th><th>说明</th><th style="width:60px">操作</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><code>username</code></td>
+                <td><span class="tag tag-gray">string</span></td>
+                <td><input type="text" class="input" value="admin" style="width:180px;"></td>
+                <td><input type="text" class="input" value="管理员账号" style="width:140px;"></td>
+                <td><button class="btn btn-link btn-sm btn-danger" onclick="removeTestDataRow(this)">删除</button></td>
+              </tr>
+              <tr>
+                <td><code>password</code></td>
+                <td><span class="tag tag-gray">string</span></td>
+                <td><input type="text" class="input" value="${env_password}" style="width:180px;"></td>
+                <td><input type="text" class="input" value="密码(环境变量)" style="width:140px;"></td>
+                <td><button class="btn btn-link btn-sm btn-danger" onclick="removeTestDataRow(this)">删除</button></td>
+              </tr>
+              <tr>
+                <td><code>remember_me</code></td>
+                <td><span class="tag tag-gray">boolean</span></td>
+                <td><input type="text" class="input" value="true" style="width:180px;"></td>
+                <td><input type="text" class="input" value="记住登录" style="width:140px;"></td>
+                <td><button class="btn btn-link btn-sm btn-danger" onclick="removeTestDataRow(this)">删除</button></td>
+              </tr>
+            </tbody>
+          </table>
+          <button class="btn btn-sm" style="margin-top:8px;" onclick="addTestDataRow(this)">+ 添加数据组</button>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: 预期响应 -->
+    <div class="tab-content" id="tab-response">
+      <div class="card"><div class="card-body">
+        <div class="status-code-section">
+          <div class="status-code-header">
+            <h4 style="margin: 0;">预期状态码</h4>
+            <input type="text" class="input code-input" value="200">
+            <button class="btn btn-sm" onclick="addAssertionField()">+ 添加断言字段</button>
+          </div>
+          <div class="response-field-header">
+            <span>字段路径</span>
+            <span>预期值</span>
+            <span>说明</span>
+            <span>操作</span>
+          </div>
+          <div id="assertionFieldsContainer">
+            <div class="response-field-row">
+              <input type="text" class="input font-mono" value="code" style="background:#f5f5f5;">
+              <input type="text" class="input" value="200" style="background:#f5f5f5;">
+              <input type="text" class="input" value="业务成功码" style="background:#f5f5f5;">
+              <button class="btn btn-link btn-sm btn-danger" onclick="this.closest('.response-field-row').remove();toggleAssertionEmpty()">删除</button>
+            </div>
+            <div class="response-field-row">
+              <input type="text" class="input font-mono" value="data.token" style="background:#f5f5f5;">
+              <input type="text" class="input" value="非空即可" style="color:var(--text-tertiary);background:#f5f5f5;">
+              <input type="text" class="input" value="认证令牌" style="background:#f5f5f5;">
+              <button class="btn btn-link btn-sm btn-danger" onclick="this.closest('.response-field-row').remove();toggleAssertionEmpty()">删除</button>
+            </div>
+          </div>
+          <div class="empty-hint" id="assertionFieldsEmpty" style="display:none;">暂无断言字段，点击上方按钮添加</div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: 引用关系 -->
+    <div class="tab-content" id="tab-refs">
+      <div class="card"><div class="card-body">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <h4 style="margin:0;font-size:14px;font-weight:600;">Action 引用</h4>
+          <span class="tag tag-blue">15 个引用</span>
+        </div>
+        <table>
+          <thead><tr><th>Action 名称</th><th>分类</th><th>创建时间</th><th style="width:80px">操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><a href="action-editor.html">用户登录并获取令牌</a></td>
+              <td><span class="tag tag-blue">登录认证</span></td>
+              <td style="color:var(--text-tertiary);font-size:12px;">2024-01-10</td>
+              <td><a href="action-editor.html" class="btn-link">查看</a></td>
+            </tr>
+            <tr>
+              <td><a href="action-editor.html">完整登录流程</a></td>
+              <td><span class="tag tag-blue">登录认证</span></td>
+              <td style="color:var(--text-tertiary);font-size:12px;">2024-01-08</td>
+              <td><a href="action-editor.html" class="btn-link">查看</a></td>
+            </tr>
+            <tr>
+              <td><a href="action-editor.html">管理员登录</a></td>
+              <td><span class="tag tag-purple">系统管理</span></td>
+              <td style="color:var(--text-tertiary);font-size:12px;">2024-01-05</td>
+              <td><a href="action-editor.html" class="btn-link">查看</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+
+  </main>
+
+  <script>
+    function switchTab(name, el) {
+      document.querySelectorAll('#editTabs .tab-item').forEach(function(t) { t.classList.remove('active'); });
+      el.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+      document.getElementById('tab-' + name).classList.add('active');
+    }
+
+    /* ===== Assertion fields ===== */
+    function addAssertionField() {
+      var container = document.getElementById('assertionFieldsContainer');
+      var row = document.createElement('div');
+      row.className = 'response-field-row';
+      row.innerHTML =
+        '<input type="text" class="input font-mono" placeholder="字段路径，如 data.id">' +
+        '<input type="text" class="input" placeholder="预期值">' +
+        '<input type="text" class="input" placeholder="说明">' +
+        '<button class="btn btn-link btn-sm btn-danger" onclick="this.closest(\'.response-field-row\').remove();toggleAssertionEmpty()">删除</button>';
+      container.appendChild(row);
+      toggleAssertionEmpty();
+    }
+
+    function toggleAssertionEmpty() {
+      var container = document.getElementById('assertionFieldsContainer');
+      var hint = document.getElementById('assertionFieldsEmpty');
+      hint.style.display = container.children.length === 0 ? 'block' : 'none';
+    }
+
+    /* ===== 保存接口关键字 ===== */
+    function handleSave() {
+      showToast('保存成功', 'success');
+      setTimeout(function() {
+        location.href = 'keyword-list.html';
+      }, 1500);
+    }
+
+    /* ===== 测试数据行操作 ===== */
+    function removeTestDataRow(btn) {
+      var row = btn.closest('tr');
+      var paramName = row.querySelector('code') ? row.querySelector('code').textContent : '该参数';
+      if (confirm('确定删除参数「' + paramName + '」吗？')) {
+        row.remove();
+        showToast('已删除参数「' + paramName + '」', 'success');
+      }
+    }
+
+    function addTestDataRow(btn) {
+      var table = btn.previousElementSibling;
+      var tbody = table.querySelector('tbody');
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><input type="text" class="input" placeholder="参数名" style="width:140px;"></td>' +
+        '<td><span class="tag tag-gray">string</span></td>' +
+        '<td><input type="text" class="input" placeholder="预设值" style="width:180px;"></td>' +
+        '<td><input type="text" class="input" placeholder="说明" style="width:140px;"></td>' +
+        '<td><button class="btn btn-link btn-sm btn-danger" onclick="removeTestDataRow(this)">删除</button></td>';
+      tbody.appendChild(tr);
+      tr.querySelector('input').focus();
+    }
+
+    /* ===== Hash 锚点自动切换 Tab ===== */
+    (function() {
+      var hash = location.hash.replace('#', '');
+      if (hash) {
+        var tabEl = document.querySelector('#editTabs .tab-item[onclick*="\'' + hash + '\'"]');
+        if (tabEl) switchTab(hash, tabEl);
+      }
+    })();
+  </script>
+  <script src="../common/nav.js"></script>
+</body>
+</html>

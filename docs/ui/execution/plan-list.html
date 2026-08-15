@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试计划 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    .plan-layout { display: flex; background: #fff; border-radius: var(--border-radius-lg); border: 1px solid var(--border-color-secondary); overflow: hidden; min-height: calc(100vh - 180px); }
+    .plan-content { flex: 1; padding: 16px 20px; overflow: auto; }
+    .tree-item.system { color: var(--text-secondary); cursor: default; }
+    .tree-item.system .system-icon { font-size: 12px; margin-left: 6px; color: var(--text-tertiary); }
+    .tree-item.system.active { background: var(--primary-bg); color: var(--primary); }
+    .tree-item.system.active .system-icon { color: var(--primary); }
+    .tree-divider { height: 1px; background: var(--border-color-secondary); margin: 8px 12px; }
+    .context-menu { position: fixed; background: #fff; border: 1px solid var(--border-color-secondary); border-radius: var(--border-radius); box-shadow: 0 2px 8px rgba(0,0,0,0.12); padding: 4px 0; min-width: 120px; z-index: 1000; display: none; }
+    .context-menu-item { padding: 6px 12px; font-size: 13px; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+    .context-menu-item:hover { background: #fafafa; }
+    .context-menu-item.danger { color: var(--error); }
+    .context-menu-divider { height: 1px; background: var(--border-color-secondary); margin: 4px 0; }
+    .tree-arrow { display: inline-block; width: 14px; font-size: 9px; color: var(--text-tertiary); cursor: pointer; flex-shrink: 0; text-align: center; transition: transform .15s; }
+    .tree-arrow.expanded { transform: rotate(90deg); }
+    .tree-arrow-placeholder { display: inline-block; width: 14px; flex-shrink: 0; }
+    .tree-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21460;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span>测试管理</span>
+      <span class="sep">&#8250;</span>
+      <span class="current">测试计划</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group open">
+        <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item active"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+  <main class="layout-main">
+
+    <div class="page-header"><h1>测试计划</h1><button class="btn btn-primary" onclick="window.location.href='plan-edit.html'">+ 新建计划</button></div>
+
+    <div class="plan-layout">
+      <!-- Left: Group Tree -->
+      <div class="tree-panel" id="treePanel" oncontextmenu="showBlankContextMenu(event)">
+        <div class="tree-search">
+          <input type="text" class="input input-search w-full" placeholder="搜索分组..." style="height: 28px; font-size: 13px;">
+        </div>
+        <div id="groupTree"></div>
+      </div>
+
+      <!-- Right: Plan List -->
+      <div class="plan-content">
+        <!-- Search Card -->
+        <div class="search-card collapsed" id="planSearchCard">
+          <div class="search-form">
+            <div class="search-row">
+              <div class="search-item">
+                <span class="filter-label">计划名称</span>
+                <input type="text" class="input input-search" id="searchPlanName" placeholder="模糊查询">
+              </div>
+              <div class="search-item">
+                <span class="filter-label">触发方式</span>
+                <select class="select" id="searchTrigger">
+                  <option>全部触发方式</option><option>定时执行</option><option>手动触发</option><option>CI 触发</option>
+                </select>
+              </div>
+              <div class="search-item">
+                <span class="filter-label">环境</span>
+                <select class="select" id="searchEnv">
+                  <option>全部环境</option><option>开发环境</option><option>测试环境</option><option>预发布环境</option><option>生产环境</option>
+                </select>
+              </div>
+              <div class="search-actions">
+                <button class="btn btn-primary" onclick="handlePlanSearch()">查询</button>
+                <button class="btn" onclick="handlePlanReset()">重置</button>
+                <button class="search-toggle" type="button" onclick="toggleSearchCard(this)">
+                  <span class="arrow">&#708;</span>
+                  <span class="text">展开</span>
+                </button>
+              </div>
+            </div>
+            <div class="search-row collapse-row">
+              <div class="search-item">
+                <span class="filter-label">状态</span>
+                <select class="select" id="searchStatus"><option>全部状态</option><option>启用</option><option>禁用</option></select>
+              </div>
+              <div class="search-item">
+                <span class="filter-label">关联套件</span>
+                <input type="text" class="input input-search" id="searchSuite" placeholder="套件名称">
+              </div>
+              <div class="search-item">
+                <span class="filter-label">最近更新</span>
+                <div class="date-range">
+                  <input type="date" class="input" value="2024-01-01">
+                  <span class="separator">至</span>
+                  <input type="date" class="input" value="2024-01-15">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Plan Table -->
+        <div class="card">
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th style="width:200px;">计划名称</th><th style="width:200px;">描述</th><th style="width:90px;">触发方式</th><th style="width:160px;">关联套件</th><th style="width:70px;">用例数</th><th style="width:100px;">环境</th><th style="width:70px;">状态</th><th style="width:160px;">最近执行</th><th style="width:70px;">通过率</th><th style="width:140px;">操作</th></tr></thead>
+              <tbody id="planTableBody"></tbody>
+            </table>
+          </div>
+          <div class="card-footer"><div class="pagination" id="planPagination"></div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Create Group Modal -->
+  <div class="modal-overlay" id="createGroupModal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header"><h3 id="createGroupTitle">新建分组</h3><button class="modal-close" onclick="closeCreateGroupModal()">&#10005;</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">分组名称 <span class="required">*</span></label><input type="text" class="input w-full" id="groupName" placeholder="请输入分组名称，如「日常测试」"></div>
+        <div class="form-group"><label class="form-label">描述</label><input type="text" class="input w-full" id="groupDesc" placeholder="可选，分组描述"></div>
+      </div>
+      <div class="modal-footer"><button class="btn" onclick="closeCreateGroupModal()">取消</button><button class="btn btn-primary" onclick="confirmCreateGroup()">确认创建</button></div>
+    </div>
+  </div>
+
+  <!-- Edit Group Modal -->
+  <div class="modal-overlay" id="editGroupModal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header"><h3>编辑分组</h3><button class="modal-close" onclick="closeEditGroupModal()">&#10005;</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">分组名称 <span class="required">*</span></label><input type="text" class="input w-full" id="editGroupName" placeholder="请输入分组名称"></div>
+        <div class="form-group"><label class="form-label">描述</label><input type="text" class="input w-full" id="editGroupDesc" placeholder="可选，分组描述"></div>
+      </div>
+      <div class="modal-footer"><button class="btn" onclick="closeEditGroupModal()">取消</button><button class="btn btn-primary" onclick="confirmEditGroup()">确认保存</button></div>
+    </div>
+  </div>
+
+  <!-- Delete Group Modal -->
+  <div class="modal-overlay" id="deleteGroupModal" style="display:none;">
+    <div class="modal" style="width:360px;">
+      <div class="modal-header"><h3>删除分组</h3><button class="modal-close" onclick="closeDeleteGroupModal()">&#10005;</button></div>
+      <div class="modal-body">
+        <p style="font-size:14px;color:var(--text-secondary);line-height:1.6;">确定删除分组 <strong id="deleteGroupName"></strong> 吗？<br><span id="deleteGroupHint">删除后，该分组下的计划将自动归入「未分组」。</span></p>
+      </div>
+      <div class="modal-footer"><button class="btn" onclick="closeDeleteGroupModal()">取消</button><button class="btn btn-primary" style="background:var(--error);border-color:var(--error);" onclick="confirmDeleteGroup()">确认删除</button></div>
+    </div>
+  </div>
+
+  <!-- Blank area context menu -->
+  <div class="context-menu" id="blankContextMenu"><div class="context-menu-item" onclick="handleBlankCreate()">新建分组</div></div>
+  <!-- Group context menu -->
+  <div class="context-menu" id="groupContextMenu">
+    <div class="context-menu-item" id="ctxCreateChild" onclick="handleContextCreateChild()">新建子分组</div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" id="ctxEditGroup" onclick="handleContextEdit()">编辑</div>
+    <div class="context-menu-item danger" id="ctxDeleteGroup" onclick="handleContextDelete()">删除</div>
+  </div>
+
+  <script>
+    function escapeHtml(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+    /* ===== Plan Data ===== */
+    var plans = [
+      { id: 1, name: '每日冒烟测试', desc: '每日自动执行冒烟用例，确保核心功能正常', trigger: '定时', triggerTag: 'tag-green', suites: ['冒烟测试套件'], caseCount: 12, env: '开发环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-15 08:00', cron: 'Cron: 0 8 * * *', passRate: '95%', passCls: 'var(--success)', groupId: '1' },
+      { id: 2, name: '每周回归测试', desc: '每周五下午全量回归，发布前验证', trigger: '定时', triggerTag: 'tag-green', suites: ['回归测试套件','电池管理测试'], caseCount: 63, env: '测试环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-12 14:00', cron: 'Cron: 0 14 * * 5', passRate: '92%', passCls: 'var(--success)', groupId: '4' },
+      { id: 3, name: '手动验证计划', desc: '临时验证用，按需手动触发执行', trigger: '手动', triggerTag: 'tag-blue', suites: ['冒烟测试套件'], caseCount: 12, env: '开发环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-10 16:30', cron: '', passRate: '88%', passCls: '', groupId: '1' },
+      { id: 4, name: 'CI/CD 集成测试', desc: 'Jenkins 部署后自动触发回归测试', trigger: 'CI', triggerTag: 'tag-purple', suites: ['回归测试套件'], caseCount: 28, env: '预发布环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-14 20:15', cron: '', passRate: '96%', passCls: 'var(--success)', groupId: '3' },
+      { id: 5, name: '接口全量回归', desc: '版本发布前全量接口回归验证', trigger: '手动', triggerTag: 'tag-blue', suites: ['冒烟测试套件','回归测试套件'], caseCount: 40, env: '测试环境', status: '禁用', statusTag: 'tag-gray', lastExec: '2024-01-08 11:20', cron: '', passRate: '72%', passCls: 'var(--error)', groupId: '4' }
+    ];
+
+    /* ===== Group Data ===== */
+    var groups = [
+      { id: 'all', name: '全部', count: 0, isSystem: true, icon: '📂' },
+      { id: 'ungrouped', name: '未分组', count: 0, isSystem: true, icon: '📁' },
+      { id: '1', name: '日常测试', count: 0, isSystem: false, parentId: null, desc: '每日/常规执行的测试计划' },
+      { id: '2', name: '版本发布', count: 0, isSystem: false, parentId: null, desc: '版本发布相关的测试计划' },
+      { id: '3', name: 'CI/CD 集成', count: 0, isSystem: false, parentId: null, desc: '持续集成触发的测试计划' },
+      { id: '4', name: '回归验证', count: 0, isSystem: false, parentId: null, desc: '版本回归验证测试计划' }
+    ];
+    var activeGroupId = 'all';
+    var contextGroupId = null;
+    var editingGroupId = null;
+    var createGroupParentId = null;
+    var expandedIds = {};
+    var nextGroupId = 100;
+
+    /* ===== Tree Helpers ===== */
+    function getChildren(pid) { return groups.filter(function(g) { return g.parentId === pid; }); }
+    function getDescendantIds(gid) { var ids = [gid]; getChildren(gid).forEach(function(c) { ids = ids.concat(getDescendantIds(c.id)); }); return ids; }
+
+    function selectGroup(id) {
+      activeGroupId = id;
+      document.getElementById('searchPlanName').value = '';
+      planCurrentPage = 1;
+      filteredPlans = getFilteredPlans();
+      renderGroups(); renderPlanTable(); renderPagination();
+    }
+    function toggleExpand(e, id) { e.stopPropagation(); expandedIds[id] = !expandedIds[id]; renderGroups(); }
+
+    function renderTreeItems(items, depth) {
+      var html = '';
+      items.forEach(function(g) {
+        var isActive = g.id === activeGroupId ? 'active' : '';
+        var systemCls = g.isSystem ? 'system' : '';
+        var lockIcon = g.isSystem ? '<span class="system-icon" title="系统默认分组，不可修改">🔒</span>' : '';
+        var icon = g.icon || '📁';
+        var children = getChildren(g.id);
+        var hasChildren = children.length > 0;
+        var arrowHtml = '';
+        if (!g.isSystem && hasChildren) {
+          var expanded = expandedIds[g.id];
+          arrowHtml = '<span class="tree-arrow' + (expanded ? ' expanded' : '') + '" onclick="toggleExpand(event,\'' + g.id + '\')">&#9654;</span>';
+        } else if (!g.isSystem) {
+          arrowHtml = '<span class="tree-arrow-placeholder"></span>';
+        }
+        var padding = g.isSystem ? 16 : (16 + depth * 16);
+        html += '<div class="tree-item ' + isActive + ' ' + systemCls + '" data-id="' + g.id + '" style="padding-left:' + padding + 'px" ' +
+          'onclick="selectGroup(\'' + g.id + '\')" oncontextmenu="showGroupContextMenu(event,\'' + g.id + '\')">' +
+          arrowHtml + '<span>' + icon + '</span><span class="tree-name" title="' + escapeHtml(g.name) + '">' + escapeHtml(g.name) + '</span>' + lockIcon + '<span class="count">' + g.count + '</span></div>';
+        if (hasChildren && !g.isSystem && expandedIds[g.id]) html += renderTreeItems(children, depth + 1);
+      });
+      return html;
+    }
+    function renderGroups() {
+      var container = document.getElementById('groupTree');
+      var systemGroups = groups.filter(function(g) { return g.isSystem; });
+      var html = renderTreeItems(systemGroups, 0);
+      html += '<div class="tree-divider"></div>';
+      var userGroups = groups.filter(function(g) { return !g.isSystem && g.parentId === null; });
+      html += renderTreeItems(userGroups, 0);
+      container.innerHTML = html;
+    }
+    function computeGroupCount(gid) {
+      var direct = plans.filter(function(p) { return p.groupId === gid; }).length;
+      getChildren(gid).forEach(function(child) { direct += computeGroupCount(child.id); });
+      return direct;
+    }
+    function updateGroupCounts() {
+      groups.forEach(function(g) {
+        if (g.id === 'all') g.count = plans.length;
+        else if (g.id === 'ungrouped') g.count = plans.filter(function(p) { return !p.groupId || p.groupId === 'ungrouped'; }).length;
+        else g.count = computeGroupCount(g.id);
+      });
+    }
+
+    /* ===== Context Menu ===== */
+    function showBlankContextMenu(e) {
+      var target = e.target;
+      while (target && target !== e.currentTarget) { if (target.classList && target.classList.contains('tree-item')) return; target = target.parentElement; }
+      e.preventDefault(); hideAllMenus();
+      var menu = document.getElementById('blankContextMenu');
+      menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
+    }
+    function handleBlankCreate() { hideAllMenus(); openCreateGroupModal(null); }
+    function showGroupContextMenu(e, id) {
+      e.preventDefault(); e.stopPropagation(); hideAllMenus();
+      contextGroupId = id;
+      var group = groups.find(function(g) { return g.id === id; });
+      if (group && group.isSystem) return;
+      var menu = document.getElementById('groupContextMenu');
+      menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
+    }
+    function hideAllMenus() {
+      document.getElementById('groupContextMenu').style.display = 'none';
+      document.getElementById('blankContextMenu').style.display = 'none';
+      contextGroupId = null;
+    }
+    function handleContextCreateChild() {
+      if (!contextGroupId) return;
+      var group = groups.find(function(g) { return g.id === contextGroupId; });
+      if (!group || group.isSystem) { hideAllMenus(); return; }
+      hideAllMenus(); openCreateGroupModal(contextGroupId);
+    }
+    function handleContextEdit() {
+      if (!contextGroupId) return;
+      var group = groups.find(function(g) { return g.id === contextGroupId; });
+      if (!group || group.isSystem) { hideAllMenus(); return; }
+      editingGroupId = contextGroupId;
+      document.getElementById('editGroupName').value = group.name;
+      document.getElementById('editGroupDesc').value = group.desc || '';
+      document.getElementById('editGroupModal').style.display = 'flex';
+      hideAllMenus();
+    }
+    function handleContextDelete() {
+      if (!contextGroupId) return;
+      var group = groups.find(function(g) { return g.id === contextGroupId; });
+      if (!group || group.isSystem) { hideAllMenus(); return; }
+      document.getElementById('deleteGroupName').textContent = group.name;
+      var childGroups = getChildren(group.id);
+      document.getElementById('deleteGroupHint').textContent = childGroups.length > 0
+        ? '删除后，子分组将一并删除，所有计划将自动归入「未分组」。'
+        : '删除后，该分组下的计划将自动归入「未分组」。';
+      document.getElementById('deleteGroupModal').style.display = 'flex';
+      hideAllMenus();
+    }
+
+    /* ===== Create Group Modal ===== */
+    function openCreateGroupModal(parentId) {
+      createGroupParentId = parentId || null;
+      document.getElementById('createGroupTitle').textContent = createGroupParentId ? '新建子分组' : '新建分组';
+      document.getElementById('createGroupModal').style.display = 'flex';
+      document.getElementById('groupName').value = '';
+      document.getElementById('groupDesc').value = '';
+      document.getElementById('groupName').style.borderColor = '';
+      document.getElementById('groupName').focus();
+    }
+    function closeCreateGroupModal() { document.getElementById('createGroupModal').style.display = 'none'; createGroupParentId = null; }
+    function confirmCreateGroup() {
+      var name = document.getElementById('groupName').value.trim();
+      if (!name) { document.getElementById('groupName').style.borderColor = 'var(--error)'; document.getElementById('groupName').focus(); return; }
+      if (name === '全部' || name === '未分组') { alert('「全部」和「未分组」为系统默认分组，不能创建同名分组'); return; }
+      groups.push({ id: String(nextGroupId++), name: name, count: 0, isSystem: false, parentId: createGroupParentId, desc: document.getElementById('groupDesc').value.trim() });
+      if (createGroupParentId) expandedIds[createGroupParentId] = true;
+      updateGroupCounts(); renderGroups(); closeCreateGroupModal();
+    }
+
+    /* ===== Edit Group Modal ===== */
+    function closeEditGroupModal() { document.getElementById('editGroupModal').style.display = 'none'; editingGroupId = null; }
+    function confirmEditGroup() {
+      if (!editingGroupId) return;
+      var name = document.getElementById('editGroupName').value.trim();
+      if (!name) { document.getElementById('editGroupName').style.borderColor = 'var(--error)'; document.getElementById('editGroupName').focus(); return; }
+      if (name === '全部' || name === '未分组') { alert('「全部」和「未分组」为系统默认分组，不能使用该名称'); return; }
+      var group = groups.find(function(g) { return g.id === editingGroupId; });
+      if (group) { group.name = name; group.desc = document.getElementById('editGroupDesc').value.trim(); }
+      renderGroups(); closeEditGroupModal();
+    }
+
+    /* ===== Delete Group ===== */
+    function closeDeleteGroupModal() { document.getElementById('deleteGroupModal').style.display = 'none'; }
+    function confirmDeleteGroup() {
+      if (!contextGroupId) return;
+      var descendantIds = getDescendantIds(contextGroupId);
+      plans.forEach(function(p) { if (descendantIds.indexOf(p.groupId) !== -1) p.groupId = 'ungrouped'; });
+      groups = groups.filter(function(g) { return descendantIds.indexOf(g.id) === -1; });
+      if (descendantIds.indexOf(activeGroupId) !== -1) activeGroupId = 'all';
+      updateGroupCounts(); filteredPlans = getFilteredPlans();
+      renderGroups(); renderPlanTable(); renderPagination(); closeDeleteGroupModal();
+    }
+
+    document.getElementById('createGroupModal').addEventListener('click', function(e) { if (e.target === this) closeCreateGroupModal(); });
+    document.getElementById('editGroupModal').addEventListener('click', function(e) { if (e.target === this) closeEditGroupModal(); });
+    document.getElementById('deleteGroupModal').addEventListener('click', function(e) { if (e.target === this) closeDeleteGroupModal(); });
+    document.addEventListener('click', function() { hideAllMenus(); });
+
+    /* ===== Filtering ===== */
+    var filteredPlans = plans;
+    var planPageSize = 20;
+    var planCurrentPage = 1;
+    var planTotalRecords = 5;
+
+    function getFilteredPlans() {
+      var nameKw = document.getElementById('searchPlanName').value.trim().toLowerCase();
+      var trigger = document.getElementById('searchTrigger').value;
+      var env = document.getElementById('searchEnv').value;
+      var status = document.getElementById('searchStatus').value;
+      var suiteKw = document.getElementById('searchSuite').value.trim().toLowerCase();
+      return plans.filter(function(p) {
+        var matchGroup = true;
+        if (activeGroupId === 'ungrouped') matchGroup = !p.groupId || p.groupId === 'ungrouped';
+        else if (activeGroupId !== 'all') matchGroup = getDescendantIds(activeGroupId).indexOf(p.groupId) !== -1;
+        var matchName = !nameKw || p.name.toLowerCase().indexOf(nameKw) !== -1;
+        var matchTrigger = trigger === '全部触发方式' || (trigger === '定时执行' && p.trigger === '定时') || (trigger === '手动触发' && p.trigger === '手动') || (trigger === 'CI 触发' && p.trigger === 'CI');
+        var matchEnv = env === '全部环境' || p.env === env;
+        var matchStatus = status === '全部状态' || p.status === status;
+        var matchSuite = !suiteKw || p.suites.some(function(s) { return s.toLowerCase().indexOf(suiteKw) !== -1; });
+        return matchGroup && matchName && matchTrigger && matchEnv && matchStatus && matchSuite;
+      });
+    }
+
+    /* ===== Render Table ===== */
+    function renderPlanTable() {
+      var start = (planCurrentPage - 1) * planPageSize;
+      var pageItems = filteredPlans.slice(start, start + planPageSize);
+      var html = '';
+      if (pageItems.length === 0) {
+        html = '<tr><td colspan="10" style="text-align:center;padding:48px 20px;color:var(--text-tertiary);"><div style="font-size:32px;margin-bottom:8px;opacity:.4;">📋</div><div>暂无匹配的计划数据</div></td></tr>';
+      }
+      pageItems.forEach(function(p) {
+        var suitesHtml = p.suites.map(function(s) { return '<span class="tag tag-blue" style="font-size:11px;">' + escapeHtml(s) + '</span>'; }).join(' ');
+        var execHtml = '<div style="font-size:12px;color:var(--text-tertiary);">' + escapeHtml(p.lastExec) + '</div>';
+        if (p.cron) execHtml += '<div style="font-size:11px;color:var(--text-tertiary);font-family:monospace;margin-top:2px;">' + escapeHtml(p.cron) + '</div>';
+        var passStyle = p.passCls ? 'color:' + p.passCls : '';
+        html += '<tr>' +
+          '<td><a href="plan-edit.html" style="font-weight:500;">' + escapeHtml(p.name) + '</a></td>' +
+          '<td style="font-size:13px;color:var(--text-secondary);">' + escapeHtml(p.desc) + '</td>' +
+          '<td><span class="tag ' + p.triggerTag + '">' + escapeHtml(p.trigger) + '</span></td>' +
+          '<td>' + suitesHtml + '</td>' +
+          '<td style="font-size:13px;">' + p.caseCount + '</td>' +
+          '<td style="font-size:13px;">' + escapeHtml(p.env) + '</td>' +
+          '<td><span class="tag ' + p.statusTag + '">' + escapeHtml(p.status) + '</span></td>' +
+          '<td>' + execHtml + '</td>' +
+          '<td><b style="' + passStyle + '">' + escapeHtml(p.passRate) + '</b></td>' +
+          '<td style="white-space:nowrap">' +
+            '<button class="btn-link" onclick="window.location.href=\'plan-edit.html\'">编辑</button>' +
+            '<button class="btn-link" onclick="alert(\'已触发执行！\')">执行</button>' +
+            '<button class="btn-link" style="color:var(--error);" onclick="handlePlanDelete(' + p.id + ')">删除</button>' +
+          '</td></tr>';
+      });
+      document.getElementById('planTableBody').innerHTML = html;
+    }
+
+    function planBuildPageNumbers(current, total) {
+      if (total <= 7) { var arr = []; for (var i = 1; i <= total; i++) arr.push(i); return arr; }
+      var pages = [1];
+      var rangeStart = Math.max(2, current - 1), rangeEnd = Math.min(total - 1, current + 1);
+      if (rangeStart > 2) pages.push('...');
+      for (var j = rangeStart; j <= rangeEnd; j++) pages.push(j);
+      if (rangeEnd < total - 1) pages.push('...');
+      pages.push(total);
+      return pages;
+    }
+
+    function renderPagination() {
+      var total = Math.max(filteredPlans.length, planTotalRecords);
+      var totalPages = Math.ceil(total / planPageSize) || 1;
+      var html = '<span class="page-info">共 ' + total + ' 条记录</span>';
+      html += '<button class="page-btn" onclick="planChangePage(' + (planCurrentPage - 1) + ')" ' + (planCurrentPage === 1 ? 'disabled' : '') + '>‹</button>';
+      var pages = planBuildPageNumbers(planCurrentPage, totalPages);
+      for (var p = 0; p < pages.length; p++) {
+        var item = pages[p];
+        if (item === '...') html += '<span class="page-ellipsis">...</span>';
+        else html += '<button class="page-btn ' + (item === planCurrentPage ? 'active' : '') + '" onclick="planChangePage(' + item + ')">' + item + '</button>';
+      }
+      html += '<button class="page-btn" onclick="planChangePage(' + (planCurrentPage + 1) + ')" ' + (planCurrentPage === totalPages ? 'disabled' : '') + '>›</button>';
+      html += '<span class="page-jump">跳至 <input type="text" id="planJumpInput" value="' + planCurrentPage + '" onkeydown="if(event.key===\'Enter\')planJumpToPage()"> 页</span>';
+      document.getElementById('planPagination').innerHTML = html;
+    }
+
+    function planChangePage(page) {
+      var total = Math.max(filteredPlans.length, planTotalRecords);
+      var totalPages = Math.ceil(total / planPageSize) || 1;
+      if (page < 1 || page > totalPages) return;
+      planCurrentPage = page; renderPlanTable(); renderPagination();
+    }
+    function planJumpToPage() {
+      var input = document.getElementById('planJumpInput');
+      if (!input) return;
+      var page = parseInt(input.value, 10);
+      if (isNaN(page)) { input.value = planCurrentPage; return; }
+      planChangePage(page);
+    }
+
+    /* ===== Search ===== */
+    function handlePlanSearch() { filteredPlans = getFilteredPlans(); planCurrentPage = 1; renderPlanTable(); renderPagination(); }
+    function handlePlanReset() {
+      document.getElementById('searchPlanName').value = '';
+      document.getElementById('searchTrigger').selectedIndex = 0;
+      document.getElementById('searchEnv').selectedIndex = 0;
+      document.getElementById('searchStatus').selectedIndex = 0;
+      document.getElementById('searchSuite').value = '';
+      filteredPlans = getFilteredPlans(); planCurrentPage = 1; renderPlanTable(); renderPagination();
+    }
+
+    /* ===== Existing UI ===== */
+    function toggleSearchCard(btn) {
+      var card = document.getElementById('planSearchCard');
+      var isCollapsed = card.classList.contains('collapsed');
+      if (isCollapsed) { card.classList.remove('collapsed'); btn.querySelector('.arrow').innerHTML = '&#707;'; btn.querySelector('.text').textContent = '收起'; }
+      else { card.classList.add('collapsed'); btn.querySelector('.arrow').innerHTML = '&#708;'; btn.querySelector('.text').textContent = '展开'; }
+    }
+    function handlePlanDelete(planId) {
+      var plan = plans.find(function(p) { return p.id === planId; });
+      if (plan && confirm('确定删除计划「' + plan.name + '」？')) {
+        plans = plans.filter(function(p) { return p.id !== planId; });
+        updateGroupCounts(); filteredPlans = getFilteredPlans();
+        renderGroups(); renderPlanTable(); renderPagination();
+      }
+    }
+
+    /* ===== Init ===== */
+    updateGroupCounts();
+    renderGroups();
+    filteredPlans = getFilteredPlans();
+    renderPlanTable();
+    renderPagination();
+  </script>
+  <script src="../common/nav.js"></script>
+</body>
+</html>

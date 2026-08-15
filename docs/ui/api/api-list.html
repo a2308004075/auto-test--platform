@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>接口文档 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    .api-layout { display: flex; background: #fff; border-radius: var(--border-radius-lg); border: 1px solid var(--border-color-secondary); overflow: hidden; min-height: calc(100vh - 180px); }
+    .api-content { flex: 1; padding: 16px 20px; overflow: auto; }
+    .api-table td { white-space: nowrap; }
+    .cell-truncate { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cell-truncate span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* 系统默认分组 */
+    .tree-item.system { color: var(--text-secondary); cursor: default; }
+    .tree-item.system .system-icon { font-size: 12px; margin-left: 6px; color: var(--text-tertiary); }
+    .tree-item.system.active { background: var(--primary-bg); color: var(--primary); }
+    .tree-item.system.active .system-icon { color: var(--primary); }
+    .tree-divider { height: 1px; background: var(--border-color-secondary); margin: 8px 12px; }
+    /* 分组右键菜单 */
+    .context-menu {
+      position: fixed; background: #fff; border: 1px solid var(--border-color-secondary);
+      border-radius: var(--border-radius); box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      padding: 4px 0; min-width: 120px; z-index: 1000; display: none;
+    }
+    .context-menu-item {
+      padding: 6px 12px; font-size: 13px; color: var(--text-primary); cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .context-menu-item:hover { background: #fafafa; }
+    .context-menu-item.danger { color: var(--error); }
+    .context-menu-item.disabled { color: var(--text-tertiary); cursor: not-allowed; }
+    .context-menu-item.disabled:hover { background: transparent; }
+    .context-menu-divider { height: 1px; background: var(--border-color-secondary); margin: 4px 0; }
+    /* 树形展开箭头 */
+    .tree-arrow {
+      display: inline-block; width: 14px; font-size: 9px; color: var(--text-tertiary);
+      cursor: pointer; flex-shrink: 0; text-align: center; transition: transform .15s;
+    }
+    .tree-arrow.expanded { transform: rotate(90deg); }
+    .tree-arrow-placeholder { display: inline-block; width: 14px; flex-shrink: 0; }
+    .tree-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* 分页 */
+    .pagination { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    .page-btn {
+      min-width: 28px; height: 28px; padding: 0 8px; border: 1px solid var(--border-color);
+      background: #fff; color: var(--text-secondary); border-radius: var(--border-radius);
+      font-size: 13px; cursor: pointer; transition: all .15s;
+    }
+    .page-btn:hover:not(:disabled) { color: var(--primary); border-color: var(--primary); }
+    .page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .page-btn:disabled { color: var(--text-disabled); border-color: var(--border-color-secondary); cursor: not-allowed; }
+    .page-info { color: var(--text-tertiary); font-size: 13px; margin-right: auto; }
+    .page-jump { display: flex; align-items: center; gap: 4px; margin-left: 8px; font-size: 13px; color: var(--text-secondary); }
+    .page-jump input {
+      width: 48px; height: 28px; text-align: center; border: 1px solid var(--border-color);
+      border-radius: var(--border-radius); font-size: 13px; color: var(--text-primary);
+      outline: none; transition: border-color .15s;
+    }
+    .page-jump input:focus { border-color: var(--primary); }
+    /* 列设置面板 */
+    .col-settings-overlay { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.25); z-index: 999; display: none; }
+    .col-settings-panel {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 260px;
+      background: #fff; box-shadow: -4px 0 16px rgba(0,0,0,0.1);
+      z-index: 1000; display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform .25s ease;
+    }
+    .col-settings-panel.open { transform: translateX(0); }
+    .col-settings-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border-color-secondary);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .col-settings-header h3 { margin: 0; font-size: 15px; font-weight: 600; }
+    .col-settings-reset {
+      font-size: 13px; color: var(--primary); cursor: pointer; background: none;
+      border: none; display: flex; align-items: center; gap: 4px; padding: 0;
+    }
+    .col-settings-reset:hover { opacity: 0.75; }
+    .col-settings-body { flex: 1; overflow-y: auto; padding: 12px 20px; }
+    .col-setting-item {
+      display: flex; align-items: center; padding: 8px 0; font-size: 13px; color: var(--text-primary);
+    }
+    .col-setting-item .col-label { margin-left: 8px; }
+    .col-settings-panel .checkbox-input { width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+    /* 表格工具栏 */
+    .table-toolbar {
+      display: flex; justify-content: flex-end; align-items: center;
+      padding: 8px 0;
+    }
+    /* 批量操作下拉按钮 */
+    .batch-dropdown { position: relative; display: inline-block; }
+    .batch-dropdown-menu {
+      display: none; position: absolute; right: 0; top: 100%; margin-top: 4px;
+      background: #fff; border: 1px solid var(--border-color-secondary);
+      border-radius: var(--border-radius); box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      min-width: 140px; z-index: 100; padding: 4px 0;
+    }
+    .batch-dropdown-menu.open { display: block; }
+    .batch-dropdown-item {
+      padding: 8px 14px; font-size: 13px; color: var(--text-primary); cursor: pointer;
+      display: flex; align-items: center; gap: 6px; white-space: nowrap;
+    }
+    .batch-dropdown-item:hover { background: var(--bg-body); }
+    .batch-dropdown-item.danger { color: var(--error); }
+    .batch-dropdown-item.danger:hover { background: #fff5f5; }
+    /* 在线调试弹窗 */
+    .debug-modal .modal { width: 960px; max-width: 92vw; max-height: 88vh; display: flex; flex-direction: column; }
+    .debug-modal .modal-body { flex: 1; overflow-y: auto; padding: 0; }
+    .debug-modal-info { padding: 0 20px; margin-bottom: 12px; }
+    .debug-modal-title { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .debug-modal-title .api-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+    .debug-modal-title .desc { color: var(--text-tertiary); font-size: 13px; }
+    .debug-modal-url { display: flex; align-items: center; gap: 10px; }
+    .debug-modal-url code { font-size: 13px; color: var(--text-secondary); font-family: 'Consolas', monospace; }
+    .debug-param-type { display: inline-block; padding: 1px 6px; background: #f0f5ff; color: #1d39c4; border-radius: 3px; font-size: 12px; font-family: 'Consolas', monospace; white-space: nowrap; }
+    .debug-env-row { display: flex; align-items: center; gap: 12px; padding: 0 20px; margin-bottom: 12px; }
+    .debug-env-row .env-label { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+    .debug-env-row .select { width: 160px; height: 30px; font-size: 13px; }
+    .debug-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: 380px; }
+    .debug-grid .debug-col { border-right: 1px solid var(--border-color-secondary); padding: 16px 20px; overflow-y: auto; max-height: 60vh; }
+    .debug-grid .debug-col:last-child { border-right: none; }
+    .debug-grid .debug-col-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .debug-grid .param-table { width: 100%; margin-bottom: 16px; }
+    .debug-grid .param-table th { font-size: 12px; color: var(--text-tertiary); font-weight: 500; padding: 4px 8px 8px; text-align: left; }
+    .debug-grid .param-table td { padding: 4px 8px; }
+    .debug-grid .param-table .input { height: 28px; font-size: 13px; }
+    .debug-grid .response-empty { display: flex; align-items: center; justify-content: center; min-height: 240px; color: var(--text-tertiary); }
+    .debug-grid .response-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border-color-secondary); margin-bottom: 12px; }
+    .debug-grid .resp-tab { padding: 8px 16px; cursor: pointer; font-size: 13px; color: var(--text-secondary); border-bottom: 2px solid transparent; }
+    .debug-grid .resp-tab:hover { color: var(--primary); }
+    .debug-grid .resp-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .debug-grid .resp-content { display: none; }
+    .debug-grid .resp-content.active { display: block; }
+    .debug-grid .status-bar { display: flex; align-items: center; gap: 16px; padding: 8px 0; margin-bottom: 8px; }
+    .debug-grid .status-code { font-weight: 700; font-size: 15px; }
+    .debug-grid .status-code.ok { color: var(--success); }
+    .debug-grid .meta-info { font-size: 12px; color: var(--text-tertiary); }
+    .debug-grid .header-table { width: 100%; font-size: 13px; }
+    .debug-grid .header-table td { padding: 6px 8px; border-bottom: 1px solid var(--border-color-secondary); }
+    .debug-grid .header-table .key { font-weight: 500; color: var(--text-primary); width: 160px; font-family: monospace; }
+    .debug-grid .header-table .val { color: var(--text-secondary); font-family: monospace; word-break: break-all; }
+    .debug-grid .param-section-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span class="current">接口文档</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item active"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+
+  <main class="layout-main">
+
+    <div class="page-header">
+      <h1>接口文档</h1>
+      <div>
+        <button class="btn" onclick="location.href='swagger-import.html'">导入 Swagger</button>
+        <button class="btn btn-primary" onclick="location.href='api-create.html'">+ 新建接口</button>
+      </div>
+    </div>
+
+    <div class="api-layout">
+      <!-- Left: Group Tree -->
+      <div class="tree-panel" id="treePanel" oncontextmenu="showBlankContextMenu(event)">
+        <div class="tree-search">
+          <input type="text" class="input input-search w-full" placeholder="搜索分组..." style="height: 28px; font-size: 13px;">
+        </div>
+        <div id="groupTree"></div>
+      </div>
+
+      <!-- Right: API List -->
+      <div class="api-content">
+        <div class="search-card collapsed" id="apiSearchCard">
+          <div class="search-form">
+            <div class="search-row">
+              <div class="search-item">
+                <span class="filter-label">接口名称</span>
+                <input type="text" class="input input-search" id="searchName" placeholder="输入接口名称">
+              </div>
+              <div class="search-item">
+                <span class="filter-label">接口路径</span>
+                <input type="text" class="input input-search" id="searchPath" placeholder="输入接口路径">
+              </div>
+              <div class="search-item">
+                <span class="filter-label">请求方法</span>
+                <select class="select" id="searchMethod">
+                  <option value="">全部方法</option><option value="GET">GET</option><option value="POST">POST</option><option value="PUT">PUT</option><option value="DELETE">DELETE</option><option value="PATCH">PATCH</option>
+                </select>
+              </div>
+              <div class="search-actions">
+                <button class="btn btn-primary" onclick="handleSearch()">查询</button>
+                <button class="btn" onclick="handleReset()">重置</button>
+                <button class="search-toggle" type="button" onclick="toggleSearchCard(this)">
+                  <span class="arrow">&#708;</span>
+                  <span class="text">展开</span>
+                </button>
+              </div>
+            </div>
+            <div class="search-row collapse-row">
+              <div class="search-item">
+                <span class="filter-label">接口来源</span>
+                <select class="select" id="searchSource">
+                  <option value="">全部来源</option><option value="Swagger">Swagger 导入</option><option value="手动">手动创建</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 表字段调整工具栏 -->
+        <div class="table-toolbar">
+          <button class="btn" onclick="toggleColumnPanel()">表字段调整</button>
+        </div>
+
+        <!-- 批量操作栏 -->
+        <div class="batch-bar" id="batchBar">
+          <span>已选中 <span class="batch-count" id="batchCount">0</span> 条记录</span>
+          <div class="batch-actions">
+            <div class="batch-dropdown" id="batchDropdown">
+              <button class="btn btn-sm btn-primary" onclick="toggleBatchDropdown()">批量操作 ▾</button>
+              <div class="batch-dropdown-menu" id="batchDropdownMenu">
+                <div class="batch-dropdown-item" onclick="openBatchGroupFromDropdown()">批量修改分组</div>
+                <div class="batch-dropdown-item danger" onclick="openBatchDeleteConfirm()">批量删除</div>
+              </div>
+            </div>
+            <button class="btn btn-sm" onclick="clearSelection()">取消选择</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-wrapper">
+            <table class="api-table">
+              <thead>
+                <tr id="apiTableHead">
+                  <!-- 由 JS 动态渲染 -->
+                </tr>
+              </thead>
+              <tbody id="apiTableBody"></tbody>
+            </table>
+          </div>
+          <div class="card-footer"><div class="pagination" id="apiPagination"></div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Create Group Modal -->
+  <div class="modal-overlay" id="createGroupModal" style="display: none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="createGroupTitle">新建分组</h3>
+        <button class="modal-close" onclick="closeCreateGroupModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">分组名称 <span class="required">*</span></label>
+          <input type="text" class="input w-full" id="groupName" placeholder="请输入分组名称，如「用户管理服务」">
+        </div>
+        <div class="form-group">
+          <label class="form-label">服务前缀</label>
+          <input type="text" class="input w-full" id="groupPrefix" placeholder="可选，如 /users">
+          <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 4px;">设置后，该分组下的接口路径将自动追加此前缀</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeCreateGroupModal()">取消</button>
+        <button class="btn btn-primary" onclick="confirmCreateGroup()">确认创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 空白区域右键菜单 -->
+  <div class="context-menu" id="blankContextMenu">
+    <div class="context-menu-item" onclick="handleBlankCreate()">新建分组</div>
+  </div>
+
+  <!-- 分组右键菜单 -->
+  <div class="context-menu" id="groupContextMenu">
+    <div class="context-menu-item" id="ctxCreateChild" onclick="handleContextCreateChild()">新建子分组</div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" id="ctxEditGroup" onclick="handleContextEdit()">编辑</div>
+    <div class="context-menu-item danger" id="ctxDeleteGroup" onclick="handleContextDelete()">删除</div>
+  </div>
+
+  <!-- 编辑分组模态框 -->
+  <div class="modal-overlay" id="editGroupModal" style="display: none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>编辑分组</h3>
+        <button class="modal-close" onclick="closeEditGroupModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">分组名称 <span class="required">*</span></label>
+          <input type="text" class="input w-full" id="editGroupName" placeholder="请输入分组名称">
+        </div>
+        <div class="form-group">
+          <label class="form-label">服务前缀</label>
+          <input type="text" class="input w-full" id="editGroupPrefix" placeholder="可选，如 /users">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeEditGroupModal()">取消</button>
+        <button class="btn btn-primary" onclick="confirmEditGroup()">确认保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除分组确认模态框 -->
+  <div class="modal-overlay" id="deleteGroupModal" style="display: none;">
+    <div class="modal" style="width: 360px;">
+      <div class="modal-header">
+        <h3>删除分组</h3>
+        <button class="modal-close" onclick="closeDeleteGroupModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
+          确定删除分组 <strong id="deleteGroupName"></strong> 吗？<br>
+          <span id="deleteGroupHint">删除后，该分组下的接口将自动归入「未分组」。</span>
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeDeleteGroupModal()">取消</button>
+        <button class="btn btn-primary" style="background: var(--error); border-color: var(--error);" onclick="confirmDeleteGroup()">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量修改分组弹窗 -->
+  <div id="batchGroupModal" onclick="if(event.target===this)closeBatchGroupModal()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:8px;width:420px;max-width:90%;box-shadow:var(--shadow);">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border-color-secondary);display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="margin:0;font-size:16px;font-weight:600;">批量修改分组</h3>
+        <button onclick="closeBatchGroupModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-tertiary);padding:0;line-height:1;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:4px;" onmouseover="this.style.background='rgba(0,0,0,.04)'" onmouseout="this.style.background='none'">&times;</button>
+      </div>
+      <div style="padding:20px;">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">将已选中的 <b id="batchModalCount" style="color:var(--primary);">0</b> 条接口的分组修改为：</p>
+        <div class="form-group">
+          <label class="form-label">目标分组 <span class="required">*</span></label>
+          <div class="search-select" id="batchGroupSelect" style="width:100%;">
+            <div class="search-select-input" tabindex="0">
+              <input type="text" class="input" placeholder="请选择分组" autocomplete="off">
+              <span class="search-select-arrow">&#9662;</span>
+            </div>
+            <div class="search-select-dropdown" id="batchGroupDropdown">
+              <!-- 分组选项由 JS 动态渲染 -->
+              <div class="search-select-empty" style="display:none;">无匹配分组</div>
+            </div>
+            <input type="hidden" class="search-select-value" value="">
+          </div>
+        </div>
+        <div id="batchPreview" style="display:none;margin-top:12px;padding:12px;background:var(--bg-body);border-radius:var(--border-radius);font-size:13px;">
+          <div style="color:var(--text-tertiary);margin-bottom:6px;">以下接口的分组将被修改：</div>
+          <div id="batchPreviewList" style="color:var(--text-primary);max-height:120px;overflow-y:auto;"></div>
+        </div>
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border-color-secondary);display:flex;justify-content:flex-end;gap:8px;">
+        <button class="btn" onclick="closeBatchGroupModal()">取消</button>
+        <button class="btn btn-primary" onclick="applyBatchGroup()">确认修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量删除确认弹窗 -->
+  <div class="modal-overlay" id="batchDeleteModal" style="display: none;">
+    <div class="modal" style="width: 400px;">
+      <div class="modal-header">
+        <h3>批量删除接口</h3>
+        <button class="modal-close" onclick="closeBatchDeleteModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
+          确定删除已选中的 <strong id="batchDeleteCount" style="color: var(--error);">0</strong> 条接口吗？<br>
+          <span style="color: var(--text-tertiary);">删除后将无法恢复，请谨慎操作。</span>
+        </p>
+        <div id="batchDeletePreview" style="margin-top: 12px; padding: 12px; background: var(--bg-body); border-radius: var(--border-radius); font-size: 13px; max-height: 160px; overflow-y: auto;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeBatchDeleteModal()">取消</button>
+        <button class="btn btn-primary" style="background: var(--error); border-color: var(--error);" onclick="confirmBatchDelete()">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 单条删除确认弹窗 -->
+  <div class="modal-overlay" id="deleteApiModal" style="display: none;">
+    <div class="modal" style="width: 360px;">
+      <div class="modal-header">
+        <h3>删除接口</h3>
+        <button class="modal-close" onclick="closeDeleteApiModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
+          确定删除接口 <strong id="deleteApiName"></strong> 吗？<br>
+          <span style="color: var(--text-tertiary);">删除后将无法恢复。</span>
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeDeleteApiModal()">取消</button>
+        <button class="btn btn-primary" style="background: var(--error); border-color: var(--error);" onclick="confirmDeleteApi()">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 表字段调整面板 -->
+  <div class="col-settings-overlay" id="colSettingsOverlay" onclick="closeColumnPanel()"></div>
+  <div class="col-settings-panel" id="colSettingsPanel">
+    <div class="col-settings-header">
+      <h3>表字段调整</h3>
+      <button class="col-settings-reset" onclick="resetColumns()">&#8635; 重置</button>
+    </div>
+    <div class="col-settings-body" id="colSettingsBody">
+      <!-- 列选项由 JS 动态渲染 -->
+    </div>
+  </div>
+
+  <!-- 在线调试弹窗 -->
+  <div class="modal-overlay debug-modal" id="debugModal" onclick="if(event.target===this)closeDebugModal()" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>在线调试</h3>
+        <button class="modal-close" onclick="closeDebugModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <div class="debug-modal-info" id="debugApiInfo">
+          <div class="debug-modal-title">
+            <span class="api-name" id="debugApiName"></span>
+            <span class="desc" id="debugApiDesc"></span>
+          </div>
+          <div class="debug-modal-url">
+            <span class="method-badge" id="debugMethod"></span>
+            <code id="debugApiPath"></code>
+          </div>
+        </div>
+        <div class="debug-env-row">
+          <span class="env-label">执行环境：</span>
+          <select class="select" id="debugEnvSelect">
+            <option>开发环境</option>
+            <option selected>测试环境</option>
+            <option>预发布环境</option>
+          </select>
+        </div>
+        <div class="debug-grid">
+          <!-- 左列：请求参数 -->
+          <div class="debug-col">
+            <div class="debug-col-title">请求参数</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <div class="param-section-title" style="margin-bottom:0;">Query 参数</div>
+              <button class="btn btn-sm" onclick="addDebugParam()" style="font-size:12px;">+ 添加参数</button>
+            </div>
+            <table class="param-table" id="debugParamsTable">
+              <thead><tr><th>参数名</th><th style="width:80px;">类型</th><th>值</th></tr></thead>
+              <tbody id="debugParamsBody">
+                <!-- 由 JS 动态渲染 -->
+              </tbody>
+            </table>
+          </div>
+          <!-- 右列：响应结果 -->
+          <div class="debug-col" id="debugResponseCol">
+            <div class="debug-col-title">响应结果</div>
+            <div class="response-empty" id="debugEmptyState">
+              <div style="text-align:center;">
+                <div style="font-size:36px;margin-bottom:12px;opacity:.3;">📡</div>
+                <div>填写参数后点击「发送请求」</div>
+              </div>
+            </div>
+            <div id="debugResponseResult" style="display:none;">
+              <div class="status-bar">
+                <span class="status-code ok">200 OK</span>
+                <span class="meta-info">耗时: 127ms</span>
+                <span class="meta-info">大小: 2.4KB</span>
+              </div>
+              <div class="response-tabs">
+                <div class="resp-tab active" onclick="switchDebugRespTab('body', this)">响应体</div>
+                <div class="resp-tab" onclick="switchDebugRespTab('headers', this)">响应头</div>
+                <div class="resp-tab" onclick="switchDebugRespTab('status', this)">状态信息</div>
+              </div>
+              <div class="resp-content active" id="debugResp-body">
+                <div class="code-editor" style="min-height:200px;font-size:12px;">{
+  <span class="string">"code"</span>: <span class="number">0</span>,
+  <span class="string">"message"</span>: <span class="string">"success"</span>,
+  <span class="string">"data"</span>: {
+    <span class="string">"items"</span>: [
+      {
+        <span class="string">"id"</span>: <span class="number">1</span>,
+        <span class="string">"username"</span>: <span class="string">"admin"</span>,
+        <span class="string">"name"</span>: <span class="string">"管理员"</span>,
+        <span class="string">"role"</span>: <span class="string">"ADMIN"</span>,
+        <span class="string">"status"</span>: <span class="string">"active"</span>
+      }
+    ],
+    <span class="string">"total"</span>: <span class="number">45</span>,
+    <span class="string">"page"</span>: <span class="number">1</span>
+  }
+}</div>
+              </div>
+              <div class="resp-content" id="debugResp-headers">
+                <table class="header-table">
+                  <tr><td class="key">Content-Type</td><td class="val">application/json; charset=utf-8</td></tr>
+                  <tr><td class="key">X-Request-Id</td><td class="val">a1b2c3d4-e5f6-7890-abcd-ef1234567890</td></tr>
+                  <tr><td class="key">X-Response-Time</td><td class="val">127ms</td></tr>
+                  <tr><td class="key">Cache-Control</td><td class="val">no-cache, no-store</td></tr>
+                </table>
+              </div>
+              <div class="resp-content" id="debugResp-status">
+                <table class="header-table">
+                  <tr><td class="key">状态码</td><td class="val">200 OK</td></tr>
+                  <tr><td class="key">响应时间</td><td class="val">127ms</td></tr>
+                  <tr><td class="key">响应大小</td><td class="val">2.4 KB</td></tr>
+                  <tr><td class="key">协议</td><td class="val">HTTP/1.1</td></tr>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeDebugModal()">关闭</button>
+        <button class="btn btn-primary" onclick="sendDebugRequest()">发送请求</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 分组数据：parentId=null 为顶层分组，支持树形嵌套
+    var groups = [
+      { id: 'all', name: '全部', count: 0, isSystem: true, icon: '📂' },
+      { id: 'ungrouped', name: '未分组', count: 0, isSystem: true, icon: '📁' },
+      { id: '1', name: '用户管理服务', count: 0, isSystem: false, prefix: '/api/users', parentId: null },
+      { id: '1-1', name: '用户认证', count: 0, isSystem: false, prefix: '/api/auth', parentId: '1' },
+      { id: '1-2', name: '角色权限', count: 0, isSystem: false, prefix: '/api/roles', parentId: '1' },
+      { id: '2', name: '电池管理服务', count: 0, isSystem: false, prefix: '/api/battery', parentId: null },
+      { id: '3', name: '换电流程服务', count: 0, isSystem: false, prefix: '/api/swap', parentId: null },
+      { id: '4', name: '设备管理服务', count: 0, isSystem: false, prefix: '/api/device', parentId: null },
+      { id: '5', name: '能量管理服务', count: 0, isSystem: false, prefix: '/api/energy', parentId: null },
+      { id: '6', name: '故障诊断服务', count: 0, isSystem: false, prefix: '/api/diagnosis', parentId: null },
+      { id: '7', name: '系统配置服务', count: 0, isSystem: false, prefix: '/api/config', parentId: null }
+    ];
+    var activeGroupId = '1';
+    var contextGroupId = null;
+    var editingGroupId = null;
+    var createGroupParentId = null;
+    var expandedIds = { '1': true };
+    var nextGroupId = 100;
+
+    // 表字段列配置：key=列标识, label=列名, locked=锁定(不可取消), defaultVisible=默认可见
+    var columnConfig = [
+      { key: 'id',          label: 'ID',         locked: true,  defaultVisible: true },
+      { key: 'name',        label: '接口名称',    locked: true,  defaultVisible: true },
+      { key: 'path',        label: '路径',         locked: true,  defaultVisible: true },
+      { key: 'method',      label: '方法',         locked: true,  defaultVisible: true },
+      { key: 'params',      label: '参数',         locked: false, defaultVisible: false },
+      { key: 'returnType',  label: '返回',         locked: false, defaultVisible: false },
+      { key: 'group',       label: '分组',         locked: false, defaultVisible: false },
+      { key: 'prefix',      label: '服务前缀',     locked: false, defaultVisible: false },
+      { key: 'desc',        label: '描述',         locked: true,  defaultVisible: true },
+      { key: 'source',      label: '来源',         locked: true,  defaultVisible: true },
+      { key: 'createTime',  label: '创建时间',     locked: false, defaultVisible: false },
+      { key: 'action',      label: '操作',         locked: true,  defaultVisible: true }
+    ];
+    // 保存初始默认值，用于重置
+    var columnDefaults = {};
+    columnConfig.forEach(function(c) { columnDefaults[c.key] = c.defaultVisible; });
+
+    function isColVisible(key) {
+      for (var i = 0; i < columnConfig.length; i++) {
+        if (columnConfig[i].key === key) return columnConfig[i].defaultVisible;
+      }
+      return false;
+    }
+
+    function getVisibleColCount() {
+      var n = 1; // checkbox 列始终显示
+      for (var i = 0; i < columnConfig.length; i++) {
+        if (columnConfig[i].defaultVisible) n++;
+      }
+      return n;
+    }
+
+    function toggleColVisibility(key) {
+      for (var i = 0; i < columnConfig.length; i++) {
+        if (columnConfig[i].key === key) {
+          if (columnConfig[i].locked) return;
+          columnConfig[i].defaultVisible = !columnConfig[i].defaultVisible;
+          break;
+        }
+      }
+      renderColumnPanel();
+      renderTableHead();
+      renderApis();
+    }
+
+    function resetColumns() {
+      for (var i = 0; i < columnConfig.length; i++) {
+        columnConfig[i].defaultVisible = columnDefaults[columnConfig[i].key];
+      }
+      renderColumnPanel();
+      renderTableHead();
+      renderApis();
+    }
+
+    function renderColumnPanel() {
+      var html = '';
+      for (var i = 0; i < columnConfig.length; i++) {
+        var col = columnConfig[i];
+        if (col.locked) continue;
+        var checked = col.defaultVisible ? 'checked' : '';
+        html += '<label class="col-setting-item">' +
+          '<input type="checkbox" class="checkbox-input" ' + checked + ' onchange="toggleColVisibility(\'' + col.key + '\')">' +
+          '<span class="col-label">' + col.label + '</span>' +
+          '</label>';
+      }
+      document.getElementById('colSettingsBody').innerHTML = html;
+    }
+
+    function toggleColumnPanel() {
+      var panel = document.getElementById('colSettingsPanel');
+      var overlay = document.getElementById('colSettingsOverlay');
+      var isOpen = panel.classList.contains('open');
+      if (isOpen) {
+        panel.classList.remove('open');
+        overlay.style.display = 'none';
+      } else {
+        renderColumnPanel();
+        overlay.style.display = 'block';
+        panel.classList.add('open');
+      }
+    }
+
+    function closeColumnPanel() {
+      document.getElementById('colSettingsPanel').classList.remove('open');
+      document.getElementById('colSettingsOverlay').style.display = 'none';
+    }
+
+    function renderTableHead() {
+      var html = '<th style="width:40px;padding-right:4px;text-align:center;">' +
+        '<input type="checkbox" class="checkbox-input" id="selectAllCheckbox" onchange="toggleSelectAll(this)"></th>';
+      if (isColVisible('id'))         html += '<th style="width:60px;">ID</th>';
+      if (isColVisible('name'))       html += '<th style="width:180px;">接口名称</th>';
+      if (isColVisible('path'))       html += '<th style="width:220px;">路径</th>';
+      if (isColVisible('method'))     html += '<th style="width:70px;">方法</th>';
+      if (isColVisible('params'))     html += '<th style="width:180px;">参数</th>';
+      if (isColVisible('returnType')) html += '<th style="width:180px;">返回</th>';
+      if (isColVisible('group'))      html += '<th style="width:120px;">分组</th>';
+      if (isColVisible('prefix'))     html += '<th style="width:100px;">服务前缀</th>';
+      if (isColVisible('desc'))       html += '<th>描述</th>';
+      if (isColVisible('source'))     html += '<th style="width:80px;">来源</th>';
+      if (isColVisible('createTime')) html += '<th style="width:160px;">创建时间</th>';
+      if (isColVisible('action'))     html += '<th style="width:150px;">操作</th>';
+      document.getElementById('apiTableHead').innerHTML = html;
+    }
+
+    function getChildren(parentId) {
+      return groups.filter(function(g) { return g.parentId === parentId; });
+    }
+
+    function getDescendantIds(groupId) {
+      var ids = [groupId];
+      getChildren(groupId).forEach(function(child) {
+        ids = ids.concat(getDescendantIds(child.id));
+      });
+      return ids;
+    }
+
+    function escapeHtml(text) {
+      var div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function renderTreeItems(items, depth) {
+      var html = '';
+      items.forEach(function(g) {
+        var isActive = g.id === activeGroupId ? 'active' : '';
+        var systemCls = g.isSystem ? 'system' : '';
+        var lockIcon = g.isSystem ? '<span class="system-icon" title="系统默认分组，不可修改">🔒</span>' : '';
+        var icon = g.icon || '📁';
+        var children = getChildren(g.id);
+        var hasChildren = children.length > 0;
+        var arrowHtml = '';
+        if (!g.isSystem && hasChildren) {
+          var expanded = expandedIds[g.id];
+          arrowHtml = '<span class="tree-arrow' + (expanded ? ' expanded' : '') + '" onclick="toggleExpand(event,\'' + g.id + '\')">&#9654;</span>';
+        } else if (!g.isSystem) {
+          arrowHtml = '<span class="tree-arrow-placeholder"></span>';
+        }
+        var padding = g.isSystem ? 16 : (16 + depth * 16);
+        var displayName = g.name.length > 10 ? g.name.substring(0, 10) + '...' : g.name;
+        html += '<div class="tree-item ' + isActive + ' ' + systemCls + '" data-id="' + g.id + '" style="padding-left:' + padding + 'px" ' +
+          'onclick="selectGroup(\'' + g.id + '\')" oncontextmenu="showGroupContextMenu(event, \'' + g.id + '\')">' +
+          arrowHtml + '<span>' + icon + '</span><span class="tree-name" title="' + escapeHtml(g.name) + '">' + escapeHtml(displayName) + '</span>' + lockIcon + '<span class="count">' + g.count + '</span></div>';
+        if (hasChildren && (!g.isSystem && expandedIds[g.id])) {
+          html += renderTreeItems(children, depth + 1);
+        }
+      });
+      return html;
+    }
+
+    function renderGroups() {
+      var container = document.getElementById('groupTree');
+      var html = '';
+      // 系统分组（全部、未分组）
+      var systemGroups = groups.filter(function(g) { return g.isSystem; });
+      html += renderTreeItems(systemGroups, 0);
+      html += '<div class="tree-divider"></div>';
+      // 用户分组（顶层）
+      var userGroups = groups.filter(function(g) { return !g.isSystem && g.parentId === null; });
+      html += renderTreeItems(userGroups, 0);
+      container.innerHTML = html;
+    }
+
+    // 递归计算分组及其子分组的接口总数
+    function computeGroupCount(groupId) {
+      var direct = apis.filter(function(api) { return api.groupId === groupId; }).length;
+      var children = getChildren(groupId);
+      for (var i = 0; i < children.length; i++) {
+        direct += computeGroupCount(children[i].id);
+      }
+      return direct;
+    }
+
+    function updateGroupCounts() {
+      groups.forEach(function(g) {
+        if (g.id === 'all') {
+          g.count = apis.length;
+        } else if (g.id === 'ungrouped') {
+          g.count = apis.filter(function(api) { return !api.groupId || api.groupId === 'ungrouped'; }).length;
+        } else {
+          g.count = computeGroupCount(g.id);
+        }
+      });
+    }
+
+    function selectGroup(id) {
+      activeGroupId = id;
+      document.getElementById('searchName').value = '';
+      document.getElementById('searchPath').value = '';
+      document.getElementById('searchMethod').value = '';
+      document.getElementById('searchSource').value = '';
+      selectedApiIds = {};
+      filteredApis = getFilteredApis();
+      apiCurrentPage = 1;
+      renderGroups();
+      renderApis();
+      renderPagination();
+    }
+
+    function toggleExpand(e, id) {
+      e.stopPropagation();
+      expandedIds[id] = !expandedIds[id];
+      renderGroups();
+    }
+
+    // 选中分组时包含所有子分组的接口
+    function getFilteredApis() {
+      var nameKw = document.getElementById('searchName').value.trim().toLowerCase();
+      var pathKw = document.getElementById('searchPath').value.trim().toLowerCase();
+      var method = document.getElementById('searchMethod').value;
+      var source = document.getElementById('searchSource').value;
+      var matchIds = null;
+      if (activeGroupId === 'all') {
+        matchIds = null;
+      } else if (activeGroupId === 'ungrouped') {
+        matchIds = ['ungrouped'];
+      } else {
+        matchIds = getDescendantIds(activeGroupId);
+      }
+      return apis.filter(function(api) {
+        var matchGroup = !matchIds || matchIds.indexOf(api.groupId) !== -1;
+        if (activeGroupId === 'ungrouped') matchGroup = !api.groupId || api.groupId === 'ungrouped';
+        var matchName = !nameKw || api.name.toLowerCase().indexOf(nameKw) !== -1;
+        var matchPath = !pathKw || api.path.toLowerCase().indexOf(pathKw) !== -1;
+        var matchMethod = !method || api.method === method;
+        var matchSource = !source || api.source === source;
+        return matchGroup && matchName && matchPath && matchMethod && matchSource;
+      });
+    }
+
+    // 接口列表数据（groupId 对应分组 id，空或 ungrouped 视为未分组）
+    var apis = [
+      { id: 1, name: '获取用户列表', path: '/api/users/list', method: 'GET', params: 'page, size, keyword', returnType: 'User[], total', desc: '分页查询用户列表，支持搜索和筛选', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 2, name: '创建用户', path: '/api/users', method: 'POST', params: 'name, email, password, role', returnType: 'User', desc: '创建新用户，需要管理员权限', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 3, name: '获取用户详情', path: '/api/users/{id}', method: 'GET', params: 'id', returnType: 'User', desc: '根据用户ID获取详细信息', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 4, name: '更新用户信息', path: '/api/users/{id}', method: 'PUT', params: 'id, name, email', returnType: 'User', desc: '更新用户基本信息和权限', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 5, name: '删除用户', path: '/api/users/{id}', method: 'DELETE', params: 'id', returnType: 'success', desc: '软删除用户，禁用账号', groupId: '1', group: '用户管理服务', source: '手动' },
+      { id: 6, name: '用户登录', path: '/api/auth/login', method: 'POST', params: 'username, password', returnType: 'token, userId', desc: '用户认证，返回 JWT Token', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 7, name: '修改用户状态', path: '/api/users/{id}/status', method: 'PATCH', params: 'id, enabled', returnType: 'success', desc: '启用/禁用用户状态', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 8, name: '重置密码', path: '/api/users/{id}/reset-password', method: 'POST', params: 'id, newPassword', returnType: 'success', desc: '管理员重置用户密码', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 9, name: '批量创建用户', path: '/api/users/batch', method: 'POST', params: 'file', returnType: 'imported, failed', desc: '通过Excel批量导入用户', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 10, name: '导出用户列表', path: '/api/users/export', method: 'GET', params: 'format', returnType: 'file', desc: '导出用户数据为Excel', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 11, name: '获取用户角色', path: '/api/users/{id}/roles', method: 'GET', params: 'id', returnType: 'Role[]', desc: '查询用户拥有的角色列表', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 12, name: '分配用户角色', path: '/api/users/{id}/roles', method: 'PUT', params: 'id, roleIds', returnType: 'success', desc: '为用户分配角色', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 13, name: '获取用户权限', path: '/api/users/{id}/permissions', method: 'GET', params: 'id', returnType: 'PermissionTree', desc: '查询用户权限树', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 14, name: '校验用户名', path: '/api/users/check-username', method: 'GET', params: 'username', returnType: 'available', desc: '检查用户名是否可用', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 15, name: '获取用户日志', path: '/api/users/{id}/logs', method: 'GET', params: 'id, page, size', returnType: 'Log[], total', desc: '查询用户操作日志', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 16, name: '解锁用户账号', path: '/api/users/{id}/unlock', method: 'POST', params: 'id', returnType: 'success', desc: '解除账号锁定状态', groupId: '1', group: '用户管理服务', source: '手动' },
+      { id: 17, name: '获取部门列表', path: '/api/departments', method: 'GET', returnType: 'Department[]', desc: '查询组织架构部门列表', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 18, name: '创建部门', path: '/api/departments', method: 'POST', params: 'name, parentId', returnType: 'Department', desc: '新增部门节点', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 19, name: '更新部门', path: '/api/departments/{id}', method: 'PUT', params: 'id, name', returnType: 'Department', desc: '修改部门信息', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 20, name: '删除部门', path: '/api/departments/{id}', method: 'DELETE', params: 'id', returnType: 'success', desc: '删除空部门节点', groupId: '1', group: '用户管理服务', source: '手动' },
+      { id: 21, name: '获取角色列表', path: '/api/roles', method: 'GET', params: 'page, size', returnType: 'Role[], total', desc: '分页查询角色定义', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 22, name: '创建角色', path: '/api/roles', method: 'POST', params: 'name, permissions', returnType: 'Role', desc: '新增系统角色', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 23, name: '更新角色', path: '/api/roles/{id}', method: 'PUT', params: 'id, name, permissions', returnType: 'Role', desc: '修改角色权限配置', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      { id: 24, name: '删除角色', path: '/api/roles/{id}', method: 'DELETE', params: 'id', returnType: 'success', desc: '删除未使用的角色', groupId: '1', group: '用户管理服务', source: '手动' },
+      { id: 25, name: '获取菜单权限', path: '/api/menus', method: 'GET', returnType: 'MenuTree', desc: '查询系统菜单权限树', groupId: '1', group: '用户管理服务', source: 'Swagger' },
+      // 电池管理服务
+      { id: 26, name: '获取电池列表', path: '/api/batteries', method: 'GET', params: 'page, size, status', returnType: 'Battery[], total', desc: '分页查询电池资产列表', groupId: '2', group: '电池管理服务', source: 'Swagger' },
+      { id: 27, name: '创建电池', path: '/api/batteries', method: 'POST', params: 'sn, model, capacity', returnType: 'Battery', desc: '录入新电池资产信息', groupId: '2', group: '电池管理服务', source: 'Swagger' },
+      { id: 28, name: '获取电池详情', path: '/api/batteries/{id}', method: 'GET', params: 'id', returnType: 'Battery', desc: '查询单个电池详细信息', groupId: '2', group: '电池管理服务', source: 'Swagger' },
+      { id: 29, name: '更新电池状态', path: '/api/batteries/{id}/status', method: 'PATCH', params: 'id, status', returnType: 'success', desc: '更新电池在库/离库/维护状态', groupId: '2', group: '电池管理服务', source: '手动' },
+      { id: 30, name: '删除电池', path: '/api/batteries/{id}', method: 'DELETE', params: 'id', returnType: 'success', desc: '删除未绑定设备的电池', groupId: '2', group: '电池管理服务', source: '手动' },
+      // 换电流程服务
+      { id: 31, name: '创建换电订单', path: '/api/swap/orders', method: 'POST', params: 'userId, batteryId, stationId', returnType: 'SwapOrder', desc: '用户发起换电请求', groupId: '3', group: '换电流程服务', source: 'Swagger' },
+      { id: 32, name: '获取换电订单详情', path: '/api/swap/orders/{id}', method: 'GET', params: 'id', returnType: 'SwapOrder', desc: '查询换电订单进度与状态', groupId: '3', group: '换电流程服务', source: 'Swagger' },
+      { id: 33, name: '取消换电订单', path: '/api/swap/orders/{id}/cancel', method: 'PUT', params: 'id, reason', returnType: 'success', desc: '取消待处理换电订单', groupId: '3', group: '换电流程服务', source: 'Swagger' },
+      { id: 34, name: '完成换电', path: '/api/swap/orders/{id}/complete', method: 'POST', params: 'id', returnType: 'SwapRecord', desc: '换电完成后确认结算', groupId: '3', group: '换电流程服务', source: '手动' },
+      { id: 35, name: '获取换电记录', path: '/api/swap/records', method: 'GET', params: 'page, size, userId', returnType: 'SwapRecord[], total', desc: '分页查询历史换电记录', groupId: '3', group: '换电流程服务', source: 'Swagger' },
+      // 设备管理服务
+      { id: 36, name: '获取设备列表', path: '/api/devices', method: 'GET', params: 'page, size, type', returnType: 'Device[], total', desc: '分页查询换电柜/充电桩设备', groupId: '4', group: '设备管理服务', source: 'Swagger' },
+      { id: 37, name: '创建设备', path: '/api/devices', method: 'POST', params: 'name, type, stationId', returnType: 'Device', desc: '注册新设备并分配站点', groupId: '4', group: '设备管理服务', source: 'Swagger' },
+      { id: 38, name: '获取设备状态', path: '/api/devices/{id}/status', method: 'GET', params: 'id', returnType: 'DeviceStatus', desc: '查询设备在线/离线/告警状态', groupId: '4', group: '设备管理服务', source: 'Swagger' },
+      { id: 39, name: '更新设备信息', path: '/api/devices/{id}', method: 'PUT', params: 'id, name, location', returnType: 'Device', desc: '修改设备名称、位置等信息', groupId: '4', group: '设备管理服务', source: '手动' },
+      // 能量管理服务
+      { id: 40, name: '获取能耗统计', path: '/api/energy/statistics', method: 'GET', params: 'stationId, period', returnType: 'EnergyStat[]', desc: '按日/月统计站点能耗', groupId: '5', group: '能量管理服务', source: 'Swagger' },
+      { id: 41, name: '获取电量分布', path: '/api/energy/distribution', method: 'GET', params: 'stationId', returnType: 'Distribution[]', desc: '查询各站点电池电量分布', groupId: '5', group: '能量管理服务', source: 'Swagger' },
+      { id: 42, name: '上报能耗数据', path: '/api/energy/reports', method: 'POST', params: 'deviceId, energy, timestamp', returnType: 'success', desc: '设备定时上报能耗数据', groupId: '5', group: '能量管理服务', source: 'Swagger' },
+      // 故障诊断服务
+      { id: 43, name: '获取故障列表', path: '/api/diagnosis/faults', method: 'GET', params: 'page, size, level', returnType: 'Fault[], total', desc: '分页查询设备故障告警', groupId: '6', group: '故障诊断服务', source: 'Swagger' },
+      { id: 44, name: '确认故障', path: '/api/diagnosis/faults/{id}/confirm', method: 'POST', params: 'id, remark', returnType: 'success', desc: '人工确认故障并派单', groupId: '6', group: '故障诊断服务', source: '手动' },
+      { id: 45, name: '解除故障', path: '/api/diagnosis/faults/{id}/resolve', method: 'POST', params: 'id, resolution', returnType: 'success', desc: '维修完成后解除告警', groupId: '6', group: '故障诊断服务', source: '手动' },
+      // 系统配置服务
+      { id: 46, name: '获取系统参数', path: '/api/config/parameters', method: 'GET', params: 'group', returnType: 'Config[]', desc: '查询全局系统配置项', groupId: '7', group: '系统配置服务', source: 'Swagger' },
+      { id: 47, name: '更新系统参数', path: '/api/config/parameters/{key}', method: 'PUT', params: 'key, value', returnType: 'success', desc: '修改全局配置项值', groupId: '7', group: '系统配置服务', source: '手动' },
+      { id: 48, name: '获取字典列表', path: '/api/config/dictionaries', method: 'GET', params: 'type', returnType: 'Dict[]', desc: '查询数据字典枚举值', groupId: '7', group: '系统配置服务', source: 'Swagger' },
+      { id: 49, name: '刷新缓存', path: '/api/config/cache/refresh', method: 'POST', returnType: 'success', desc: '手动刷新系统配置缓存', groupId: '7', group: '系统配置服务', source: '手动' }
+    ];
+    var filteredApis = apis;
+    var apiPageSize = 20;
+    var apiCurrentPage = 1;
+    var selectedApiIds = {};   // { apiId: true }
+    var batchTargetGroupId = null;
+    var batchGroupExpanded = {};  // { groupId: true } 树形下拉展开状态
+
+    function renderApis() {
+      var start = (apiCurrentPage - 1) * apiPageSize;
+      var end = start + apiPageSize;
+      var pageItems = filteredApis.slice(start, end);
+      var html = '';
+      var colCount = getVisibleColCount();
+      if (pageItems.length === 0) {
+        html = '<tr><td colspan="' + colCount + '" style="text-align:center;padding:48px 20px;color:var(--text-tertiary);">' +
+          '<div style="font-size:32px;margin-bottom:8px;opacity:.4;">📄</div>' +
+          '<div>暂无匹配的接口数据</div></td></tr>';
+      }
+      pageItems.forEach(function(api) {
+        var checked = selectedApiIds[api.id] ? 'checked' : '';
+        var apiGroup = groups.find(function(g) { return g.id === api.groupId; });
+        var apiPrefix = apiGroup && apiGroup.prefix ? apiGroup.prefix : '';
+        var createDate = '2024-01-' + String(20 - api.id % 20).padStart(2, '0');
+        html += '<tr>';
+        html += '<td style="text-align:center;padding-right:4px;"><input type="checkbox" class="checkbox-input row-check" ' + checked + ' onchange="toggleApiSelect(' + api.id + ')"></td>';
+        if (isColVisible('id'))         html += '<td>A-' + api.id + '</td>';
+        if (isColVisible('name'))       html += '<td>' + escapeHtml(api.name) + '</td>';
+        if (isColVisible('path'))       html += '<td>' + escapeHtml(api.path) + '</td>';
+        if (isColVisible('method'))     html += '<td>' + escapeHtml(api.method) + '</td>';
+        if (isColVisible('params'))     html += '<td title="' + escapeHtml(api.params || '--') + '" class="cell-truncate"><span>' + escapeHtml(api.params || '--') + '</span></td>';
+        if (isColVisible('returnType')) html += '<td title="' + escapeHtml(api.returnType || '--') + '" class="cell-truncate"><span>' + escapeHtml(api.returnType || '--') + '</span></td>';
+        if (isColVisible('group'))      html += '<td>' + escapeHtml(api.group) + '</td>';
+        if (isColVisible('prefix'))     html += '<td>' + escapeHtml(apiPrefix) + '</td>';
+        if (isColVisible('desc'))       html += '<td class="cell-truncate"><span title="' + escapeHtml(api.desc) + '">' + escapeHtml(api.desc) + '</span></td>';
+        if (isColVisible('source'))     html += '<td>' + escapeHtml(api.source) + '</td>';
+        if (isColVisible('createTime')) html += '<td>' + createDate + '</td>';
+        if (isColVisible('action'))     html += '<td style="white-space:nowrap"><button class="btn btn-link btn-sm" onclick="location.href=\'api-edit.html\'">编辑</button><button class="btn btn-link btn-sm" onclick="openDebugModal(' + api.id + ')">调试</button><button class="btn btn-link btn-sm btn-danger" onclick="deleteApi(' + api.id + ')">删除</button></td>';
+        html += '</tr>';
+      });
+      document.getElementById('apiTableBody').innerHTML = html;
+      updateBatchBar();
+    }
+
+    function renderPagination() {
+      var total = filteredApis.length;
+      var totalPages = Math.ceil(total / apiPageSize) || 1;
+      var html = '';
+      // 左侧：总记录数
+      html += '<span class="page-info">共 ' + total + ' 条记录</span>';
+      // 上一页
+      html += '<button class="page-btn" onclick="changeApiPage(' + (apiCurrentPage - 1) + ')" ' + (apiCurrentPage === 1 ? 'disabled' : '') + '>‹</button>';
+      // 智能页码（含省略号）
+      var pages = buildPageNumbers(apiCurrentPage, totalPages);
+      for (var p = 0; p < pages.length; p++) {
+        var item = pages[p];
+        if (item === '...') {
+          html += '<span style="color:var(--text-tertiary);padding:0 2px;font-size:12px;letter-spacing:1px;">...</span>';
+        } else {
+          var activeCls = item === apiCurrentPage ? 'active' : '';
+          html += '<button class="page-btn ' + activeCls + '" onclick="changeApiPage(' + item + ')">' + item + '</button>';
+        }
+      }
+      // 下一页
+      html += '<button class="page-btn" onclick="changeApiPage(' + (apiCurrentPage + 1) + ')" ' + (apiCurrentPage === totalPages ? 'disabled' : '') + '>›</button>';
+      // 页码跳转
+      html += '<span class="page-jump">跳至 <input type="text" id="jumpPageInput" value="' + apiCurrentPage + '" onkeydown="if(event.key===\'Enter\')jumpToPage()"> 页</span>';
+      document.getElementById('apiPagination').innerHTML = html;
+    }
+
+    /**
+     * 构建智能页码序列，页码过多时显示省略号
+     * 规则：始终显示首尾页，当前页前后各保留1~2个相邻页
+     */
+    function buildPageNumbers(current, total) {
+      if (total <= 7) {
+        var arr = [];
+        for (var i = 1; i <= total; i++) arr.push(i);
+        return arr;
+      }
+      var pages = [];
+      pages.push(1);
+      var rangeStart = Math.max(2, current - 1);
+      var rangeEnd = Math.min(total - 1, current + 1);
+      if (rangeStart > 2) pages.push('...');
+      for (var j = rangeStart; j <= rangeEnd; j++) pages.push(j);
+      if (rangeEnd < total - 1) pages.push('...');
+      pages.push(total);
+      return pages;
+    }
+
+    /**
+     * 输入页码跳转
+     */
+    function jumpToPage() {
+      var input = document.getElementById('jumpPageInput');
+      if (!input) return;
+      var page = parseInt(input.value, 10);
+      if (isNaN(page)) { input.value = apiCurrentPage; return; }
+      changeApiPage(page);
+    }
+
+    function changeApiPage(page) {
+      var totalPages = Math.ceil(filteredApis.length / apiPageSize) || 1;
+      if (page < 1 || page > totalPages) return;
+      apiCurrentPage = page;
+      selectedApiIds = {};
+      renderApis();
+      renderPagination();
+    }
+
+    function handleSearch() {
+      filteredApis = getFilteredApis();
+      apiCurrentPage = 1;
+      selectedApiIds = {};
+      renderApis();
+      renderPagination();
+    }
+
+    function handleReset() {
+      document.getElementById('searchName').value = '';
+      document.getElementById('searchPath').value = '';
+      document.getElementById('searchMethod').value = '';
+      document.getElementById('searchSource').value = '';
+      filteredApis = getFilteredApis();
+      apiCurrentPage = 1;
+      selectedApiIds = {};
+      renderApis();
+      renderPagination();
+    }
+
+    function toggleSearchCard(btn) {
+      var card = document.getElementById('apiSearchCard');
+      var isCollapsed = card.classList.contains('collapsed');
+      if (isCollapsed) {
+        card.classList.remove('collapsed');
+        btn.querySelector('.arrow').innerHTML = '&#707;';
+        btn.querySelector('.text').textContent = '收起';
+      } else {
+        card.classList.add('collapsed');
+        btn.querySelector('.arrow').innerHTML = '&#708;';
+        btn.querySelector('.text').textContent = '展开';
+      }
+    }
+
+    function openCreateGroupModal(parentId) {
+      createGroupParentId = parentId || null;
+      var titleEl = document.getElementById('createGroupTitle');
+      titleEl.textContent = createGroupParentId ? '新建子分组' : '新建分组';
+      document.getElementById('createGroupModal').style.display = 'flex';
+      document.getElementById('groupName').value = '';
+      document.getElementById('groupPrefix').value = '';
+      document.getElementById('groupName').style.borderColor = '';
+      document.getElementById('groupName').focus();
+    }
+    function closeCreateGroupModal() {
+      document.getElementById('createGroupModal').style.display = 'none';
+      createGroupParentId = null;
+    }
+    function confirmCreateGroup() {
+      var name = document.getElementById('groupName').value.trim();
+      if (!name) {
+        document.getElementById('groupName').style.borderColor = 'var(--error)';
+        document.getElementById('groupName').focus();
+        return;
+      }
+      if (name === '全部' || name === '未分组') {
+        alert('「全部」和「未分组」为系统默认分组，不能创建同名分组');
+        return;
+      }
+      var prefix = document.getElementById('groupPrefix').value.trim();
+      var newId = String(nextGroupId++);
+      groups.push({ id: newId, name: name, count: 0, isSystem: false, prefix: prefix, parentId: createGroupParentId });
+      if (createGroupParentId) expandedIds[createGroupParentId] = true;
+      updateGroupCounts();
+      renderGroups();
+      closeCreateGroupModal();
+    }
+
+    /* ===== 右键菜单 ===== */
+    function showBlankContextMenu(e) {
+      var target = e.target;
+      while (target && target !== e.currentTarget) {
+        if (target.classList && target.classList.contains('tree-item')) return;
+        target = target.parentElement;
+      }
+      e.preventDefault();
+      hideAllMenus();
+      var menu = document.getElementById('blankContextMenu');
+      menu.style.display = 'block';
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+    }
+
+    function handleBlankCreate() {
+      hideAllMenus();
+      openCreateGroupModal(null);
+    }
+
+    function showGroupContextMenu(e, id) {
+      e.preventDefault();
+      e.stopPropagation();
+      hideAllMenus();
+      contextGroupId = id;
+      var group = groups.find(function(g) { return g.id === id; });
+      // 系统默认分组不弹出右键菜单
+      if (group && group.isSystem) return;
+      var createChildItem = document.getElementById('ctxCreateChild');
+      var editItem = document.getElementById('ctxEditGroup');
+      var deleteItem = document.getElementById('ctxDeleteGroup');
+      createChildItem.className = 'context-menu-item';
+      editItem.className = 'context-menu-item';
+      deleteItem.className = 'context-menu-item danger';
+      var menu = document.getElementById('groupContextMenu');
+      menu.style.display = 'block';
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+    }
+
+    function hideAllMenus() {
+      document.getElementById('groupContextMenu').style.display = 'none';
+      document.getElementById('blankContextMenu').style.display = 'none';
+      contextGroupId = null;
+    }
+
+    function handleContextCreateChild() {
+      if (!contextGroupId) return;
+      var group = groups.find(function(g) { return g.id === contextGroupId; });
+      if (!group || group.isSystem) { hideAllMenus(); return; }
+      hideAllMenus();
+      openCreateGroupModal(contextGroupId);
+    }
+
+    function handleContextEdit() {
+      if (!contextGroupId) return;
+      var group = groups.find(function(g) { return g.id === contextGroupId; });
+      if (!group || group.isSystem) {
+        alert('系统默认分组「' + (group ? group.name : '') + '」不可编辑');
+        hideAllMenus();
+        return;
+      }
+      editingGroupId = contextGroupId;
+      document.getElementById('editGroupName').value = group.name;
+      document.getElementById('editGroupPrefix').value = group.prefix || '';
+      document.getElementById('editGroupModal').style.display = 'flex';
+      hideAllMenus();
+    }
+
+    function closeEditGroupModal() {
+      document.getElementById('editGroupModal').style.display = 'none';
+      editingGroupId = null;
+    }
+
+    function confirmEditGroup() {
+      if (!editingGroupId) return;
+      var name = document.getElementById('editGroupName').value.trim();
+      if (!name) {
+        document.getElementById('editGroupName').style.borderColor = 'var(--error)';
+        document.getElementById('editGroupName').focus();
+        return;
+      }
+      if (name === '全部' || name === '未分组') {
+        alert('「全部」和「未分组」为系统默认分组，不能使用该名称');
+        return;
+      }
+      var group = groups.find(function(g) { return g.id === editingGroupId; });
+      if (group) {
+        group.name = name;
+        group.prefix = document.getElementById('editGroupPrefix').value.trim();
+        apis.forEach(function(api) {
+          if (api.groupId === editingGroupId) api.group = name;
+        });
+        renderGroups();
+        renderApis();
+      }
+      closeEditGroupModal();
+    }
+
+    function handleContextDelete() {
+      if (!contextGroupId) return;
+      var group = groups.find(function(g) { return g.id === contextGroupId; });
+      if (!group || group.isSystem) {
+        alert('系统默认分组「' + (group ? group.name : '') + '」不可删除');
+        hideAllMenus();
+        return;
+      }
+      document.getElementById('deleteGroupName').textContent = group.name;
+      var childGroups = getChildren(group.id);
+      var hint = document.getElementById('deleteGroupHint');
+      if (childGroups.length > 0) {
+        hint.textContent = '删除后，子分组将一并删除，所有接口将自动归入「未分组」。';
+      } else {
+        hint.textContent = '删除后，该分组下的接口将自动归入「未分组」。';
+      }
+      document.getElementById('deleteGroupModal').style.display = 'flex';
+      hideAllMenus();
+    }
+
+    function closeDeleteGroupModal() {
+      document.getElementById('deleteGroupModal').style.display = 'none';
+    }
+
+    function confirmDeleteGroup() {
+      if (!contextGroupId) return;
+      var descendantIds = getDescendantIds(contextGroupId);
+      // 所有后代分组下的接口归入「未分组」
+      apis.forEach(function(api) {
+        if (descendantIds.indexOf(api.groupId) !== -1) {
+          api.groupId = 'ungrouped';
+          api.group = '未分组';
+        }
+      });
+      groups = groups.filter(function(g) { return descendantIds.indexOf(g.id) === -1; });
+      if (descendantIds.indexOf(activeGroupId) !== -1) activeGroupId = 'all';
+      updateGroupCounts();
+      filteredApis = getFilteredApis();
+      renderGroups();
+      renderApis();
+      renderPagination();
+      closeDeleteGroupModal();
+      contextGroupId = null;
+    }
+
+    document.getElementById('createGroupModal').addEventListener('click', function(e) {
+      if (e.target === this) closeCreateGroupModal();
+    });
+    document.getElementById('editGroupModal').addEventListener('click', function(e) {
+      if (e.target === this) closeEditGroupModal();
+    });
+    document.getElementById('deleteGroupModal').addEventListener('click', function(e) {
+      if (e.target === this) closeDeleteGroupModal();
+    });
+    document.addEventListener('click', function() { hideAllMenus(); });
+
+    /* ===== 批量操作 ===== */
+    function getSelectedApiList() {
+      var ids = Object.keys(selectedApiIds);
+      return apis.filter(function(api) { return selectedApiIds[api.id]; });
+    }
+
+    function toggleSelectAll(checkbox) {
+      var start = (apiCurrentPage - 1) * apiPageSize;
+      var end = start + apiPageSize;
+      var pageItems = filteredApis.slice(start, end);
+      pageItems.forEach(function(api) {
+        if (checkbox.checked) {
+          selectedApiIds[api.id] = true;
+        } else {
+          delete selectedApiIds[api.id];
+        }
+      });
+      renderApis();
+    }
+
+    function toggleApiSelect(id) {
+      if (selectedApiIds[id]) {
+        delete selectedApiIds[id];
+      } else {
+        selectedApiIds[id] = true;
+      }
+      renderApis();
+    }
+
+    function clearSelection() {
+      selectedApiIds = {};
+      var selectAllCb = document.getElementById('selectAllCheckbox');
+      if (selectAllCb) { selectAllCb.checked = false; selectAllCb.indeterminate = false; }
+      renderApis();
+    }
+
+    function updateBatchBar() {
+      var bar = document.getElementById('batchBar');
+      var countEl = document.getElementById('batchCount');
+      var total = Object.keys(selectedApiIds).length;
+      countEl.textContent = total;
+      if (total > 0) {
+        bar.classList.add('visible');
+      } else {
+        bar.classList.remove('visible');
+      }
+      // 同步全选 checkbox 状态
+      var start = (apiCurrentPage - 1) * apiPageSize;
+      var end = start + apiPageSize;
+      var pageItems = filteredApis.slice(start, end);
+      var checkedCount = pageItems.filter(function(api) { return selectedApiIds[api.id]; }).length;
+      var selectAllCb = document.getElementById('selectAllCheckbox');
+      if (!selectAllCb) return;
+      if (checkedCount === 0) {
+        selectAllCb.checked = false;
+        selectAllCb.indeterminate = false;
+      } else if (checkedCount === pageItems.length && pageItems.length > 0) {
+        selectAllCb.checked = true;
+        selectAllCb.indeterminate = false;
+      } else {
+        selectAllCb.checked = false;
+        selectAllCb.indeterminate = true;
+      }
+    }
+
+    /* ===== 批量修改分组弹窗 ===== */
+    function renderBatchPreview() {
+      var list = getSelectedApiList();
+      var targetGroup = batchTargetGroupId
+        ? groups.find(function(g) { return g.id === batchTargetGroupId; })
+        : null;
+      var html = '';
+      list.forEach(function(api) {
+        var rightSide = targetGroup
+          ? '<span style="color:var(--primary);font-weight:500;">' + escapeHtml(targetGroup.name) + '</span>'
+          : '<span style="color:var(--text-disabled);font-style:italic;">请选择目标分组</span>';
+        html += '<div style="padding:3px 0;">' +
+          '<span style="color:var(--text-secondary);">' + escapeHtml(api.name) + '</span>' +
+          '<span style="margin:0 6px;color:var(--text-tertiary);font-size:12px;">' + escapeHtml(api.group) + '</span>' +
+          '<span style="margin:0 4px;color:var(--text-tertiary);">→</span>' +
+          rightSide +
+          '</div>';
+      });
+      document.getElementById('batchPreviewList').innerHTML = html;
+    }
+
+    function getGroupDepth(groupId) {
+      var depth = 0;
+      var g = groups.find(function(x) { return x.id === groupId; });
+      while (g && g.parentId) {
+        depth++;
+        g = groups.find(function(x) { return x.id === g.parentId; });
+      }
+      return depth;
+    }
+
+    /* 树形下拉：渲染分组树（默认模式，仅显示已展开的子节点） */
+    function renderGroupTreeOptions() {
+      var dropdown = document.getElementById('batchGroupDropdown');
+      var emptyEl = dropdown.querySelector('.search-select-empty');
+      Array.prototype.slice.call(dropdown.querySelectorAll('.search-select-option')).forEach(function(el) { el.remove(); });
+      var userGroups = groups.filter(function(g) { return !g.isSystem; });
+      var topGroups = userGroups.filter(function(g) { return g.parentId === null; });
+      topGroups.forEach(function(g) { insertTreeOption(dropdown, emptyEl, g, 0, userGroups); });
+      emptyEl.style.display = topGroups.length === 0 ? 'block' : 'none';
+    }
+
+    function insertTreeOption(dropdown, beforeEl, g, depth, allUserGroups) {
+      var childGroups = allUserGroups.filter(function(x) { return x.parentId === g.id; });
+      var hasChildren = childGroups.length > 0;
+      var isExpanded = batchGroupExpanded[g.id];
+      var btnStyle = 'display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid var(--border-color);border-radius:3px;font-size:13px;font-weight:700;line-height:1;cursor:pointer;color:var(--primary);background:#fff;flex-shrink:0;';
+      var toggleIcon = hasChildren ? (isExpanded ? '<span style="' + btnStyle + '">−</span>' : '<span style="' + btnStyle + '">+</span>') : '<span style="width:16px;display:inline-block;flex-shrink:0;"></span>';
+      var indent = depth > 0 ? '<span style="display:inline-block;width:' + (depth * 16) + 'px;flex-shrink:0;"></span>' : '';
+      var opt = document.createElement('div');
+      opt.className = 'search-select-option';
+      if (batchTargetGroupId === g.id) opt.classList.add('selected');
+      opt.setAttribute('data-value', g.id);
+      opt.innerHTML = indent +
+        '<span class="tree-toggle" data-toggle-id="' + g.id + '" style="display:inline-flex;align-items:center;margin-right:6px;">' + toggleIcon + '</span>' +
+        '<span>' + escapeHtml(g.name) + '</span>';
+      dropdown.insertBefore(opt, beforeEl);
+      if (hasChildren && isExpanded) {
+        childGroups.forEach(function(child) { insertTreeOption(dropdown, beforeEl, child, depth + 1, allUserGroups); });
+      }
+    }
+
+    /* 平铺下拉：搜索模式下显示所有匹配项（不区分层级） */
+    function renderGroupFlatOptions(keyword) {
+      var dropdown = document.getElementById('batchGroupDropdown');
+      var emptyEl = dropdown.querySelector('.search-select-empty');
+      Array.prototype.slice.call(dropdown.querySelectorAll('.search-select-option')).forEach(function(el) { el.remove(); });
+      var userGroups = groups.filter(function(g) { return !g.isSystem; });
+      var kw = (keyword || '').toLowerCase();
+      var matched = userGroups.filter(function(g) { return !kw || g.name.toLowerCase().indexOf(kw) !== -1; });
+      matched.forEach(function(g) {
+        var opt = document.createElement('div');
+        opt.className = 'search-select-option';
+        if (batchTargetGroupId === g.id) opt.classList.add('selected');
+        opt.setAttribute('data-value', g.id);
+        opt.textContent = g.name;
+        dropdown.insertBefore(opt, emptyEl);
+      });
+      emptyEl.style.display = matched.length === 0 ? 'block' : 'none';
+    }
+
+    /* 切换分组展开/收起 */
+    function toggleBatchGroupExpand(groupId) {
+      batchGroupExpanded[groupId] = !batchGroupExpanded[groupId];
+      renderGroupTreeOptions();
+    }
+
+    function openBatchGroupModal() {
+      var list = getSelectedApiList();
+      if (list.length === 0) return;
+      batchTargetGroupId = null;
+      batchGroupExpanded = {};
+      document.getElementById('batchModalCount').textContent = list.length;
+
+      // 重置 search-select 组件
+      var ss = document.getElementById('batchGroupSelect');
+      ss.querySelector('.search-select-value').value = '';
+      ss.querySelector('.input').value = '';
+      ss.querySelector('.input').placeholder = '请选择分组';
+      ss.querySelectorAll('.search-select-option').forEach(function(opt) {
+        opt.classList.remove('hidden', 'selected');
+      });
+      ss.querySelector('.search-select-empty').style.display = 'none';
+      ss.classList.remove('open');
+
+      // 动态生成分组树形选项
+      renderGroupTreeOptions();
+
+      // 构建预览列表（初始状态，目标分组待选择）
+      renderBatchPreview();
+      document.getElementById('batchPreview').style.display = 'block';
+      document.getElementById('batchPreview').style.borderColor = '';
+      document.getElementById('batchPreview').style.background = 'var(--bg-body)';
+
+      document.getElementById('batchGroupModal').style.display = 'flex';
+    }
+
+    function closeBatchGroupModal() {
+      document.getElementById('batchGroupModal').style.display = 'none';
+    }
+
+    function applyBatchGroup() {
+      var newGroupId = document.querySelector('#batchGroupSelect .search-select-value').value;
+      if (!newGroupId) {
+        var ssInput = document.querySelector('#batchGroupSelect .search-select-input .input');
+        ssInput.style.borderColor = 'var(--error)';
+        ssInput.focus();
+        setTimeout(function() { ssInput.style.borderColor = ''; }, 2000);
+        return;
+      }
+      var targetGroup = groups.find(function(g) { return g.id === newGroupId; });
+      if (!targetGroup) { alert('目标分组不存在'); closeBatchGroupModal(); return; }
+
+      var list = getSelectedApiList();
+      var count = list.length;
+      apis.forEach(function(api) {
+        if (selectedApiIds[api.id]) {
+          api.groupId = targetGroup.id;
+          api.group = targetGroup.name;
+        }
+      });
+
+      selectedApiIds = {};
+      updateGroupCounts();
+      filteredApis = getFilteredApis();
+      renderGroups();
+      renderApis();
+      renderPagination();
+      closeBatchGroupModal();
+
+      // 成功提示 toast
+      showToast('已成功将 ' + count + ' 条接口的分组修改为「' + escapeHtml(targetGroup.name) + '」', 'success');
+    }
+
+    /* ===== 批量操作下拉菜单 ===== */
+    function toggleBatchDropdown() {
+      var menu = document.getElementById('batchDropdownMenu');
+      menu.classList.toggle('open');
+    }
+
+    // 点击外部关闭批量操作下拉菜单
+    document.addEventListener('click', function(e) {
+      var dropdown = document.getElementById('batchDropdown');
+      if (dropdown && !dropdown.contains(e.target)) {
+        document.getElementById('batchDropdownMenu').classList.remove('open');
+      }
+    });
+
+    function openBatchGroupFromDropdown() {
+      document.getElementById('batchDropdownMenu').classList.remove('open');
+      openBatchGroupModal();
+    }
+
+    /* ===== 批量删除 ===== */
+    var deleteApiId = null;
+
+    function openBatchDeleteConfirm() {
+      document.getElementById('batchDropdownMenu').classList.remove('open');
+      var list = getSelectedApiList();
+      if (list.length === 0) return;
+      document.getElementById('batchDeleteCount').textContent = list.length;
+      // 渲染删除预览
+      var html = '<div style="color:var(--text-tertiary);margin-bottom:6px;">以下接口将被删除：</div>';
+      list.forEach(function(api) {
+        html += '<div style="padding:2px 0;color:var(--text-primary);">' +
+          '<span>' + escapeHtml(api.method) + '</span> ' +
+          '<span style="color:var(--text-secondary);">' + escapeHtml(api.path) + '</span> ' +
+          '<span style="color:var(--text-tertiary);font-size:12px;">(' + escapeHtml(api.name) + ')</span>' +
+          '</div>';
+      });
+      document.getElementById('batchDeletePreview').innerHTML = html;
+      document.getElementById('batchDeleteModal').style.display = 'flex';
+    }
+
+    function closeBatchDeleteModal() {
+      document.getElementById('batchDeleteModal').style.display = 'none';
+    }
+
+    function confirmBatchDelete() {
+      var list = getSelectedApiList();
+      var count = list.length;
+      var idsToRemove = {};
+      list.forEach(function(api) { idsToRemove[api.id] = true; });
+      apis = apis.filter(function(api) { return !idsToRemove[api.id]; });
+      selectedApiIds = {};
+      updateGroupCounts();
+      filteredApis = getFilteredApis();
+      renderGroups();
+      renderApis();
+      renderPagination();
+      closeBatchDeleteModal();
+      showToast('已删除 ' + count + ' 条接口', 'success');
+    }
+
+    /* ===== 单条删除 ===== */
+    function deleteApi(id) {
+      deleteApiId = id;
+      var api = apis.find(function(a) { return a.id === id; });
+      document.getElementById('deleteApiName').textContent = api ? api.name : '';
+      document.getElementById('deleteApiModal').style.display = 'flex';
+    }
+
+    function closeDeleteApiModal() {
+      document.getElementById('deleteApiModal').style.display = 'none';
+      deleteApiId = null;
+    }
+
+    function confirmDeleteApi() {
+      if (!deleteApiId) return;
+      apis = apis.filter(function(api) { return api.id !== deleteApiId; });
+      delete selectedApiIds[deleteApiId];
+      deleteApiId = null;
+      updateGroupCounts();
+      filteredApis = getFilteredApis();
+      renderGroups();
+      renderApis();
+      renderPagination();
+      closeDeleteApiModal();
+      showToast('已删除 1 条接口', 'success');
+    }
+
+    /* ===== 批量分组 search-select 组件绑定 ===== */
+    (function() {
+      var ss = document.getElementById('batchGroupSelect');
+      var inputEl = ss.querySelector('.input');
+      var hiddenEl = ss.querySelector('.search-select-value');
+      var emptyMsg = ss.querySelector('.search-select-empty');
+      var preview = document.getElementById('batchPreview');
+
+      // 切换下拉
+      ss.querySelector('.search-select-input').addEventListener('click', function(e) {
+        e.stopPropagation();
+        document.querySelectorAll('.search-select.open').forEach(function(s) {
+          if (s !== ss) s.classList.remove('open');
+        });
+        ss.classList.toggle('open');
+        if (ss.classList.contains('open')) inputEl.focus();
+      });
+
+      // 模糊搜索：输入时切换为平铺模式，清空时恢复树形
+      inputEl.addEventListener('input', function() {
+        var keyword = this.value.trim().toLowerCase();
+        hiddenEl.value = '';
+        batchTargetGroupId = null;
+        if (keyword) {
+          renderGroupFlatOptions(keyword);
+        } else {
+          renderGroupTreeOptions();
+        }
+        if (!ss.classList.contains('open')) ss.classList.add('open');
+        preview.style.borderColor = '';
+        preview.style.background = 'var(--bg-body)';
+        renderBatchPreview();
+      });
+
+      // 选中选项 / 展开收起
+      ss.addEventListener('click', function(e) {
+        // 点击 +/- 展开收起按钮
+        var toggleEl = e.target.closest('.tree-toggle');
+        if (toggleEl) {
+          e.stopPropagation();
+          var gid = toggleEl.getAttribute('data-toggle-id');
+          if (gid) toggleBatchGroupExpand(gid);
+          return;
+        }
+        // 点击选项本身
+        var opt = e.target.closest('.search-select-option');
+        if (!opt) return;
+        e.stopPropagation();
+        var val = opt.getAttribute('data-value');
+        var gName = groups.find(function(g) { return g.id === val; });
+        hiddenEl.value = val;
+        batchTargetGroupId = val;
+        inputEl.value = gName ? gName.name : opt.textContent.trim();
+        inputEl.style.borderColor = '';
+        ss.querySelectorAll('.search-select-option').forEach(function(o) { o.classList.remove('selected'); });
+        opt.classList.add('selected');
+        ss.classList.remove('open');
+        preview.style.borderColor = 'var(--primary-border)';
+        preview.style.background = 'var(--primary-bg)';
+        renderBatchPreview();
+      });
+
+      // 外部点击关闭
+      document.addEventListener('click', function(e) {
+        if (!ss.contains(e.target)) ss.classList.remove('open');
+      });
+
+      // Escape 关闭
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && ss.classList.contains('open')) ss.classList.remove('open');
+      });
+    })();
+
+    // 搜索框回车触发查询
+    document.getElementById('searchName').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') handleSearch();
+    });
+    document.getElementById('searchPath').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') handleSearch();
+    });
+
+    updateGroupCounts();
+    renderGroups();
+    renderTableHead();
+    renderApis();
+    renderPagination();
+
+    /* ===== 在线调试弹窗 ===== */
+    // 参数类型映射（模拟接口的参数数据类型）
+    var debugParamTypeMap = {
+      page: 'integer', page_size: 'integer', size: 'integer', id: 'integer',
+      roleIds: 'integer[]', userId: 'integer', batteryId: 'integer',
+      stationId: 'integer', deviceid: 'integer', energy: 'number',
+      enabled: 'boolean', timestamp: 'datetime', file: 'file',
+      permissions: 'object', period: 'object'
+    };
+
+    function getDebugParamType(name) {
+      if (debugParamTypeMap[name]) return debugParamTypeMap[name];
+      return 'string';
+    }
+
+    function openDebugModal(apiId) {
+      var api = apis.find(function(a) { return a.id === apiId; });
+      if (!api) return;
+      // 更新弹窗头部信息
+      document.getElementById('debugApiName').textContent = api.name;
+      document.getElementById('debugApiDesc').textContent = api.desc || '';
+      var methodEl = document.getElementById('debugMethod');
+      methodEl.textContent = api.method;
+      methodEl.className = 'method-badge method-' + api.method.toLowerCase();
+      document.getElementById('debugApiPath').textContent = api.path;
+      // 动态渲染 Query 参数（含类型列）
+      var paramsBody = document.getElementById('debugParamsBody');
+      paramsBody.innerHTML = '';
+      if (api.params) {
+        var paramList = api.params.split(',');
+        paramList.forEach(function(p) {
+          var name = p.trim();
+          if (!name) return;
+          var type = getDebugParamType(name);
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td><input type="text" class="input font-mono" value="' + escapeHtml(name) + '" style="width:100%;" readonly></td>' +
+            '<td><span class="debug-param-type">' + type + '</span></td>' +
+            '<td><input type="text" class="input" value="" placeholder="输入值" style="width:100%;"></td>';
+          paramsBody.appendChild(tr);
+        });
+      }
+      if (paramsBody.children.length === 0) {
+        paramsBody.innerHTML = '<tr><td colspan="3" style="color:var(--text-tertiary);font-size:12px;padding:8px;">该接口无 Query 参数</td></tr>';
+      }
+      // 重置响应区域
+      document.getElementById('debugEmptyState').style.display = 'flex';
+      document.getElementById('debugResponseResult').style.display = 'none';
+      // 重置响应标签页
+      var tabs = document.querySelectorAll('#debugModal .resp-tab');
+      tabs.forEach(function(t) { t.classList.remove('active'); });
+      tabs[0].classList.add('active');
+      var contents = document.querySelectorAll('#debugModal .resp-content');
+      contents.forEach(function(c) { c.classList.remove('active'); });
+      document.getElementById('debugResp-body').classList.add('active');
+      document.getElementById('debugModal').style.display = 'flex';
+    }
+
+    /* 手动添加自定义参数 */
+    function addDebugParam() {
+      var paramsBody = document.getElementById('debugParamsBody');
+      // 如果当前是「无参数」提示行，先清空
+      var emptyRow = paramsBody.querySelector('td[colspan]');
+      if (emptyRow) emptyRow.parentElement.remove();
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td><input type="text" class="input font-mono" placeholder="参数名" style="width:100%;"></td>' +
+        '<td><select class="select" style="width:100%;height:28px;font-size:13px;">' +
+        '<option value="string">string</option>' +
+        '<option value="integer">integer</option>' +
+        '<option value="number">number</option>' +
+        '<option value="boolean">boolean</option>' +
+        '<option value="datetime">datetime</option>' +
+        '</select></td>' +
+        '<td style="white-space:nowrap;"><input type="text" class="input" value="" placeholder="输入值" style="width:calc(100% - 28px);display:inline-block;vertical-align:middle;">' +
+        '<button class="btn btn-link btn-sm btn-danger" onclick="this.closest(\'tr\').remove()" style="margin-left:2px;vertical-align:middle;">✕</button></td>';
+      paramsBody.appendChild(tr);
+      // 聚焦到参数名输入框
+      tr.querySelector('input').focus();
+    }
+
+    function closeDebugModal() {
+      document.getElementById('debugModal').style.display = 'none';
+    }
+
+    function sendDebugRequest() {
+      document.getElementById('debugEmptyState').style.display = 'none';
+      document.getElementById('debugResponseResult').style.display = 'block';
+    }
+
+    function switchDebugRespTab(name, el) {
+      var modal = document.getElementById('debugModal');
+      modal.querySelectorAll('.resp-tab').forEach(function(t) { t.classList.remove('active'); });
+      el.classList.add('active');
+      modal.querySelectorAll('.resp-content').forEach(function(c) { c.classList.remove('active'); });
+      document.getElementById('debugResp-' + name).classList.add('active');
+    }
+  </script>
+  <script src="../common/nav.js"></script>
+</body>
+</html>

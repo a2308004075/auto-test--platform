@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>执行记录 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span>测试管理</span>
+      <span class="sep">&#8250;</span>
+      <span class="current">执行记录</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group open">
+        <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item active"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+  <main class="layout-main">
+
+    <div class="page-header"><h1>执行记录</h1></div>
+    <!-- Search Card -->
+    <div class="search-card collapsed" id="executionSearchCard">
+      <div class="search-form">
+        <div class="search-row">
+          <div class="search-item">
+            <span class="filter-label">测试计划名称</span>
+            <input type="text" class="input input-search" placeholder="模糊查询">
+          </div>
+          <div class="search-item">
+            <span class="filter-label">环境</span>
+            <select class="select">
+              <option>全部环境</option>
+              <option>开发环境</option>
+              <option>测试环境</option>
+              <option>预发布环境</option>
+              <option>生产环境</option>
+            </select>
+          </div>
+          <div class="search-item">
+            <span class="filter-label">触发方式</span>
+            <select class="select">
+              <option>全部触发方式</option>
+              <option>手动</option>
+              <option>定时</option>
+              <option>CI</option>
+            </select>
+          </div>
+          <div class="search-actions">
+            <button class="btn btn-primary" onclick="handleExecSearch()">查询</button>
+            <button class="btn" onclick="handleExecReset()">重置</button>
+            <button class="search-toggle" type="button" onclick="toggleSearchCard(this)">
+              <span class="arrow">&#708;</span>
+              <span class="text">展开</span>
+            </button>
+          </div>
+        </div>
+        <div class="search-row collapse-row">
+          <div class="search-item">
+            <span class="filter-label">状态</span>
+            <select class="select">
+              <option>全部状态</option>
+              <option>通过</option>
+              <option>失败</option>
+              <option>运行中</option>
+              <option>已取消</option>
+            </select>
+          </div>
+          <div class="search-item">
+            <span class="filter-label">开始执行时间</span>
+            <div class="date-range">
+              <input type="date" class="input" value="2024-01-08">
+              <span class="separator">至</span>
+              <input type="date" class="input" value="2024-01-15">
+            </div>
+          </div>
+          <div class="search-item">
+            <span class="filter-label">结束执行时间</span>
+            <div class="date-range">
+              <input type="date" class="input">
+              <span class="separator">至</span>
+              <input type="date" class="input">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- History Table -->
+    <div class="card">
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th style="width:180px;">测试计划</th><th style="width:100px;">环境</th><th style="width:90px;">触发方式</th><th style="width:140px;">执行进度</th><th style="width:80px;">状态</th><th style="width:170px;">用例（通过/失败/跳过）</th><th style="width:80px;">通过率</th><th style="width:160px;">开始执行时间</th><th style="width:160px;">结束执行时间</th><th style="width:120px;">操作</th></tr></thead>
+          <tbody id="execTableBody">
+            <tr>
+              <td><a href="execution-detail.html">冒烟测试-v2.1 #39</a></td>
+              <td style="font-size:12px;">开发环境</td>
+              <td><span class="tag tag-blue">手动</span></td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="progress-bar" style="flex:1;"><div class="fill fill-primary" style="width:80%;"></div></div>
+                  <span style="font-size:12px;color:var(--primary);white-space:nowrap;font-weight:500;">80%</span>
+                </div>
+              </td>
+              <td><span class="status-dot running">运行中</span></td>
+              <td style="font-size:12px;">15 (<span style="color:var(--success);">10</span>/<span style="color:var(--error);">1</span>/1)</td>
+              <td>-</td>
+              <td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 10:30:00</td>
+              <td style="font-size:12px;color:var(--text-tertiary);">-</td>
+              <td style="white-space:nowrap"><button class="btn-link" onclick="window.location.href='execution-detail.html'">详情</button> <button class="btn-link" onclick="handleCancelExec(this)">取消执行</button></td>
+            </tr>
+            <tr>
+              <td><a href="execution-detail.html">冒烟测试-v2.1 #38</a></td>
+              <td style="font-size:12px;">开发环境</td>
+              <td><span class="tag tag-green">定时</span></td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="progress-bar" style="flex:1;"><div class="fill fill-success" style="width:100%;"></div></div>
+                  <span style="font-size:12px;color:var(--text-secondary);white-space:nowrap;">100%</span>
+                </div>
+              </td>
+              <td><span class="status-dot success">通过</span></td>
+              <td style="font-size:12px;">12 (<span style="color:var(--success);">11</span>/<span style="color:var(--error);">1</span>/0)</td>
+              <td><b style="color:var(--success);">91.7%</b></td>
+              <td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 08:00:00</td>
+              <td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 08:00:45</td>
+              <td style="white-space:nowrap"><button class="btn-link" onclick="window.location.href='execution-detail.html'">详情</button> <button class="btn-link" onclick="handleReExec(this)">重新执行</button></td>
+            </tr>
+            <tr>
+              <td><a href="execution-detail.html">回归测试-v2.0 #44</a></td>
+              <td style="font-size:12px;">测试环境</td>
+              <td><span class="tag tag-green">定时</span></td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="progress-bar" style="flex:1;"><div class="fill fill-success" style="width:100%;"></div></div>
+                  <span style="font-size:12px;color:var(--text-secondary);white-space:nowrap;">100%</span>
+                </div>
+              </td>
+              <td><span class="status-dot success">通过</span></td>
+              <td style="font-size:12px;">63 (<span style="color:var(--success);">58</span>/<span style="color:var(--error);">3</span>/2)</td>
+              <td><b style="color:var(--success);">92.1%</b></td>
+              <td style="font-size:12px;color:var(--text-tertiary);">2024-01-12 14:00:00</td>
+              <td style="font-size:12px;color:var(--text-tertiary);">2024-01-12 14:08:12</td>
+              <td style="white-space:nowrap"><button class="btn-link" onclick="window.location.href='execution-detail.html'">详情</button> <button class="btn-link" onclick="handleReExec(this)">重新执行</button></td>
+            </tr>
+            <tr>
+              <td><a href="execution-detail.html">冒烟测试-v2.1 #37</a></td>
+              <td style="font-size:12px;">开发环境</td>
+              <td><span class="tag tag-green">定时</span></td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="progress-bar" style="flex:1;"><div class="fill fill-success" style="width:100%;"></div></div>
+                  <span style="font-size:12px;color:var(--text-secondary);white-space:nowrap;">100%</span>
+                </div>
+              </td>
+              <td><span class="status-dot error">失败</span></td>
+              <td style="font-size:12px;">12 (<span style="color:var(--success);">10</span>/<span style="color:var(--error);">2</span>/0)</td>
+              <td><b style="color:var(--error);">83.3%</b></td>
+              <td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 08:00:00</td>
+              <td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 08:00:52</td>
+              <td style="white-space:nowrap"><button class="btn-link" onclick="window.location.href='execution-detail.html'">详情</button> <button class="btn-link" onclick="handleReExec(this)">重新执行</button></td>
+            </tr>
+            <tr>
+              <td><a href="execution-detail.html">CI集成测试 #12</a></td>
+              <td style="font-size:12px;">预发布环境</td>
+              <td><span class="tag tag-purple">CI</span></td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="progress-bar" style="flex:1;"><div class="fill fill-success" style="width:100%;"></div></div>
+                  <span style="font-size:12px;color:var(--text-secondary);white-space:nowrap;">100%</span>
+                </div>
+              </td>
+              <td><span class="status-dot success">通过</span></td>
+              <td style="font-size:12px;">28 (<span style="color:var(--success);">27</span>/<span style="color:var(--error);">1</span>/0)</td>
+              <td><b style="color:var(--success);">96.4%</b></td>
+              <td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 20:15:00</td>
+              <td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 20:18:45</td>
+              <td style="white-space:nowrap"><button class="btn-link" onclick="window.location.href='execution-detail.html'">详情</button> <button class="btn-link" onclick="handleReExec(this)">重新执行</button></td>
+            </tr>
+            <tr>
+              <td><a href="execution-detail.html">手动验证 #5</a></td>
+              <td style="font-size:12px;">开发环境</td>
+              <td><span class="tag tag-blue">手动</span></td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="progress-bar" style="flex:1;"><div class="fill" style="width:0%;background:var(--text-disabled);"></div></div>
+                  <span style="font-size:12px;color:var(--text-tertiary);white-space:nowrap;">0%</span>
+                </div>
+              </td>
+              <td><span class="status-dot default">已取消</span></td>
+              <td style="font-size:12px;color:var(--text-tertiary);">-</td>
+              <td>-</td>
+              <td style="font-size:12px;color:var(--text-tertiary);">2024-01-10 16:30:00</td>
+              <td style="font-size:12px;color:var(--text-tertiary);">2024-01-10 16:30:05</td>
+              <td style="white-space:nowrap"><button class="btn-link" onclick="window.location.href='execution-detail.html'">详情</button> <button class="btn-link" onclick="handleReExec(this)">重新执行</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer"><div class="pagination" id="execPagination"></div></div>
+    </div>
+  </main>
+  <script>
+    /* ===== 搜索卡片展开/收起 ===== */
+    function toggleSearchCard(btn) {
+      var card = document.getElementById('executionSearchCard');
+      var isCollapsed = card.classList.contains('collapsed');
+      if (isCollapsed) {
+        card.classList.remove('collapsed');
+        btn.querySelector('.arrow').innerHTML = '&#707;';
+        btn.querySelector('.text').textContent = '收起';
+      } else {
+        card.classList.add('collapsed');
+        btn.querySelector('.arrow').innerHTML = '&#708;';
+        btn.querySelector('.text').textContent = '展开';
+      }
+    }
+
+    function handleExecSearch() {
+      alert('查询条件已应用！');
+    }
+
+    function handleExecReset() {
+      var inputs = document.querySelectorAll('#executionSearchCard .input, #executionSearchCard .select');
+      inputs.forEach(function(el) {
+        if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        else if (el.type !== 'date') el.value = '';
+      });
+    }
+
+    function handleCancelExec(btn) {
+      var planName = btn.closest('tr').querySelector('td a').textContent;
+      if (confirm('确定取消执行「' + planName + '」？')) {
+        alert('已取消执行！');
+      }
+    }
+
+    function handleReExec(btn) {
+      var planName = btn.closest('tr').querySelector('td a').textContent;
+      if (confirm('确定重新执行「' + planName + '」？')) {
+        alert('已触发重新执行！');
+      }
+    }
+
+    /* ===== 分页逻辑 ===== */
+    var execPageSize = 20;
+    var execCurrentPage = 1;
+    var execTotalRecords = 156;
+
+    function execGetAllRows() {
+      return Array.prototype.slice.call(document.querySelectorAll('#execTableBody tr'));
+    }
+
+    function execRenderTable() {
+      var rows = execGetAllRows();
+      var start = (execCurrentPage - 1) * execPageSize;
+      var end = start + execPageSize;
+      for (var i = 0; i < rows.length; i++) {
+        rows[i].style.display = (i >= start && i < end) ? '' : 'none';
+      }
+    }
+
+    function execBuildPageNumbers(current, total) {
+      if (total <= 7) {
+        var arr = [];
+        for (var i = 1; i <= total; i++) arr.push(i);
+        return arr;
+      }
+      var pages = [];
+      pages.push(1);
+      var rangeStart = Math.max(2, current - 1);
+      var rangeEnd = Math.min(total - 1, current + 1);
+      if (rangeStart > 2) pages.push('...');
+      for (var j = rangeStart; j <= rangeEnd; j++) pages.push(j);
+      if (rangeEnd < total - 1) pages.push('...');
+      pages.push(total);
+      return pages;
+    }
+
+    function execRenderPagination() {
+      var rows = execGetAllRows();
+      var total = Math.max(rows.length, execTotalRecords);
+      var totalPages = Math.ceil(total / execPageSize) || 1;
+      var html = '';
+      html += '<span class="page-info">共 ' + total + ' 条记录</span>';
+      html += '<button class="page-btn" onclick="execChangePage(' + (execCurrentPage - 1) + ')" ' + (execCurrentPage === 1 ? 'disabled' : '') + '>‹</button>';
+      var pages = execBuildPageNumbers(execCurrentPage, totalPages);
+      for (var p = 0; p < pages.length; p++) {
+        var item = pages[p];
+        if (item === '...') {
+          html += '<span class="page-ellipsis">...</span>';
+        } else {
+          var activeCls = item === execCurrentPage ? 'active' : '';
+          html += '<button class="page-btn ' + activeCls + '" onclick="execChangePage(' + item + ')">' + item + '</button>';
+        }
+      }
+      html += '<button class="page-btn" onclick="execChangePage(' + (execCurrentPage + 1) + ')" ' + (execCurrentPage === totalPages ? 'disabled' : '') + '>›</button>';
+      html += '<span class="page-jump">跳至 <input type="text" id="execJumpInput" value="' + execCurrentPage + '" onkeydown="if(event.key===\'Enter\')execJumpToPage()"> 页</span>';
+      document.getElementById('execPagination').innerHTML = html;
+    }
+
+    function execChangePage(page) {
+      var rows = execGetAllRows();
+      var total = Math.max(rows.length, execTotalRecords);
+      var totalPages = Math.ceil(total / execPageSize) || 1;
+      if (page < 1 || page > totalPages) return;
+      execCurrentPage = page;
+      execRenderTable();
+      execRenderPagination();
+    }
+
+    function execJumpToPage() {
+      var input = document.getElementById('execJumpInput');
+      if (!input) return;
+      var page = parseInt(input.value, 10);
+      if (isNaN(page)) { input.value = execCurrentPage; return; }
+      execChangePage(page);
+    }
+
+    execRenderTable();
+    execRenderPagination();
+  </script>
+  <script src="../common/nav.js"></script>
+</body>
+</html>

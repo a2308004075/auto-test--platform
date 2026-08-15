@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新建工具方法关键字 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    .edit-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .edit-header .actions { display: flex; gap: 8px; }
+    .edit-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span><a href="tool-list.html">工具方法关键字</a></span>
+      <span class="sep">&#8250;</span>
+      <span class="current">新建工具方法关键字</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item active"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+  <main class="layout-main">
+
+    <div class="edit-header">
+      <h1 style="font-size: 18px;">新建工具方法关键字</h1>
+      <div class="actions">
+        <button id="testBtn" class="btn" onclick="openTestModal()">测试</button>
+        <button id="saveBtn" class="btn btn-primary" onclick="handleSave()">保存</button>
+        <button class="btn" onclick="location.href='tool-list.html'">取消</button>
+      </div>
+    </div>
+    <!-- Tabs -->
+    <div class="tabs" id="createTabs">
+      <div class="tab-item active" onclick="switchTab('basic', this)">基础信息</div>
+      <div class="tab-item" onclick="switchTab('code', this)">代码编辑</div>
+    </div>
+
+    <!-- Tab: 基础信息 -->
+    <div class="tab-content active" id="tab-basic">
+      <div class="card"><div class="card-body">
+        <div class="edit-form-row">
+          <div class="form-group">
+            <label class="form-label">工具方法关键字 <span class="required">*</span></label>
+            <input id="keywordInput" type="text" class="input w-full" maxlength="20" placeholder="最多20个字符">
+          </div>
+          <div class="form-group">
+            <label class="form-label">分组 <span class="required">*</span></label>
+            <select id="categorySelect" class="select w-full"><option value="" disabled selected>请选择分组</option><option>自定义</option><option>加密</option><option>字符串</option><option>时间</option><option>数据转换</option></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">描述</label>
+          <textarea class="textarea w-full" rows="2" maxlength="200" placeholder="最多200个字符"></textarea>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: 代码编辑 -->
+    <div class="tab-content" id="tab-code">
+      <div class="card">
+        <div class="card-header"><span class="form-label" style="margin-bottom:0;">代码编辑 <span class="required">*</span></span><span style="display:flex;gap:4px;margin-left:auto;"><span style="font-size:11px;background:#306998;color:#FFD43B;padding:1px 8px;border-radius:3px;font-weight:600;margin-right:8px;line-height:20px;">Python</span><button class="btn btn-sm" onclick="insertTemplate()">插入模板</button><button class="btn btn-sm" onclick="formatCode()">格式化</button></span></div>
+        <div class="card-body" style="padding:0;">
+          <div class="py-editor-wrap" style="display:flex;min-height:240px;background:#1e1e1e;border-radius:0 0 6px 6px;overflow:hidden;">
+            <div id="lineNumbers" style="padding:16px 0;text-align:right;user-select:none;color:#858585;font:13px/1.6 Consolas,'Courier New',monospace;min-width:40px;background:#1e1e1e;border-right:1px solid #333;"></div>
+            <div style="position:relative;flex:1;min-height:240px;">
+              <pre id="pyHighlight" style="position:absolute;top:0;left:0;right:0;bottom:0;margin:0;padding:16px 16px 16px 12px;font:13px/1.6 Consolas,'Courier New',monospace;white-space:pre;overflow:auto;pointer-events:none;color:#d4d4d4;tab-size:4;"></pre>
+              <textarea id="pyEditor" spellcheck="false" style="position:absolute;top:0;left:0;width:100%;height:100%;min-height:240px;padding:16px 16px 16px 12px;background:transparent;color:transparent;caret-color:#d4d4d4;border:none;outline:none;resize:none;font:13px/1.6 Consolas,'Courier New',monospace;tab-size:4;white-space:pre;overflow:auto;z-index:1;"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 在线测试弹窗 -->
+  <div id="testModal" onclick="if(event.target===this)closeTestModal()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:8px;width:600px;max-width:90%;max-height:80vh;overflow:auto;box-shadow:0 4px 20px rgba(0,0,0,0.15);">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="margin:0;font-size:16px;font-weight:600;">在线测试</h3>
+        <button class="btn btn-sm" onclick="closeTestModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-secondary);padding:0;line-height:1;">&times;</button>
+      </div>
+      <div style="padding:20px;">
+        <h4 style="font-size:13px;font-weight:600;margin-bottom:12px;">测试参数</h4>
+        <table class="w-full" style="margin-bottom:16px;">
+          <thead><tr><th>参数名</th><th>测试值</th></tr></thead>
+          <tbody id="testParamsBody"></tbody>
+        </table>
+        <button class="btn btn-primary btn-sm" onclick="runTest()">▶ 执行测试</button>
+        <div id="testResult" style="margin-top:16px;display:none;">
+          <h4 style="font-size:13px;font-weight:600;margin-bottom:8px;">执行结果</h4>
+          <div style="display:flex;gap:16px;margin-bottom:8px;font-size:13px;">
+            <span>耗时：<b id="testCost" style="color:var(--success);">12ms</b></span>
+            <span>状态：<span class="tag tag-green">成功</span></span>
+          </div>
+          <div class="code-editor" style="min-height:60px;padding:12px;font-size:12px;">
+            <span class="comment">// 返回值</span><br>
+            <span id="testOutput" class="string">"BAT7K3X9M2P5"</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 保存确认弹窗 -->
+  <div class="modal-overlay" id="saveModal" style="display: none;">
+    <div class="modal" style="width: 380px;">
+      <div class="modal-header">
+        <h3>保存工具方法关键字</h3>
+        <button class="modal-close" onclick="closeSaveModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-confirm-message" id="saveModalMsg">工具方法关键字 <strong></strong> 保存成功！</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="location.href='tool-list.html'">返回列表</button>
+        <button class="btn btn-primary" onclick="closeSaveModal()">继续新建</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../common/nav.js"></script>
+  <script>
+  (function(){
+    var editor = document.getElementById('pyEditor');
+    var gutter = document.getElementById('lineNumbers');
+    var highlight = document.getElementById('pyHighlight');
+    var testBtn = document.getElementById('testBtn');
+    var saveBtn = document.getElementById('saveBtn');
+    var keywordInput = document.getElementById('keywordInput');
+    var categorySelect = document.getElementById('categorySelect');
+
+    /* ===== Tab 切换 ===== */
+    function switchTab(name, el) {
+      document.querySelectorAll('#createTabs .tab-item').forEach(function(t) { t.classList.remove('active'); });
+      el.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+      document.getElementById('tab-' + name).classList.add('active');
+    }
+    window.switchTab = switchTab;
+
+    /* ===== 保存确认弹窗 ===== */
+    function closeSaveModal() {
+      document.getElementById('saveModal').style.display = 'none';
+    }
+    window.closeSaveModal = closeSaveModal;
+    document.getElementById('saveModal').addEventListener('click', function(e) {
+      if (e.target === this) closeSaveModal();
+    });
+
+    var KW = 'False|None|True|and|as|assert|async|await|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield';
+    var kwRe = new RegExp('\\b(' + KW + ')\\b');
+    var BUILTINS = 'print|len|range|int|str|float|list|dict|set|tuple|bool|type|isinstance|open|input|abs|max|min|sum|sorted|enumerate|zip|map|filter|hasattr|getattr|setattr|super|property|staticmethod|classmethod';
+    var biRe = new RegExp('\\b(' + BUILTINS + ')\\b');
+
+    function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function attrEsc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+    function pyHighlight(code){
+      var lines = code.split('\n');
+      var out = [];
+      for(var li=0; li<lines.length; li++){
+        var line = lines[li];
+        var result = '';
+        var i = 0;
+        while(i < line.length){
+          // Comment
+          if(line[i] === '#'){
+            result += '<span style="color:#6a9955;">' + esc(line.substring(i)) + '</span>';
+            i = line.length; continue;
+          }
+          // Triple-quoted string
+          if(line.substring(i,i+3) === '"""' || line.substring(i,i+3) === "'''"){
+            var q = line.substring(i,i+3);
+            var end = line.indexOf(q, i+3);
+            if(end !== -1){
+              result += '<span style="color:#ce9178;">' + esc(line.substring(i, end+3)) + '</span>';
+              i = end + 3;
+            } else {
+              result += '<span style="color:#ce9178;">' + esc(line.substring(i)) + '</span>';
+              i = line.length;
+            }
+            continue;
+          }
+          // Single/double quoted string
+          if(line[i] === '"' || line[i] === "'"){
+            var q2 = line[i], j = i+1;
+            while(j < line.length && line[j] !== q2){
+              if(line[j] === '\\') j++;
+              j++;
+            }
+            j = Math.min(j+1, line.length);
+            result += '<span style="color:#ce9178;">' + esc(line.substring(i, j)) + '</span>';
+            i = j; continue;
+          }
+          // f-string prefix
+          if((line[i]==='f'||line[i]==='F'||line[i]==='b'||line[i]==='B'||line[i]==='r'||line[i]==='R') && (line[i+1]==='"'||line[i+1]==="'")){
+            var q3 = line[i+1], j2 = i+2;
+            while(j2 < line.length && line[j2] !== q3){
+              if(line[j2] === '\\') j2++;
+              j2++;
+            }
+            j2 = Math.min(j2+1, line.length);
+            result += '<span style="color:#ce9178;">' + esc(line.substring(i, j2)) + '</span>';
+            i = j2; continue;
+          }
+          // Decorator
+          if(line[i] === '@' && (i===0 || /\s/.test(line[i-1]))){
+            var m = line.substring(i).match(/^@\w+/);
+            if(m){
+              result += '<span style="color:#dcdcaa;">' + esc(m[0]) + '</span>';
+              i += m[0].length; continue;
+            }
+          }
+          // Numbers
+          if(/\d/.test(line[i]) && (i===0 || /[\s=+\-*/%<>!,(:]/.test(line[i-1]))){
+            var nm = line.substring(i).match(/^\d+\.?\d*/);
+            if(nm){
+              result += '<span style="color:#b5cea8;">' + esc(nm[0]) + '</span>';
+              i += nm[0].length; continue;
+            }
+          }
+          // Word (keyword / builtin / identifier)
+          if(/[a-zA-Z_]/.test(line[i])){
+            var wm = line.substring(i).match(/^[a-zA-Z_]\w*/);
+            if(wm){
+              var w = wm[0];
+              if(kwRe.test(w)){
+                result += '<span style="color:#569cd6;font-weight:normal;">' + esc(w) + '</span>';
+              } else if(biRe.test(w)){
+                result += '<span style="color:#4ec9b0;">' + esc(w) + '</span>';
+              } else if(i > 0 && line[i-1] === '.'){
+                result += '<span style="color:#d4d4d4;">' + esc(w) + '</span>';
+              } else {
+                var after = line.substring(i + w.length);
+                if(/^\s*\(/.test(after)){
+                  result += '<span style="color:#dcdcaa;">' + esc(w) + '</span>';
+                } else {
+                  result += '<span style="color:#9cdcfe;">' + esc(w) + '</span>';
+                }
+              }
+              i += w.length; continue;
+            }
+          }
+          // Operators & punctuation
+          if(/[=+\-*/%<>!&|^~]/.test(line[i])){
+            result += '<span style="color:#d4d4d4;">' + esc(line[i]) + '</span>';
+            i++; continue;
+          }
+          if(/[()[\]{},.:;]/.test(line[i])){
+            result += '<span style="color:#d4d4d4;">' + esc(line[i]) + '</span>';
+            i++; continue;
+          }
+          result += esc(line[i]);
+          i++;
+        }
+        out.push(result);
+      }
+      return out.join('\n');
+    }
+
+    var TEMPLATE = "import random\nimport string\n\ndef generate_sn(prefix: str, length: int) -> str:\n    \"\"\"生成电池SN编码\"\"\"\n    remaining = length - len(prefix)\n    chars = string.ascii_uppercase + string.digits\n    random_part = ''.join(random.choices(chars, k=remaining))\n    return prefix + random_part";
+
+    function insertTemplate(){
+      var s = editor.selectionStart, end = editor.selectionEnd;
+      var before = editor.value.substring(0, s);
+      var after = editor.value.substring(end);
+      editor.value = before + TEMPLATE + after;
+      editor.selectionStart = editor.selectionEnd = s + TEMPLATE.length;
+      editor.focus();
+      syncAll();
+    }
+    window.insertTemplate = insertTemplate;
+
+    function spaces(n){
+      var s = '';
+      for(var k=0; k<n; k++) s += ' ';
+      return s;
+    }
+
+    function formatCode(){
+      var lines = editor.value.split('\n');
+      var out = [];
+      var indentSize = 4;
+      for(var i=0; i<lines.length; i++){
+        var raw = lines[i];
+        var stripped = raw.replace(/^\s+|\s+$/g, '');
+        if(!stripped){
+          out.push('');
+          continue;
+        }
+        var originalIndent = raw.match(/^\s*/)[0].length;
+        var normalizedIndent = Math.round(originalIndent / indentSize) * indentSize;
+        if(i > 0){
+          var prevRaw = lines[i-1];
+          var prevStripped = prevRaw.replace(/^\s+|\s+$/g, '');
+          if(prevStripped && /:\s*(#.*)?$/.test(prevStripped)){
+            var prevIndent = prevRaw.match(/^\s*/)[0].length;
+            var prevNormIndent = Math.round(prevIndent / indentSize) * indentSize;
+            if(normalizedIndent <= prevNormIndent){
+              normalizedIndent = prevNormIndent + indentSize;
+            }
+          }
+        }
+        out.push(spaces(normalizedIndent) + stripped);
+      }
+      var result = out.join('\n').replace(/\n{3,}/g, '\n\n').replace(/\n+$/g, '');
+      editor.value = result;
+      editor.focus();
+      syncAll();
+    }
+    window.formatCode = formatCode;
+
+    function extractParams(code){
+      var match = code.match(/\bdef\s+\w+\s*\(([\s\S]*?)\)\s*(?:->[^:]*)?:/);
+      if(!match) return [];
+      var paramsPart = match[1];
+      if(!paramsPart.trim()) return [];
+      var params = paramsPart.split(',');
+      var result = [];
+      for(var i=0; i<params.length; i++){
+        var p = params[i].trim();
+        if(!p) continue;
+        var name, type = '', required = true, defaultValue = '';
+        var eqIndex = p.indexOf('=');
+        var leftPart = eqIndex !== -1 ? p.substring(0, eqIndex).trim() : p;
+        var defaultPart = eqIndex !== -1 ? p.substring(eqIndex + 1).trim() : '';
+
+        if(eqIndex !== -1){
+          required = false;
+          defaultValue = pyValueToString(defaultPart);
+        }
+
+        var colonIndex = leftPart.indexOf(':');
+        if(colonIndex !== -1){
+          var nameMatch = leftPart.substring(0, colonIndex).trim().match(/^([*\w]+)/);
+          if(nameMatch) name = nameMatch[1];
+          type = leftPart.substring(colonIndex + 1).trim();
+        } else {
+          var nameMatch2 = leftPart.match(/^([*\w]+)/);
+          if(nameMatch2) name = nameMatch2[1];
+        }
+
+        if(!type && defaultValue) type = inferTypeFromDefault(defaultValue);
+
+        if(name) result.push({name: name, type: type, required: required, defaultValue: defaultValue});
+      }
+      return result;
+    }
+
+    function pyValueToString(val){
+      val = val.trim();
+      if((val.charAt(0) === '"' && val.charAt(val.length - 1) === '"') ||
+         (val.charAt(0) === "'" && val.charAt(val.length - 1) === "'")){
+        return val.substring(1, val.length - 1);
+      }
+      return val;
+    }
+
+    function inferTypeFromDefault(val){
+      val = val.trim();
+      if((val.charAt(0) === '"' && val.charAt(val.length - 1) === '"') ||
+         (val.charAt(0) === "'" && val.charAt(val.length - 1) === "'")) return 'str';
+      if(val === 'True' || val === 'False') return 'bool';
+      if(val === 'None') return 'NoneType';
+      if(/^-?\d+\.\d+$/.test(val)) return 'float';
+      if(/^-?\d+$/.test(val)) return 'int';
+      if(val.charAt(0) === '[' && val.charAt(val.length - 1) === ']') return 'list';
+      if(val.charAt(0) === '{' && val.charAt(val.length - 1) === '}') return 'dict';
+      return '';
+    }
+
+    function openTestModal(){
+      var modal = document.getElementById('testModal');
+      var tbody = document.getElementById('testParamsBody');
+      var result = document.getElementById('testResult');
+      var params = extractParams(editor.value);
+
+      tbody.innerHTML = '';
+      if(params.length === 0){
+        tbody.innerHTML = '<tr><td colspan="2" style="color:var(--text-tertiary);text-align:center;padding:16px;">未检测到函数参数</td></tr>';
+      } else {
+        for(var i=0; i<params.length; i++){
+          var p = params[i];
+          var requiredMark = p.required ? '<span style="color:var(--error);margin-left:4px;">*</span>' : '';
+          var typeTag = p.type ? '<span class="tag tag-gray" style="margin-left:6px;font-size:11px;">' + esc(p.type) + '</span>' : '';
+          var placeholder = p.required ? '必填' : '';
+          if(p.required && p.name === 'prefix') placeholder = '必填，例如 BAT';
+          else if(p.required && p.name === 'length') placeholder = '必填，例如 12';
+          else if(p.type === 'int') placeholder = '请输入整数';
+          else if(p.type === 'float') placeholder = '请输入数字';
+          else if(p.type === 'bool') placeholder = 'True / False';
+          tbody.innerHTML += '<tr><td><code>' + esc(p.name) + '</code>' + requiredMark + typeTag + '</td><td><input type="text" class="input test-param" data-name="' + esc(p.name) + '" data-type="' + esc(p.type) + '" data-default="' + attrEsc(p.defaultValue) + '" data-required="' + p.required + '" value="' + attrEsc(p.defaultValue) + '" placeholder="' + placeholder + '" style="width:240px;"><div class="param-error" data-error-for="' + esc(p.name) + '" style="display:none;color:var(--error);font-size:12px;margin-top:4px;"></div></td></tr>';
+        }
+        var testInputs = tbody.querySelectorAll('.test-param');
+        for(var j=0; j<testInputs.length; j++){
+          testInputs[j].addEventListener('input', function(){
+            var errDiv = document.querySelector('.param-error[data-error-for="' + this.getAttribute('data-name') + '"]');
+            if(errDiv){
+              errDiv.style.display = 'none';
+              errDiv.textContent = '';
+            }
+          });
+        }
+      }
+
+      result.style.display = 'none';
+      modal.style.display = 'flex';
+    }
+    window.openTestModal = openTestModal;
+
+    function closeTestModal(){
+      document.getElementById('testModal').style.display = 'none';
+    }
+    window.closeTestModal = closeTestModal;
+
+    function validateParam(name, type, value){
+      if(!type || value === undefined || value === null) return '';
+      if(type === 'int'){
+        if(!/^-?\d+$/.test(value)) return '参数 ' + name + ' 必须是整数';
+      } else if(type === 'float'){
+        if(!/^-?\d+(\.\d+)?$/.test(value)) return '参数 ' + name + ' 必须是数字';
+      } else if(type === 'bool'){
+        if(value !== 'True' && value !== 'False' && value !== 'true' && value !== 'false'){
+          return '参数 ' + name + ' 必须是布尔值（True / False）';
+        }
+      }
+      return '';
+    }
+
+    function showParamError(name, msg){
+      var errDiv = document.querySelector('.param-error[data-error-for="' + name + '"]');
+      if(errDiv){
+        errDiv.textContent = msg;
+        errDiv.style.display = 'block';
+      }
+    }
+
+    function clearParamErrors(){
+      var errs = document.querySelectorAll('.param-error');
+      for(var i=0; i<errs.length; i++){
+        errs[i].style.display = 'none';
+        errs[i].textContent = '';
+      }
+    }
+
+    function runTest(){
+      clearParamErrors();
+      var inputs = document.querySelectorAll('.test-param');
+      var values = {};
+      var hasError = false;
+      for(var i=0; i<inputs.length; i++){
+        var name = inputs[i].getAttribute('data-name');
+        var type = inputs[i].getAttribute('data-type');
+        var val = inputs[i].value;
+        if(val === ''){
+          if(inputs[i].getAttribute('data-required') === 'true'){
+            showParamError(name, '参数 ' + name + ' 为必填项');
+            hasError = true;
+            continue;
+          }
+          val = inputs[i].getAttribute('data-default');
+        }
+        var err = validateParam(name, type, val);
+        if(err){
+          showParamError(name, err);
+          hasError = true;
+          continue;
+        }
+        values[name] = val;
+      }
+      if(hasError) return;
+
+      var output = '"执行成功"';
+      var code = editor.value;
+      var fnMatch = code.match(/\bdef\s+(\w+)\s*\(/);
+      var fnName = fnMatch ? fnMatch[1] : '';
+
+      if(fnName === 'generate_sn' && values.prefix !== undefined && values.length !== undefined){
+        var prefix = values.prefix;
+        var len = parseInt(values.length, 10) || 0;
+        var remaining = Math.max(0, len - prefix.length);
+        var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        var randomPart = '';
+        for(var k=0; k<remaining; k++){
+          randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        output = '"' + prefix + randomPart + '"';
+      }
+
+      document.getElementById('testOutput').textContent = output;
+      document.getElementById('testCost').textContent = Math.floor(Math.random() * 50 + 5) + 'ms';
+      document.getElementById('testResult').style.display = 'block';
+    }
+    window.runTest = runTest;
+
+    function handleSave(){
+      var keyword = keywordInput ? keywordInput.value.trim() : '';
+      var category = categorySelect ? categorySelect.value : '';
+      var code = editor.value.trim();
+      if(keyword === ''){
+        showToast('工具方法关键字名称不能为空', 'error');
+        switchTab('basic', document.querySelectorAll('#createTabs .tab-item')[0]);
+        return;
+      }
+      if(!category || category === ''){
+        showToast('请选择分组', 'error');
+        switchTab('basic', document.querySelectorAll('#createTabs .tab-item')[0]);
+        return;
+      }
+      if(code === ''){
+        showToast('代码编辑内容不能为空', 'error');
+        switchTab('code', document.querySelectorAll('#createTabs .tab-item')[1]);
+        return;
+      }
+      document.getElementById('saveModalMsg').innerHTML = '工具方法关键字 <strong>' + keyword + '</strong> 保存成功！';
+      document.getElementById('saveModal').style.display = 'flex';
+    }
+    window.handleSave = handleSave;
+
+    function syncAll(){
+      var val = editor.value;
+      // Sync line numbers
+      var n = val.split('\n').length;
+      var lh = '';
+      for(var i=1;i<=n;i++) lh += '<div style="padding-right:10px;">'+i+'</div>';
+      gutter.innerHTML = lh;
+      // Sync syntax highlighting
+      highlight.innerHTML = pyHighlight(val) + '\n';
+      // Update test button state
+      if(testBtn){
+        var isEmpty = val.trim() === '';
+        testBtn.disabled = isEmpty;
+        testBtn.style.opacity = isEmpty ? '0.5' : '1';
+        testBtn.style.cursor = isEmpty ? 'not-allowed' : 'pointer';
+      }
+      updateSaveBtnState();
+    }
+
+    function updateSaveBtnState(){
+      if(!saveBtn) return;
+      var keywordFilled = keywordInput && keywordInput.value.trim() !== '';
+      var categoryFilled = categorySelect && categorySelect.value !== '';
+      var codeFilled = editor && editor.value.trim() !== '';
+      var valid = keywordFilled && categoryFilled && codeFilled;
+      saveBtn.disabled = !valid;
+      saveBtn.style.opacity = valid ? '1' : '0.5';
+      saveBtn.style.cursor = valid ? 'pointer' : 'not-allowed';
+    }
+
+    if(keywordInput) keywordInput.addEventListener('input', updateSaveBtnState);
+    if(categorySelect) categorySelect.addEventListener('change', updateSaveBtnState);
+    editor.addEventListener('input', syncAll);
+    editor.addEventListener('scroll', function(){
+      highlight.scrollTop = editor.scrollTop;
+      highlight.scrollLeft = editor.scrollLeft;
+      gutter.scrollTop = editor.scrollTop;
+    });
+    editor.addEventListener('keydown', function(e){
+      if(e.key === 'Tab'){
+        e.preventDefault();
+        var s = this.selectionStart, end = this.selectionEnd;
+        this.value = this.value.substring(0,s) + '    ' + this.value.substring(end);
+        this.selectionStart = this.selectionEnd = s + 4;
+        syncAll();
+      }
+    });
+    syncAll();
+  })();
+  </script>
+</body>
+</html>

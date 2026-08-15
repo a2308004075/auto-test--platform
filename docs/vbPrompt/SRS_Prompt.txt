@@ -1,0 +1,10 @@
+目标：开发新项目postman-platform，生成需求文档
+输入：深入学习postman-tool项目，该项目核心是关键字驱动测试
+输出：根据postman-tool项目，开发新项目postman-platform，生成需求文档，保存到
+步骤：
+1、深入学习postman-tool项目，该项目核心是关键字驱动测试
+2、根据postman-tool项目，开发新项目postman-platform，生成需求文档，保存到
+（1）postman-platform有web前端、后端
+（2）使用最新技术开发
+（3）web界面风格要专业、美观，不要有AI感
+3、请不要猜测我的意图，任何不明确的地方都必须向我提问。

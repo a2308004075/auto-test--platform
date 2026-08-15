@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>编辑接口 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    .edit-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .edit-header .actions { display: flex; gap: 8px; }
+    .edit-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .params-section { margin-bottom: 24px; }
+    .params-section h4 { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .add-param-btn { font-size: 13px; }
+    .schema-editor { background: #fafafa; border: 1px solid var(--border-color-secondary); border-radius: var(--border-radius); padding: 16px; }
+    .schema-mode { display: flex; gap: 8px; margin-bottom: 12px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .source-info { padding: 8px 12px; background: #fafafa; border-radius: 4px; font-size: 13px; color: var(--text-tertiary); display: inline-flex; align-items: center; gap: 6px; }
+    .debug-section { }
+    .debug-env-select { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .debug-params { margin-bottom: 16px; }
+    .response-area { margin-top: 16px; }
+    .response-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .response-status { display: inline-flex; align-items: center; gap: 6px; }
+    .status-ok { color: var(--success); font-weight: 600; }
+    .response-body { }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span><a href="api-list.html">接口文档</a></span>
+      <span class="sep">&#8250;</span>
+      <span class="current">编辑接口</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item active"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+
+  <main class="layout-main">
+
+
+    <div class="edit-header">
+      <h1 style="font-size: 18px;">编辑接口</h1>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="handleSave()">保存</button>
+        <button class="btn" onclick="location.href='api-list.html'">取消保存</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" id="editTabs">
+      <div class="tab-item active" onclick="switchTab('basic', this)">基础信息</div>
+      <div class="tab-item" onclick="switchTab('params', this)">请求参数</div>
+      <div class="tab-item" onclick="switchTab('body', this)">请求体</div>
+      <div class="tab-item" onclick="switchTab('response', this)">响应定义</div>
+      <div class="tab-item" onclick="switchTab('debug', this)">调试</div>
+      <div class="tab-item" onclick="switchTab('refs', this)">引用关系</div>
+    </div>
+
+    <!-- Tab: Basic Info -->
+    <div class="tab-content active" id="tab-basic">
+      <div class="card"><div class="card-body">
+        <div class="edit-form-row">
+          <div class="form-group">
+            <label class="form-label">接口 ID</label>
+            <input type="text" class="input w-full font-mono" value="API-1" readonly style="background:#f5f5f5;color:var(--text-tertiary);cursor:not-allowed;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">来源</label>
+            <input type="text" class="input w-full" value="Swagger 导入" readonly style="background:#f5f5f5;color:var(--text-tertiary);cursor:not-allowed;">
+          </div>
+        </div>
+        <div class="edit-form-row">
+          <div class="form-group">
+            <label class="form-label">接口名称</label>
+            <input type="text" class="input w-full" value="获取用户列表">
+          </div>
+          <div class="form-group">
+            <label class="form-label">HTTP 方法</label>
+            <select class="select w-full"><option selected>GET</option><option>POST</option><option>PUT</option><option>DELETE</option><option>PATCH</option></select>
+          </div>
+        </div>
+        <div class="edit-form-row">
+          <div class="form-group">
+            <label class="form-label">接口路径</label>
+            <input type="text" class="input w-full font-mono" value="/api/users/list">
+          </div>
+          <div class="form-group">
+            <label class="form-label">描述</label>
+            <input type="text" class="input w-full" value="分页查询用户列表，支持搜索和筛选">
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: Request Params -->
+    <div class="tab-content" id="tab-params">
+      <div class="card"><div class="card-body">
+        <div class="params-section">
+          <h4>Path 参数 <span class="text-tertiary text-sm">无</span></h4>
+        </div>
+        <div class="params-section">
+          <h4>Query 参数 <button class="btn btn-sm add-param-btn">+ 添加参数</button></h4>
+          <table>
+            <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th><th style="width:60px">操作</th></tr></thead>
+            <tbody>
+              <tr><td><input type="text" class="input" value="page" style="width:120px"></td><td><select class="select" style="width:100px"><option>integer</option><option selected>integer</option></select></td><td><span class="switch" onclick="this.classList.toggle('on')"></span></td><td><input type="text" class="input" value="页码" style="width:200px"></td><td><button class="btn btn-link btn-sm btn-danger">删除</button></td></tr>
+              <tr><td><input type="text" class="input" value="page_size" style="width:120px"></td><td><select class="select" style="width:100px"><option selected>integer</option></select></td><td><span class="switch" onclick="this.classList.toggle('on')"></span></td><td><input type="text" class="input" value="每页条数" style="width:200px"></td><td><button class="btn btn-link btn-sm btn-danger">删除</button></td></tr>
+              <tr><td><input type="text" class="input" value="keyword" style="width:120px"></td><td><select class="select" style="width:100px"><option selected>string</option></select></td><td><span class="switch" onclick="this.classList.toggle('on')"></span></td><td><input type="text" class="input" value="搜索关键字" style="width:200px"></td><td><button class="btn btn-link btn-sm btn-danger">删除</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="params-section">
+          <h4>Header 参数 <button class="btn btn-sm add-param-btn">+ 添加参数</button></h4>
+          <table>
+            <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th><th style="width:60px">操作</th></tr></thead>
+            <tbody>
+              <tr><td><input type="text" class="input" value="Authorization" style="width:140px"></td><td><select class="select" style="width:100px"><option selected>string</option></select></td><td><span class="switch on" onclick="this.classList.toggle('on')"></span></td><td><input type="text" class="input" value="Bearer Token" style="width:200px"></td><td><button class="btn btn-link btn-sm btn-danger">删除</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: Request Body (hidden for GET) -->
+    <div class="tab-content" id="tab-body">
+      <div class="card"><div class="card-body">
+        <div class="empty-state">
+          <div class="icon">📋</div>
+          <div class="text">GET 请求不包含请求体</div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: Response -->
+    <div class="tab-content" id="tab-response">
+      <div class="card"><div class="card-body">
+        <div class="params-section">
+          <h4>状态码 200 <button class="btn btn-sm add-param-btn">+ 添加状态码</button></h4>
+          <div class="schema-editor">
+            <div class="schema-mode">
+              <button class="btn btn-sm" style="background: var(--primary-bg); color: var(--primary);">手动定义</button>
+              <button class="btn btn-sm">从示例推断</button>
+            </div>
+            <table>
+              <thead><tr><th>字段名</th><th>类型</th><th>必填</th><th>描述</th></tr></thead>
+              <tbody>
+                <tr><td class="font-mono">code</td><td>integer</td><td>是</td><td>业务状态码</td></tr>
+                <tr><td class="font-mono">message</td><td>string</td><td>是</td><td>状态描述</td></tr>
+                <tr><td class="font-mono">data.items[]</td><td>array</td><td>是</td><td>用户列表</td></tr>
+                <tr><td class="font-mono">data.total</td><td>integer</td><td>是</td><td>总记录数</td></tr>
+                <tr><td class="font-mono">data.page</td><td>integer</td><td>是</td><td>当前页码</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: Debug -->
+    <div class="tab-content" id="tab-debug">
+      <div class="card"><div class="card-body">
+        <div class="debug-env-select">
+          <label class="form-label" style="margin: 0;">选择环境：</label>
+          <select class="select" style="width: 160px;"><option>test</option><option>staging</option><option>prod</option></select>
+          <button class="btn btn-primary" onclick="simulateDebug()">发送请求</button>
+        </div>
+        <div class="debug-params">
+          <h4 style="margin-bottom: 8px;">Query 参数</h4>
+          <table>
+            <thead><tr><th>参数名</th><th>值</th></tr></thead>
+            <tbody>
+              <tr><td class="font-mono">page</td><td><input type="text" class="input" value="1" style="width:200px"></td></tr>
+              <tr><td class="font-mono">page_size</td><td><input type="text" class="input" value="20" style="width:200px"></td></tr>
+              <tr><td class="font-mono">keyword</td><td><input type="text" class="input" value="" placeholder="搜索关键字" style="width:200px"></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="response-area" id="debugResponse" style="display: none;">
+          <div class="response-header">
+            <div class="response-status"><span class="status-ok">200 OK</span></div>
+            <span class="text-tertiary text-sm">耗时: 127ms</span>
+            <span class="text-tertiary text-sm">大小: 2.4KB</span>
+          </div>
+          <div class="tabs" style="margin-bottom: 8px;">
+            <div class="tab-item active" style="font-size:13px; padding: 4px 12px;">响应体</div>
+            <div class="tab-item" style="font-size:13px; padding: 4px 12px;">响应头</div>
+          </div>
+          <div class="code-editor" style="min-height: 180px; font-size: 12px;">{
+  <span class="string">"code"</span>: <span class="number">0</span>,
+  <span class="string">"message"</span>: <span class="string">"success"</span>,
+  <span class="string">"data"</span>: {
+    <span class="string">"items"</span>: [
+      { <span class="string">"id"</span>: <span class="number">1</span>, <span class="string">"username"</span>: <span class="string">"admin"</span>, <span class="string">"name"</span>: <span class="string">"管理员"</span>, <span class="string">"role"</span>: <span class="string">"ADMIN"</span> },
+      { <span class="string">"id"</span>: <span class="number">2</span>, <span class="string">"username"</span>: <span class="string">"zhangsan"</span>, <span class="string">"name"</span>: <span class="string">"张三"</span>, <span class="string">"role"</span>: <span class="string">"USER"</span> }
+    ],
+    <span class="string">"total"</span>: <span class="number">45</span>,
+    <span class="string">"page"</span>: <span class="number">1</span>,
+    <span class="string">"page_size"</span>: <span class="number">20</span>
+  }
+}</div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: 引用关系 -->
+    <div class="tab-content" id="tab-refs">
+      <div class="card"><div class="card-body">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <h4 style="margin:0;font-size:14px;font-weight:600;">接口关键字引用</h4>
+          <span class="tag tag-blue">3 个引用</span>
+        </div>
+        <table>
+          <thead><tr><th>关键字名称</th><th>创建人</th><th>修改时间</th><th style="width:80px">操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><a href="../keywords/keyword-edit.html">获取用户列表</a></td>
+              <td>张三</td>
+              <td style="color:var(--text-tertiary);font-size:12px;">2024-10-15</td>
+              <td><a href="../keywords/keyword-edit.html" class="btn-link">查看</a></td>
+            </tr>
+            <tr>
+              <td><a href="../keywords/keyword-edit.html">用户登录</a></td>
+              <td>张三</td>
+              <td style="color:var(--text-tertiary);font-size:12px;">2024-11-02</td>
+              <td><a href="../keywords/keyword-edit.html" class="btn-link">查看</a></td>
+            </tr>
+            <tr>
+              <td><a href="../keywords/keyword-edit.html">获取用户详情</a></td>
+              <td>李四</td>
+              <td style="color:var(--text-tertiary);font-size:12px;">2024-11-20</td>
+              <td><a href="../keywords/keyword-edit.html" class="btn-link">查看</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+
+  </main>
+
+  <script>
+    function switchTab(name, el) {
+      document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+    }
+    function simulateDebug() {
+      document.getElementById('debugResponse').style.display = 'block';
+    }
+
+    /* ===== 保存接口 ===== */
+    function handleSave() {
+      showToast('保存成功', 'success');
+      setTimeout(function() {
+        location.href = 'api-list.html';
+      }, 1500);
+    }
+  </script>
+  <script src="../common/nav.js"></script>
+</body>
+</html>

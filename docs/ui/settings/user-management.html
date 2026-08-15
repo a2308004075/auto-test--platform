@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户列表 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span>系统管理</span>
+      <span class="sep">&#8250;</span>
+      <span class="current">用户列表</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <div class="menu-group open">
+        <div class="menu-group-header open"><span class="icon">&#9881;</span><span class="label">系统管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="profile.html">个人资料</a></li>
+            <li class="menu-item active"><a href="user-management.html">用户列表</a></li>
+            <li class="menu-item"><a href="global-config.html">全局设置</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+  <main class="layout-main">
+
+    <div class="page-header"><h1>用户列表</h1><button class="btn btn-primary" onclick="document.getElementById('userModal').style.display='flex'">+ 新建用户</button></div>
+    <div class="toolbar">
+      <input type="text" class="input input-search" id="searchAccount" placeholder="搜索账号" style="width:160px;" oninput="userFilterAndRender()">
+      <input type="text" class="input input-search" id="searchDisplayName" placeholder="搜索用户名" style="width:160px;" oninput="userFilterAndRender()">
+      <select class="select" id="filterRole" style="width:120px;" onchange="userFilterAndRender()"><option value="">全部角色</option><option value="admin">管理员</option><option value="tester">测试人员</option></select>
+    </div>
+    <div class="card">
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th style="width:120px;">账号</th><th style="width:80px;">用户名</th><th style="width:80px;">角色</th><th style="width:65px;">状态</th><th style="width:148px;">创建时间</th><th style="width:148px;">最近登录</th><th style="width:260px;">操作</th></tr></thead>
+          <tbody id="userTableBody">
+0            <tr><td><b>admin</b></td><td>管理员</td><td><span class="tag tag-purple">admin</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2023-06-01 18:07:40</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 14:30:07</td><td style="white-space:nowrap"><button class="btn-link" data-action="resetpwd">重置密码</button></td></tr>
+            <tr><td><b>zhangsan</b></td><td>张三</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2023-08-15 08:47:01</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 10:20:47</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>lisi</b></td><td>李四</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2023-09-20 12:15:17</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 16:45:15</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>wangwu</b></td><td>王五</td><td><span class="tag tag-purple">admin</span></td><td><span class="tag tag-gray">禁用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2023-10-01 11:08:14</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-05 09:00:08</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="enable" style="color:var(--success);">启用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>zhaoliu</b></td><td>赵六</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2023-10-12 19:06:47</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 08:30:06</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>sunqi</b></td><td>孙七</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2023-10-25 18:47:43</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 11:10:47</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>zhouba</b></td><td>周八</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-gray">禁用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2023-11-03 16:05:57</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-02 17:20:34</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="enable" style="color:var(--success);">启用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>wujiu</b></td><td>吴九</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2023-11-15 17:27:05</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-13 09:45:37</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>zhengshi</b></td><td>郑十</td><td><span class="tag tag-purple">admin</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2023-11-20 08:01:27</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 13:00:02</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>liuxia</b></td><td>刘夏</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2023-12-01 09:13:01</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-12 15:30:05</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>chenyu</b></td><td>陈宇</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2023-12-08 11:32:13</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 16:20:14</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>yangguang</b></td><td>杨光</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-gray">禁用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2023-12-15 17:01:32</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-01 10:00:38</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="enable" style="color:var(--success);">启用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>huangli</b></td><td>黄丽</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2023-12-20 16:12:01</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 14:15:35</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>wuming</b></td><td>吴明</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-02 19:41:12</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 09:10:45</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>linfeng</b></td><td>林峰</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-05 19:34:41</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 17:40:44</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>hejing</b></td><td>何静</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-06 14:14:34</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 10:55:26</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>xuchao</b></td><td>徐超</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-gray">禁用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-07 15:37:14</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-10 08:20:28</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="enable" style="color:var(--success);">启用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>gaojie</b></td><td>高洁</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-08 12:51:37</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 11:30:17</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>songmei</b></td><td>宋梅</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-09 08:48:51</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-13 16:00:55</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>tangwei</b></td><td>唐伟</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-10 20:10:00</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 14:50:48</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>renhua</b></td><td>任华</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-11 19:27:51</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 08:45:10</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>hanxue</b></td><td>韩雪</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-12 13:17:44</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 12:10:27</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>fenglei</b></td><td>冯磊</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-gray">禁用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-13 10:13:21</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-13 19:30:17</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="enable" style="color:var(--success);">启用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>dengyan</b></td><td>邓燕</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 20:21:09</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 15:25:13</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>caopeng</b></td><td>曹鹏</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 09:05:48</td><td style="font-size:12px;color:var(--text-tertiary);">-</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>jiangtao</b></td><td>姜涛</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-27 14:06:21</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 14:02:06</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>shimin</b></td><td>施敏</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-28 13:54:05</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-13 15:09:24</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>zhangwei</b></td><td>张伟</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-gray">禁用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-01 13:38:06</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-12 16:16:22</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="enable" style="color:var(--success);">启用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>kongfang</b></td><td>孔芳</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-02 12:51:54</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-11 17:23:22</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>yanlei</b></td><td>严磊</td><td><span class="tag tag-purple">admin</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-03 08:46:38</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 08:30:16</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>weina</b></td><td>魏娜</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-04 15:34:51</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 09:37:02</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>qingang</b></td><td>秦刚</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-05 09:59:46</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-13 10:44:29</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>jiangli</b></td><td>蒋丽</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-gray">禁用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-06 14:05:34</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-12 11:51:07</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="enable" style="color:var(--success);">启用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>tianjing</b></td><td>田静</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-07 16:18:59</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-11 12:58:24</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>dingyong</b></td><td>丁勇</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-08 18:39:05</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 13:05:35</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>shenjie</b></td><td>沈洁</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-09 13:36:18</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 14:12:53</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>panqiang</b></td><td>潘强</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-10 11:45:40</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-13 15:19:39</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>daihui</b></td><td>戴辉</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-gray">禁用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-11 09:02:56</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-12 16:26:55</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="enable" style="color:var(--success);">启用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>fanxiuying</b></td><td>范秀英</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-12 18:14:23</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-11 17:33:36</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>fangming</b></td><td>方明</td><td><span class="tag tag-purple">admin</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-13 20:18:12</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 08:40:45</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>shilei</b></td><td>石磊</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-14 09:54:04</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 09:47:02</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>yaoting</b></td><td>姚婷</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-15 11:55:42</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-13 10:54:14</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>tanjun</b></td><td>谭军</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-gray">禁用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-16 09:24:49</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-12 11:01:18</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="enable" style="color:var(--success);">启用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>liaoxia</b></td><td>廖霞</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-17 12:29:05</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-11 12:08:54</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>xiongwei</b></td><td>熊伟</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-18 18:53:14</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 13:15:55</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>jinxin</b></td><td>金鑫</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-19 13:10:06</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 14:22:24</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>luying</b></td><td>陆颖</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-20 13:22:17</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-13 15:29:29</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>haoshuai</b></td><td>郝帅</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-gray">禁用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-21 11:42:40</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-12 16:36:53</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="enable" style="color:var(--success);">启用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>jiaqian</b></td><td>贾倩</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-22 12:44:23</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-11 17:43:10</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>xiazhiyuan</b></td><td>夏志远</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-23 18:41:23</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 08:50:22</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>houbin</b></td><td>侯斌</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-24 09:38:13</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 09:57:42</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>gongxue</b></td><td>龚雪</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-25 18:10:17</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-13 10:04:44</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>wentao</b></td><td>文涛</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-gray">禁用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-26 16:46:59</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-12 11:11:43</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="enable" style="color:var(--success);">启用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>yinhui</b></td><td>尹慧</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-27 11:10:41</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-11 12:18:04</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>zoupeng</b></td><td>邹鹏</td><td><span class="tag tag-purple">admin</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-02-28 15:24:38</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 13:25:40</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>duanchao</b></td><td>段超</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-01 12:59:10</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 14:32:34</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>leifang</b></td><td>雷芳</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-02 18:44:46</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-13 15:39:15</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>shijian</b></td><td>史建</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-gray">禁用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-03 16:14:10</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-12 16:46:29</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="enable" style="color:var(--success);">启用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>menglin</b></td><td>孟琳</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-04 18:20:24</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-11 17:53:17</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>longfei</b></td><td>龙飞</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-05 20:49:59</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 08:00:40</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>guxin</b></td><td>顾欣</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-06 08:14:44</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 09:07:35</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>wanli</b></td><td>万莉</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-07 08:51:14</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-13 10:14:43</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>qianhao</b></td><td>钱浩</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-gray">禁用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-08 13:25:20</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-12 11:21:53</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="enable" style="color:var(--success);">启用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>ouyangguang</b></td><td>欧阳光</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-09 12:04:49</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-11 12:28:49</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>dongjie</b></td><td>董洁</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-10 11:58:03</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 13:35:14</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>yuanye</b></td><td>袁野</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-11 17:56:52</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-14 14:42:02</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>liangjuan</b></td><td>梁娟</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-12 19:20:51</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-13 15:49:20</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>liufeng</b></td><td>柳峰</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-13 11:41:25</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-12 16:56:17</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>lantian</b></td><td>蓝天</td><td><span class="tag tag-blue">tester</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-14 15:25:04</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-11 17:03:13</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+            <tr><td><b>mubai</b></td><td>慕白</td><td><span class="tag tag-purple">admin</span></td><td><span class="tag tag-green">启用</span></td><td style="font-size:12px;color:var(--text-tertiary);">2024-03-15 18:29:58</td><td style="font-size:12px;color:var(--text-tertiary);">2024-01-15 08:10:36</td><td style="white-space:nowrap"><button class="btn-link" data-action="edit">编辑</button> <button class="btn-link" data-action="role">分配角色</button> <button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> <button class="btn-link" data-action="resetpwd">重置密码</button> <button class="btn-link" data-action="delete" style="color:var(--error);">删除</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer"><div class="pagination" id="userPagination"></div></div>
+    </div>
+  </main>
+  <!-- User Modal -->
+  <div class="modal-overlay" id="userModal" style="display:none;">
+    <div class="modal" style="width:440px;">
+      <div class="modal-header"><h3>新建用户</h3><button class="modal-close" onclick="this.closest('.modal-overlay').style.display='none'">×</button></div>
+      <div class="modal-body">
+        <div class="form-group" id="createAccountGroup"><label class="form-label">账号 <span class="required">*</span></label><input type="text" class="input w-full" id="createAccountInput" placeholder="请输入账号（登录用）" oninput="clearCreateError('createAccountGroup')"><div class="error-msg" id="createAccountError" style="display:none;"></div></div>
+        <div class="form-group" id="createDisplayNameGroup"><label class="form-label">用户名 <span class="required">*</span></label><input type="text" class="input w-full" id="createDisplayNameInput" placeholder="请输入用户名（显示名称）" oninput="clearCreateError('createDisplayNameGroup')"><div class="error-msg" id="createDisplayNameError" style="display:none;"></div></div>
+        <div class="form-group" id="createPasswordGroup"><label class="form-label">密码 <span class="required">*</span></label><input type="password" class="input w-full" id="createPasswordInput" placeholder="请输入密码"><div class="error-msg" id="createPasswordError" style="display:none;"></div></div>
+        <div class="form-group"><label class="form-label">角色</label><select class="select w-full"><option value="tester">测试人员（tester）</option><option value="admin">管理员（admin）</option></select></div>
+      </div>
+      <div class="modal-footer"><button class="btn" onclick="this.closest('.modal-overlay').style.display='none'">取消</button><button class="btn btn-primary" onclick="handleCreateUser()">确定</button></div>
+    </div>
+  </div>
+  <!-- Role Assign Modal -->
+  <div class="modal-overlay" id="roleModal" style="display:none;">
+    <div class="modal" style="width:400px;">
+      <div class="modal-header"><h3>分配角色</h3><button class="modal-close" onclick="this.closest('.modal-overlay').style.display='none'">×</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">当前用户</label><input type="text" class="input w-full" value="" id="roleUserName" readonly style="background:var(--bg-secondary);"></div>
+        <div class="form-group"><label class="form-label">分配角色</label><select class="select w-full" id="roleSelect"><option value="tester">测试人员（tester）</option><option value="admin">管理员（admin）</option></select></div>
+      </div>
+      <div class="modal-footer"><button class="btn" onclick="this.closest('.modal-overlay').style.display='none'">取消</button><button class="btn btn-primary" onclick="handleRoleAssign()">确定</button></div>
+    </div>
+  </div>
+  <!-- Edit User Modal -->
+  <div class="modal-overlay" id="editModal" style="display:none;">
+    <div class="modal" style="width:440px;">
+      <div class="modal-header"><h3>编辑用户</h3><button class="modal-close" onclick="closeEditModal()">×</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">账号</label><input type="text" class="input w-full" id="editAccountInput" readonly style="background:var(--bg-body);cursor:not-allowed;"></div>
+        <div class="form-group" id="editDisplayNameGroup"><label class="form-label">用户名 <span class="required">*</span></label><input type="text" class="input w-full" id="editDisplayNameInput" placeholder="请输入用户名（显示名称）" oninput="clearEditError('editDisplayNameGroup')"><div class="error-msg" id="editDisplayNameError" style="display:none;"></div></div>
+        <div class="form-group"><label class="form-label">角色</label><select class="select w-full" id="editRoleSelect"><option value="tester">测试人员（tester）</option><option value="admin">管理员（admin）</option></select></div>
+      </div>
+      <div class="modal-footer"><button class="btn" onclick="closeEditModal()">取消</button><button class="btn btn-primary" onclick="handleEditUser()">确定</button></div>
+    </div>
+  </div>
+  <!-- Reset Password Modal -->
+  <div class="modal-overlay" id="resetPwdModal" style="display:none;">
+    <div class="modal" style="width:400px;">
+      <div class="modal-header"><h3>重置密码</h3><button class="modal-close" onclick="closeResetPwdModal()">×</button></div>
+      <div class="modal-body">
+        <div style="margin-bottom:16px;padding:10px 14px;background:var(--warning-bg);border:1px solid #ffe58f;border-radius:4px;font-size:13px;color:#874d00;">
+          <span style="margin-right:4px;">⚠</span> 即将重置用户 <b id="resetPwdUserName"></b> 的登录密码
+        </div>
+        <div class="form-group" id="resetPwdGroup"><label class="form-label">新密码 <span class="required">*</span></label><input type="password" class="input w-full" id="resetPwdInput" placeholder="请输入新密码（至少6位）" oninput="clearResetPwdError()"><div class="error-msg" id="resetPwdError" style="display:none;"></div></div>
+        <div class="form-group" id="resetPwdConfirmGroup"><label class="form-label">确认密码 <span class="required">*</span></label><input type="password" class="input w-full" id="resetPwdConfirmInput" placeholder="请再次输入新密码" oninput="clearResetPwdConfirmError()"><div class="error-msg" id="resetPwdConfirmError" style="display:none;"></div></div>
+      </div>
+      <div class="modal-footer"><button class="btn" onclick="closeResetPwdModal()">取消</button><button class="btn btn-primary" onclick="handleResetPassword()">确定</button></div>
+    </div>
+  </div>
+  <!-- Toggle Status Confirm Modal -->
+  <div class="modal-overlay" id="toggleStatusModal" style="display:none;">
+    <div class="modal modal-confirm" style="width:400px;">
+      <div class="modal-header"><h3 id="toggleStatusTitle">确认操作</h3><button class="modal-close" onclick="closeToggleStatusModal()">×</button></div>
+      <div class="modal-body">
+        <p class="modal-confirm-message" id="toggleStatusMessage"></p>
+      </div>
+      <div class="modal-footer"><button class="btn" onclick="closeToggleStatusModal()">取消</button><button class="btn" id="toggleStatusConfirmBtn" onclick="handleToggleStatus()">确定</button></div>
+    </div>
+  </div>
+  <!-- Delete User Confirm Modal -->
+  <div class="modal-overlay" id="deleteUserModal" style="display:none;">
+    <div class="modal modal-confirm" style="width:400px;">
+      <div class="modal-header"><h3>确认删除</h3><button class="modal-close" onclick="closeDeleteUserModal()">×</button></div>
+      <div class="modal-body">
+        <p class="modal-confirm-message" id="deleteUserMessage"></p>
+      </div>
+      <div class="modal-footer"><button class="btn" onclick="closeDeleteUserModal()">取消</button><button class="btn btn-danger" onclick="handleDeleteUser()">确认删除</button></div>
+    </div>
+  </div>
+  <script src="../common/nav.js"></script>
+  <script>
+    // Reserved display names that are not allowed for user creation or modification
+    var RESERVED_DISPLAY_NAMES = ['管理员'];
+    // Reserved account names (case-insensitive) that are not allowed for user creation or modification
+    var RESERVED_ACCOUNTS_LOWER = ['admin'];
+
+    /* ===== Create User ===== */
+    function showCreateError(groupId, errorId, msg) {
+      var group = document.getElementById(groupId);
+      if (group) group.classList.add('has-error');
+      var err = document.getElementById(errorId);
+      if (err) { err.textContent = msg; err.style.display = 'block'; }
+    }
+
+    function clearCreateError(groupId) {
+      var group = document.getElementById(groupId);
+      if (group) group.classList.remove('has-error');
+      var errEl = group ? group.querySelector('.error-msg') : null;
+      if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+    }
+
+    function handleCreateUser() {
+      var account = document.getElementById('createAccountInput').value.trim();
+      var displayName = document.getElementById('createDisplayNameInput').value.trim();
+      var password = document.getElementById('createPasswordInput').value;
+      var valid = true;
+
+      clearCreateError('createAccountGroup');
+      clearCreateError('createDisplayNameGroup');
+      clearCreateError('createPasswordGroup');
+
+      if (!account) {
+        showCreateError('createAccountGroup', 'createAccountError', '请输入账号');
+        valid = false;
+      } else if (RESERVED_ACCOUNTS_LOWER.indexOf(account.toLowerCase()) !== -1) {
+        showCreateError('createAccountGroup', 'createAccountError', '账号不能使用"admin"，该账号为系统保留');
+        valid = false;
+      }
+      if (!displayName) {
+        showCreateError('createDisplayNameGroup', 'createDisplayNameError', '请输入用户名');
+        valid = false;
+      } else if (RESERVED_DISPLAY_NAMES.indexOf(displayName) !== -1) {
+        showCreateError('createDisplayNameGroup', 'createDisplayNameError', '用户名不能为"' + displayName + '"，该名称为系统保留');
+        valid = false;
+      }
+      if (!password) {
+        showCreateError('createPasswordGroup', 'createPasswordError', '请输入密码');
+        valid = false;
+      }
+      if (!valid) return;
+
+      // Add new row to table
+      var tbody = document.querySelector('table tbody');
+      var tr = document.createElement('tr');
+      var roleText = tr.querySelector ? '' : '';
+      var roleSelect = document.querySelector('#userModal select');
+      var role = roleSelect ? roleSelect.value : 'tester';
+      var roleTagClass = role === 'admin' ? 'tag-purple' : 'tag-blue';
+      var now = new Date();
+      var dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+      var timeStr = dateStr + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+
+      tr.innerHTML = '<td><b>' + account + '</b></td>' +
+        '<td>' + displayName + '</td>' +
+        '<td><span class="tag ' + roleTagClass + '">' + role + '</span></td>' +
+        '<td><span class="tag tag-green">启用</span></td>' +
+        '<td style="font-size:12px;color:var(--text-tertiary);">' + timeStr + ':56</td>' +
+        '<td style="font-size:12px;color:var(--text-tertiary);">-</td>' +
+        '<td style="white-space:nowrap">' + buildActionButtons(role) + '</td>';
+      tbody.appendChild(tr);
+      bindRowActions(tr);
+      updatePagination();
+
+      showToast('用户 ' + account + ' 创建成功');
+      document.getElementById('userModal').style.display = 'none';
+      // Reset form
+      document.getElementById('createAccountInput').value = '';
+      document.getElementById('createDisplayNameInput').value = '';
+      document.getElementById('createPasswordInput').value = '';
+    }
+
+    /* ===== Role Assign ===== */
+    function handleRoleAssign() {
+      var userName = document.getElementById('roleUserName').value;
+      var role = document.getElementById('roleSelect').value;
+      showToast('用户 ' + userName + ' 角色已分配为 ' + (role === 'admin' ? '管理员' : '测试人员'));
+      document.getElementById('roleModal').style.display = 'none';
+    }
+
+    /* ===== Edit User ===== */
+    var _editRow = null;
+
+    function openEditModal(row) {
+      _editRow = row;
+      var cells = row.querySelectorAll('td');
+      var account = cells[0].textContent.trim();
+      var displayName = cells[1].textContent.trim();
+      var roleTag = cells[2].querySelector('.tag');
+      var role = roleTag ? roleTag.textContent.trim() : 'tester';
+
+      document.getElementById('editAccountInput').value = account;
+      document.getElementById('editDisplayNameInput').value = displayName;
+      document.getElementById('editRoleSelect').value = role;
+      clearEditError('editDisplayNameGroup');
+      document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').style.display = 'none';
+      _editRow = null;
+    }
+
+    function clearEditError(groupId) {
+      var group = document.getElementById(groupId);
+      if (group) group.classList.remove('has-error');
+      var errEl = group ? group.querySelector('.error-msg') : null;
+      if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+    }
+
+    function handleEditUser() {
+      if (!_editRow) return;
+      var displayName = document.getElementById('editDisplayNameInput').value.trim();
+      var role = document.getElementById('editRoleSelect').value;
+      var valid = true;
+
+      clearEditError('editDisplayNameGroup');
+
+      if (!displayName) {
+        var group = document.getElementById('editDisplayNameGroup');
+        group.classList.add('has-error');
+        var err = document.getElementById('editDisplayNameError');
+        err.textContent = '请输入用户名';
+        err.style.display = 'block';
+        valid = false;
+      } else if (RESERVED_DISPLAY_NAMES.indexOf(displayName) !== -1) {
+        var group = document.getElementById('editDisplayNameGroup');
+        group.classList.add('has-error');
+        var err = document.getElementById('editDisplayNameError');
+        err.textContent = '用户名不能为"' + displayName + '"，该名称为系统保留';
+        err.style.display = 'block';
+        valid = false;
+      }
+      if (!valid) return;
+
+      var cells = _editRow.querySelectorAll('td');
+      cells[1].textContent = displayName;
+      var roleTag = cells[2].querySelector('.tag');
+      if (roleTag) {
+        roleTag.textContent = role;
+        roleTag.className = 'tag ' + (role === 'admin' ? 'tag-purple' : 'tag-blue');
+      }
+
+      var account = document.getElementById('editAccountInput').value;
+      showToast('用户 ' + account + ' 信息已更新');
+      closeEditModal();
+    }
+
+    /* ===== Reset Password ===== */
+    var _resetPwdRow = null;
+
+    function openResetPwdModal(row) {
+      _resetPwdRow = row;
+      var cells = row.querySelectorAll('td');
+      var displayName = cells[1].textContent.trim();
+      document.getElementById('resetPwdUserName').textContent = displayName;
+      document.getElementById('resetPwdInput').value = '';
+      document.getElementById('resetPwdConfirmInput').value = '';
+      clearResetPwdError();
+      clearResetPwdConfirmError();
+      document.getElementById('resetPwdModal').style.display = 'flex';
+    }
+
+    function closeResetPwdModal() {
+      document.getElementById('resetPwdModal').style.display = 'none';
+      _resetPwdRow = null;
+    }
+
+    function clearResetPwdError() {
+      var group = document.getElementById('resetPwdGroup');
+      if (group) group.classList.remove('has-error');
+      var err = document.getElementById('resetPwdError');
+      if (err) { err.style.display = 'none'; err.textContent = ''; }
+    }
+
+    function clearResetPwdConfirmError() {
+      var group = document.getElementById('resetPwdConfirmGroup');
+      if (group) group.classList.remove('has-error');
+      var err = document.getElementById('resetPwdConfirmError');
+      if (err) { err.style.display = 'none'; err.textContent = ''; }
+    }
+
+    function handleResetPassword() {
+      var pwd = document.getElementById('resetPwdInput').value;
+      var confirm = document.getElementById('resetPwdConfirmInput').value;
+      var valid = true;
+
+      clearResetPwdError();
+      clearResetPwdConfirmError();
+
+      if (!pwd) {
+        var group = document.getElementById('resetPwdGroup');
+        group.classList.add('has-error');
+        var err = document.getElementById('resetPwdError');
+        err.textContent = '请输入新密码';
+        err.style.display = 'block';
+        valid = false;
+      } else if (pwd.length < 6) {
+        var group = document.getElementById('resetPwdGroup');
+        group.classList.add('has-error');
+        var err = document.getElementById('resetPwdError');
+        err.textContent = '密码长度不能少于6位';
+        err.style.display = 'block';
+        valid = false;
+      }
+      if (!confirm) {
+        var group = document.getElementById('resetPwdConfirmGroup');
+        group.classList.add('has-error');
+        var err = document.getElementById('resetPwdConfirmError');
+        err.textContent = '请再次输入新密码';
+        err.style.display = 'block';
+        valid = false;
+      } else if (pwd && pwd !== confirm) {
+        var group = document.getElementById('resetPwdConfirmGroup');
+        group.classList.add('has-error');
+        var err = document.getElementById('resetPwdConfirmError');
+        err.textContent = '两次输入的密码不一致';
+        err.style.display = 'block';
+        valid = false;
+      }
+      if (!valid) return;
+
+      var userName = document.getElementById('resetPwdUserName').textContent;
+      showToast('用户 ' + userName + ' 密码已重置');
+      closeResetPwdModal();
+    }
+
+    /* ===== Toggle Status (Enable / Disable) ===== */
+    var _toggleRow = null;
+    var _toggleAction = ''; // 'disable' or 'enable'
+
+    function openToggleStatusModal(row, action) {
+      _toggleRow = row;
+      _toggleAction = action;
+      var cells = row.querySelectorAll('td');
+      var account = cells[0].textContent.trim();
+      var displayName = cells[1].textContent.trim();
+
+      if (action === 'disable') {
+        document.getElementById('toggleStatusTitle').textContent = '确认禁用';
+        document.getElementById('toggleStatusMessage').innerHTML =
+          '确定要禁用用户 <b>' + displayName + '</b>（' + account + '）吗？<br><span style="color:var(--text-tertiary);font-size:13px;">禁用后该用户将无法登录系统。</span>';
+        var btn = document.getElementById('toggleStatusConfirmBtn');
+        btn.className = 'btn btn-danger';
+        btn.textContent = '确认禁用';
+      } else {
+        document.getElementById('toggleStatusTitle').textContent = '确认启用';
+        document.getElementById('toggleStatusMessage').innerHTML =
+          '确定要启用用户 <b>' + displayName + '</b>（' + account + '）吗？<br><span style="color:var(--text-tertiary);font-size:13px;">启用后该用户将可以正常登录系统。</span>';
+        var btn = document.getElementById('toggleStatusConfirmBtn');
+        btn.className = 'btn btn-primary';
+        btn.textContent = '确认启用';
+      }
+      document.getElementById('toggleStatusModal').style.display = 'flex';
+    }
+
+    function closeToggleStatusModal() {
+      document.getElementById('toggleStatusModal').style.display = 'none';
+      _toggleRow = null;
+      _toggleAction = '';
+    }
+
+    function handleToggleStatus() {
+      if (!_toggleRow || !_toggleAction) return;
+      var cells = _toggleRow.querySelectorAll('td');
+      var statusCell = cells[3];
+      var displayName = cells[1].textContent.trim();
+
+      if (_toggleAction === 'disable') {
+        statusCell.innerHTML = '<span class="tag tag-gray">禁用</span>';
+        // Rebuild action buttons: change "禁用" to "启用"
+        cells[6].style.whiteSpace = 'nowrap';
+        cells[6].innerHTML = buildActionButtonsForDisabled();
+        showToast('用户 ' + displayName + ' 已禁用');
+      } else {
+        statusCell.innerHTML = '<span class="tag tag-green">启用</span>';
+        // Determine role to rebuild buttons
+        var roleTag = cells[2].querySelector('.tag');
+        var role = roleTag ? roleTag.textContent.trim() : 'tester';
+        cells[6].style.whiteSpace = 'nowrap';
+        cells[6].innerHTML = buildActionButtons(role);
+        showToast('用户 ' + displayName + ' 已启用');
+      }
+      bindRowActions(_toggleRow);
+      closeToggleStatusModal();
+    }
+
+    /* ===== Delete User ===== */
+    var _deleteRow = null;
+
+    function openDeleteUserModal(row) {
+      _deleteRow = row;
+      var cells = row.querySelectorAll('td');
+      var account = cells[0].textContent.trim();
+      var displayName = cells[1].textContent.trim();
+
+      if (RESERVED_ACCOUNTS_LOWER.indexOf(account.toLowerCase()) !== -1) {
+        showToast('系统内置管理员账号不允许删除', 'error');
+        return;
+      }
+
+      document.getElementById('deleteUserMessage').innerHTML =
+        '确定要删除用户 <b>' + displayName + '</b>（' + account + '）吗？<br><span style="color:var(--error);font-size:13px;">删除后该用户数据将无法恢复，请谨慎操作。</span>';
+      document.getElementById('deleteUserModal').style.display = 'flex';
+    }
+
+    function closeDeleteUserModal() {
+      document.getElementById('deleteUserModal').style.display = 'none';
+      _deleteRow = null;
+    }
+
+    function handleDeleteUser() {
+      if (!_deleteRow) return;
+      var cells = _deleteRow.querySelectorAll('td');
+      var displayName = cells[1].textContent.trim();
+      var account = cells[0].textContent.trim();
+
+      if (RESERVED_ACCOUNTS_LOWER.indexOf(account.toLowerCase()) !== -1) {
+        showToast('系统内置管理员账号不允许删除', 'error');
+        closeDeleteUserModal();
+        return;
+      }
+
+      _deleteRow.parentNode.removeChild(_deleteRow);
+      updatePagination();
+      showToast('用户 ' + displayName + ' 已删除');
+      closeDeleteUserModal();
+    }
+
+    /* ===== Action Button Builders ===== */
+    function buildActionButtons(role) {
+      return '<button class="btn-link" data-action="edit">编辑</button> ' +
+        '<button class="btn-link" data-action="role">分配角色</button> ' +
+        '<button class="btn-link" data-action="disable" style="color:var(--warning);">禁用</button> ' +
+        '<button class="btn-link" data-action="resetpwd">重置密码</button> ' +
+        '<button class="btn-link" data-action="delete" style="color:var(--error);">删除</button>';
+    }
+
+    function buildActionButtonsForDisabled() {
+      return '<button class="btn-link" data-action="edit">编辑</button> ' +
+        '<button class="btn-link" data-action="role">分配角色</button> ' +
+        '<button class="btn-link" data-action="enable" style="color:var(--success);">启用</button> ' +
+        '<button class="btn-link" data-action="resetpwd">重置密码</button> ' +
+        '<button class="btn-link" data-action="delete" style="color:var(--error);">删除</button>';
+    }
+
+    /* ===== Bind Row Action Events ===== */
+    function bindRowActions(row) {
+      var btns = row.querySelectorAll('.btn-link[data-action]');
+      btns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var action = this.getAttribute('data-action');
+          var tr = this.closest('tr');
+          if (action === 'edit') openEditModal(tr);
+          else if (action === 'role') {
+            var userName = tr.querySelectorAll('td')[1].textContent;
+            document.getElementById('roleUserName').value = userName;
+            document.getElementById('roleModal').style.display = 'flex';
+          }
+          else if (action === 'disable') openToggleStatusModal(tr, 'disable');
+          else if (action === 'enable') openToggleStatusModal(tr, 'enable');
+          else if (action === 'resetpwd') openResetPwdModal(tr);
+          else if (action === 'delete') openDeleteUserModal(tr);
+        });
+      });
+    }
+
+    /* ===== 分页逻辑 ===== */
+    var userPageSize = 20;
+    var userCurrentPage = 1;
+
+    function userGetAllRows() {
+      return Array.prototype.slice.call(document.querySelectorAll('#userTableBody tr'));
+    }
+
+    function userGetVisibleRows() {
+      return Array.prototype.slice.call(document.querySelectorAll('#userTableBody tr:not([data-filtered="true"])'));
+    }
+
+    function userFilterRows() {
+      var accountKw = document.getElementById('searchAccount').value.trim().toLowerCase();
+      var nameKw = document.getElementById('searchDisplayName').value.trim().toLowerCase();
+      var roleFilter = document.getElementById('filterRole').value;
+      var rows = userGetAllRows();
+      for (var i = 0; i < rows.length; i++) {
+        var tds = rows[i].querySelectorAll('td');
+        var account = (tds[0].querySelector('b') || tds[0]).textContent.toLowerCase();
+        var displayName = tds[1].textContent.toLowerCase();
+        var roleTag = tds[2].querySelector('.tag');
+        var role = roleTag ? roleTag.textContent.trim() : '';
+        var matchAccount = !accountKw || account.indexOf(accountKw) !== -1;
+        var matchName = !nameKw || displayName.indexOf(nameKw) !== -1;
+        var matchRole = !roleFilter || role === roleFilter;
+        if (matchAccount && matchName && matchRole) {
+          rows[i].setAttribute('data-filtered', 'false');
+        } else {
+          rows[i].setAttribute('data-filtered', 'true');
+        }
+      }
+    }
+
+    function userSortByCreateTime() {
+      var tbody = document.getElementById('userTableBody');
+      var rows = userGetAllRows();
+      rows.sort(function(a, b) {
+        var accA = (a.querySelector('td b') || a.querySelectorAll('td')[0]).textContent.trim().toLowerCase();
+        var accB = (b.querySelector('td b') || b.querySelectorAll('td')[0]).textContent.trim().toLowerCase();
+        // 'admin' always first
+        if (accA === 'admin' && accB !== 'admin') return -1;
+        if (accB === 'admin' && accA !== 'admin') return 1;
+        var timeA = a.querySelectorAll('td')[4].textContent.trim();
+        var timeB = b.querySelectorAll('td')[4].textContent.trim();
+        return timeA > timeB ? -1 : (timeA < timeB ? 1 : 0);
+      });
+      for (var i = 0; i < rows.length; i++) tbody.appendChild(rows[i]);
+    }
+
+    function userFilterAndRender() {
+      userFilterRows();
+      userCurrentPage = 1;
+      userRenderTable();
+      userRenderPagination();
+    }
+
+    function userRenderTable() {
+      var rows = userGetVisibleRows();
+      var start = (userCurrentPage - 1) * userPageSize;
+      var end = start + userPageSize;
+      var allRows = userGetAllRows();
+      for (var i = 0; i < allRows.length; i++) {
+        if (allRows[i].getAttribute('data-filtered') === 'true') {
+          allRows[i].style.display = 'none';
+        }
+      }
+      for (var j = 0; j < rows.length; j++) {
+        rows[j].style.display = (j >= start && j < end) ? '' : 'none';
+      }
+    }
+
+    function userBuildPageNumbers(current, total) {
+      if (total <= 7) {
+        var arr = [];
+        for (var i = 1; i <= total; i++) arr.push(i);
+        return arr;
+      }
+      var pages = [];
+      pages.push(1);
+      var rangeStart = Math.max(2, current - 1);
+      var rangeEnd = Math.min(total - 1, current + 1);
+      if (rangeStart > 2) pages.push('...');
+      for (var j = rangeStart; j <= rangeEnd; j++) pages.push(j);
+      if (rangeEnd < total - 1) pages.push('...');
+      pages.push(total);
+      return pages;
+    }
+
+    function userRenderPagination() {
+      var rows = userGetVisibleRows();
+      var total = rows.length;
+      var totalPages = Math.ceil(total / userPageSize) || 1;
+      var html = '';
+      html += '<span class="page-info">共 ' + total + ' 个用户</span>';
+      html += '<button class="page-btn" onclick="userChangePage(' + (userCurrentPage - 1) + ')" ' + (userCurrentPage === 1 ? 'disabled' : '') + '>‹</button>';
+      var pages = userBuildPageNumbers(userCurrentPage, totalPages);
+      for (var p = 0; p < pages.length; p++) {
+        var item = pages[p];
+        if (item === '...') {
+          html += '<span class="page-ellipsis">...</span>';
+        } else {
+          var activeCls = item === userCurrentPage ? 'active' : '';
+          html += '<button class="page-btn ' + activeCls + '" onclick="userChangePage(' + item + ')">' + item + '</button>';
+        }
+      }
+      html += '<button class="page-btn" onclick="userChangePage(' + (userCurrentPage + 1) + ')" ' + (userCurrentPage === totalPages ? 'disabled' : '') + '>›</button>';
+      html += '<span class="page-jump">跳至 <input type="text" id="userJumpInput" value="' + userCurrentPage + '" onkeydown="if(event.key===\'Enter\')userJumpToPage()"> 页</span>';
+      document.getElementById('userPagination').innerHTML = html;
+    }
+
+    function userChangePage(page) {
+      var rows = userGetVisibleRows();
+      var totalPages = Math.ceil(rows.length / userPageSize) || 1;
+      if (page < 1 || page > totalPages) return;
+      userCurrentPage = page;
+      userRenderTable();
+      userRenderPagination();
+    }
+
+    function userJumpToPage() {
+      var input = document.getElementById('userJumpInput');
+      if (!input) return;
+      var page = parseInt(input.value, 10);
+      if (isNaN(page)) { input.value = userCurrentPage; return; }
+      userChangePage(page);
+    }
+
+    function updatePagination() {
+      userSortByCreateTime();
+      userFilterRows();
+      userCurrentPage = 1;
+      userRenderTable();
+      userRenderPagination();
+    }
+
+    /* Initialize: sort by creation time desc, then set filter attributes */
+    userSortByCreateTime();
+    (function() {
+      var rows = userGetAllRows();
+      for (var i = 0; i < rows.length; i++) rows[i].setAttribute('data-filtered', 'false');
+    })();
+    userRenderTable();
+    userRenderPagination();
+
+    /* ===== Init: Bind all existing rows ===== */
+    document.querySelectorAll('table tbody tr').forEach(function(row) {
+      bindRowActions(row);
+    });
+
+    /* ===== Error styles (injected if missing) ===== */
+    (function() {
+      if (!document.getElementById('userMgmtErrorStyles')) {
+        var style = document.createElement('style');
+        style.id = 'userMgmtErrorStyles';
+        style.textContent = '.form-group.has-error .input { border-color: var(--error); }' +
+          '.form-group.has-error .input:focus { box-shadow: 0 0 0 2px rgba(255,77,79,.1); }' +
+          '.error-msg { color: var(--error); font-size: 12px; margin-top: 4px; }';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
+</body>
+</html>

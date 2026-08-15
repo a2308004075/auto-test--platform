@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swagger 导入 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    .import-container { max-width: 900px; margin: 0 auto; }
+    .step-content { display: none; }
+    .step-content.active { display: block; }
+    .group-options { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+    .group-option {
+      display: flex; align-items: flex-start; gap: 12px; padding: 16px;
+      border: 1px solid var(--border-color-secondary); border-radius: var(--border-radius);
+      cursor: pointer; transition: all .15s;
+    }
+    .group-option:hover { border-color: var(--primary-border); }
+    .group-option.selected { border-color: var(--primary); background: var(--primary-bg); }
+    .group-option input[type="radio"] { margin-top: 2px; }
+    .group-option .option-label { font-size: 14px; font-weight: 500; }
+    .group-option .option-desc { font-size: 13px; color: var(--text-tertiary); margin-top: 2px; }
+    .group-option .option-fields { margin-top: 8px; display: flex; gap: 8px; }
+    .preview-stats { display: flex; gap: 24px; padding: 16px; background: #fafafa; border-radius: var(--border-radius); margin-bottom: 16px; }
+    .preview-stats .stat { font-size: 14px; }
+    .preview-stats .stat .num { font-size: 20px; font-weight: 700; }
+    .preview-stats .stat .num.blue { color: var(--primary); }
+    .preview-stats .stat .num.orange { color: #fa8c16; }
+    .step-actions { display: flex; justify-content: space-between; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color-secondary); }
+    .summary-cards { display: flex; gap: 16px; margin-bottom: 24px; }
+    .summary-card { flex: 1; text-align: center; padding: 24px; background: #fafafa; border-radius: var(--border-radius-lg); }
+    .summary-card .num { font-size: 36px; font-weight: 700; }
+    .summary-card .label { font-size: 14px; color: var(--text-tertiary); margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span>接口文档</span>
+      <span class="sep">&#8250;</span>
+      <span class="current">Swagger 导入</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item active"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+
+  <main class="layout-main">
+
+
+    <div class="import-container">
+      <!-- Steps Indicator -->
+      <div class="steps">
+        <div class="step active" id="step1-indicator">
+          <div class="step-num">1</div>
+          <span class="step-label">上传文件 & 选择分组</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" id="step2-indicator">
+          <div class="step-num">2</div>
+          <span class="step-label">解析预览</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" id="step3-indicator">
+          <div class="step-num">3</div>
+          <span class="step-label">确认导入</span>
+        </div>
+      </div>
+
+      <!-- Step 1: Upload & Group -->
+      <div class="step-content active" id="step1">
+        <div class="card"><div class="card-body">
+          <div class="upload-area" id="uploadArea" onclick="simulateUpload()">
+            <div class="upload-icon">📄</div>
+            <div style="font-size: 15px; color: var(--text-primary); margin-bottom: 4px;">点击或拖拽 Swagger 2.0 JSON 文件</div>
+            <div style="font-size: 13px;">支持 .json 格式，文件大小不超过 10MB</div>
+          </div>
+          <div id="fileInfo" style="display:none; margin-top: 16px; padding: 12px; background: var(--success-bg); border-radius: var(--border-radius); display: flex; align-items: center; gap: 8px;">
+            <span style="color: var(--success);">✓</span>
+            <span>swagger-api-manager.json</span>
+            <span class="text-tertiary text-sm">· 128KB</span>
+          </div>
+
+          <div style="margin-top: 24px;">
+            <div class="form-label">选择分组方式</div>
+            <div class="group-options">
+              <label class="group-option selected" onclick="selectOption(this)">
+                <input type="radio" name="groupMode" checked>
+                <div>
+                  <div class="option-label">导入到已有分组</div>
+                  <div class="option-desc">选择已创建的接口分组</div>
+                  <div class="option-fields">
+                    <select class="select" style="width: 240px; margin-top: 4px;" onclick="event.stopPropagation()">
+                      <option>用户管理服务 (23)</option><option>电池管理服务 (45)</option><option>换电流程服务 (67)</option>
+                    </select>
+                  </div>
+                </div>
+              </label>
+              <label class="group-option" onclick="selectOption(this)">
+                <input type="radio" name="groupMode">
+                <div>
+                  <div class="option-label">创建新分组</div>
+                  <div class="option-desc">创建一个新的接口分组来存放导入的接口</div>
+                  <div class="option-fields">
+                    <input type="text" class="input" placeholder="分组名称" style="width: 180px;" onclick="event.stopPropagation()">
+                    <input type="text" class="input" placeholder="服务前缀 (可选)" style="width: 160px;" onclick="event.stopPropagation()">
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div></div>
+
+        <div class="step-actions">
+          <div></div>
+          <button class="btn btn-primary" onclick="goStep(2)">下一步 →</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Preview -->
+      <div class="step-content" id="step2">
+        <div class="card"><div class="card-body">
+          <div class="preview-stats">
+            <div class="stat"><div class="num blue">18</div><div>新增接口</div></div>
+            <div class="stat"><div class="num orange">5</div><div>将更新</div></div>
+            <div class="stat"><div class="num">23</div><div>已选择</div></div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+            <label class="checkbox-label"><input type="checkbox" checked> 全选 / 取消全选</label>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th style="width:40px"><input type="checkbox" checked></th><th style="width:70px;">方法</th><th style="width:220px;">路径</th><th>名称</th><th style="width:70px;">参数</th><th style="width:80px;">状态</th></tr></thead>
+              <tbody>
+                <tr><td><input type="checkbox" checked></td><td><span class="method-badge method-get">GET</span></td><td class="font-mono text-sm">/api/users/list</td><td>获取用户列表</td><td>4</td><td><span class="tag tag-blue">新增</span></td></tr>
+                <tr><td><input type="checkbox" checked></td><td><span class="method-badge method-post">POST</span></td><td class="font-mono text-sm">/api/users</td><td>创建用户</td><td>6</td><td><span class="tag tag-blue">新增</span></td></tr>
+                <tr><td><input type="checkbox" checked></td><td><span class="method-badge method-get">GET</span></td><td class="font-mono text-sm">/api/users/{id}</td><td>获取用户详情</td><td>1</td><td><span class="tag tag-orange">将更新</span></td></tr>
+                <tr><td><input type="checkbox" checked></td><td><span class="method-badge method-put">PUT</span></td><td class="font-mono text-sm">/api/users/{id}</td><td>更新用户信息</td><td>5</td><td><span class="tag tag-blue">新增</span></td></tr>
+                <tr><td><input type="checkbox" checked></td><td><span class="method-badge method-delete">DELETE</span></td><td class="font-mono text-sm">/api/users/{id}</td><td>删除用户</td><td>1</td><td><span class="tag tag-orange">将更新</span></td></tr>
+                <tr><td><input type="checkbox" checked></td><td><span class="method-badge method-post">POST</span></td><td class="font-mono text-sm">/api/auth/login</td><td>用户登录</td><td>2</td><td><span class="tag tag-orange">将更新</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div></div>
+        <div class="step-actions">
+          <button class="btn" onclick="goStep(1)">← 上一步</button>
+          <button class="btn btn-primary" onclick="goStep(3)">下一步 →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Confirm -->
+      <div class="step-content" id="step3">
+        <div class="card"><div class="card-body" style="text-align: center; padding: 40px;">
+          <div class="summary-cards">
+            <div class="summary-card"><div class="num" style="color: var(--primary);">18</div><div class="label">新增接口</div></div>
+            <div class="summary-card"><div class="num" style="color: #fa8c16;">5</div><div class="label">更新接口</div></div>
+          </div>
+          <div style="margin-bottom: 24px; display: flex; justify-content: center; gap: 12px;">
+            <button class="btn" onclick="location.href='api-list.html'">取消</button>
+            <button class="btn btn-primary btn-lg" onclick="finishImport()">✓ 确认导入</button>
+          </div>
+          <div id="importResult" style="display: none; margin-top: 16px; padding: 16px; background: var(--success-bg); border-radius: var(--border-radius);">
+            <div style="color: var(--success); font-size: 16px; font-weight: 600; margin-bottom: 4px;">🎉 导入完成</div>
+            <div style="color: var(--text-secondary);">成功导入 23 个接口到「用户管理服务」</div>
+            <a href="api-list.html" style="margin-top: 8px; display: inline-block;">返回接口文档 →</a>
+          </div>
+        </div></div>
+        <div class="step-actions">
+          <button class="btn" onclick="goStep(2)">← 上一步</button>
+          <div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function simulateUpload() {
+      document.getElementById('uploadArea').style.borderColor = 'var(--success)';
+      document.getElementById('uploadArea').innerHTML = '<div style="color: var(--success); font-size: 32px;">✓</div><div style="margin-top: 8px;">swagger-api-manager.json</div>';
+    }
+    function selectOption(el) {
+      document.querySelectorAll('.group-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+    function goStep(n) {
+      document.querySelectorAll('.step-content').forEach(s => s.classList.remove('active'));
+      document.getElementById('step' + n).classList.add('active');
+      for (let i = 1; i <= 3; i++) {
+        const ind = document.getElementById('step' + i + '-indicator');
+        ind.classList.remove('active', 'done');
+        if (i < n) ind.classList.add('done');
+        else if (i === n) ind.classList.add('active');
+      }
+    }
+    function finishImport() {
+      document.getElementById('importResult').style.display = 'block';
+    }
+  </script>
+  <script src="../common/nav.js"></script>
+</body>
+</html>

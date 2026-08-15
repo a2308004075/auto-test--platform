@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>环境配置 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    .env-project-bar { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: #f0f5ff; border: 1px solid #d6e4ff; border-radius: 6px; margin-bottom: 16px; font-size: 13px; color: rgba(0,0,0,.65); }
+    .env-project-bar .project-name { font-weight: 600; color: #1890ff; }
+    .env-split { display: flex; flex-direction: column; gap: 16px; }
+    .env-table-section { background: #fff; border-radius: var(--border-radius-lg); border: 1px solid var(--border-color-secondary); }
+    .env-table-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color-secondary); }
+    .env-table-header h3 { font-size: 15px; font-weight: 600; margin: 0; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <a href="project-dashboard.html">电池管理系统</a>
+      <span class="sep">&#8250;</span>
+      <span class="current">环境配置</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="project-dashboard.html"><span class="icon">&#128202;</span> 项目概览</a></li>
+        <li class="menu-item active"><a href="environment-config.html"><span class="icon">&#127760;</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">&#128196;</span> 接口文档</a></li>
+      </ul>
+    </nav></aside>
+
+  <main class="layout-main">
+
+    <div class="page-header">
+      <h1>环境配置</h1>
+      <button class="btn btn-primary" onclick="showModal('newEnvModal')">+ 新建环境</button>
+    </div>
+
+    <!-- Project Context Bar -->
+    <div class="env-project-bar">
+      <span>&#128204;</span>
+      <span>当前项目：<span class="project-name">电池管理系统</span></span>
+      <span style="color:var(--text-tertiary);">|</span>
+      <span>每个项目独立管理环境配置，环境切换不影响其他项目</span>
+    </div>
+
+    <div class="env-split">
+      <!-- Environment List -->
+      <div class="env-table-section">
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>环境名称</th>
+                <th>描述</th>
+                <th>创建时间</th>
+                <th style="width: 120px;">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>test</strong></td>
+                <td>测试环境 - 主要用于日常开发和联调</td>
+                <td>2025-01-10</td>
+                <td>
+                  <button class="btn btn-link btn-sm" onclick="handleEnvEdit('test')">编辑</button>
+                  <button class="btn btn-link btn-sm btn-danger" onclick="deleteEnv('test')">删除</button>
+                </td>
+              </tr>
+              <tr>
+                <td>staging</td>
+                <td>预发布环境 - 模拟生产配置</td>
+                <td>2025-01-10</td>
+                <td>
+                  <button class="btn btn-link btn-sm" onclick="handleEnvEdit('staging')">编辑</button>
+                  <button class="btn btn-link btn-sm btn-danger" onclick="deleteEnv('staging')">删除</button>
+                </td>
+              </tr>
+              <tr>
+                <td>prod</td>
+                <td>生产环境 - 仅用于验证测试</td>
+                <td>2025-01-12</td>
+                <td>
+                  <button class="btn btn-link btn-sm" onclick="handleEnvEdit('prod')">编辑</button>
+                  <button class="btn btn-link btn-sm btn-danger" onclick="deleteEnv('prod')">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- New Environment Modal -->
+  <div class="modal-overlay" id="newEnvModal" style="display:none;">
+    <div class="modal" style="width: 480px;">
+      <div class="modal-header">
+        <h3>新建环境</h3>
+        <button class="modal-close" onclick="hideModal('newEnvModal')">&#215;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">环境名称 <span class="required">*</span></label>
+          <input type="text" class="input w-full" placeholder="如 test / staging / prod">
+        </div>
+        <div class="form-group">
+          <label class="form-label">描述</label>
+          <textarea class="textarea w-full" rows="2" placeholder="环境描述"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="hideModal('newEnvModal')">取消</button>
+        <button class="btn btn-primary" onclick="hideModal('newEnvModal')">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirm Modal -->
+  <div class="modal-overlay" id="deleteEnvModal" style="display:none;">
+    <div class="modal" style="width: 400px;">
+      <div class="modal-header">
+        <h3>确认删除</h3>
+        <button class="modal-close" onclick="hideModal('deleteEnvModal')">&#215;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin:0;">确定删除环境「<strong id="deleteEnvName"></strong>」？删除后该项目下相关配置将不可恢复。</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="hideModal('deleteEnvModal')">取消</button>
+        <button class="btn" style="background:var(--error);color:#fff;" onclick="hideModal('deleteEnvModal')">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+    function handleEnvEdit(name) {
+      window.location.href = 'environment-edit.html?env=' + encodeURIComponent(name);
+    }
+    function deleteEnv(name) {
+      document.getElementById('deleteEnvName').textContent = name;
+      showModal('deleteEnvModal');
+    }
+  </script>
+  <script src="../common/nav.js"></script>
+</body>
+</html>

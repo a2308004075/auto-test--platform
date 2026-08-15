@@ -1,0 +1,14 @@
+目标：
+	生成详细设计文档
+输入：
+	docs/SRS.md
+	docs/PRD.md
+	docs/HLD.md
+	docs/ui
+输出：
+	详细设计文档docs/LLD.md
+步骤：
+	1、根据SRS.md、PRD.md、HLD.md、docs/ui，编写详细设计文档。
+	2、模块与模块之间尽量保持相互独立，可以独立进行测试
+
+	不要猜测我的意图，任何不明确的地方都必须向我提问。

@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>项目概览 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span class="current">项目概览</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item active"><a href="project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+    </nav></aside>
+  <main class="layout-main">
+
+    <!-- Layer 1: Project Header -->
+    <div class="overview-header">
+      <div class="overview-header-left">
+        <h1>
+          电池管理系统
+          <span class="status-tag">运行中</span>
+        </h1>
+        <p class="overview-desc">电池包充放电、SOC 估算、故障诊断等接口测试</p>
+      </div>
+      <div class="overview-header-right">
+        <div class="last-exec">最近执行：2024-01-15 14:00<a href="../execution/execution-list.html">查看详情 →</a></div>
+        <div class="data-update-time">数据更新至 2024-01-15 14:30</div>
+      </div>
+    </div>
+
+    <!-- Layer 2: Quality Health Score Panel -->
+    <div class="health-score-panel">
+      <div class="health-score-left">
+        <div class="health-score-circle-wrap">
+          <svg viewBox="0 0 120 120" width="120" height="120">
+            <circle cx="60" cy="60" r="50" fill="none" stroke="var(--border-color-secondary)" stroke-width="8"/>
+            <circle cx="60" cy="60" r="50" fill="none" stroke="var(--success)" stroke-width="8"
+              stroke-dasharray="289.03 314.16" stroke-linecap="round"
+              transform="rotate(-90 60 60)"/>
+          </svg>
+          <div class="health-score-center">
+            <span class="health-score-num">92</span>
+            <span class="health-score-grade">优秀</span>
+          </div>
+        </div>
+        <div class="health-score-title">
+          质量健康度
+          <span class="metric-help-btn" data-tooltip="综合评分 = 通过率得分×35% + 覆盖率得分×25% + 稳定性得分×25% + 效率得分×15%，满分 100 分。评分等级：≥90 优秀、≥75 良好、≥60 一般、<60 较差">ⓘ</span>
+        </div>
+        <div class="health-score-subtitle">基于最近 30 天测试数据综合评估</div>
+      </div>
+      <div class="health-score-right">
+        <div class="score-dimension">
+          <div class="score-dim-header">
+            <span class="score-dim-label">通过率得分</span>
+            <span class="metric-help-btn" data-tooltip="基于所有测试用例的通过率计算，权重 35%。通过率越高，该项得分越高">ⓘ</span>
+            <span class="score-dim-value">95</span>
+          </div>
+          <div class="score-dim-bar"><div class="score-dim-fill" style="width:95%;background:var(--success);"></div></div>
+        </div>
+        <div class="score-dimension">
+          <div class="score-dim-header">
+            <span class="score-dim-label">覆盖率得分</span>
+            <span class="metric-help-btn" data-tooltip="基于接口覆盖率和模块覆盖率加权计算，权重 25%。覆盖率越高，该项得分越高">ⓘ</span>
+            <span class="score-dim-value">88</span>
+          </div>
+          <div class="score-dim-bar"><div class="score-dim-fill" style="width:88%;background:var(--success);"></div></div>
+        </div>
+        <div class="score-dimension">
+          <div class="score-dim-header">
+            <span class="score-dim-label">稳定性得分</span>
+            <span class="metric-help-btn" data-tooltip="基于用例回归通过率和缺陷逃逸率综合计算，权重 25%。回归通过率越高、逃逸率越低，该项得分越高">ⓘ</span>
+            <span class="score-dim-value">90</span>
+          </div>
+          <div class="score-dim-bar"><div class="score-dim-fill" style="width:90%;background:var(--success);"></div></div>
+        </div>
+        <div class="score-dimension">
+          <div class="score-dim-header">
+            <span class="score-dim-label">效率得分</span>
+            <span class="metric-help-btn" data-tooltip="基于缺陷修复时效和测试执行频次综合计算，权重 15%。修复越快、执行越频繁，该项得分越高">ⓘ</span>
+            <span class="score-dim-value">85</span>
+          </div>
+          <div class="score-dim-bar"><div class="score-dim-fill" style="width:85%;background:var(--success);"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Layer 3: KPI Cards Grid (8 cards, 2 rows x 4 columns) -->
+    <div class="overview-kpi-row">
+      <!-- 1. 用例通过率 -->
+      <div class="overview-kpi-card">
+        <div class="overview-kpi-icon" style="background:var(--success-bg);">✓</div>
+        <div class="overview-kpi-info">
+          <div class="overview-kpi-label">
+            用例通过率
+            <span class="metric-help-btn" data-tooltip="所有测试用例在最近一次完整执行中的通过比例。计算公式：通过用例数 / 总执行用例数 × 100%">ⓘ</span>
+          </div>
+          <div class="overview-kpi-value" style="color:var(--success);">92.3%</div>
+          <div class="overview-kpi-footer"><span class="trend-up">↑ 2.1%</span> vs 上周</div>
+        </div>
+      </div>
+      <!-- 2. 接口覆盖率 -->
+      <div class="overview-kpi-card">
+        <div class="overview-kpi-icon" style="background:var(--primary-bg);">◎</div>
+        <div class="overview-kpi-info">
+          <div class="overview-kpi-label">
+            接口覆盖率
+            <span class="metric-help-btn" data-tooltip="已有测试用例覆盖的 API 接口占项目总接口数的比例。计算公式：已覆盖接口数 / 总接口数 × 100%">ⓘ</span>
+          </div>
+          <div class="overview-kpi-value">94.2%</div>
+          <div class="overview-kpi-footer">81/86 个接口</div>
+        </div>
+      </div>
+      <!-- 3. 缺陷密度 -->
+      <div class="overview-kpi-card">
+        <div class="overview-kpi-icon" style="background:var(--error-bg);">⚠</div>
+        <div class="overview-kpi-info">
+          <div class="overview-kpi-label">
+            缺陷密度
+            <span class="metric-help-btn" data-tooltip="平均每个接口关联的缺陷数量，用于衡量代码质量水平。计算公式：总缺陷数 / 总接口数">ⓘ</span>
+          </div>
+          <div class="overview-kpi-value">0.8</div>
+          <div class="overview-kpi-footer"><span class="trend-down">↓ 0.1</span> vs 上月 · 缺陷/接口</div>
+        </div>
+      </div>
+      <!-- 4. 本周执行次数 -->
+      <div class="overview-kpi-card">
+        <div class="overview-kpi-icon" style="background:var(--primary-bg);">▶</div>
+        <div class="overview-kpi-info">
+          <div class="overview-kpi-label">
+            本周执行次数
+            <span class="metric-help-btn" data-tooltip="当前自然周内所有测试计划的累计执行次数，含手动触发和定时触发">ⓘ</span>
+          </div>
+          <div class="overview-kpi-value">45</div>
+          <div class="overview-kpi-footer"><span class="trend-up">↑ 8</span> vs 上周</div>
+        </div>
+      </div>
+      <!-- 5. 缺陷修复时效 -->
+      <div class="overview-kpi-card">
+        <div class="overview-kpi-icon" style="background:var(--warning-bg);">⏱</div>
+        <div class="overview-kpi-info">
+          <div class="overview-kpi-label">
+            缺陷修复时效
+            <span class="metric-help-btn" data-tooltip="从缺陷发现到修复确认的平均耗时，用于衡量团队响应速度。计算方式：所有缺陷修复耗时之和 / 已修复缺陷总数">ⓘ</span>
+          </div>
+          <div class="overview-kpi-value">2.3<span style="font-size:14px;font-weight:400;color:var(--text-secondary);"> 天</span></div>
+          <div class="overview-kpi-footer"><span class="trend-up">↓ 0.5天</span> vs 上月</div>
+        </div>
+      </div>
+      <!-- 6. 套件完成率 -->
+      <div class="overview-kpi-card">
+        <div class="overview-kpi-icon" style="background:#f0e6ff;">📋</div>
+        <div class="overview-kpi-info">
+          <div class="overview-kpi-label">
+            套件完成率
+            <span class="metric-help-btn" data-tooltip="已完成执行的测试套件占总测试套件的比例。计算公式：已执行套件数 / 总套件数 × 100%">ⓘ</span>
+          </div>
+          <div class="overview-kpi-value">87.5%</div>
+          <div class="overview-kpi-footer">7/8 个套件</div>
+        </div>
+      </div>
+      <!-- 7. 缺陷逃逸率 -->
+      <div class="overview-kpi-card">
+        <div class="overview-kpi-icon" style="background:var(--error-bg);">🐛</div>
+        <div class="overview-kpi-info">
+          <div class="overview-kpi-label">
+            缺陷逃逸率
+            <span class="metric-help-btn" data-tooltip="上线后发现的缺陷占总缺陷数的比例，反映测试有效性。计算公式：线上缺陷数 / 总缺陷数 × 100%。该值越低越好">ⓘ</span>
+          </div>
+          <div class="overview-kpi-value" style="color:var(--warning);">3.2%</div>
+          <div class="overview-kpi-footer"><span class="trend-up">↓ 1.2%</span> vs 上月</div>
+        </div>
+      </div>
+      <!-- 8. 回归通过率 -->
+      <div class="overview-kpi-card">
+        <div class="overview-kpi-icon" style="background:var(--success-bg);">↻</div>
+        <div class="overview-kpi-info">
+          <div class="overview-kpi-label">
+            回归通过率
+            <span class="metric-help-btn" data-tooltip="回归测试套件的用例通过率，用于评估版本迭代对已有功能的影响程度。回归通过率越高，说明版本变更对存量功能的破坏越小">ⓘ</span>
+          </div>
+          <div class="overview-kpi-value" style="color:var(--success);">95.1%</div>
+          <div class="overview-kpi-footer"><span class="trend-up">↑ 1.3%</span> vs 上周</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Layer 4: Trend Analysis (3 columns) -->
+    <div class="trend-section-3col">
+      <!-- 4.1 Pass Rate Trend (50%) -->
+      <div class="card trend-card-main">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+          通过率趋势
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="trend-target-line" title="目标基线：95%">
+              <span class="trend-target-dot"></span>目标 95%
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-sm active" onclick="switchTimeRange(this,'day')">天</button>
+              <button class="btn btn-sm" onclick="switchTimeRange(this,'week')">周</button>
+              <button class="btn btn-sm" onclick="switchTimeRange(this,'month')">月</button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="width:100%;padding:8px 0;">
+            <svg width="100%" height="200" viewBox="0 0 620 200" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#1890ff" stop-opacity="0.15"/>
+                  <stop offset="100%" stop-color="#1890ff" stop-opacity="0.01"/>
+                </linearGradient>
+              </defs>
+              <!-- Grid lines -->
+              <line x1="40" y1="20" x2="600" y2="20" stroke="#f0f0f0" stroke-width="1"/>
+              <line x1="40" y1="60" x2="600" y2="60" stroke="#f0f0f0" stroke-width="1"/>
+              <line x1="40" y1="100" x2="600" y2="100" stroke="#f0f0f0" stroke-width="1"/>
+              <line x1="40" y1="140" x2="600" y2="140" stroke="#f0f0f0" stroke-width="1"/>
+              <line x1="40" y1="180" x2="600" y2="180" stroke="#f0f0f0" stroke-width="1"/>
+              <!-- Y-axis labels -->
+              <text x="32" y="24" font-size="10" fill="rgba(0,0,0,.45)" text-anchor="end">100%</text>
+              <text x="32" y="64" font-size="10" fill="rgba(0,0,0,.45)" text-anchor="end">95%</text>
+              <text x="32" y="104" font-size="10" fill="rgba(0,0,0,.45)" text-anchor="end">90%</text>
+              <text x="32" y="144" font-size="10" fill="rgba(0,0,0,.45)" text-anchor="end">85%</text>
+              <text x="32" y="184" font-size="10" fill="rgba(0,0,0,.45)" text-anchor="end">80%</text>
+              <!-- Target baseline at 95% (y=60) -->
+              <line x1="40" y1="60" x2="600" y2="60" stroke="#faad14" stroke-width="1" stroke-dasharray="4 3" opacity="0.6"/>
+              <!-- Area fill -->
+              <polygon points="40,100 80,85 120,70 160,80 200,55 240,65 280,45 320,55 360,35 400,50 440,25 480,40 520,30 560,35 600,20 600,180 40,180" fill="url(#trendFill)"/>
+              <!-- Trend line -->
+              <polyline points="40,100 80,85 120,70 160,80 200,55 240,65 280,45 320,55 360,35 400,50 440,25 480,40 520,30 560,35 600,20" fill="none" stroke="#1890ff" stroke-width="2" stroke-linejoin="round"/>
+              <!-- Data points -->
+              <circle cx="40" cy="100" r="3" fill="#fff" stroke="#1890ff" stroke-width="2"/>
+              <circle cx="200" cy="55" r="3" fill="#fff" stroke="#1890ff" stroke-width="2"/>
+              <circle cx="360" cy="35" r="3" fill="#fff" stroke="#1890ff" stroke-width="2"/>
+              <circle cx="600" cy="20" r="3" fill="#fff" stroke="#1890ff" stroke-width="2"/>
+              <!-- X-axis labels -->
+              <text x="40" y="196" font-size="10" fill="rgba(0,0,0,.45)" text-anchor="middle">01-01</text>
+              <text x="160" y="196" font-size="10" fill="rgba(0,0,0,.45)" text-anchor="middle">01-04</text>
+              <text x="280" y="196" font-size="10" fill="rgba(0,0,0,.45)" text-anchor="middle">01-07</text>
+              <text x="400" y="196" font-size="10" fill="rgba(0,0,0,.45)" text-anchor="middle">01-10</text>
+              <text x="520" y="196" font-size="10" fill="rgba(0,0,0,.45)" text-anchor="middle">01-13</text>
+              <text x="600" y="196" font-size="10" fill="rgba(0,0,0,.45)" text-anchor="middle">01-15</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column container (25% + 25%) -->
+      <div class="trend-side-col">
+        <!-- 4.2 Execution Frequency (bar chart) -->
+        <div class="card trend-card-side">
+          <div class="card-header" style="padding:12px 16px;">
+            <span style="font-size:13px;font-weight:600;">每日执行频次</span>
+            <span style="font-size:11px;color:var(--text-tertiary);">近 7 天</span>
+          </div>
+          <div class="card-body" style="padding:12px 16px;">
+            <div class="bar-chart">
+              <div class="bar-group">
+                <div class="bar-stack">
+                  <div class="bar bar-success" style="height:48px;"></div>
+                  <div class="bar bar-error" style="height:8px;"></div>
+                </div>
+                <span class="bar-label">周一</span>
+                <span class="bar-count">8</span>
+              </div>
+              <div class="bar-group">
+                <div class="bar-stack">
+                  <div class="bar bar-success" style="height:60px;"></div>
+                  <div class="bar bar-error" style="height:12px;"></div>
+                </div>
+                <span class="bar-label">周二</span>
+                <span class="bar-count">10</span>
+              </div>
+              <div class="bar-group">
+                <div class="bar-stack">
+                  <div class="bar bar-success" style="height:36px;"></div>
+                  <div class="bar bar-error" style="height:6px;"></div>
+                </div>
+                <span class="bar-label">周三</span>
+                <span class="bar-count">6</span>
+              </div>
+              <div class="bar-group">
+                <div class="bar-stack">
+                  <div class="bar bar-success" style="height:54px;"></div>
+                  <div class="bar bar-error" style="height:6px;"></div>
+                </div>
+                <span class="bar-label">周四</span>
+                <span class="bar-count">9</span>
+              </div>
+              <div class="bar-group">
+                <div class="bar-stack">
+                  <div class="bar bar-success" style="height:42px;"></div>
+                  <div class="bar bar-error" style="height:12px;"></div>
+                </div>
+                <span class="bar-label">周五</span>
+                <span class="bar-count">7</span>
+              </div>
+              <div class="bar-group">
+                <div class="bar-stack">
+                  <div class="bar bar-success" style="height:24px;"></div>
+                  <div class="bar bar-error" style="height:0;"></div>
+                </div>
+                <span class="bar-label">周六</span>
+                <span class="bar-count">3</span>
+              </div>
+              <div class="bar-group">
+                <div class="bar-stack">
+                  <div class="bar bar-success" style="height:12px;"></div>
+                  <div class="bar bar-error" style="height:6px;"></div>
+                </div>
+                <span class="bar-label">周日</span>
+                <span class="bar-count">2</span>
+              </div>
+            </div>
+            <div class="bar-chart-legend">
+              <span class="legend-inline"><span class="legend-dot" style="background:var(--success);"></span>通过</span>
+              <span class="legend-inline"><span class="legend-dot" style="background:var(--error);"></span>失败</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4.3 Defect Trend (dual line) -->
+        <div class="card trend-card-side">
+          <div class="card-header" style="padding:12px 16px;">
+            <span style="font-size:13px;font-weight:600;">缺陷趋势</span>
+            <span style="font-size:11px;color:var(--text-tertiary);">近 4 周</span>
+          </div>
+          <div class="card-body" style="padding:12px 16px;">
+            <svg width="100%" height="140" viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet">
+              <!-- Grid -->
+              <line x1="30" y1="10" x2="270" y2="10" stroke="#f0f0f0" stroke-width="1"/>
+              <line x1="30" y1="40" x2="270" y2="40" stroke="#f0f0f0" stroke-width="1"/>
+              <line x1="30" y1="70" x2="270" y2="70" stroke="#f0f0f0" stroke-width="1"/>
+              <line x1="30" y1="100" x2="270" y2="100" stroke="#f0f0f0" stroke-width="1"/>
+              <line x1="30" y1="120" x2="270" y2="120" stroke="#f0f0f0" stroke-width="1"/>
+              <text x="24" y="14" font-size="9" fill="rgba(0,0,0,.45)" text-anchor="end">12</text>
+              <text x="24" y="44" font-size="9" fill="rgba(0,0,0,.45)" text-anchor="end">9</text>
+              <text x="24" y="74" font-size="9" fill="rgba(0,0,0,.45)" text-anchor="end">6</text>
+              <text x="24" y="104" font-size="9" fill="rgba(0,0,0,.45)" text-anchor="end">3</text>
+              <text x="24" y="124" font-size="9" fill="rgba(0,0,0,.45)" text-anchor="end">0</text>
+              <!-- New defects line (red) -->
+              <polyline points="50,30 110,50 170,70 230,80" fill="none" stroke="#ff4d4f" stroke-width="2" stroke-linejoin="round"/>
+              <circle cx="50" cy="30" r="3" fill="#fff" stroke="#ff4d4f" stroke-width="1.5"/>
+              <circle cx="110" cy="50" r="3" fill="#fff" stroke="#ff4d4f" stroke-width="1.5"/>
+              <circle cx="170" cy="70" r="3" fill="#fff" stroke="#ff4d4f" stroke-width="1.5"/>
+              <circle cx="230" cy="80" r="3" fill="#fff" stroke="#ff4d4f" stroke-width="1.5"/>
+              <!-- Fixed defects line (green) -->
+              <polyline points="50,50 110,40 170,50 230,60" fill="none" stroke="#52c41a" stroke-width="2" stroke-linejoin="round"/>
+              <circle cx="50" cy="50" r="3" fill="#fff" stroke="#52c41a" stroke-width="1.5"/>
+              <circle cx="110" cy="40" r="3" fill="#fff" stroke="#52c41a" stroke-width="1.5"/>
+              <circle cx="170" cy="50" r="3" fill="#fff" stroke="#52c41a" stroke-width="1.5"/>
+              <circle cx="230" cy="60" r="3" fill="#fff" stroke="#52c41a" stroke-width="1.5"/>
+              <!-- X-axis -->
+              <text x="50" y="136" font-size="9" fill="rgba(0,0,0,.45)" text-anchor="middle">第1周</text>
+              <text x="110" y="136" font-size="9" fill="rgba(0,0,0,.45)" text-anchor="middle">第2周</text>
+              <text x="170" y="136" font-size="9" fill="rgba(0,0,0,.45)" text-anchor="middle">第3周</text>
+              <text x="230" y="136" font-size="9" fill="rgba(0,0,0,.45)" text-anchor="middle">第4周</text>
+            </svg>
+            <div class="bar-chart-legend">
+              <span class="legend-inline"><span class="legend-dot" style="background:var(--error);"></span>新增缺陷</span>
+              <span class="legend-inline"><span class="legend-dot" style="background:var(--success);"></span>已修复</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Layer 5: Coverage & Risk Monitor (2 columns) -->
+    <div class="overview-section" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <!-- 5.1 Module Test Coverage -->
+      <div class="card">
+        <div class="card-header">模块测试覆盖率</div>
+        <div class="card-body">
+          <div class="coverage-item">
+            <span class="coverage-module">电池管理
+              <span class="metric-help-btn" data-tooltip="该模块的接口被测试用例覆盖的比例">ⓘ</span>
+            </span>
+            <div class="coverage-bar-wrap"><div class="coverage-bar" style="width:95%;background:var(--success);"></div></div>
+            <span class="coverage-count">38</span>
+            <span class="coverage-pct" style="color:var(--success);">95%</span>
+          </div>
+          <div class="coverage-item">
+            <span class="coverage-module">充电协议
+              <span class="metric-help-btn" data-tooltip="该模块的接口被测试用例覆盖的比例">ⓘ</span>
+            </span>
+            <div class="coverage-bar-wrap"><div class="coverage-bar" style="width:88%;background:var(--success);"></div></div>
+            <span class="coverage-count">22</span>
+            <span class="coverage-pct" style="color:var(--success);">88%</span>
+          </div>
+          <div class="coverage-item">
+            <span class="coverage-module">SOC 估算
+              <span class="metric-help-btn" data-tooltip="该模块的接口被测试用例覆盖的比例">ⓘ</span>
+            </span>
+            <div class="coverage-bar-wrap"><div class="coverage-bar" style="width:91%;background:var(--success);"></div></div>
+            <span class="coverage-count">18</span>
+            <span class="coverage-pct" style="color:var(--success);">91%</span>
+          </div>
+          <div class="coverage-item">
+            <span class="coverage-module">故障诊断
+              <span class="metric-help-btn" data-tooltip="该模块的接口被测试用例覆盖的比例">ⓘ</span>
+            </span>
+            <div class="coverage-bar-wrap"><div class="coverage-bar" style="width:76%;background:var(--warning);"></div></div>
+            <span class="coverage-count">15</span>
+            <span class="coverage-pct" style="color:var(--warning);">76%</span>
+          </div>
+          <div class="coverage-item">
+            <span class="coverage-module">温度监控
+              <span class="metric-help-btn" data-tooltip="该模块的接口被测试用例覆盖的比例">ⓘ</span>
+            </span>
+            <div class="coverage-bar-wrap"><div class="coverage-bar" style="width:82%;background:var(--success);"></div></div>
+            <span class="coverage-count">12</span>
+            <span class="coverage-pct" style="color:var(--success);">82%</span>
+          </div>
+          <div class="coverage-item">
+            <span class="coverage-module">数据上报
+              <span class="metric-help-btn" data-tooltip="该模块的接口被测试用例覆盖的比例">ⓘ</span>
+            </span>
+            <div class="coverage-bar-wrap"><div class="coverage-bar" style="width:68%;background:var(--warning);"></div></div>
+            <span class="coverage-count">8</span>
+            <span class="coverage-pct" style="color:var(--warning);">68%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5.2 Quality Risk Top 5 -->
+      <div class="card">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+          质量风险 Top 5
+          <a href="../cases/case-list.html" style="font-size:12px;font-weight:normal;">查看全部 →</a>
+        </div>
+        <div class="card-body">
+          <div class="unstable-item">
+            <div class="unstable-rank top">1</div>
+            <div class="unstable-info">
+              <div class="unstable-name">电池入仓操作</div>
+              <div class="unstable-meta">电池管理测试 · 近 30 天失败 8 次 · 失败率 42%</div>
+            </div>
+            <div class="unstable-fail">42%</div>
+          </div>
+          <div class="unstable-item">
+            <div class="unstable-rank top">2</div>
+            <div class="unstable-info">
+              <div class="unstable-name">充电桩超时处理</div>
+              <div class="unstable-meta">回归测试套件 · 近 30 天失败 5 次 · 失败率 25%</div>
+            </div>
+            <div class="unstable-fail">25%</div>
+          </div>
+          <div class="unstable-item">
+            <div class="unstable-rank top">3</div>
+            <div class="unstable-info">
+              <div class="unstable-name">异常断电恢复</div>
+              <div class="unstable-meta">回归测试套件 · 近 30 天失败 3 次 · 失败率 15%</div>
+            </div>
+            <div class="unstable-fail">15%</div>
+          </div>
+          <div class="unstable-item">
+            <div class="unstable-rank normal">4</div>
+            <div class="unstable-info">
+              <div class="unstable-name">电池温度告警</div>
+              <div class="unstable-meta">电池管理测试 · 近 30 天失败 2 次 · 失败率 10%</div>
+            </div>
+            <div class="unstable-fail">10%</div>
+          </div>
+          <div class="unstable-item">
+            <div class="unstable-rank normal">5</div>
+            <div class="unstable-info">
+              <div class="unstable-name">SOC 精度校验</div>
+              <div class="unstable-meta">SOC 估算测试 · 近 30 天失败 2 次 · 失败率 8%</div>
+            </div>
+            <div class="unstable-fail">8%</div>
+          </div>
+          <div class="risk-monitor-footer">
+            <span>持续失败用例：</span><span class="risk-count">3</span><span>个用例连续 3 次以上执行失败</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+  <script src="../common/nav.js"></script>
+  <script>
+    // KPI card click-to-navigate
+    document.querySelectorAll('.overview-kpi-card[data-href]').forEach(function(card) {
+      card.addEventListener('click', function() {
+        window.location.href = this.getAttribute('data-href');
+      });
+    });
+    // Time range switching
+    function switchTimeRange(el, range) {
+      el.parentNode.querySelectorAll('.btn').forEach(function(b) { b.classList.remove('active'); b.style.opacity = ''; });
+      el.classList.add('active');
+      el.style.opacity = '1';
+    }
+    // Metric tooltip positioning
+    document.querySelectorAll('.metric-help-btn').forEach(function(btn) {
+      btn.addEventListener('mouseenter', function() {
+        var rect = this.getBoundingClientRect();
+        var spaceAbove = rect.top;
+        if (spaceAbove < 80) {
+          this.classList.add('tooltip-below');
+        } else {
+          this.classList.remove('tooltip-below');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

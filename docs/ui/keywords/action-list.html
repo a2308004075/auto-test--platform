@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Action 关键字 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    .kw-layout { display: flex; background: #fff; border-radius: var(--border-radius-lg); border: 1px solid var(--border-color-secondary); overflow: hidden; min-height: calc(100vh - 180px); }
+    .kw-content { flex: 1; padding: 16px 20px; overflow: auto; }
+    .kw-table td { white-space: nowrap; }
+    .cell-truncate { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cell-truncate span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tree-item.system { color: var(--text-secondary); cursor: default; }
+    .tree-item.system .system-icon { font-size: 12px; margin-left: 6px; color: var(--text-tertiary); }
+    .tree-item.system.active { background: var(--primary-bg); color: var(--primary); }
+    .tree-item.system.active .system-icon { color: var(--primary); }
+    .tree-divider { height: 1px; background: var(--border-color-secondary); margin: 8px 12px; }
+    .context-menu {
+      position: fixed; background: #fff; border: 1px solid var(--border-color-secondary);
+      border-radius: var(--border-radius); box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      padding: 4px 0; min-width: 120px; z-index: 1000; display: none;
+    }
+    .context-menu-item { padding: 6px 12px; font-size: 13px; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+    .context-menu-item:hover { background: #fafafa; }
+    .context-menu-item.danger { color: var(--error); }
+    .context-menu-divider { height: 1px; background: var(--border-color-secondary); margin: 4px 0; }
+    .tree-arrow { display: inline-block; width: 14px; font-size: 9px; color: var(--text-tertiary); cursor: pointer; flex-shrink: 0; text-align: center; transition: transform .15s; }
+    .tree-arrow.expanded { transform: rotate(90deg); }
+    .tree-arrow-placeholder { display: inline-block; width: 14px; flex-shrink: 0; }
+    .tree-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* 列设置面板 */
+    .col-settings-overlay { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.25); z-index: 999; display: none; }
+    .col-settings-panel {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 260px;
+      background: #fff; box-shadow: -4px 0 16px rgba(0,0,0,0.1);
+      z-index: 1000; display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform .25s ease;
+    }
+    .col-settings-panel.open { transform: translateX(0); }
+    .col-settings-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border-color-secondary);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .col-settings-header h3 { margin: 0; font-size: 15px; font-weight: 600; }
+    .col-settings-reset {
+      font-size: 13px; color: var(--primary); cursor: pointer; background: none;
+      border: none; display: flex; align-items: center; gap: 4px; padding: 0;
+    }
+    .col-settings-reset:hover { opacity: 0.75; }
+    .col-settings-body { flex: 1; overflow-y: auto; padding: 12px 20px; }
+    .col-setting-item {
+      display: flex; align-items: center; padding: 8px 0; font-size: 13px; color: var(--text-primary);
+    }
+    .col-setting-item .col-label { margin-left: 8px; }
+    .col-settings-panel .checkbox-input { width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+    /* 表格工具栏 */
+    .table-toolbar {
+      display: flex; justify-content: flex-end; align-items: center;
+      padding: 8px 0;
+    }
+    /* 批量操作下拉按钮 */
+    .batch-dropdown { position: relative; display: inline-block; }
+    .batch-dropdown-menu {
+      display: none; position: absolute; right: 0; top: 100%; margin-top: 4px;
+      background: #fff; border: 1px solid var(--border-color-secondary);
+      border-radius: var(--border-radius); box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      min-width: 140px; z-index: 100; padding: 4px 0;
+    }
+    .batch-dropdown-menu.open { display: block; }
+    .batch-dropdown-item {
+      padding: 8px 14px; font-size: 13px; color: var(--text-primary); cursor: pointer;
+      display: flex; align-items: center; gap: 6px; white-space: nowrap;
+    }
+    .batch-dropdown-item:hover { background: var(--bg-body); }
+    .batch-dropdown-item.danger { color: var(--error); }
+    .batch-dropdown-item.danger:hover { background: #fff5f5; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span>关键字管理</span>
+      <span class="sep">&#8250;</span>
+      <span class="current">Action 关键字</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item active"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+
+  <main class="layout-main">
+    <div class="page-header">
+      <h1>Action 关键字</h1>
+      <button class="btn btn-primary" onclick="window.location.href='action-editor.html'">+ 新建 Action</button>
+    </div>
+
+    <div class="kw-layout">
+      <!-- Left: Group Tree -->
+      <div class="tree-panel" id="treePanel" oncontextmenu="showBlankContextMenu(event)">
+        <div class="tree-search">
+          <input type="text" class="input input-search w-full" placeholder="搜索分组..." style="height: 28px; font-size: 13px;">
+        </div>
+        <div id="groupTree"></div>
+      </div>
+
+      <!-- Right: Action List -->
+      <div class="kw-content">
+        <div class="search-card collapsed" id="actionSearchCard">
+          <div class="search-form">
+            <div class="search-row">
+              <div class="search-item">
+                <span class="filter-label">名称</span>
+                <input type="text" class="input input-search" id="searchActionName" placeholder="输入名称">
+              </div>
+              <div class="search-item">
+                <span class="filter-label">描述</span>
+                <input type="text" class="input input-search" id="searchActionDesc" placeholder="输入描述">
+              </div>
+              <div class="search-actions">
+                <button class="btn btn-primary" onclick="handleSearch()">查询</button>
+                <button class="btn" onclick="handleReset()">重置</button>
+                <button class="search-toggle" type="button" onclick="toggleSearchCard(this)">
+                  <span class="arrow">&#708;</span>
+                  <span class="text">展开</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 表字段调整工具栏 -->
+        <div class="table-toolbar">
+          <button class="btn" onclick="toggleColumnPanel()">表字段调整</button>
+        </div>
+
+        <!-- 批量操作栏 -->
+        <div class="batch-bar" id="batchBar">
+          <span>已选中 <span class="batch-count" id="batchCount">0</span> 条记录</span>
+          <div class="batch-actions">
+            <div class="batch-dropdown" id="batchDropdown">
+              <button class="btn btn-sm btn-primary" onclick="toggleBatchDropdown()">批量操作 ▾</button>
+              <div class="batch-dropdown-menu" id="batchDropdownMenu">
+                <div class="batch-dropdown-item" onclick="openBatchGroupFromDropdown()">批量修改分组</div>
+                <div class="batch-dropdown-item danger" onclick="openBatchDeleteConfirm()">批量删除</div>
+              </div>
+            </div>
+            <button class="btn btn-sm" onclick="clearSelection()">取消选择</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-wrapper">
+            <table class="kw-table">
+              <thead>
+                <tr id="actionTableHead">
+                  <!-- 由 JS 动态渲染 -->
+                </tr>
+              </thead>
+              <tbody id="actionTableBody">
+                <!-- 由 JS 动态渲染 -->
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer"><div class="pagination" id="actionPagination"></div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 空白区域右键菜单 -->
+  <div class="context-menu" id="blankContextMenu">
+    <div class="context-menu-item" onclick="handleBlankCreate()">新建分组</div>
+  </div>
+
+  <!-- 分组右键菜单 -->
+  <div class="context-menu" id="groupContextMenu">
+    <div class="context-menu-item" onclick="handleContextCreateChild()">新建子分组</div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item" onclick="handleContextEdit()">编辑</div>
+    <div class="context-menu-item danger" onclick="handleContextDelete()">删除</div>
+  </div>
+
+  <!-- 创建分组模态框 -->
+  <div class="modal-overlay" id="createGroupModal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="createGroupTitle">新建分组</h3>
+        <button class="modal-close" onclick="closeCreateGroupModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">分组名称 <span class="required">*</span></label>
+          <input type="text" class="input w-full" id="groupName" placeholder="请输入分组名称，如「登录认证」">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeCreateGroupModal()">取消</button>
+        <button class="btn btn-primary" onclick="confirmCreateGroup()">确认创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑分组模态框 -->
+  <div class="modal-overlay" id="editGroupModal" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>编辑分组</h3>
+        <button class="modal-close" onclick="closeEditGroupModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">分组名称 <span class="required">*</span></label>
+          <input type="text" class="input w-full" id="editGroupName" placeholder="请输入分组名称">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeEditGroupModal()">取消</button>
+        <button class="btn btn-primary" onclick="confirmEditGroup()">确认保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 删除分组确认模态框 -->
+  <div class="modal-overlay" id="deleteGroupModal" style="display:none;">
+    <div class="modal" style="width:360px;">
+      <div class="modal-header">
+        <h3>删除分组</h3>
+        <button class="modal-close" onclick="closeDeleteGroupModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:14px;color:var(--text-secondary);line-height:1.6;">
+          确定删除分组 <strong id="deleteGroupName"></strong> 吗？<br>
+          <span id="deleteGroupHint">删除后，该分组下的关键字将自动归入「未分组」。</span>
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeDeleteGroupModal()">取消</button>
+        <button class="btn btn-primary" style="background:var(--error);border-color:var(--error);" onclick="confirmDeleteGroup()">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量删除确认弹窗 -->
+  <div class="modal-overlay" id="batchDeleteModal" style="display: none;">
+    <div class="modal" style="width: 400px;">
+      <div class="modal-header">
+        <h3>批量删除 Action 关键字</h3>
+        <button class="modal-close" onclick="closeBatchDeleteModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
+          确定删除已选中的 <strong id="batchDeleteCount" style="color: var(--error);">0</strong> 条 Action 关键字吗？<br>
+          <span style="color: var(--text-tertiary);">删除后将无法恢复，请谨慎操作。</span>
+        </p>
+        <div id="batchDeletePreview" style="margin-top: 12px; padding: 12px; background: var(--bg-body); border-radius: var(--border-radius); font-size: 13px; max-height: 160px; overflow-y: auto;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeBatchDeleteModal()">取消</button>
+        <button class="btn btn-primary" style="background: var(--error); border-color: var(--error);" onclick="confirmBatchDelete()">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 单条删除确认弹窗 -->
+  <div class="modal-overlay" id="deleteActionModal" style="display: none;">
+    <div class="modal" style="width: 360px;">
+      <div class="modal-header">
+        <h3>删除 Action 关键字</h3>
+        <button class="modal-close" onclick="closeDeleteActionModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
+          确定删除 Action 关键字 <strong id="deleteActionName"></strong> 吗？<br>
+          <span style="color: var(--text-tertiary);">删除后将无法恢复。</span>
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeDeleteActionModal()">取消</button>
+        <button class="btn btn-primary" style="background: var(--error); border-color: var(--error);" onclick="confirmDeleteAction()">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 批量修改分组弹窗 -->
+  <div class="modal-overlay" id="batchGroupModal" onclick="if(event.target===this)closeBatchGroupModal()" style="display:none;">
+    <div class="modal" style="width: 420px;">
+      <div class="modal-header">
+        <h3>批量修改分组</h3>
+        <button class="modal-close" onclick="closeBatchGroupModal()">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">将已选中的 <b id="batchModalCount" style="color: var(--primary);">0</b> 条 Action 关键字的分组修改为：</p>
+        <div class="form-group">
+          <label class="form-label">目标分组 <span class="required">*</span></label>
+          <div class="search-select" id="batchGroupSelect" style="width:100%;">
+            <div class="search-select-input" tabindex="0">
+              <input type="text" class="input" placeholder="请选择分组" autocomplete="off">
+              <span class="search-select-arrow">&#9662;</span>
+            </div>
+            <div class="search-select-dropdown" id="batchGroupDropdown">
+              <div class="search-select-empty" style="display:none;">无匹配分组</div>
+            </div>
+            <input type="hidden" class="search-select-value" value="">
+          </div>
+        </div>
+        <div id="batchPreview" style="display:none;margin-top:12px;padding:12px;background:var(--bg-body);border-radius:var(--border-radius);font-size:13px;">
+          <div style="color:var(--text-tertiary);margin-bottom:6px;">以下 Action 关键字的分组将被修改：</div>
+          <div id="batchPreviewList" style="color:var(--text-primary);max-height:120px;overflow-y:auto;"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeBatchGroupModal()">取消</button>
+        <button class="btn btn-primary" onclick="applyBatchGroup()">确认修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 表字段调整面板 -->
+  <div class="col-settings-overlay" id="colSettingsOverlay" onclick="closeColumnPanel()"></div>
+  <div class="col-settings-panel" id="colSettingsPanel">
+    <div class="col-settings-header">
+      <h3>表字段调整</h3>
+      <button class="col-settings-reset" onclick="resetColumns()">&#8635; 重置</button>
+    </div>
+    <div class="col-settings-body" id="colSettingsBody">
+      <!-- 列选项由 JS 动态渲染 -->
+    </div>
+  </div>
+
+  <script>
+    /* ===== 分组数据 ===== */
+    var groups = [
+      { id: 'all', name: '全部', count: 0, isSystem: true, icon: '📂' },
+      { id: 'ungrouped', name: '未分组', count: 0, isSystem: true, icon: '📁' },
+      { id: '1', name: '登录认证', count: 1, isSystem: false, parentId: null },
+      { id: '2', name: '用户管理', count: 0, isSystem: false, parentId: null },
+      { id: '3', name: '订单处理', count: 1, isSystem: false, parentId: null },
+      { id: '4', name: '电池管理', count: 2, isSystem: false, parentId: null }
+    ];
+    var activeGroupId = 'all';
+    var contextGroupId = null;
+    var editingGroupId = null;
+    var createGroupParentId = null;
+    var expandedIds = {};
+    var batchTargetGroupId = null;
+    var batchGroupExpanded = {};
+    var nextGroupId = 100;
+
+    /* ===== 表字段列配置 ===== */
+    var columnConfig = [
+      { key: 'name',           label: '名称',         locked: true,  defaultVisible: true },
+      { key: 'desc',           label: '描述',         locked: true,  defaultVisible: true },
+      { key: 'createTime',     label: '创建时间',     locked: false, defaultVisible: true },
+      { key: 'updateTime',     label: '更新时间',     locked: false, defaultVisible: false },
+      { key: 'action',         label: '操作',         locked: true,  defaultVisible: true }
+    ];
+    var columnDefaults = {};
+    columnConfig.forEach(function(c) { columnDefaults[c.key] = c.defaultVisible; });
+
+    /* ===== Action 数据 ===== */
+    var actionData = [
+      { id: 1, name: '用户登录并获取令牌', desc: '完成用户登录并将Token存入变量',     groupId: '1', group: '登录认证', nodeCount: 3, actionRefCount: 3,  caseRefCount: 12, createTime: '2024-01-10', updateTime: '2024-01-12' },
+      { id: 2, name: '创建订单完整流程',   desc: '登录→选商品→创建订单→确认',       groupId: '3', group: '订单处理', nodeCount: 6, actionRefCount: 0,  caseRefCount: 8,  createTime: '2024-01-08', updateTime: '2024-01-10' },
+      { id: 3, name: '电池入仓操作',       desc: '一键入仓→确认仓位→启动充电',       groupId: '4', group: '电池管理', nodeCount: 5, actionRefCount: 2,  caseRefCount: 15, createTime: '2024-01-05', updateTime: '2024-01-07' },
+      { id: 4, name: '电池状态检查',       desc: '查询电池SOC/温度/故障状态',        groupId: '4', group: '电池管理', nodeCount: 4, actionRefCount: 5,  caseRefCount: 20, createTime: '2024-01-03', updateTime: '2024-01-05' }
+    ];
+    var filteredActionData = actionData;
+
+    function getChildren(parentId) {
+      return groups.filter(function(g) { return g.parentId === parentId; });
+    }
+
+    function escapeHtml(text) {
+      var div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    /* ===== 列可见性控制 ===== */
+    function isColVisible(key) {
+      for (var i = 0; i < columnConfig.length; i++) {
+        if (columnConfig[i].key === key) return columnConfig[i].defaultVisible;
+      }
+      return false;
+    }
+    function getVisibleColCount() {
+      var n = 1; // checkbox 列始终显示
+      for (var i = 0; i < columnConfig.length; i++) {
+        if (columnConfig[i].defaultVisible) n++;
+      }
+      return n;
+    }
+    function toggleColVisibility(key) {
+      for (var i = 0; i < columnConfig.length; i++) {
+        if (columnConfig[i].key === key) {
+          if (columnConfig[i].locked) return;
+          columnConfig[i].defaultVisible = !columnConfig[i].defaultVisible;
+          break;
+        }
+      }
+      renderColumnPanel();
+      renderTableHead();
+      renderActionRows();
+    }
+    function resetColumns() {
+      for (var i = 0; i < columnConfig.length; i++) {
+        columnConfig[i].defaultVisible = columnDefaults[columnConfig[i].key];
+      }
+      renderColumnPanel();
+      renderTableHead();
+      renderActionRows();
+    }
+    function renderColumnPanel() {
+      var html = '';
+      for (var i = 0; i < columnConfig.length; i++) {
+        var col = columnConfig[i];
+        if (col.locked) continue;
+        var checked = col.defaultVisible ? 'checked' : '';
+        html += '<label class="col-setting-item">' +
+          '<input type="checkbox" class="checkbox-input" ' + checked + ' onchange="toggleColVisibility(\'' + col.key + '\')">' +
+          '<span class="col-label">' + col.label + '</span>' +
+          '</label>';
+      }
+      document.getElementById('colSettingsBody').innerHTML = html;
+    }
+    function toggleColumnPanel() {
+      var panel = document.getElementById('colSettingsPanel');
+      var overlay = document.getElementById('colSettingsOverlay');
+      var isOpen = panel.classList.contains('open');
+      if (isOpen) {
+        panel.classList.remove('open');
+        overlay.style.display = 'none';
+      } else {
+        renderColumnPanel();
+        overlay.style.display = 'block';
+        panel.classList.add('open');
+      }
+    }
+    function closeColumnPanel() {
+      document.getElementById('colSettingsPanel').classList.remove('open');
+      document.getElementById('colSettingsOverlay').style.display = 'none';
+    }
+
+    /* ===== 表格动态渲染 ===== */
+    function renderTableHead() {
+      var html = '<th style="width:40px;padding-right:4px;text-align:center;">' +
+        '<input type="checkbox" class="checkbox-input" id="selectAllCheckbox" onchange="toggleSelectAll(this)"></th>';
+      if (isColVisible('name'))            html += '<th style="width:200px;">名称</th>';
+      if (isColVisible('desc'))            html += '<th>描述</th>';
+      if (isColVisible('createTime'))      html += '<th style="width:160px;">创建时间</th>';
+      if (isColVisible('updateTime'))      html += '<th style="width:160px;">更新时间</th>';
+      if (isColVisible('action'))          html += '<th style="width:150px;">操作</th>';
+      document.getElementById('actionTableHead').innerHTML = html;
+    }
+
+    function renderActionRows() {
+      var start = (actionCurrentPage - 1) * actionPageSize;
+      var end = start + actionPageSize;
+      var pageItems = filteredActionData.slice(start, end);
+      var html = '';
+      var colCount = getVisibleColCount();
+      if (pageItems.length === 0) {
+        html = '<tr><td colspan="' + colCount + '" style="text-align:center;padding:48px 20px;color:var(--text-tertiary);">' +
+          '<div style="font-size:32px;margin-bottom:8px;opacity:.4;">⚡</div>' +
+          '<div>暂无匹配的 Action 关键字数据</div></td></tr>';
+      }
+      pageItems.forEach(function(a) {
+        html += '<tr data-id="' + a.id + '">';
+        html += '<td style="text-align:center;padding-right:4px;"><input type="checkbox" class="checkbox-input row-check" onchange="updateBatchBar()"></td>';
+        if (isColVisible('name'))            html += '<td>' + escapeHtml(a.name) + '</td>';
+        if (isColVisible('desc'))            html += '<td class="cell-truncate"><span title="' + escapeHtml(a.desc) + '">' + escapeHtml(a.desc) + '</span></td>';
+        if (isColVisible('createTime'))      html += '<td>' + escapeHtml(a.createTime) + '</td>';
+        if (isColVisible('updateTime'))      html += '<td>' + escapeHtml(a.updateTime) + '</td>';
+        if (isColVisible('action'))     html += '<td style="white-space:nowrap">' +
+          '<button class="btn btn-link btn-sm" onclick="window.location.href=\'action-editor.html\'">编辑</button>' +
+          '<button class="btn btn-link btn-sm" onclick="window.location.href=\'action-debug.html\'">调试</button>' +
+          '<button class="btn btn-link btn-sm btn-danger" onclick="deleteAction(' + a.id + ')">删除</button>' +
+          '</td>';
+        html += '</tr>';
+      });
+      document.getElementById('actionTableBody').innerHTML = html;
+    }
+
+    function renderTreeItems(items, depth) {
+      var html = '';
+      items.forEach(function(g) {
+        var isActive = g.id === activeGroupId ? 'active' : '';
+        var systemCls = g.isSystem ? 'system' : '';
+        var lockIcon = g.isSystem ? '<span class="system-icon" title="系统默认分组，不可修改">&#128274;</span>' : '';
+        var icon = g.icon || '📁';
+        var children = getChildren(g.id);
+        var hasChildren = children.length > 0;
+        var arrowHtml = '';
+        if (!g.isSystem && hasChildren) {
+          var expanded = expandedIds[g.id];
+          arrowHtml = '<span class="tree-arrow' + (expanded ? ' expanded' : '') + '" onclick="toggleExpand(event,\'' + g.id + '\')">&#9654;</span>';
+        } else if (!g.isSystem) {
+          arrowHtml = '<span class="tree-arrow-placeholder"></span>';
+        }
+        var padding = g.isSystem ? 16 : (16 + depth * 16);
+        var displayName = g.name.length > 10 ? g.name.substring(0, 10) + '...' : g.name;
+        html += '<div class="tree-item ' + isActive + ' ' + systemCls + '" data-id="' + g.id + '" style="padding-left:' + padding + 'px" ' +
+          (g.isSystem ? '' : 'oncontextmenu="showGroupContextMenu(event,\'' + g.id + '\')"') +
+          ' onclick="selectGroup(\'' + g.id + '\')">' +
+          arrowHtml + '<span>' + icon + '</span><span class="tree-name" title="' + escapeHtml(g.name) + '">' + escapeHtml(displayName) + '</span>' + lockIcon + '<span class="count">' + g.count + '</span></div>';
+        if (!g.isSystem && hasChildren && expandedIds[g.id]) {
+          html += renderTreeItems(children, depth + 1);
+        }
+      });
+      return html;
+    }
+
+    function renderGroups() {
+      var container = document.getElementById('groupTree');
+      var html = '';
+      // 系统分组（全部、未分组）
+      var systemGroups = groups.filter(function(g) { return g.isSystem; });
+      html += renderTreeItems(systemGroups, 0);
+      html += '<div class="tree-divider"></div>';
+      // 用户分组（顶层）
+      var userGroups = groups.filter(function(g) { return !g.isSystem && g.parentId === null; });
+      html += renderTreeItems(userGroups, 0);
+      container.innerHTML = html;
+    }
+
+    function selectGroup(id) {
+      activeGroupId = id;
+      document.getElementById('searchActionName').value = '';
+      document.getElementById('searchActionDesc').value = '';
+      filteredActionData = getFilteredActionData();
+      actionCurrentPage = 1;
+      renderGroups();
+      renderActionRows();
+      actionRenderPagination();
+    }
+
+    function toggleExpand(e, id) {
+      e.stopPropagation();
+      expandedIds[id] = !expandedIds[id];
+      renderGroups();
+    }
+
+    function computeGroupCount(groupId) {
+      var direct = actionData.filter(function(a) { return a.groupId === groupId; }).length;
+      var children = getChildren(groupId);
+      for (var i = 0; i < children.length; i++) {
+        direct += computeGroupCount(children[i].id);
+      }
+      return direct;
+    }
+
+    function updateGroupCounts() {
+      groups.forEach(function(g) {
+        if (g.id === 'all') {
+          g.count = actionData.length;
+        } else if (g.id === 'ungrouped') {
+          g.count = actionData.filter(function(a) { return !a.groupId || a.groupId === 'ungrouped'; }).length;
+        } else {
+          g.count = computeGroupCount(g.id);
+        }
+      });
+    }
+
+    function getDescendantIds(groupId) {
+      var ids = [groupId];
+      getChildren(groupId).forEach(function(child) {
+        ids = ids.concat(getDescendantIds(child.id));
+      });
+      return ids;
+    }
+
+    /* ===== 右键菜单 ===== */
+    function hideAllMenus() {
+      document.getElementById('blankContextMenu').style.display = 'none';
+      document.getElementById('groupContextMenu').style.display = 'none';
+    }
+    function showBlankContextMenu(e) {
+      var target = e.target;
+      while (target && target !== e.currentTarget) {
+        if (target.classList && target.classList.contains('tree-item')) { e.preventDefault(); return; }
+        target = target.parentElement;
+      }
+      e.preventDefault();
+      hideAllMenus();
+      var menu = document.getElementById('blankContextMenu');
+      menu.style.display = 'block';
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+    }
+    function showGroupContextMenu(e, id) {
+      e.preventDefault();
+      e.stopPropagation();
+      hideAllMenus();
+      contextGroupId = id;
+      var group = groups.find(function(g) { return g.id === id; });
+      if (group && group.isSystem) return;
+      var menu = document.getElementById('groupContextMenu');
+      menu.style.display = 'block';
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+    }
+    document.addEventListener('click', hideAllMenus);
+
+    function handleBlankCreate() { hideAllMenus(); openCreateGroupModal(null); }
+    function handleContextCreateChild() { hideAllMenus(); openCreateGroupModal(contextGroupId); }
+    function handleContextEdit() { hideAllMenus(); openEditGroupModal(contextGroupId); }
+    function handleContextDelete() { hideAllMenus(); openDeleteGroupModal(contextGroupId); }
+
+    /* ===== 创建分组 ===== */
+    function openCreateGroupModal(parentId) {
+      createGroupParentId = parentId || null;
+      document.getElementById('createGroupTitle').textContent = createGroupParentId ? '新建子分组' : '新建分组';
+      document.getElementById('createGroupModal').style.display = 'flex';
+      document.getElementById('groupName').value = '';
+      document.getElementById('groupName').focus();
+    }
+    function closeCreateGroupModal() {
+      document.getElementById('createGroupModal').style.display = 'none';
+      createGroupParentId = null;
+    }
+    function confirmCreateGroup() {
+      var name = document.getElementById('groupName').value.trim();
+      if (!name) { document.getElementById('groupName').style.borderColor = 'var(--error)'; return; }
+      var newId = String(nextGroupId++);
+      groups.push({ id: newId, name: name, count: 0, isSystem: false, parentId: createGroupParentId });
+      if (createGroupParentId) expandedIds[createGroupParentId] = true;
+      renderGroups();
+      closeCreateGroupModal();
+    }
+
+    /* ===== 编辑分组 ===== */
+    function openEditGroupModal(id) {
+      editingGroupId = id;
+      var group = groups.find(function(g) { return g.id === id; });
+      if (!group) return;
+      document.getElementById('editGroupName').value = group.name;
+      document.getElementById('editGroupModal').style.display = 'flex';
+    }
+    function closeEditGroupModal() {
+      document.getElementById('editGroupModal').style.display = 'none';
+      editingGroupId = null;
+    }
+    function confirmEditGroup() {
+      var name = document.getElementById('editGroupName').value.trim();
+      if (!name) return;
+      var group = groups.find(function(g) { return g.id === editingGroupId; });
+      if (group) group.name = name;
+      renderGroups();
+      closeEditGroupModal();
+    }
+
+    /* ===== 删除分组 ===== */
+    function openDeleteGroupModal(id) {
+      var group = groups.find(function(g) { return g.id === id; });
+      if (!group) return;
+      document.getElementById('deleteGroupName').textContent = group.name;
+      document.getElementById('deleteGroupModal').style.display = 'flex';
+    }
+    function closeDeleteGroupModal() {
+      document.getElementById('deleteGroupModal').style.display = 'none';
+    }
+    function confirmDeleteGroup() {
+      groups = groups.filter(function(g) { return g.id !== editingGroupId && g.parentId !== editingGroupId; });
+      if (activeGroupId === editingGroupId) activeGroupId = 'all';
+      renderGroups();
+      closeDeleteGroupModal();
+    }
+
+    renderGroups();
+
+    /* ===== 查询过滤逻辑 ===== */
+    function getFilteredActionData() {
+      var nameKw = document.getElementById('searchActionName').value.trim().toLowerCase();
+      var descKw = document.getElementById('searchActionDesc').value.trim().toLowerCase();
+      return actionData.filter(function(a) {
+        var matchName = !nameKw || a.name.toLowerCase().indexOf(nameKw) !== -1;
+        var matchDesc = !descKw || a.desc.toLowerCase().indexOf(descKw) !== -1;
+        return matchName && matchDesc;
+      });
+    }
+
+    function handleSearch() {
+      filteredActionData = getFilteredActionData();
+      actionCurrentPage = 1;
+      renderActionRows();
+      actionRenderPagination();
+    }
+
+    function handleReset() {
+      document.getElementById('searchActionName').value = '';
+      document.getElementById('searchActionDesc').value = '';
+      filteredActionData = getFilteredActionData();
+      actionCurrentPage = 1;
+      renderActionRows();
+      actionRenderPagination();
+    }
+
+    // 搜索框回车触发查询
+    document.getElementById('searchActionName').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') handleSearch();
+    });
+    document.getElementById('searchActionDesc').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') handleSearch();
+    });
+
+    /* ===== 删除操作 ===== */
+    var deleteActionId = null;
+    function deleteAction(id) {
+      deleteActionId = id;
+      var item = actionData.find(function(a) { return a.id === id; });
+      document.getElementById('deleteActionName').textContent = item ? item.name : '';
+      document.getElementById('deleteActionModal').style.display = 'flex';
+    }
+    function closeDeleteActionModal() {
+      document.getElementById('deleteActionModal').style.display = 'none';
+      deleteActionId = null;
+    }
+    function confirmDeleteAction() {
+      if (!deleteActionId) return;
+      actionData = actionData.filter(function(a) { return a.id !== deleteActionId; });
+      deleteActionId = null;
+      updateGroupCounts();
+      filteredActionData = getFilteredActionData();
+      renderGroups();
+      renderActionRows();
+      actionRenderPagination();
+      closeDeleteActionModal();
+      showToast('已删除 1 条 Action 关键字', 'success');
+    }
+
+    /* ===== 批量操作下拉菜单 ===== */
+    function toggleBatchDropdown() {
+      document.getElementById('batchDropdownMenu').classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      var dropdown = document.getElementById('batchDropdown');
+      if (dropdown && !dropdown.contains(e.target)) {
+        document.getElementById('batchDropdownMenu').classList.remove('open');
+      }
+    });
+
+    /* ===== 批量选择 ===== */
+    function toggleSelectAll(el) {
+      var checks = document.querySelectorAll('.row-check');
+      for (var i = 0; i < checks.length; i++) checks[i].checked = el.checked;
+      updateBatchBar();
+    }
+    function getCheckedIds() {
+      var ids = [];
+      var checks = document.querySelectorAll('.row-check:checked');
+      for (var i = 0; i < checks.length; i++) {
+        ids.push(parseInt(checks[i].closest('tr').getAttribute('data-id'), 10));
+      }
+      return ids;
+    }
+    function updateBatchBar() {
+      var bar = document.getElementById('batchBar');
+      var countEl = document.getElementById('batchCount');
+      var checked = document.querySelectorAll('.row-check:checked').length;
+      var total = document.querySelectorAll('.row-check').length;
+      countEl.textContent = checked;
+      if (checked > 0) bar.classList.add('visible');
+      else bar.classList.remove('visible');
+      var selectAllEl = document.getElementById('selectAllCheckbox');
+      if (selectAllEl) {
+        if (checked === 0) { selectAllEl.checked = false; selectAllEl.indeterminate = false; }
+        else if (checked === total) { selectAllEl.checked = true; selectAllEl.indeterminate = false; }
+        else { selectAllEl.checked = false; selectAllEl.indeterminate = true; }
+      }
+    }
+    function clearSelection() {
+      var checks = document.querySelectorAll('.row-check');
+      for (var i = 0; i < checks.length; i++) checks[i].checked = false;
+      var selectAllEl = document.getElementById('selectAllCheckbox');
+      if (selectAllEl) { selectAllEl.checked = false; selectAllEl.indeterminate = false; }
+      updateBatchBar();
+    }
+
+    /* ===== 批量修改分组 ===== */
+    function getGroupDepth(groupId) {
+      var depth = 0;
+      var g = groups.find(function(x) { return x.id === groupId; });
+      while (g && g.parentId) { depth++; g = groups.find(function(x) { return x.id === g.parentId; }); }
+      return depth;
+    }
+
+    function renderGroupTreeOptions() {
+      var dropdown = document.getElementById('batchGroupDropdown');
+      var emptyEl = dropdown.querySelector('.search-select-empty');
+      Array.prototype.slice.call(dropdown.querySelectorAll('.search-select-option')).forEach(function(el) { el.remove(); });
+      var userGroups = groups.filter(function(g) { return !g.isSystem; });
+      var topGroups = userGroups.filter(function(g) { return g.parentId === null; });
+      topGroups.forEach(function(g) { insertTreeOption(dropdown, emptyEl, g, 0, userGroups); });
+      emptyEl.style.display = topGroups.length === 0 ? 'block' : 'none';
+    }
+
+    function insertTreeOption(dropdown, beforeEl, g, depth, allUserGroups) {
+      var childGroups = allUserGroups.filter(function(x) { return x.parentId === g.id; });
+      var hasChildren = childGroups.length > 0;
+      var isExpanded = batchGroupExpanded[g.id];
+      var btnStyle = 'display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid var(--border-color);border-radius:3px;font-size:13px;font-weight:700;line-height:1;cursor:pointer;color:var(--primary);background:#fff;flex-shrink:0;';
+      var toggleIcon = hasChildren ? (isExpanded ? '<span style="' + btnStyle + '">&#8722;</span>' : '<span style="' + btnStyle + '">+</span>') : '<span style="width:16px;display:inline-block;flex-shrink:0;"></span>';
+      var indent = depth > 0 ? '<span style="display:inline-block;width:' + (depth * 16) + 'px;flex-shrink:0;"></span>' : '';
+      var opt = document.createElement('div');
+      opt.className = 'search-select-option';
+      if (batchTargetGroupId === g.id) opt.classList.add('selected');
+      opt.setAttribute('data-value', g.id);
+      opt.innerHTML = indent +
+        '<span class="tree-toggle" data-toggle-id="' + g.id + '" style="display:inline-flex;align-items:center;margin-right:6px;">' + toggleIcon + '</span>' +
+        '<span>' + escapeHtml(g.name) + '</span>';
+      dropdown.insertBefore(opt, beforeEl);
+      if (hasChildren && isExpanded) {
+        childGroups.forEach(function(child) { insertTreeOption(dropdown, beforeEl, child, depth + 1, allUserGroups); });
+      }
+    }
+
+    function renderGroupFlatOptions(keyword) {
+      var dropdown = document.getElementById('batchGroupDropdown');
+      var emptyEl = dropdown.querySelector('.search-select-empty');
+      Array.prototype.slice.call(dropdown.querySelectorAll('.search-select-option')).forEach(function(el) { el.remove(); });
+      var userGroups = groups.filter(function(g) { return !g.isSystem; });
+      var kw = (keyword || '').toLowerCase();
+      var matched = userGroups.filter(function(g) { return !kw || g.name.toLowerCase().indexOf(kw) !== -1; });
+      matched.forEach(function(g) {
+        var opt = document.createElement('div');
+        opt.className = 'search-select-option';
+        if (batchTargetGroupId === g.id) opt.classList.add('selected');
+        opt.setAttribute('data-value', g.id);
+        opt.textContent = g.name;
+        dropdown.insertBefore(opt, emptyEl);
+      });
+      emptyEl.style.display = matched.length === 0 ? 'block' : 'none';
+    }
+
+    function toggleBatchGroupExpand(groupId) {
+      batchGroupExpanded[groupId] = !batchGroupExpanded[groupId];
+      renderGroupTreeOptions();
+    }
+
+    function renderBatchPreview() {
+      var ids = getCheckedIds();
+      var targetGroup = batchTargetGroupId ? groups.find(function(g) { return g.id === batchTargetGroupId; }) : null;
+      var html = '';
+      ids.forEach(function(id) {
+        var item = actionData.find(function(a) { return a.id === id; });
+        if (!item) return;
+        var rightSide = targetGroup
+          ? '<span style="color:var(--primary);font-weight:500;">' + escapeHtml(targetGroup.name) + '</span>'
+          : '<span style="color:var(--text-disabled);font-style:italic;">请选择目标分组</span>';
+        html += '<div style="padding:3px 0;">' +
+          '<span style="color:var(--text-secondary);">' + escapeHtml(item.name) + '</span>' +
+          '<span style="margin:0 6px;color:var(--text-tertiary);font-size:12px;">' + escapeHtml(item.group || '未分组') + '</span>' +
+          '<span style="margin:0 4px;color:var(--text-tertiary);">&#8594;</span>' +
+          rightSide + '</div>';
+      });
+      document.getElementById('batchPreviewList').innerHTML = html;
+    }
+
+    function openBatchGroupModal() {
+      var ids = getCheckedIds();
+      if (ids.length === 0) return;
+      batchTargetGroupId = null;
+      batchGroupExpanded = {};
+      document.getElementById('batchModalCount').textContent = ids.length;
+      var ss = document.getElementById('batchGroupSelect');
+      ss.querySelector('.search-select-value').value = '';
+      ss.querySelector('.input').value = '';
+      ss.querySelector('.input').placeholder = '请选择分组';
+      ss.querySelectorAll('.search-select-option').forEach(function(opt) { opt.classList.remove('hidden', 'selected'); });
+      ss.querySelector('.search-select-empty').style.display = 'none';
+      ss.classList.remove('open');
+      renderGroupTreeOptions();
+      renderBatchPreview();
+      document.getElementById('batchPreview').style.display = 'block';
+      document.getElementById('batchPreview').style.borderColor = '';
+      document.getElementById('batchPreview').style.background = 'var(--bg-body)';
+      document.getElementById('batchGroupModal').style.display = 'flex';
+    }
+
+    function closeBatchGroupModal() {
+      document.getElementById('batchGroupModal').style.display = 'none';
+    }
+
+    function applyBatchGroup() {
+      var newGroupId = document.querySelector('#batchGroupSelect .search-select-value').value;
+      if (!newGroupId) {
+        var ssInput = document.querySelector('#batchGroupSelect .search-select-input .input');
+        ssInput.style.borderColor = 'var(--error)';
+        ssInput.focus();
+        setTimeout(function() { ssInput.style.borderColor = ''; }, 2000);
+        return;
+      }
+      var targetGroup = groups.find(function(g) { return g.id === newGroupId; });
+      if (!targetGroup) { alert('目标分组不存在'); closeBatchGroupModal(); return; }
+      var ids = getCheckedIds();
+      var count = ids.length;
+      actionData.forEach(function(a) {
+        if (ids.indexOf(a.id) !== -1) {
+          a.groupId = targetGroup.id;
+          a.group = targetGroup.name;
+        }
+      });
+      clearSelection();
+      updateGroupCounts();
+      filteredActionData = getFilteredActionData();
+      renderGroups();
+      renderActionRows();
+      actionRenderPagination();
+      closeBatchGroupModal();
+      showToast('已成功将 ' + count + ' 条 Action 关键字的分组修改为「' + escapeHtml(targetGroup.name) + '」', 'success');
+    }
+
+    function openBatchGroupFromDropdown() {
+      document.getElementById('batchDropdownMenu').classList.remove('open');
+      openBatchGroupModal();
+    }
+
+    /* ===== 批量分组 search-select 组件绑定 ===== */
+    (function() {
+      var ss = document.getElementById('batchGroupSelect');
+      var inputEl = ss.querySelector('.input');
+      var hiddenEl = ss.querySelector('.search-select-value');
+      var preview = document.getElementById('batchPreview');
+      ss.querySelector('.search-select-input').addEventListener('click', function(e) {
+        e.stopPropagation();
+        document.querySelectorAll('.search-select.open').forEach(function(s) { if (s !== ss) s.classList.remove('open'); });
+        ss.classList.toggle('open');
+        if (ss.classList.contains('open')) inputEl.focus();
+      });
+      inputEl.addEventListener('input', function() {
+        var keyword = this.value.trim().toLowerCase();
+        hiddenEl.value = '';
+        batchTargetGroupId = null;
+        if (keyword) { renderGroupFlatOptions(keyword); } else { renderGroupTreeOptions(); }
+        if (!ss.classList.contains('open')) ss.classList.add('open');
+        preview.style.borderColor = '';
+        preview.style.background = 'var(--bg-body)';
+        renderBatchPreview();
+      });
+      ss.addEventListener('click', function(e) {
+        var toggleEl = e.target.closest('.tree-toggle');
+        if (toggleEl) {
+          e.stopPropagation();
+          var gid = toggleEl.getAttribute('data-toggle-id');
+          if (gid) toggleBatchGroupExpand(gid);
+          return;
+        }
+        var opt = e.target.closest('.search-select-option');
+        if (!opt) return;
+        e.stopPropagation();
+        var val = opt.getAttribute('data-value');
+        var gName = groups.find(function(g) { return g.id === val; });
+        hiddenEl.value = val;
+        batchTargetGroupId = val;
+        inputEl.value = gName ? gName.name : opt.textContent.trim();
+        inputEl.style.borderColor = '';
+        ss.querySelectorAll('.search-select-option').forEach(function(o) { o.classList.remove('selected'); });
+        opt.classList.add('selected');
+        ss.classList.remove('open');
+        preview.style.borderColor = 'var(--primary-border)';
+        preview.style.background = 'var(--primary-bg)';
+        renderBatchPreview();
+      });
+      document.addEventListener('click', function(e) { if (!ss.contains(e.target)) ss.classList.remove('open'); });
+      document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && ss.classList.contains('open')) ss.classList.remove('open'); });
+    })();
+
+    /* ===== 批量删除 ===== */
+    function openBatchDeleteConfirm() {
+      document.getElementById('batchDropdownMenu').classList.remove('open');
+      var ids = getCheckedIds();
+      if (ids.length === 0) return;
+      document.getElementById('batchDeleteCount').textContent = ids.length;
+      var html = '<div style="color:var(--text-tertiary);margin-bottom:6px;">以下 Action 关键字将被删除：</div>';
+      ids.forEach(function(id) {
+        var item = actionData.find(function(a) { return a.id === id; });
+        if (item) {
+          html += '<div style="padding:2px 0;color:var(--text-primary);">' + escapeHtml(item.name) +
+            ' <span style="color:var(--text-tertiary);font-size:12px;">(' + item.nodeCount + ' 节点)</span></div>';
+        }
+      });
+      document.getElementById('batchDeletePreview').innerHTML = html;
+      document.getElementById('batchDeleteModal').style.display = 'flex';
+    }
+    function closeBatchDeleteModal() {
+      document.getElementById('batchDeleteModal').style.display = 'none';
+    }
+    function confirmBatchDelete() {
+      var ids = getCheckedIds();
+      var count = ids.length;
+      actionData = actionData.filter(function(a) { return ids.indexOf(a.id) === -1; });
+      updateGroupCounts();
+      filteredActionData = getFilteredActionData();
+      renderGroups();
+      clearSelection();
+      renderActionRows();
+      actionRenderPagination();
+      closeBatchDeleteModal();
+      showToast('已删除 ' + count + ' 条 Action 关键字', 'success');
+    }
+
+    /* ===== 分页逻辑 ===== */
+    var actionPageSize = 20;
+    var actionCurrentPage = 1;
+
+    function actionBuildPageNumbers(current, total) {
+      if (total <= 7) {
+        var arr = [];
+        for (var i = 1; i <= total; i++) arr.push(i);
+        return arr;
+      }
+      var pages = [];
+      pages.push(1);
+      var rangeStart = Math.max(2, current - 1);
+      var rangeEnd = Math.min(total - 1, current + 1);
+      if (rangeStart > 2) pages.push('...');
+      for (var j = rangeStart; j <= rangeEnd; j++) pages.push(j);
+      if (rangeEnd < total - 1) pages.push('...');
+      pages.push(total);
+      return pages;
+    }
+    function actionRenderPagination() {
+      var total = filteredActionData.length;
+      var totalPages = Math.ceil(total / actionPageSize) || 1;
+      var html = '';
+      html += '<span class="page-info">共 ' + total + ' 条记录</span>';
+      html += '<button class="page-btn" onclick="actionChangePage(' + (actionCurrentPage - 1) + ')" ' + (actionCurrentPage === 1 ? 'disabled' : '') + '>‹</button>';
+      var pages = actionBuildPageNumbers(actionCurrentPage, totalPages);
+      for (var p = 0; p < pages.length; p++) {
+        var item = pages[p];
+        if (item === '...') {
+          html += '<span class="page-ellipsis">...</span>';
+        } else {
+          var activeCls = item === actionCurrentPage ? 'active' : '';
+          html += '<button class="page-btn ' + activeCls + '" onclick="actionChangePage(' + item + ')">' + item + '</button>';
+        }
+      }
+      html += '<button class="page-btn" onclick="actionChangePage(' + (actionCurrentPage + 1) + ')" ' + (actionCurrentPage === totalPages ? 'disabled' : '') + '>›</button>';
+      html += '<span class="page-jump">跳至 <input type="text" id="actionJumpInput" value="' + actionCurrentPage + '" onkeydown="if(event.key===\'Enter\')actionJumpToPage()"> 页</span>';
+      document.getElementById('actionPagination').innerHTML = html;
+    }
+    function actionChangePage(page) {
+      var totalPages = Math.ceil(filteredActionData.length / actionPageSize) || 1;
+      if (page < 1 || page > totalPages) return;
+      actionCurrentPage = page;
+      renderActionRows();
+      actionRenderPagination();
+    }
+    function actionJumpToPage() {
+      var input = document.getElementById('actionJumpInput');
+      if (!input) return;
+      var page = parseInt(input.value, 10);
+      if (isNaN(page)) { input.value = actionCurrentPage; return; }
+      actionChangePage(page);
+    }
+
+    // 暴露全局函数
+    window.toggleColumnPanel = toggleColumnPanel;
+    window.closeColumnPanel = closeColumnPanel;
+    window.resetColumns = resetColumns;
+    window.toggleColVisibility = toggleColVisibility;
+    window.handleSearch = handleSearch;
+    window.handleReset = handleReset;
+    window.deleteAction = deleteAction;
+    window.toggleSelectAll = toggleSelectAll;
+    window.clearSelection = clearSelection;
+    window.toggleBatchDropdown = toggleBatchDropdown;
+    window.openBatchDeleteConfirm = openBatchDeleteConfirm;
+    window.closeBatchDeleteModal = closeBatchDeleteModal;
+    window.confirmBatchDelete = confirmBatchDelete;
+    window.closeDeleteActionModal = closeDeleteActionModal;
+    window.confirmDeleteAction = confirmDeleteAction;
+    window.openBatchGroupFromDropdown = openBatchGroupFromDropdown;
+    window.openBatchGroupModal = openBatchGroupModal;
+    window.closeBatchGroupModal = closeBatchGroupModal;
+    window.applyBatchGroup = applyBatchGroup;
+
+    // 初始化表格渲染
+    renderTableHead();
+    renderActionRows();
+    actionRenderPagination();
+  </script>
+  <script src="../common/nav.js"></script>
+</body>
+</html>

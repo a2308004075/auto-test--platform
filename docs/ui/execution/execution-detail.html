@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>执行详情 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span>测试管理</span>
+      <span class="sep">&#8250;</span>
+      <span class="current">执行详情</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group open">
+        <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item active"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+  <main class="layout-main">
+
+    <div class="page-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <h1>冒烟测试-v2.1 #38</h1>
+        <span class="status-dot success" style="font-size:14px;">通过</span>
+      </div>
+      <div class="flex gap-8"><button class="btn btn-primary" onclick="handleReExecDetail()">重新执行</button></div>
+    </div>
+    <div style="display:flex;gap:12px;font-size:13px;color:var(--text-secondary);margin-bottom:16px;flex-wrap:wrap;">
+      <span>计划：<b>每日冒烟测试</b></span><span>环境：<b>开发环境</b></span><span>触发：<b>定时</b></span><span>时间：<b>2024-01-15 08:00:00</b></span><span>总耗时：<b>45s</b></span>
+    </div>
+    <!-- Summary Stats -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr) auto;gap:12px;margin-bottom:16px;">
+      <div class="stat-card"><div class="label">总用例</div><div class="value">12</div></div>
+      <div class="stat-card"><div class="label">通过</div><div class="value" style="color:var(--success);">11</div></div>
+      <div class="stat-card"><div class="label">失败</div><div class="value" style="color:var(--error);">1</div></div>
+      <div class="stat-card"><div class="label">跳过</div><div class="value">0</div></div>
+      <div style="display:flex;align-items:center;justify-content:center;padding:8px 16px;background:#fff;border-radius:var(--border-radius-lg);border:1px solid var(--border-color-secondary);">
+        <svg width="80" height="80" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="34" fill="none" stroke="#f0f0f0" stroke-width="8"/>
+          <circle cx="40" cy="40" r="34" fill="none" stroke="#52c41a" stroke-width="8" stroke-dasharray="196.3" stroke-dashoffset="16.3" stroke-linecap="round" transform="rotate(-90 40 40)"/>
+          <text x="40" y="38" text-anchor="middle" font-size="16" font-weight="700" fill="#52c41a">91.7%</text>
+          <text x="40" y="52" text-anchor="middle" font-size="9" fill="#999">通过率</text>
+        </svg>
+      </div>
+    </div>
+    <!-- Case Results -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">用例执行结果
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-sm active" style="opacity:1;" onclick="filterCaseResults(this,'all')">全部 (12)</button>
+          <button class="btn btn-sm" style="color:var(--success);" onclick="filterCaseResults(this,'pass')">通过 (11)</button>
+          <button class="btn btn-sm" style="color:var(--error);" onclick="filterCaseResults(this,'fail')">失败 (1)</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <table>
+          <thead><tr><th>用例名称</th><th style="width:80px;">状态</th><th style="width:80px;">耗时</th><th>错误摘要</th></tr></thead>
+          <tbody>
+            <tr data-status="pass"><td>用户登录验证</td><td><span class="status-dot success">通过</span></td><td>1.2s</td><td style="color:var(--text-tertiary);">-</td></tr>
+            <tr data-status="pass"><td>创建订单流程</td><td><span class="status-dot success">通过</span></td><td>3.5s</td><td style="color:var(--text-tertiary);">-</td></tr>
+            <tr data-status="fail" style="background:var(--error-bg);"><td>电池入仓操作</td><td><span class="status-dot error">失败</span></td><td>8.2s</td><td style="color:var(--error);font-size:12px;">步骤3 断言失败：expected status=charging, actual=error</td></tr>
+            <tr data-status="pass"><td>电池状态查询</td><td><span class="status-dot success">通过</span></td><td>2.1s</td><td style="color:var(--text-tertiary);">-</td></tr>
+            <tr data-status="pass"><td>充电桩状态监控</td><td><span class="status-dot success">通过</span></td><td>1.8s</td><td style="color:var(--text-tertiary);">-</td></tr>
+            <tr data-status="pass"><td>电池出仓换电</td><td><span class="status-dot success">通过</span></td><td>5.4s</td><td style="color:var(--text-tertiary);">-</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Execution Log -->
+    <div class="card">
+      <div class="card-header">执行日志 <select class="select" style="width:100px;height:24px;font-size:11px;margin-left:auto;"><option>全部</option><option>INFO</option><option>WARN</option><option>ERROR</option></select></div>
+      <div class="card-body" style="padding:0;">
+        <div class="code-editor" style="min-height:160px;padding:12px;font-size:11px;line-height:1.8;">
+<span class="comment">[2024-01-15 08:00:01] INFO</span> 开始执行冒烟测试-v2.1 #38
+<span class="comment">[2024-01-15 08:00:01] INFO</span> 环境：开发环境 | 用例数：12
+<span class="comment">[2024-01-15 08:00:02] INFO</span> ✓ 用户登录验证 - 通过 (1.2s)
+<span class="comment">[2024-01-15 08:00:05] INFO</span> ✓ 创建订单流程 - 通过 (3.5s)
+<span class="comment">[2024-01-15 08:00:13] ERROR</span> ✗ 电池入仓操作 - 失败 (8.2s)
+<span class="comment">[2024-01-15 08:00:13] ERROR</span>   步骤3: 断言失败 expected=charging actual=error
+<span class="comment">[2024-01-15 08:00:15] INFO</span> ✓ 电池状态查询 - 通过 (2.1s)
+<span class="comment">[2024-01-15 08:00:17] INFO</span> ✓ 充电桩状态监控 - 通过 (1.8s)
+<span class="comment">[2024-01-15 08:00:23] INFO</span> ✓ 电池出仓换电 - 通过 (5.4s)
+<span class="comment">[2024-01-15 08:00:45] INFO</span> 执行完成 | 通过:11 失败:1 跳过:0 | 通过率:91.7%</div>
+      </div>
+    </div>
+  </main>
+  <script src="../common/nav.js"></script>
+  <script>
+    function handleReExecDetail() {
+      if (confirm('确定重新执行此测试计划？')) {
+        alert('已触发重新执行！');
+      }
+    }
+
+    function filterCaseResults(btn, status) {
+      btn.parentNode.querySelectorAll('.btn').forEach(function(b) {
+        b.classList.remove('active');
+        b.style.opacity = '.7';
+      });
+      btn.classList.add('active');
+      btn.style.opacity = '1';
+
+      var rows = document.querySelectorAll('.card-body table tbody tr[data-status]');
+      rows.forEach(function(row) {
+        if (status === 'all' || row.getAttribute('data-status') === status) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

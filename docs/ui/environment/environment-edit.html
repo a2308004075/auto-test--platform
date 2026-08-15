@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>编辑环境变量 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    .env-edit-card { background: #fff; border-radius: var(--border-radius-lg); border: 1px solid var(--border-color-secondary); }
+    .env-edit-header { padding: 20px 24px; border-bottom: 1px solid var(--border-color-secondary); }
+    .env-edit-header h2 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+    .env-edit-header .env-desc { font-size: 13px; color: var(--text-tertiary); margin: 0; }
+    .env-edit-toolbar { padding: 12px 24px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border-color-secondary); background: #fafafa; }
+    .env-var-table th.var-key { width: 200px; }
+    .env-var-table th.var-value { width: auto; }
+    .env-var-table th.var-desc { width: 200px; }
+    .env-var-table th.var-action { width: 70px; text-align: center; }
+    .env-var-table td { vertical-align: middle; padding: 8px 16px; }
+    .env-var-table .var-input { width: 100%; height: 32px; padding: 4px 11px; border: 1px solid var(--border-color); border-radius: var(--border-radius); font-size: 13px; color: var(--text-primary); background: #fff; outline: none; transition: border-color .2s; }
+    .env-var-table .var-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,.06); }
+    .env-var-table .var-input[readonly] { border-color: transparent; background: transparent; cursor: default; }
+    .env-var-table .var-input[readonly]:focus { box-shadow: none; }
+    .env-var-table .key-cell { display: flex; align-items: center; gap: 4px; }
+    .env-var-table .key-cell .required-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--error); flex-shrink: 0; }
+    .var-row:hover { background: #fafafa; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <a href="environment-config.html">环境配置</a>
+      <span class="sep">&#8250;</span>
+      <span class="current">test</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item active"><a href="environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+
+  <main class="layout-main">
+
+    <div class="page-header">
+      <h1>编辑环境变量</h1>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="location.href='environment-config.html'">取消</button>
+        <button class="btn btn-primary" onclick="saveEnvVars()">保存</button>
+      </div>
+    </div>
+
+    <div class="env-edit-card">
+      <div class="env-edit-header">
+        <h2>test</h2>
+        <p class="env-desc">测试环境 - 主要用于日常开发和联调</p>
+      </div>
+
+      <div class="env-edit-toolbar">
+        <button class="btn btn-sm btn-primary" onclick="addVarRow()">+ 添加变量</button>
+        <span style="margin-left:auto;font-size:12px;color:var(--text-tertiary);">共 <span id="varCount">6</span> 个变量</span>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="env-var-table" id="varTable">
+          <thead>
+            <tr>
+              <th class="var-key">变量名</th>
+              <th class="var-value">变量值</th>
+              <th class="var-desc">描述</th>
+              <th class="var-action">操作</th>
+            </tr>
+          </thead>
+          <tbody id="varBody">
+            <tr class="var-row">
+              <td>
+                <div class="key-cell"><span class="required-dot" title="必填"></span><input class="var-input" value="host" readonly></div>
+              </td>
+              <td><input class="var-input" value="https://pdd-station-supercharge-test.catles.com"></td>
+              <td><input class="var-input" value="服务接口地址"></td>
+              <td style="text-align:center;"><button class="btn btn-link btn-sm btn-danger" onclick="removeRow(this)">删除</button></td>
+            </tr>
+            <tr class="var-row">
+              <td>
+                <div class="key-cell"><span class="required-dot" title="必填"></span><input class="var-input" value="host_authorization" readonly></div>
+              </td>
+              <td><input class="var-input" value="Bearer eyJhbGciOiJSUzI1NiJ9..."></td>
+              <td><input class="var-input" value="接口鉴权 Token"></td>
+              <td style="text-align:center;"><button class="btn btn-link btn-sm btn-danger" onclick="removeRow(this)">删除</button></td>
+            </tr>
+            <tr class="var-row">
+              <td>
+                <div class="key-cell"><input class="var-input" value="wss" readonly></div>
+              </td>
+              <td><input class="var-input" value="wss://pdd-station-supercharge-test.catles.com"></td>
+              <td><input class="var-input" value="WebSocket 地址"></td>
+              <td style="text-align:center;"><button class="btn btn-link btn-sm btn-danger" onclick="removeRow(this)">删除</button></td>
+            </tr>
+            <tr class="var-row">
+              <td>
+                <div class="key-cell"><input class="var-input" value="nacos" readonly></div>
+              </td>
+              <td><input class="var-input" value="https://nacos-pdd-test.catles.com:4484"></td>
+              <td><input class="var-input" value="Nacos 注册中心地址"></td>
+              <td style="text-align:center;"><button class="btn btn-link btn-sm btn-danger" onclick="removeRow(this)">删除</button></td>
+            </tr>
+            <tr class="var-row">
+              <td>
+                <div class="key-cell"><input class="var-input" value="nacos_accessToken" readonly></div>
+              </td>
+              <td><input class="var-input" value="eyJhbGciOiJIUzI1NiJ9..."></td>
+              <td><input class="var-input" value="Nacos 访问令牌"></td>
+              <td style="text-align:center;"><button class="btn btn-link btn-sm btn-danger" onclick="removeRow(this)">删除</button></td>
+            </tr>
+            <tr class="var-row">
+              <td>
+                <div class="key-cell"><input class="var-input" value="company" readonly></div>
+              </td>
+              <td><input class="var-input" value="qkl"></td>
+              <td><input class="var-input" value="公司标识"></td>
+              <td style="text-align:center;"><button class="btn btn-link btn-sm btn-danger" onclick="removeRow(this)">删除</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    function addVarRow() {
+      var tbody = document.getElementById('varBody');
+      var tr = document.createElement('tr');
+      tr.className = 'var-row';
+      tr.innerHTML =
+        '<td><div class="key-cell"><input class="var-input" placeholder="变量名"></div></td>' +
+        '<td><input class="var-input" placeholder="变量值"></td>' +
+        '<td><input class="var-input" placeholder="描述"></td>' +
+        '<td style="text-align:center;"><button class="btn btn-link btn-sm btn-danger" onclick="removeRow(this)">删除</button></td>';
+      tbody.appendChild(tr);
+      updateCount();
+      tr.querySelector('input').focus();
+    }
+
+    function removeRow(btn) {
+      btn.closest('tr').remove();
+      updateCount();
+    }
+
+    function updateCount() {
+      document.getElementById('varCount').textContent = document.getElementById('varBody').children.length;
+    }
+
+    function saveEnvVars() {
+      alert('环境变量保存成功！');
+    }
+  </script>
+  <script src="../common/nav.js"></script>
+</body>
+</html>

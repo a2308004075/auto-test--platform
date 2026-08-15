@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>接口调试 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    .debug-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-height: calc(100vh - 160px); }
+    .debug-panel { background: #fff; border-radius: var(--border-radius-lg); border: 1px solid var(--border-color-secondary); overflow: hidden; }
+    .debug-panel-header { padding: 12px 16px; border-bottom: 1px solid var(--border-color-secondary); background: #fafafa; }
+    .debug-panel-header h3 { font-size: 14px; font-weight: 600; margin: 0; }
+    .debug-panel-body { padding: 16px; }
+    .param-table { width: 100%; margin-bottom: 16px; }
+    .param-table th { font-size: 12px; color: var(--text-tertiary); font-weight: 500; padding: 4px 8px 8px; text-align: left; }
+    .param-table td { padding: 4px 8px; }
+    .param-table .input { height: 28px; font-size: 13px; }
+    .response-empty { display: flex; align-items: center; justify-content: center; min-height: 300px; color: var(--text-tertiary); }
+    .response-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border-color-secondary); margin-bottom: 12px; }
+    .resp-tab { padding: 8px 16px; cursor: pointer; font-size: 13px; color: var(--text-secondary); border-bottom: 2px solid transparent; }
+    .resp-tab:hover { color: var(--primary); }
+    .resp-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .resp-content { display: none; }
+    .resp-content.active { display: block; }
+    .status-bar { display: flex; align-items: center; gap: 16px; padding: 8px 0; margin-bottom: 8px; }
+    .status-code { font-weight: 700; font-size: 15px; }
+    .status-code.ok { color: var(--success); }
+    .meta-info { font-size: 12px; color: var(--text-tertiary); }
+    .header-table { width: 100%; font-size: 13px; }
+    .header-table td { padding: 6px 8px; border-bottom: 1px solid var(--border-color-secondary); }
+    .header-table .key { font-weight: 500; color: var(--text-primary); width: 200px; font-family: monospace; }
+    .header-table .val { color: var(--text-secondary); font-family: monospace; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span>接口文档</span>
+      <span class="sep">&#8250;</span>
+      <span>获取用户列表</span>
+      <span class="sep">&#8250;</span>
+      <span class="current">调试</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <ul class="sidebar-menu">
+        <li class="menu-item active"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
+
+  <main class="layout-main">
+
+    <div class="page-header">
+      <div class="flex items-center gap-12">
+        <span class="method-badge method-get" style="font-size: 13px; height: 24px; min-width: 56px;">GET</span>
+        <h1 style="font-size: 16px; margin: 0;">获取用户列表</h1>
+        <span class="font-mono text-secondary text-sm">/api/users/list</span>
+      </div>
+      <button class="btn btn-primary" onclick="sendRequest()">发送请求</button>
+    </div>
+
+    <div class="debug-layout">
+      <!-- Left: Request -->
+      <div class="debug-panel">
+        <div class="debug-panel-header"><h3>请求参数</h3></div>
+        <div class="debug-panel-body">
+          <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary);">Query 参数</div>
+          <table class="param-table">
+            <thead><tr><th>参数名</th><th>值</th></tr></thead>
+            <tbody>
+              <tr><td><input type="text" class="input font-mono" value="page" style="width: 100%;" readonly></td><td><input type="text" class="input" value="1" style="width: 100%;"></td></tr>
+              <tr><td><input type="text" class="input font-mono" value="page_size" style="width: 100%;" readonly></td><td><input type="text" class="input" value="20" style="width: 100%;"></td></tr>
+              <tr><td><input type="text" class="input font-mono" value="keyword" style="width: 100%;" readonly></td><td><input type="text" class="input" value="" placeholder="搜索关键字" style="width: 100%;"></td></tr>
+            </tbody>
+          </table>
+          <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary);">Header 参数</div>
+          <table class="param-table">
+            <thead><tr><th>参数名</th><th>值</th></tr></thead>
+            <tbody>
+              <tr><td><input type="text" class="input font-mono" value="Authorization" style="width: 100%;" readonly></td><td><input type="text" class="input" value="Bearer eyJhbGci..." style="width: 100%;"></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Right: Response -->
+      <div class="debug-panel" id="responsePanel">
+        <div class="debug-panel-header"><h3>响应结果</h3></div>
+        <div class="debug-panel-body" id="responseBody">
+          <div class="response-empty" id="emptyState">
+            <div style="text-align: center;">
+              <div style="font-size: 36px; margin-bottom: 12px; opacity: .3;">📡</div>
+              <div>填写参数后点击「发送请求」</div>
+            </div>
+          </div>
+          <div id="responseResult" style="display: none;">
+            <div class="status-bar">
+              <span class="status-code ok">200 OK</span>
+              <span class="meta-info">耗时: 127ms</span>
+              <span class="meta-info">大小: 2.4KB</span>
+            </div>
+            <div class="response-tabs">
+              <div class="resp-tab active" onclick="switchRespTab('body', this)">响应体</div>
+              <div class="resp-tab" onclick="switchRespTab('headers', this)">响应头</div>
+              <div class="resp-tab" onclick="switchRespTab('status', this)">状态信息</div>
+            </div>
+            <div class="resp-content active" id="resp-body">
+              <div class="code-editor" style="min-height: 280px; font-size: 12px;">{
+  <span class="string">"code"</span>: <span class="number">0</span>,
+  <span class="string">"message"</span>: <span class="string">"success"</span>,
+  <span class="string">"data"</span>: {
+    <span class="string">"items"</span>: [
+      {
+        <span class="string">"id"</span>: <span class="number">1</span>,
+        <span class="string">"username"</span>: <span class="string">"admin"</span>,
+        <span class="string">"name"</span>: <span class="string">"管理员"</span>,
+        <span class="string">"role"</span>: <span class="string">"ADMIN"</span>,
+        <span class="string">"status"</span>: <span class="string">"active"</span>
+      },
+      {
+        <span class="string">"id"</span>: <span class="number">2</span>,
+        <span class="string">"username"</span>: <span class="string">"zhangsan"</span>,
+        <span class="string">"name"</span>: <span class="string">"张三"</span>,
+        <span class="string">"role"</span>: <span class="string">"USER"</span>,
+        <span class="string">"status"</span>: <span class="string">"active"</span>
+      }
+    ],
+    <span class="string">"total"</span>: <span class="number">45</span>,
+    <span class="string">"page"</span>: <span class="number">1</span>,
+    <span class="string">"page_size"</span>: <span class="number">20</span>
+  }
+}</div>
+            </div>
+            <div class="resp-content" id="resp-headers">
+              <table class="header-table">
+                <tr><td class="key">Content-Type</td><td class="val">application/json; charset=utf-8</td></tr>
+                <tr><td class="key">X-Request-Id</td><td class="val">a1b2c3d4-e5f6-7890-abcd-ef1234567890</td></tr>
+                <tr><td class="key">X-Response-Time</td><td class="val">127ms</td></tr>
+                <tr><td class="key">Cache-Control</td><td class="val">no-cache, no-store</td></tr>
+                <tr><td class="key">Date</td><td class="val">Mon, 15 Jan 2025 14:30:00 GMT</td></tr>
+              </table>
+            </div>
+            <div class="resp-content" id="resp-status">
+              <table class="header-table">
+                <tr><td class="key">状态码</td><td class="val">200 OK</td></tr>
+                <tr><td class="key">响应时间</td><td class="val">127ms</td></tr>
+                <tr><td class="key">响应大小</td><td class="val">2.4 KB</td></tr>
+                <tr><td class="key">协议</td><td class="val">HTTP/1.1</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function sendRequest() {
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('responseResult').style.display = 'block';
+    }
+    function switchRespTab(name, el) {
+      document.querySelectorAll('.resp-tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      document.querySelectorAll('.resp-content').forEach(c => c.classList.remove('active'));
+      document.getElementById('resp-' + name).classList.add('active');
+    }
+  </script>
+  <script src="../common/nav.js"></script>
+</body>
+</html>

@@ -29,14 +29,14 @@ postman-platform 是一个**通用的关键字驱动测试管理平台**，面�
 | 层 | 技术选型 |
 |---|---|
 | 前端 | Vue 3 + TypeScript + Vite + Ant Design Vue 4.x + Pinia + ECharts + Monaco Editor + AntV X6 |
-| 后端微服务 | Java 1.8 + Spring Boot 2.7 + Spring Cloud 2021.x + Spring Cloud Alibaba 2021.x |
-| 微服务组件 | Spring Cloud Gateway（网关）+ Nacos 2.x（注册中心/配置中心）+ OpenFeign（服务间调用）+ Sentinel（限流熔断） |
+| 后端 | Java 1.8 + Spring Boot 2.7（单体应用） |
+| 后端组件 | Spring Security 5.7 + JJWT 0.11（JWT 认证）+ Spring AMQP（异步消息）+ OkHttp 4.12（HTTP 客户端） |
 | 数据持久层 | MyBatis-Plus 3.5 + Flyway 8 + Spring Security 5.7 + Sa-Token + JJWT 0.11 |
 | 数据库 | MySQL 8.0+ + Redis 7.x |
 | 消息队列 | RabbitMQ 3.x（异步事件驱动：测试执行触发、状态通知） |
 | 任务调度 | XXL-Job 2.4+（分布式定时调度）+ Spring Async（服务内异步） |
 | 执行引擎 | 内嵌于 pp-execution（OkHttp 4.12 客户端 + Groovy ScriptEngine 沙箱 + swagger-parser + JavaParser） |
-| 部署 | Docker Compose（推荐）/ Nginx + Spring Cloud 微服务集群 |
+| 部署 | Docker Compose（推荐）/ Nginx + Spring Boot 单体应用 |
 
 ### 1.4 术语约定
 
@@ -54,7 +54,7 @@ postman-platform 是一个**通用的关键字驱动测试管理平台**，面�
 
 ### 2.1 逻辑架构
 
-系统采用前后端分离 + 微服务架构，整体分为前端层、网关层、微服务层和数据层四个逻辑层次：
+系统采用前后端分离架构，整体分为前端层、后端服务层和数据层三个逻辑层次：
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -69,37 +69,36 @@ postman-platform 是一个**通用的关键字驱动测试管理平台**，面�
 └─────────────────────────────────┬────────────────────────────────────────┘
                                   │ HTTP REST / WebSocket
 ┌─────────────────────────────────▼────────────────────────────────────────┐
-│                  网关层（Spring Cloud Gateway）                            │
+│                  后端服务层（Spring Boot 单体应用）                         │
 │                                                                          │
-│  统一入口 │ 路由分发 │ JWT 鉴权过滤 │ 限流熔断(Sentinel) │ CORS │ 灰度    │
+│  JWT 鉴权过滤 │ CORS │ 全局异常处理 │ 统一响应格式                      │
 └─────────────────────────────────┬────────────────────────────────────────┘
-                                  │ OpenFeign 服务间调用
+                                  │ Spring Bean 依赖注入
 ┌─────────────────────────────────▼────────────────────────────────────────┐
-│                         微服务层                                          │
+│                         功能模块层                                        │
 │                                                                          │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐   │
-│  │ pp-auth  │ │ pp-core  │ │pp-keyword│ │pp-execu- │ │   Nacos      │   │
-│  │ 认证服务  │ │ 核心服务  │ │关键字服务│ │ tion     │ │  注册中心     │   │
-│  │          │ │          │ │          │ │ 执行服务  │ │  配置中心     │   │
-│  │ M1认证   │ │ M2项目   │ │ M5接口KW │ │ M8用例   │ │              │   │
-│  │ 用户管理  │ │ M3环境   │ │ M6工具KW │ │ M9执行   │ │              │   │
-│  │ 系统配置  │ │ M4接口   │ │ M7Action │ │ M10报告  │ │              │   │
+│  │ auth     │ │ project  │ │ api      │ │ keyword  │ │ execution    │   │
+│  │ 认证模块  │ │ 项目模块  │ │ 接口模块  │ │ 关键字模块│ │ 执行模块      │   │
+│  │ M1认证   │ │ M2项目   │ │ M4接口   │ │ M5接口KW │ │ M8用例       │   │
+│  │ 用户管理  │ │ M3环境   │ │ 文档管理  │ │ M6工具KW │ │ M9执行       │   │
+│  │ 系统配置  │ │ 配置管理  │ │          │ │ M7Action │ │ M10报告      │   │
 │  └──────────┘ └──────────┘ └──────────┘ └────┬─────┘ └──────────────┘   │
 │                                               │                           │
 │  ┌─── 基础设施 ───────────────────────────────┼───────────────────────┐  │
-│  │ RabbitMQ 异步事件 │ XXL-Job 分布式调度 │ WebSocket(pp-execution)    │  │
-│  │ EasyExcel/PDF 报告生成 │ Redis 缓存/分布式锁                         │  │
+│  │ RabbitMQ 异步事件 │ XXL-Job 定时调度 │ WebSocket 实时推送            │  │
+│  │ EasyExcel/PDF 报告生成 │ Redis 缓存                                    │  │
 │  └────────────────────────────────────────────────────────────────────┘  │
 │                                                                          │
-│  ┌─── 执行引擎（pp-execution 内置） ──────────────────────────────────┐  │
+│  ┌─── 执行引擎（内置于 execution 模块） ──────────────────────────────────┐  │
 │  │ HTTP客户端(OkHttp) │ 断言引擎 │ Groovy沙箱 │ Swagger解析器      │  │
-│  │ Action流程执行器 │ AST解析器 │ 协议适配器(WSS/Nacos/Shell)           │  │
+│  │ Action流程执行器 │ AST解析器 │ 协议适配器(WSS/Shell)           │  │
 │  └────────────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────────┘
        │                    │                    │
   ┌────▼────┐         ┌────▼────┐         ┌─────▼─────┐
   │  MySQL  │         │  Redis  │         │ 文件存储   │
-  │ 业务数据 │         │ 缓存/队列│         │ 报告/日志  │
+  │ 业务数据 │         │ 缓存    │         │ 报告/日志  │
   └─────────┘         └─────────┘         └───────────┘
 ```
 
@@ -109,23 +108,18 @@ postman-platform 是一个**通用的关键字驱动测试管理平台**，面�
 
 | 方式 | 组件 | 说明 |
 |---|---|---|
-| Docker Compose（推荐） | nginx / pp-gateway / pp-auth / pp-core / pp-keyword / pp-execution / nacos / rabbitmq / mysql / redis | 一键编排，适合开发和中小规模生产 |
-| Kubernetes | Nginx Ingress + Spring Cloud 微服务 Pod + Nacos + RabbitMQ + MySQL + Redis | 适合大规模生产环境，支持弹性伸缩 |
+| Docker Compose（推荐） | nginx / backend / rabbitmq / mysql / redis | 一键编排，适合开发和中小规模生产 |
+| Kubernetes | Nginx Ingress + Spring Boot 后端 Pod + RabbitMQ + MySQL + Redis | 适合大规模生产环境，支持弹性伸缩 |
 
 **Docker Compose 容器编排：**
 
 ```yaml
 services:
   nginx:          # 前端静态资源 + API 反向代理
-  pp-gateway:     # Spring Cloud Gateway（API 网关）
-  pp-auth:        # 认证服务（M1）
-  pp-core:        # 核心服务（M2/M3/M4）
-  pp-keyword:     # 关键字服务（M5/M6/M7）
-  pp-execution:   # 执行服务（M8/M9/M10 + 内置执行引擎）
-  nacos:          # 服务注册中心 + 配置中心
+  backend:        # Spring Boot 单体应用（包含所有功能模块 M1~M10 + 内置执行引擎）
   rabbitmq:       # 消息队列（异步事件驱动）
-  mysql:          # MySQL 8.0+（共享数据库，逻辑隔离）
-  redis:          # Redis 7.x（缓存 + 分布式锁）
+  mysql:          # MySQL 8.0+
+  redis:          # Redis 7.x（缓存）
 ```
 
 **Kubernetes 部署拓扑：**
@@ -133,56 +127,43 @@ services:
 ```
 Nginx Ingress Controller
   ├── /static/*           → frontend (Deployment)
-  ├── /api/*              → pp-gateway (Deployment + HPA)
-  └── /ws/*               → pp-execution (Deployment)
+  ├── /api/*              → backend (Deployment + HPA)
+  └── /ws/*               → backend (Deployment)
       ↓
-Spring Cloud Gateway
-  ├── /auth/**            → pp-auth (Deployment + HPA)
-  ├── /projects/**        → pp-core (Deployment + HPA)
-  ├── /environments/**    → pp-core
-  ├── /apis/**            → pp-core
-  ├── /keywords/**        → pp-keyword (Deployment + HPA)
-  ├── /tool-methods/**    → pp-keyword
-  ├── /actions/**         → pp-keyword
-  ├── /suites/**          → pp-execution
-  ├── /executions/**      → pp-execution
-  └── /reports/**         → pp-execution
-      ↓
-Nacos + RabbitMQ + MySQL + Redis
+RabbitMQ + MySQL + Redis
 ```
 
 ---
 
-### 2.3 微服务划分
+### 2.3 后端功能模块划分
 
-基于模块内聚性和部署灵活性，将 10 个功能模块拆分为 **4 个 Java 微服务 + 1 个 API 网关**（纯 Java 技术栈），通过 Spring Cloud Gateway 统一对外暴露：
+后端采用 Spring Boot 单体应用架构，将 10 个功能模块组织在同一个应用内，按业务领域划分为 5 个模块包：
 
-| 微服务 | 服务名 | 包含模块 | 核心职责 | 端口 |
-|---|---|---|---|---|
-| API 网关 | pp-gateway | — | 统一入口、路由分发、JWT 鉴权过滤、限流熔断、CORS | 8080 |
-| 认证服务 | pp-auth | M1 | 用户认证、JWT 签发/刷新、RBAC 权限、用户 CRUD、全局配置 | 8081 |
-| 核心服务 | pp-core | M2, M3, M4 | 项目管理、环境配置、接口文档、Swagger 导入 | 8082 |
-| 关键字服务 | pp-keyword | M5, M6, M7 | 接口关键字、工具方法、Action 画布、删除保护链 | 8083 |
-| 执行服务 | pp-execution | M8, M9, M10 | 测试套件、用例编排、执行调度、实时推送、报告分析、**内置执行引擎** | 8084 |
+| 模块包 | 包含模块 | 核心职责 |
+|---|---|---|
+| auth | M1 | 用户认证、JWT 签发/刷新、RBAC 权限、用户 CRUD、全局配置 |
+| project | M2, M3 | 项目管理、环境配置 |
+| api | M4 | 接口文档、Swagger 导入、接口调试 |
+| keyword | M5, M6, M7 | 接口关键字、工具方法、Action 画布、删除保护链 |
+| execution | M8, M9, M10 | 测试套件、用例编排、执行调度、实时推送、报告分析、**内置执行引擎** |
 
-**服务间通信：**
+**模块间通信：**
 
 | 通信方式 | 场景 | 技术 |
 |---|---|---|
-| 同步调用 | 实时数据查询（如执行时获取关键字详情、环境配置） | OpenFeign + Spring Cloud LoadBalancer |
-| 异步消息 | 测试执行触发、执行状态变更通知、报告生成 | RabbitMQ（Spring Cloud Stream） |
-| 共享存储 | 服务间共享业务数据（同库不同表） | MySQL 共享实例，各服务操作各自表 |
-| 缓存共享 | JWT 黑名单、分布式锁、执行状态缓存 | Redis 共享实例 |
+| 同步调用 | 模块间直接方法调用（如执行时获取关键字详情、环境配置） | Spring Bean 依赖注入 |
+| 异步消息 | 测试执行触发、执行状态变更通知、报告生成 | RabbitMQ + Spring AMQP |
+| 数据存储 | 所有模块共享同一数据库实例，操作各自表 | MySQL |
+| 缓存 | JWT 黑名单、执行状态缓存 | Redis |
 
-**服务间依赖关系：**
+**模块间依赖关系：**
 
 ```
-pp-auth ──────→ pp-core ──────→ pp-keyword ──────→ pp-execution
- │                │                │                   │
- │                │                │                   │ (内置执行引擎)
- │                │                │                   │
- └─────────────┴────────────┴───────────────┘
-               (所有服务均依赖 pp-auth 的 JWT 验证能力)
+auth ←─── project ←─── api ←─── keyword ←─── execution
+  │                                           │
+  │                                           │ (内置执行引擎)
+  └───────────────────────────────────────────┘
+           (所有模块均依赖 auth 的 JWT 验证能力)
 ```
 
 ---
@@ -685,20 +666,20 @@ pp-auth ──────→ pp-core ──────→ pp-keyword ───
 
 ### 4.1 依赖关系总图
 
-> 下图展示模块级依赖，括号内为所属微服务。服务间调用通过 OpenFeign 实现。
+> 下图展示模块级依赖，所有模块均在同一个 Spring Boot 应用内，通过 Spring Bean 依赖注入直接调用。
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                   M1 认证与用户管理 (pp-auth)                                 │
-│              (JWT 认证 · RBAC 权限 · 用户管理 · 全局配置)                      │
-│              ▲ 所有服务均依赖 JWT 鉴权（通过 Gateway 过滤器统一校验）             │
+│                   M1 认证与用户管理 (auth)                                     │
+│              (JWT 认证 · RBAC 权限 · 用户管理 · 全局配置)                        │
+│              ▲ 所有模块均依赖 JWT 鉴权（通过全局过滤器统一校验）                   │
 └──────────────────────────────────┬───────────────────────────────────────────┘
-                                   │ Feign 调用
+                                   │ Bean 注入
        ┌───────────────────────────┼───────────────────────────┐
        ▼                           ▼                           ▼
 ┌─────────────┐           ┌──────────────┐           ┌─────────────────┐
 │ M2 项目管理  │           │ M3 环境配置   │           │ M4 接口管理      │
-│ (pp-core)    │           │ (pp-core)    │           │ (pp-core)       │
+│ (project)    │           │ (project)    │           │ (api)           │
 │ (项目CRUD    │           │ (环境CRUD     │           │ (分组·Swagger   │
 │  概览仪表板) │           │  JSON配置     │           │  接口CRUD·调试) │
 └──────┬──────┘           │  连接测试)    │           └────────┬────────┘
@@ -706,14 +687,14 @@ pp-auth ──────→ pp-core ──────→ pp-keyword ───
        │                         │                            ▼
        │                         │                  ┌──────────────────┐
        │                         │                  │ M5 接口关键字管理  │
-       │                         │                  │ (pp-keyword)      │
+       │                         │                  │ (keyword)         │
        │                         │                  │ (测试数据·预期响应 │
        │                         │                  │  删除保护)        │
        │                         │                  └────────┬─────────┘
        │                         │                           │
        │                         │                  ┌──────────────────┐
        │                         │                  │ M6 工具方法关键字  │
-       │                         │                  │ (pp-keyword)      │
+       │                         │                  │ (keyword)         │
        │                         │                  │ (代码沙箱·在线测试 │
        │                         │                  │  传参返回)        │
        │                         │                  └────────┬─────────┘
@@ -722,7 +703,7 @@ pp-auth ──────→ pp-core ──────→ pp-keyword ───
        │                         │              ▼            ▼            ▼
        │                         │    ┌───────────────────────────────────────┐
        │                         │    │         M7 Action 关键字管理           │
-       │                         │    │ (pp-keyword)                           │
+       │                         │    │ (keyword)                              │
        │                         │    │ (流程画布编排·调试·引用管理·删除保护)    │
        │                         │    │ 引用 → M5(接口关键字)                  │
        │                         │    │ 引用 → M6(工具方法关键字)               │
@@ -732,27 +713,27 @@ pp-auth ──────→ pp-core ──────→ pp-keyword ───
        │                         │                       ▼
        │                         │    ┌───────────────────────────────────────┐
        │                         │    │         M8 测试用例管理                │
-       │                         │    │ (pp-execution)                         │
+       │                         │    │ (execution)                            │
        │                         │    │ (套件·用例编排·校验·Setup/Teardown)    │
        │                         │    │ 步骤引用 → M5/M6/M7(Keyword)          │
        │                         │    └──────────────────┬────────────────────┘
        │                         │                       │
        │                         ▼                       ▼
        │                  ┌──────────────────────────────────────────────┐
-       │                  │            M9 测试执行与调度 (pp-execution)    │
+       │                  │            M9 测试执行与调度 (execution)      │
        │                  │ (计划·触发·异步执行·WebSocket实时推送)          │
-       │                  │ Feign→ pp-core: 读取 M3(环境配置)             │
-       │                  │ Feign→ pp-keyword: 加载 M5/M6/M7(关键字)      │
-       │                  │ Feign→ pp-execution: 加载 M8(用例步骤)        │
-       │                  │ 内置执行引擎: 调用 Java 引擎执行                  │
+       │                  │ 直接查询: 读取 M3(环境配置)                    │
+       │                  │ 直接查询: 加载 M5/M6/M7(关键字)               │
+       │                  │ 直接查询: 加载 M8(用例步骤)                   │
+       │                  │ 内置执行引擎: 调用 Java 引擎执行               │
        │                  └──────────────────┬───────────────────────────┘
        │                                     │
        │                                     ▼
        │                  ┌──────────────────────────────────────────────┐
-       │                  │            M10 测试报告与分析 (pp-execution)   │
+       │                  │            M10 测试报告与分析 (execution)     │
        │                  │ (详情·历史·趋势·对比·PDF/Excel导出)            │
        │                  │ 数据源 → M9(执行记录·测试结果)                │
-       │                  │ Feign→ pp-core: 聚合 M2(项目概览仪表板)       │
+       │                  │ 聚合查询: M2(项目概览仪表板)                  │
        └──────────────────┤                                              │
                           └──────────────────────────────────────────────┘
 ```
@@ -787,10 +768,10 @@ pp-auth ──────→ pp-core ──────→ pp-keyword ───
 #### 执行时依赖链
 
 ```
-M9 触发执行（pp-execution 发布消息到 RabbitMQ）
-  → Feign 调用 pp-core: 读取 M3 环境配置（host, authorization, wss 等）
+M9 触发执行（发布消息到 RabbitMQ）
+  → 直接查询 project 模块: 读取 M3 环境配置（host, authorization 等）
   → 本地查询: 加载 M8 测试用例（steps JSON）
-  → Feign 调用 pp-keyword: 获取关键字详情，解析步骤树：
+  → 直接查询 keyword 模块: 获取关键字详情，解析步骤树：
       → 接口关键字步骤 → 查找 M5 → 组装 HTTP 请求 → 调用内置 HttpClient 执行
       → 工具方法步骤 → 查找 M6 → 调用内置 Groovy 沙箱执行代码
       → Action 关键字步骤 → 查找 M7 → 解析 nodes JSON → 按画布拓扑递归执行
@@ -934,21 +915,20 @@ Keyword
 
 ## 8. 技术风险与约束
 
-### 8.1 微服务架构风险
+### 8.1 单体架构风险
 
 | 风险 | 说明 | 缓解策略 |
 |---|---|---|
-| 服务间调用复杂性 | 跨服务 Feign 调用链路较长，网络延迟叠加 | 合理拆分服务粒度，避免过度拆分；核心链路添加本地缓存；设置合理的超时和熔断策略 |
-| 分布式事务 | 跨服务数据一致性（如删除保护链跨 pp-core/pp-keyword 查询） | 优先采用最终一致性设计；删除保护通过 Feign 查询而非事务；必要时引入 Saga 模式 |
-| 服务注册与发现 | Nacos 单点故障影响全局服务调用 | Nacos 集群部署（生产环境至少 3 节点）；服务侧配置合理的重试和降级策略 |
-| 配置管理 | 多服务配置分散，环境切换复杂 | 统一使用 Nacos 配置中心，按环境/服务分组；敏感配置加密存储 |
+| 模块耦合风险 | 所有模块在同一应用内，可能出现模块间耦合过紧 | 通过包级别封装和接口抽象保持模块边界清晰；模块间通过 Service 接口调用，避免直接访问 Mapper |
+| 扩展性受限 | 单体应用无法按模块独立扩展 | 通过 Spring Profile 和条件配置支持多实例部署；未来如需拆分可基于当前模块包边界拆分 |
+| 启动时间 | 随着模块增多，应用启动时间增加 | 合理组织 Bean 加载顺序；使用懒加载策略减少启动时间 |
 
 ### 8.2 执行引擎实现风险
 
 | 风险 | 说明 | 缓解策略 |
 |---|---|---|
 | 沙箱安全性 | Groovy ScriptEngine 执行用户代码，存在安全逃逸风险 | 白名单 import + 黑名单 class + SecurityManager 限制 + 超时/内存控制 |
-| 环境配置适配 | 原 postman-tool 引擎从文件读取 env.json，平台需改为从 DB 读取 | pp-execution 通过 Feign 从 pp-core 获取环境配置，构建 ExecutionContext 传给执行引擎 |
+| 环境配置适配 | 原 postman-tool 引擎从文件读取 env.json，平台需改为从 DB 读取 | execution 模块通过 Spring Bean 直接调用 project 模块获取环境配置，构建 ExecutionContext 传给执行引擎 |
 | 关键字存储适配 | 原引擎使用 Python 字典文件，平台使用 DB | 执行引擎从 DB 加载关键字数据，序列化为内部执行格式 |
 
 ### 8.3 前端技术风险
@@ -998,9 +978,9 @@ Keyword
 
 | 阶段 | 工期 | 涉及模块/服务 |
 |---|---|---|
-| Phase 0：微服务基础设施 | 1 周 | Spring Cloud 脚手架、Nacos/RabbitMQ 配置、Gateway 路由、公共模块 |
-| Phase 1：基础框架 & 核心功能 | 4 周 | pp-auth(M1), pp-core(M2/M3/M4), pp-keyword(M5/M6/M7) |
-| Phase 2：用例编排 & 执行引擎 | 3 周 | pp-execution(M8/M9 + 内置执行引擎) |
-| Phase 3：调度 & 报告分析 | 3 周 | pp-execution(M9/M10), XXL-Job 集成 |
-| Phase 4：优化 & 部署 | 2 周 | 微服务链路优化、集成测试、Docker/K8s 部署配置 |
+| Phase 0：项目基础设施 | 1 周 | Spring Boot 脚手架、JWT/RabbitMQ 配置、公共模块 |
+| Phase 1：基础框架 & 核心功能 | 4 周 | auth(M1), project(M2/M3), api(M4), keyword(M5/M6/M7) |
+| Phase 2：用例编排 & 执行引擎 | 3 周 | execution(M8/M9 + 内置执行引擎) |
+| Phase 3：调度 & 报告分析 | 3 周 | execution(M9/M10), XXL-Job 集成 |
+| Phase 4：优化 & 部署 | 2 周 | 后端性能优化、集成测试、Docker/K8s 部署配置 |
 | **合计** | **13 周** | |

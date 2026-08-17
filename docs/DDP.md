@@ -22,19 +22,17 @@
     - [A.2 MySQL 8.0 启动](#a2-mysql-80-启动)
     - [A.3 Redis 7.x 启动](#a3-redis-7x-启动)
     - [A.4 RabbitMQ 启动](#a4-rabbitmq-启动)
-    - [A.5 Nacos 启动](#a5-nacos-启动)
-    - [A.6 XXL-Job 启动（可选，Phase 3 再用）](#a6-xxl-job-启动可选phase-3-再用)
-    - [A.7 一键启动所有中间件](#a7-一键启动所有中间件)
+    - [A.5 XXL-Job 启动（可选，Phase 3 再用）](#a5-xxl-job-启动可选phase-3-再用)
+    - [A.6 一键启动所有中间件](#a6-一键启动所有中间件)
   - [方式 B：原生 Windows 安装（无需管理员权限）](#方式-b原生-windows-安装无需管理员权限)
     - [B.1 MySQL 8.0 安装](#b1-mysql-80-安装)
     - [B.2 Redis 安装](#b2-redis-安装)
     - [B.3 RabbitMQ 安装](#b3-rabbitmq-安装)
-    - [B.4 Nacos 安装](#b4-nacos-安装)
-    - [B.5 各中间件访问信息汇总](#b5-各中间件访问信息汇总)
+    - [B.4 各中间件访问信息汇总](#b4-各中间件访问信息汇总)
 - [四、后端项目工程搭建](#四后端项目工程搭建)
-  - [4.1 Maven 多模块项目结构](#41-maven-多模块项目结构)
-  - [4.2 父 POM 配置](#42-父-pom-配置)
-  - [4.3 子模块创建顺序](#43-子模块创建顺序)
+  - [4.1 项目结构](#41-项目结构)
+  - [4.2 Maven POM 配置](#42-maven-pom-配置)
+  - [4.3 包结构创建顺序](#43-包结构创建顺序)
   - [4.4 IDEA 后端项目导入](#44-idea-后端项目导入)
   - [4.5 验证后端启动](#45-验证后端启动)
 - [五、前端项目工程搭建](#五前端项目工程搭建)
@@ -56,15 +54,15 @@
 | 类别 | 技术栈 | 说明 |
 |------|--------|------|
 | **前端** | Vue 3 + TypeScript + Vite + Ant Design Vue 4.x | 独立的 SPA 工程，用 IDEA 打开 |
-| **后端** | Java 1.8 + Spring Boot 2.7 + Spring Cloud 2021.x 微服务 | Maven 多模块工程，用 IDEA 打开 |
-| **中间件** | MySQL 8.0 + Redis 7.x + RabbitMQ + Nacos | Docker 容器 或 原生 Windows 安装（二选一） |
+| **后端** | Java 1.8 + Spring Boot 2.7（单体应用） | Maven 工程，用 IDEA 打开 |
+| **中间件** | MySQL 8.0 + Redis 7.x + RabbitMQ | Docker 容器 或 原生 Windows 安装（二选一） |
 
 **你需要依次完成以下步骤：**
 
 ```
 ① 安装基础软件（JDK、Node.js、Git、IDEA）
 ② 安装中间件（Docker 方式 或 原生 Windows 方式，二选一）
-③ 搭建后端 Maven 多模块工程
+③ 搭建后端 Spring Boot 工程
 ④ 搭建前端 Vue 3 工程
 ⑤ 配置开发规范（编码、格式化等）
 ⑥ 验证全部环境就绪
@@ -76,7 +74,7 @@
 
 ### 2.1 JDK 1.8 验证
 
-后端使用 Java 1.8 版本，你的系统中已安装 JDK 1.8.0_451（`C:\Program Files\Java\jdk-1.8`）。
+后端使用 Java 1.8 版本，你的系统中已安装 JDK 1.8.0_451（`D:\software\jdk-1.8`）。
 
 **步骤：**
 
@@ -91,12 +89,12 @@
    ```powershell
    echo $env:JAVA_HOME
    ```
-   应显示 `C:\Program Files\Java\jdk-1.8`。如果为空，需要手动配置：
+   应显示 `D:\software\jdk-1.8`。如果为空，需要手动配置：
    - 右键「此电脑」→「属性」→「高级系统设置」→「环境变量」
    - 新建系统变量：
      ```
      变量名：JAVA_HOME
-     变量值：C:\Program Files\Java\jdk-1.8
+     变量值：D:\software\jdk-1.8
      ```
    - 编辑 `Path` 变量，添加：
      ```
@@ -182,7 +180,7 @@
 #### 2.4.2 配置 JDK 1.8
 
 1. 打开 IDEA → `File` → `Project Structure` → `SDKs`
-2. 点击 `+` → `Add JDK`，选择 JDK 1.8 安装目录（`C:\Program Files\Java\jdk-1.8`）
+2. 点击 `+` → `Add JDK`，选择 JDK 1.8 安装目录（`D:\software\jdk-1.8`）
 3. 在 `Project` 选项卡中，将 `SDK` 设置为 JDK 1.8，`Language level` 选择 `8`
 
 #### 2.4.3 配置文件编码（重要！）
@@ -199,16 +197,16 @@
 IDEA 自带 Maven，但建议使用外部 Maven 以获得更好的控制：
 
 1. 下载 Maven：https://maven.apache.org/download.cgi （选择 `Binary zip archive`）
-2. 解压到 `D:\tools\apache-maven-3.9.x`（路径不要有中文和空格）
+2. 解压到 `D:\software\apache-maven-3.9.x`（路径不要有中文和空格）
 3. 配置环境变量：
    ```
    变量名：MAVEN_HOME
-   变量值：D:\tools\apache-maven-3.9.x
+   变量值：D:\software\apache-maven-3.9.x
    
    Path 中添加：
    %MAVEN_HOME%\bin
    ```
-4. 编辑 Maven 配置文件 `D:\tools\apache-maven-3.9.x\conf\settings.xml`，添加阿里云镜像（加速依赖下载）：
+4. 编辑 Maven 配置文件 `D:\software\apache-maven-3.9.x\conf\settings.xml`，添加阿里云镜像（加速依赖下载）：
    ```xml
    <mirrors>
      <mirror>
@@ -220,9 +218,9 @@ IDEA 自带 Maven，但建议使用外部 Maven 以获得更好的控制：
    </mirrors>
    ```
 5. 在 IDEA 中配置：`File` → `Settings` → `Build, Execution, Deployment` → `Build Tools` → `Maven`
-   - `Maven home path`：`D:\tools\apache-maven-3.9.x`
-   - `User settings file`：`D:\tools\apache-maven-3.9.x\conf\settings.xml`（勾选 Override）
-   - `Local repository`：`D:\tools\maven-repo`（勾选 Override，自定义仓库路径）
+   - `Maven home path`：`D:\software\apache-maven-3.9.x`
+   - `User settings file`：`D:\software\apache-maven-3.9.x\conf\settings.xml`（勾选 Override）
+   - `Local repository`：`D:\software\maven-repo`（勾选 Override，自定义仓库路径）
 
 6. **验证 Maven**：
    ```powershell
@@ -234,7 +232,7 @@ IDEA 自带 Maven，但建议使用外部 Maven 以获得更好的控制：
 
 ## 三、中间件安装
 
-本项目依赖 MySQL、Redis、RabbitMQ、Nacos 等中间件。提供两种安装方式，请根据自身情况选择其一：
+本项目依赖 MySQL、Redis、RabbitMQ 等中间件。提供两种安装方式，请根据自身情况选择其一：
 
 ### 选择安装方式
 
@@ -361,43 +359,7 @@ docker run -d `
 
 ---
 
-### A.5 Nacos 启动
-
-Nacos 是微服务的注册中心和配置中心，所有后端服务都依赖它。
-
-> **重要**：Nacos 需要连接 MySQL 存储配置数据。首次启动前，需要先初始化 Nacos 数据库：
-> 1. 下载 Nacos SQL 脚本：https://github.com/alibaba/nacos/blob/2.2.3/distribution/conf/mysql-schema.sql
-> 2. 在 MySQL 中创建 `nacos_config` 数据库并执行该 SQL 脚本：
->    ```powershell
->    docker exec -it pp-mysql mysql -uroot -ppp2024 -e "CREATE DATABASE IF NOT EXISTS nacos_config DEFAULT CHARACTER SET utf8mb4;"
->    ```
-> 3. 将下载的 `mysql-schema.sql` 复制到容器中并执行：
->    ```powershell
->    docker cp mysql-schema.sql pp-mysql:/tmp/
->    docker exec -it pp-mysql mysql -uroot -ppp2024 nacos_config -e "source /tmp/mysql-schema.sql;"
->    ```
-
-初始化完成后，启动 Nacos：
-
-```powershell
-docker run -d `
-  --name pp-nacos `
-  -p 8848:8848 `
-  -p 9848:9848 `
-  -e MODE=standalone `
-  -e MYSQL_SERVICE_HOST=host.docker.internal `
-  -e MYSQL_SERVICE_PORT=3306 `
-  -e MYSQL_SERVICE_USER=root `
-  -e MYSQL_SERVICE_PASSWORD=pp2024 `
-  -e MYSQL_SERVICE_DB_NAME=nacos_config `
-  nacos/nacos-server:v2.2.3
-```
-
-**验证**：打开浏览器访问 `http://localhost:8848/nacos`，使用 `nacos / nacos` 登录。
-
----
-
-### A.6 XXL-Job 启动（可选，Phase 3 再用）
+### A.5 XXL-Job 启动（可选，Phase 3 再用）
 
 XXL-Job 用于分布式定时调度（测试计划定时执行），在项目 Phase 3 阶段才需要。现阶段可以先不部署。
 
@@ -412,7 +374,7 @@ docker run -d `
 
 ---
 
-### A.7 一键启动所有中间件
+### A.6 一键启动所有中间件
 
 为了方便日常开发，在项目中创建统一的 Docker Compose 文件，一键启停所有中间件。
 
@@ -455,22 +417,6 @@ services:
     volumes:
       - pp-rabbitmq-data:/var/lib/rabbitmq
 
-  nacos:
-    image: nacos/nacos-server:v2.2.3
-    container_name: pp-nacos
-    ports:
-      - "8848:8848"
-      - "9848:9848"
-    environment:
-      MODE: standalone
-      MYSQL_SERVICE_HOST: host.docker.internal
-      MYSQL_SERVICE_PORT: 3306
-      MYSQL_SERVICE_USER: root
-      MYSQL_SERVICE_PASSWORD: pp2024
-      MYSQL_SERVICE_DB_NAME: nacos_config
-    depends_on:
-      - mysql
-
 volumes:
   pp-mysql-data:
   pp-redis-data:
@@ -501,13 +447,12 @@ docker compose ps
 | MySQL | localhost | 3306 | root / pp2024 |
 | Redis | localhost | 6379 | 无密码 |
 | RabbitMQ 管理界面 | http://localhost:15672 | 15672 | admin / admin123 |
-| Nacos 控制台 | http://localhost:8848/nacos | 8848 | nacos / nacos |
 
 ---
 
 ## 方式 B：原生 Windows 安装（无需管理员权限）
 
-以下所有中间件均采用**下载 ZIP + 解压运行**的方式安装，**无需管理员权限**，无需 Docker / WSL。所有工具统一安装到 `D:\tools\` 目录下（路径中不要有中文和空格）。
+以下所有中间件均采用**下载 ZIP + 解压运行**的方式安装，**无需管理员权限**，无需 Docker / WSL。所有工具统一安装到 `D:\software\` 目录下（路径中不要有中文和空格）。
 
 > **约定**：MySQL root 密码统一为 `pp2024`，与方式 A 保持一致，便于后端配置文件共用。
 
@@ -531,10 +476,10 @@ https://dev.mysql.com/downloads/mysql/
 
 #### 第 2 步：解压
 
-将 ZIP 解压到 `D:\tools\mysql-8.0`。解压后目录结构大致如下：
+将 ZIP 解压到 `D:\software\mysql-8.0`。解压后目录结构大致如下：
 
 ```
-D:\tools\mysql-8.0\
+D:\software\mysql-8.0\
 ├── bin\
 ├── lib\
 ├── share\
@@ -545,7 +490,7 @@ D:\tools\mysql-8.0\
 
 #### 第 3 步：创建配置文件
 
-在 `D:\tools\mysql-8.0\` 下新建 `my.ini` 文件，写入以下内容：
+在 `D:\software\mysql-8.0\` 下新建 `my.ini` 文件，写入以下内容：
 
 ```ini
 [mysqld]
@@ -568,7 +513,7 @@ default-character-set=utf8mb4
 打开 PowerShell，执行：
 
 ```powershell
-D:\tools\mysql-8.0\bin\mysqld --initialize-insecure --console
+D:\software\mysql-8.0\bin\mysqld --initialize-insecure --console
 ```
 
 该命令会：
@@ -583,20 +528,20 @@ D:\tools\mysql-8.0\bin\mysqld --initialize-insecure --console
 先启动 MySQL（见第 6 步），然后在另一个 PowerShell 窗口中执行：
 
 ```powershell
-D:\tools\mysql-8.0\bin\mysql -uroot --skip-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'pp2024';"
+D:\software\mysql-8.0\bin\mysql -uroot --skip-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'pp2024';"
 ```
 
 #### 第 6 步：启动 MySQL
 
 ```powershell
-D:\tools\mysql-8.0\bin\mysqld --console
+D:\software\mysql-8.0\bin\mysqld --console
 ```
 
 > **说明**：此命令在前台运行 MySQL，窗口关闭则 MySQL 停止。建议开一个独立的 PowerShell 窗口运行。
 >
 > **停止 MySQL**：在另一个 PowerShell 窗口执行：
 > ```powershell
-> D:\tools\mysql-8.0\bin\mysqladmin -uroot -ppp2024 shutdown
+> D:\software\mysql-8.0\bin\mysqladmin -uroot -ppp2024 shutdown
 > ```
 
 #### 第 7 步：验证连接
@@ -604,7 +549,7 @@ D:\tools\mysql-8.0\bin\mysqld --console
 打开另一个 PowerShell 窗口（MySQL 保持运行），执行：
 
 ```powershell
-D:\tools\mysql-8.0\bin\mysql -uroot -ppp2024 -e "SELECT VERSION();"
+D:\software\mysql-8.0\bin\mysql -uroot -ppp2024 -e "SELECT VERSION();"
 ```
 
 应显示 `8.0.x` 版本信息。
@@ -612,7 +557,7 @@ D:\tools\mysql-8.0\bin\mysql -uroot -ppp2024 -e "SELECT VERSION();"
 #### 创建项目数据库
 
 ```powershell
-D:\tools\mysql-8.0\bin\mysql -uroot -ppp2024 -e "CREATE DATABASE IF NOT EXISTS postman_platform DEFAULT CHARACTER SET utf8mb4;"
+D:\software\mysql-8.0\bin\mysql -uroot -ppp2024 -e "CREATE DATABASE IF NOT EXISTS postman_platform DEFAULT CHARACTER SET utf8mb4;"
 ```
 
 ---
@@ -640,12 +585,12 @@ https://github.com/tporadowski/redis/releases
 
 #### 第 2 步：解压
 
-将 ZIP 解压到 `D:\tools\redis`。
+将 ZIP 解压到 `D:\software\redis`。
 
 #### 第 3 步：启动 Redis
 
 ```powershell
-D:\tools\redis\redis-server.exe
+D:\software\redis\redis-server.exe
 ```
 
 > Redis 默认监听 `localhost:6379`，无需额外配置。如需修改端口，可编辑同目录下的 `redis.windows.conf` 文件。
@@ -657,7 +602,7 @@ D:\tools\redis\redis-server.exe
 在另一个 PowerShell 窗口执行：
 
 ```powershell
-D:\tools\redis\redis-cli.exe PING
+D:\software\redis\redis-cli.exe PING
 ```
 
 应返回 `PONG`。
@@ -675,9 +620,9 @@ https://www.erlang.org/downloads
 ```
 
 - 选择 `Windows 64-bit Binary File`（如 `OTP-26.x.x_win64.exe`）
-- 这是一个自解压安装包，运行后选择安装到 `D:\tools\erlang`
+- 这是一个自解压安装包，运行后选择安装到 `D:\software\erlang`
 
-> 如果 .exe 安装器要求管理员权限，可以尝试从 https://github.com/erlang/otp/releases 下载 `otp_win64_x.x.zip` 手动解压到 `D:\tools\erlang`。
+> 如果 .exe 安装器要求管理员权限，可以尝试从 https://github.com/erlang/otp/releases 下载 `otp_win64_x.x.zip` 手动解压到 `D:\software\erlang`。
 
 #### 第 2 步：下载 RabbitMQ
 
@@ -690,29 +635,29 @@ https://github.com/rabbitmq/rabbitmq-server/releases
 
 #### 第 3 步：解压
 
-将 ZIP 解压到 `D:\tools\rabbitmq`。解压后关键目录为 `D:\tools\rabbitmq\sbin\`。
+将 ZIP 解压到 `D:\software\rabbitmq`。解压后关键目录为 `D:\software\rabbitmq\sbin\`。
 
 #### 第 4 步：启用管理插件
 
 在 PowerShell 中执行（需要先设置 Erlang 路径）：
 
 ```powershell
-$env:ERLANG_HOME = "D:\tools\erlang"
-D:\tools\rabbitmq\sbin\rabbitmq-plugins.bat enable rabbitmq_management
+$env:ERLANG_HOME = "D:\software\erlang"
+D:\software\rabbitmq\sbin\rabbitmq-plugins.bat enable rabbitmq_management
 ```
 
 #### 第 5 步：启动 RabbitMQ
 
 ```powershell
-$env:ERLANG_HOME = "D:\tools\erlang"
-D:\tools\rabbitmq\sbin\rabbitmq-server.bat
+$env:ERLANG_HOME = "D:\software\erlang"
+D:\software\rabbitmq\sbin\rabbitmq-server.bat
 ```
 
-> **提示**：由于每次启动都需要设置 `ERLANG_HOME`，建议在 `D:\tools\` 下创建启动脚本 `start-rabbitmq.bat`：
+> **提示**：由于每次启动都需要设置 `ERLANG_HOME`，建议在 `D:\software\` 下创建启动脚本 `start-rabbitmq.bat`：
 > ```bat
 > @echo off
-> set ERLANG_HOME=D:\tools\erlang
-> D:\tools\rabbitmq\sbin\rabbitmq-server.bat
+> set ERLANG_HOME=D:\software\erlang
+> D:\software\rabbitmq\sbin\rabbitmq-server.bat
 > ```
 > 以后双击此脚本即可启动 RabbitMQ。
 
@@ -722,76 +667,16 @@ D:\tools\rabbitmq\sbin\rabbitmq-server.bat
 
 > **账号说明**：RabbitMQ 默认创建 `guest / guest` 账号，但仅限 localhost 访问。如需自定义账号，可通过管理界面的 Admin 选项卡创建 `admin / admin123` 用户并赋予 Administrator 角色，或通过命令行：
 > ```powershell
-> D:\tools\rabbitmq\sbin\rabbitmqctl.bat add_user admin admin123
-> D:\tools\rabbitmq\sbin\rabbitmqctl.bat set_user_tags admin administrator
-> D:\tools\rabbitmq\sbin\rabbitmqctl.bat set_permissions -p / admin ".*" ".*" ".*"
+> D:\software\rabbitmq\sbin\rabbitmqctl.bat add_user admin admin123
+> D:\software\rabbitmq\sbin\rabbitmqctl.bat set_user_tags admin administrator
+> D:\software\rabbitmq\sbin\rabbitmqctl.bat set_permissions -p / admin ".*" ".*" ".*"
 > ```
 
 > **端口说明**：`5672` 是 AMQP 协议端口（程序连接用），`15672` 是 Web 管理界面端口。
 
 ---
 
-### B.4 Nacos 安装
-
-Nacos 是 Java 应用，官方提供可直接运行的 Windows 启动脚本，无需 Docker。
-
-#### 第 1 步：下载
-
-```
-https://github.com/alibaba/nacos/releases
-```
-
-- 选择 **2.2.3** 版本（与 Docker 方式保持一致）
-- 下载 `nacos-server-2.2.3.zip`（约 150MB）
-
-#### 第 2 步：解压
-
-将 ZIP 解压到 `D:\tools\nacos`。解压后关键目录：
-
-```
-D:\tools\nacos\
-├── bin\
-│   ├── startup.cmd       ← Windows 启动脚本
-│   └── shutdown.cmd      ← Windows 停止脚本
-├── conf\
-├── logs\
-└── ...
-```
-
-#### 第 3 步：选择存储模式
-
-**开发环境推荐：使用内嵌 Derby 数据库（单机模式，无需 MySQL）**
-
-此方式最简单，Nacos 使用内嵌数据库存储数据，无需额外配置 MySQL。
-
-> **注意**：如果需要使用 MySQL 存储（与生产环境一致），请先确保 B.1 中 MySQL 已启动，然后：
-> 1. 创建数据库：`CREATE DATABASE IF NOT EXISTS nacos_config DEFAULT CHARACTER SET utf8mb4;`
-> 2. 执行初始化 SQL：https://github.com/alibaba/nacos/blob/2.2.3/distribution/conf/mysql-schema.sql
-> 3. 编辑 `D:\tools\nacos\conf\application.properties`，取消 MySQL 相关配置的注释并填入连接信息
-
-#### 第 4 步：启动 Nacos（单机模式 + 内嵌数据库）
-
-```powershell
-D:\tools\nacos\bin\startup.cmd -m standalone
-```
-
-> 启动过程需要 30 秒左右，终端会显示 Nacos 启动日志。看到 `Nacos started successfully in stand alone mode` 即表示启动成功。
->
-> **前提**：系统已安装 JDK 1.8（§2.1）且 `JAVA_HOME` 环境变量已配置。
-
-#### 第 5 步：验证
-
-打开浏览器访问 `http://localhost:8848/nacos`，使用 `nacos / nacos` 登录。
-
-#### 停止 Nacos
-
-```powershell
-D:\tools\nacos\bin\shutdown.cmd
-```
-
----
-
-### B.5 各中间件访问信息汇总
+### B.4 各中间件访问信息汇总
 
 无论使用方式 A 还是方式 B，各中间件的访问信息完全一致：
 
@@ -800,13 +685,12 @@ D:\tools\nacos\bin\shutdown.cmd
 | MySQL | localhost | 3306 | root / pp2024 |
 | Redis | localhost | 6379 | 无密码 |
 | RabbitMQ 管理界面 | http://localhost:15672 | 15672 | admin / admin123 |
-| Nacos 控制台 | http://localhost:8848/nacos | 8848 | nacos / nacos |
 
 **日常启停顺序**（方式 B）：
 
 ```
-启动顺序：① MySQL → ② Redis → ③ RabbitMQ → ④ Nacos
-停止顺序：④ Nacos → ③ RabbitMQ → ② Redis → ① MySQL
+启动顺序：① MySQL → ② Redis → ③ RabbitMQ
+停止顺序：③ RabbitMQ → ② Redis → ① MySQL
 ```
 
 > 每个中间件建议在独立的 PowerShell 窗口中运行，方便查看日志和随时停止。
@@ -817,30 +701,27 @@ D:\tools\nacos\bin\shutdown.cmd
 
 ### 4.1 Maven 多模块项目结构
 
-后端采用 Maven 多模块结构，一个父 POM 管理所有子模块。目标目录结构如下：
+后端采用 Spring Boot 单体应用结构，所有功能模块打包在同一个 Maven 工程中。目标目录结构如下：
 
 ```
 postman-platform/                  ← 项目根目录（已有）
-├── backend/                       ← 后端工程根目录（新建）
-│   ├── pom.xml                    ← 父 POM（依赖版本统一管理）
-│   ├── pp-common/                 ← 公共模块（实体、工具类、通用配置）
-│   │   ├── pom.xml
-│   │   └── src/
-│   ├── pp-gateway/                ← API 网关（端口 8080）
-│   │   ├── pom.xml
-│   │   └── src/
-│   ├── pp-auth/                   ← 认证服务（端口 8081）
-│   │   ├── pom.xml
-│   │   └── src/
-│   ├── pp-core/                   ← 核心服务（端口 8082）
-│   │   ├── pom.xml
-│   │   └── src/
-│   ├── pp-keyword/                ← 关键字服务（端口 8083）
-│   │   ├── pom.xml
-│   │   └── src/
-│   └── pp-execution/              ← 执行服务（端口 8084）
-│       ├── pom.xml
-│       └── src/
+├── backend/                       ← 后端工程（新建，Spring Boot 单体应用）
+│   ├── pom.xml                    ← Maven POM（Spring Boot 应用）
+│   └── src/main/
+│       ├── java/com/postman/platform/
+│       │   ├── PostmanPlatformApplication.java
+│       │   ├── common/             ← 公共模块（实体、工具类、通用配置）
+│       │   ├── auth/               ← 认证模块（M1）
+│       │   ├── project/            ← 项目管理模块（M2/M3）
+│       │   ├── api/                ← 接口管理模块（M4）
+│       │   ├── keyword/            ← 关键字管理模块（M5/M6/M7）
+│       │   ├── execution/          ← 执行与报告模块（M8/M9/M10）
+│       │   └── filter/             ← 全局过滤器
+│       └── resources/
+│           ├── application.yml
+│           ├── application-dev.yml
+│           ├── application-prod.yml
+│           └── db/migration/
 ├── frontend/                      ← 前端工程根目录（新建）
 │   ├── package.json
 │   └── src/
@@ -850,9 +731,9 @@ postman-platform/                  ← 项目根目录（已有）
 
 ---
 
-### 4.2 父 POM 配置
+### 4.2 Maven POM 配置
 
-以下是 `backend/pom.xml` 父 POM 的核心配置，统一管理所有子模块的依赖版本：
+以下是 `backend/pom.xml` 的核心配置：
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -865,19 +746,9 @@ postman-platform/                  ← 项目根目录（已有）
     <groupId>com.postman</groupId>
     <artifactId>postman-platform</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
     <name>postman-platform</name>
     <description>关键字驱动测试管理平台</description>
-
-    <!-- 子模块 -->
-    <modules>
-        <module>pp-common</module>
-        <module>pp-gateway</module>
-        <module>pp-auth</module>
-        <module>pp-core</module>
-        <module>pp-keyword</module>
-        <module>pp-execution</module>
-    </modules>
 
     <!-- 版本统一管理 -->
     <properties>
@@ -887,12 +758,9 @@ postman-platform/                  ← 项目根目录（已有）
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <spring-boot.version>2.7.18</spring-boot.version>
-        <spring-cloud.version>2021.0.9</spring-cloud.version>
-        <spring-cloud-alibaba.version>2021.0.6.0</spring-cloud-alibaba.version>
         <mybatis-plus.version>3.5.9</mybatis-plus.version>
         <flyway.version>8.5.13</flyway.version>
         <mysql.version>8.0.33</mysql.version>
-        <sa-token.version>1.39.0</sa-token.version>
         <jjwt.version>0.11.5</jjwt.version>
         <hutool.version>5.8.34</hutool.version>
         <okhttp.version>4.12.0</okhttp.version>
@@ -906,36 +774,14 @@ postman-platform/                  ← 项目根目录（已有）
         <relativePath/>
     </parent>
 
-    <!-- 依赖版本管理（子模块按需引入，不在此处直接依赖） -->
+    <!-- 依赖管理 -->
     <dependencyManagement>
         <dependencies>
-            <!-- Spring Cloud -->
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <!-- Spring Cloud Alibaba -->
-            <dependency>
-                <groupId>com.alibaba.cloud</groupId>
-                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
-                <version>${spring-cloud-alibaba.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
             <!-- MyBatis-Plus -->
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-boot-starter</artifactId>
                 <version>${mybatis-plus.version}</version>
-            </dependency>
-            <!-- Sa-Token -->
-            <dependency>
-                <groupId>cn.dev33</groupId>
-                <artifactId>sa-token-spring-boot-starter</artifactId>
-                <version>${sa-token.version}</version>
             </dependency>
             <!-- JJWT -->
             <dependency>
@@ -967,16 +813,9 @@ postman-platform/                  ← 项目根目录（已有）
                 <artifactId>hutool-all</artifactId>
                 <version>${hutool.version}</version>
             </dependency>
-            <!-- pp-common 模块 -->
-            <dependency>
-                <groupId>com.postman</groupId>
-                <artifactId>pp-common</artifactId>
-                <version>${project.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
-    <!-- 所有子模块公共依赖 -->
     <dependencies>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -987,6 +826,10 @@ postman-platform/                  ← 项目根目录（已有）
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -1003,29 +846,26 @@ postman-platform/                  ← 项目根目录（已有）
 
 ---
 
-### 4.3 子模块创建顺序
+### 4.3 包结构创建顺序
 
-请按以下顺序在 IDEA 中创建子模块（后面开发时也会按此顺序逐步推进）：
+请按以下顺序在 IDEA 中创建包结构（后面开发时也会按此顺序逐步推进）：
 
-| 顺序 | 模块名 | 类型 | 说明 |
-|------|--------|------|------|
-| 1 | pp-common | jar | 公共模块，无 Spring Boot 启动类 |
-| 2 | pp-gateway | jar | Spring Cloud Gateway 网关 |
-| 3 | pp-auth | jar | 认证服务 |
-| 4 | pp-core | jar | 核心业务服务 |
-| 5 | pp-keyword | jar | 关键字管理服务 |
-| 6 | pp-execution | jar | 执行与报告服务 |
+| 顺序 | 包名 | 说明 |
+|------|--------|------|
+| 1 | common | 公共模块（实体、工具类、通用配置、异常处理） |
+| 2 | auth | 认证模块（登录、JWT、用户管理） |
+| 3 | project | 项目管理模块（项目、环境配置） |
+| 4 | api | 接口管理模块（接口文档、Swagger 导入） |
+| 5 | keyword | 关键字管理模块（接口关键字、工具方法、Action） |
+| 6 | execution | 执行与报告模块（用例、执行、报告） |
 
-**在 IDEA 中创建子模块的步骤**：
+**在 IDEA 中创建包的步骤**：
 
-1. 右键点击 `backend` 文件夹 → `New` → `Module`
-2. 选择 `Maven`，填写：
-   - `Name`：模块名（如 `pp-common`）
-   - `GroupId`：`com.postman`
-   - `ArtifactId`：模块名
+1. 右键点击 `src/main/java/com/postman/platform` → `New` → `Package`
+2. 填写包名（如 `auth`）
 3. 点击 `Create`
 
-> 详细的子模块 pom.xml 配置、启动类代码、配置文件等，将在正式开发阶段（Phase 0）逐步生成。
+> 详细的 Controller、Service、Mapper、Entity 等类文件将在正式开发阶段（Phase 0）逐步生成。
 
 ---
 
@@ -1043,9 +883,9 @@ postman-platform/                  ← 项目根目录（已有）
 
 在 Phase 0 开发完成后，你应该能够：
 
-1. 启动 Nacos，确认控制台可访问：`http://localhost:8848/nacos`
-2. 在 IDEA 中运行 `pp-gateway` 的启动类
-3. 访问 `http://localhost:8080/actuator/health` 确认网关健康
+1. 在 IDEA 中运行 `PostmanPlatformApplication` 启动类
+2. 访问 `http://localhost:8080/actuator/health` 确认应用健康
+3. 确认 RabbitMQ、MySQL、Redis 均已启动并可访问
 
 ---
 
@@ -1225,19 +1065,17 @@ pnpm dev
 - [ ] MySQL 连接测试：`docker exec -it pp-mysql mysql -uroot -ppp2024 -e "SELECT 1;"`
 - [ ] Redis 连接测试：`docker exec -it pp-redis redis-cli PING` → 返回 `PONG`
 - [ ] RabbitMQ 管理界面：http://localhost:15672 可访问
-- [ ] Nacos 控制台：http://localhost:8848/nacos 可访问
 
 ### 中间件（方式 B：原生 Windows 安装）
 
-- [ ] MySQL 连接测试：`D:\tools\mysql-8.0\bin\mysql -uroot -ppp2024 -e "SELECT VERSION();"` → 显示 8.0.x
-- [ ] Redis 连接测试：`D:\tools\redis\redis-cli.exe PING` → 返回 `PONG`
+- [ ] MySQL 连接测试：`D:\software\mysql-8.0\bin\mysql -uroot -ppp2024 -e "SELECT VERSION();"` → 显示 8.0.x
+- [ ] Redis 连接测试：`D:\software\redis\redis-cli.exe PING` → 返回 `PONG`
 - [ ] RabbitMQ 管理界面：http://localhost:15672 可访问
-- [ ] Nacos 控制台：http://localhost:8848/nacos 可访问
 
 ### 后端工程
 
-- [ ] `backend/` 目录已创建，包含父 `pom.xml`
-- [ ] 6 个子模块目录已创建（pp-common / pp-gateway / pp-auth / pp-core / pp-keyword / pp-execution）
+- [ ] `backend/` 目录已创建，包含 `pom.xml`
+- [ ] 包结构已创建（common / auth / project / api / keyword / execution）
 - [ ] IDEA 中 Maven 依赖下载完成（无红色错误标记）
 
 ### 前端工程
@@ -1290,35 +1128,12 @@ net stop mysql
   如有其他 MySQL 服务占用，可停止它或修改 `my.ini` 中的端口号。
 - **data 目录已存在**：如果之前初始化过，重新初始化前需要先删除 `data` 目录：
   ```powershell
-  Remove-Item -Recurse -Force D:\tools\mysql-8.0\data
-  D:\tools\mysql-8.0\bin\mysqld --initialize-insecure --console
+  Remove-Item -Recurse -Force D:\software\mysql-8.0\data
+  D:\software\mysql-8.0\bin\mysqld --initialize-insecure --console
   ```
 - **启动后立即闪退**：检查 `my.ini` 中的路径是否正确（使用正斜杠 `/`），以及 `basedir` 和 `datadir` 目录是否存在。
 
-### Q5：Nacos 启动失败
-
-**方式 A（Docker）**：
-1. 确认 MySQL 容器已先启动并运行正常
-2. 确认已创建 `nacos_config` 数据库并执行了初始化 SQL 脚本
-3. 查看 Nacos 日志：
-   ```powershell
-   docker logs pp-nacos
-   ```
-
-**方式 B（原生安装）**：
-- **`JAVA_HOME` 未配置**：`startup.cmd` 依赖 `JAVA_HOME` 环境变量。确认 JDK 1.8 已安装且环境变量正确：
-  ```powershell
-  echo $env:JAVA_HOME
-  java -version
-  ```
-- **端口被占用**：检查 8848 端口：
-  ```powershell
-  netstat -ano | findstr :8848
-  ```
-- **单机模式未指定**：务必使用 `startup.cmd -m standalone` 启动，不带 `-m standalone` 参数会尝试以集群模式启动并失败。
-- **启动缓慢**：Nacos 是 Java 应用，首次启动可能需要 30-60 秒。查看 `D:\tools\nacos\logs\start.out` 确认启动状态。
-
-### Q6：前端 `pnpm dev` 报端口占用
+### Q5：前端 `pnpm dev` 报端口占用
 
 **解决**：在 `vite.config.ts` 中修改端口：
 ```typescript
@@ -1329,11 +1144,11 @@ export default defineConfig({
 })
 ```
 
-### Q7：PowerShell 执行 docker run 多行命令报错
+### Q6：PowerShell 执行 docker run 多行命令报错
 
 **解决**：PowerShell 中多行命令使用反引号 `` ` `` 作为换行符（不是 `\`）。确保反引号后面没有多余的空格。也可以将所有参数写在一行中。
 
-### Q8：RabbitMQ 启动失败（方式 B）
+### Q7：RabbitMQ 启动失败（方式 B）
 
 **常见原因及解决方法**：
 - **找不到 Erlang**：确认 `$env:ERLANG_HOME` 已正确设置，且路径下有 `bin\erl.exe`：
@@ -1343,30 +1158,30 @@ export default defineConfig({
   如返回 `True` 则路径正确。
 - **管理界面无法访问**：确认已启用管理插件：
   ```powershell
-  D:\tools\rabbitmq\sbin\rabbitmq-plugins.bat enable rabbitmq_management
+  D:\software\rabbitmq\sbin\rabbitmq-plugins.bat enable rabbitmq_management
   ```
 - **端口被占用**：检查 5672 和 15672 端口：
   ```powershell
   netstat -ano | findstr ":5672 :15672"
   ```
 
-### Q9：没有管理员权限，无法设置系统环境变量
+### Q8：没有管理员权限，无法设置系统环境变量
 
-**解决**：本文档中方式 B 的所有操作均**不需要系统级环境变量**。对于 RabbitMQ 和 Nacos 等需要环境变量的程序，使用 PowerShell 会话级变量即可：
+**解决**：本文档中方式 B 的所有操作均**不需要系统级环境变量**。对于 RabbitMQ 等需要环境变量的程序，使用 PowerShell 会话级变量即可：
 
 ```powershell
 # 仅在当前 PowerShell 窗口有效
-$env:ERLANG_HOME = "D:\tools\erlang"
-$env:JAVA_HOME = "C:\Program Files\Java\jdk-1.8"
+$env:ERLANG_HOME = "D:\software\erlang"
+$env:JAVA_HOME = "D:\software\jdk-1.8"
 ```
 
 如果需要永久生效（非管理员），可以通过用户级环境变量设置（不需要管理员权限）：
 
 ```powershell
-[Environment]::SetEnvironmentVariable("ERLANG_HOME", "D:\tools\erlang", "User")
+[Environment]::SetEnvironmentVariable("ERLANG_HOME", "D:\software\erlang", "User")
 ```
 
-### Q10：Redis 在 Windows 上没有官方版本怎么办
+### Q9：Redis 在 Windows 上没有官方版本怎么办
 
 **解决**：推荐使用以下替代方案（按优先级排列）：
 1. **tporadowski 社区版**（https://github.com/tporadowski/redis/releases）—— 基于 Redis 5.0 移植，ZIP 解压即用，适合开发环境
@@ -1376,4 +1191,4 @@ $env:JAVA_HOME = "C:\Program Files\Java\jdk-1.8"
 
 ---
 
-> **下一步**：环境准备完成后，我们将按照 HLD 文档中的 Phase 0（微服务基础设施搭建）开始正式开发。
+> **下一步**：环境准备完成后，我们将按照 HLD 文档中的 Phase 0（项目基础设施搭建）开始正式开发。

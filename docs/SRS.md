@@ -297,70 +297,62 @@ Shell/SQL 链路：
 | VueDraggable | - | 拖拽排序（测试步骤编排） |
 | dayjs | 1.x | 日期处理 |
 
-#### 后端（微服务架构）
+#### 后端
 
 | 技术 | 版本 | 选型理由 |
 |---|---|---|
 | Java | 1.8 | 主流企业级语言，LTS 版本保证长期支持，生态成熟稳定 |
 | Spring Boot | 2.7 | 企业级框架标杆，自动配置、内嵌容器、生态成熟、社区活跃 |
-| Spring Cloud | 2021.x | 微服务全家桶，网关、注册发现、负载均衡、熔断降级、分布式追踪 |
-| Spring Cloud Alibaba | 2021.x | Nacos 注册/配置中心、Sentinel 限流熔断、Seata 分布式事务 |
-| Spring Cloud Gateway | - | API 网关，统一入口、路由分发、鉴权过滤、限流 |
-| OpenFeign | - | 声明式 HTTP 客户端，服务间同步调用 |
-| RabbitMQ | 3.x | 消息队列，异步事件驱动（测试执行触发、状态通知） |
-| Spring Cloud Stream | - | 消息驱动框架，统一 RabbitMQ 编程模型 |
-| MyBatis-Plus | 3.5+ | 增强型 ORM，简化 CRUD，支持代码生成、分页、多租户 |
-| Flyway | 8.x | 数据库版本迁移工具，SQL 脚本管理、自动执行、回滚支持 |
 | Spring Security | 5.7 | 认证鉴权框架，与 Spring Boot 深度集成，支持 OAuth2/JWT |
 | Sa-Token | 1.39+ | 轻量级权限认证框架，API 简洁，与 Spring Security 互补 |
 | JJWT | 0.11 | JWT 认证，成熟的 Java JWT 库 |
+| MyBatis-Plus | 3.5+ | 增强型 ORM，简化 CRUD，支持代码生成、分页、多租户 |
+| Flyway | 8.x | 数据库版本迁移工具，SQL 脚本管理、自动执行、回滚支持 |
+| RabbitMQ | 3.x | 消息队列，异步事件驱动（测试执行触发、状态通知） |
 | MySQL | 8.0+ | 广泛使用，运维成熟，原生 JSON 类型支持 |
 | Redis | 7.x | 缓存、会话管理、分布式锁 |
 | XXL-Job | 2.4+ | 分布式任务调度（可视化管理、分片广播） |
 | Spring Async | - | 服务内异步任务执行（@Async + ThreadPoolTaskExecutor） |
 | javax.validation | - | 数据校验（Spring Boot 内置，注解驱动） |
+| OkHttp | 4.12 | HTTP 客户端，支持 HTTP/2、异步请求 |
+| Groovy ScriptEngine | JSR-223 | 工具方法沙箱执行 |
+| swagger-parser | - | Swagger/OpenAPI 文档解析 |
+| JavaParser | - | 工具方法源码 AST 解析 |
 | EasyExcel | 3.x | Excel 报告导出，阿里开源，低内存消耗 |
 | iText / OpenPDF | - | PDF 报告生成 |
 | SpringDoc | 1.x | 自动 OpenAPI/Swagger 文档生成 |
 
 ### 2.2 系统架构
 
-系统采用前后端分离 + 微服务架构，整体分为前端层、网关层、微服务层和数据层四个层次：
+系统采用前后端分离架构，整体分为前端服务和后端服务两大部分：
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                        前端层（Vue 3 SPA）                                │
+│                        前端服务（Vue 3 SPA）                              │
+│                                                                          │
 │  接口关键字 │ Action 关键字 │ 用例编排 │ 环境配置 │ 执行调度 │ 报告分析 │ 设置 │
 └─────────────────────────────────┬────────────────────────────────────────┘
                                   │ HTTP REST / WebSocket
 ┌─────────────────────────────────▼────────────────────────────────────────┐
-│                  网关层（Spring Cloud Gateway）                            │
-│  统一入口 │ 路由分发 │ JWT 鉴权过滤 │ 限流熔断(Sentinel) │ CORS         │
-└─────────────────────────────────┬────────────────────────────────────────┘
-                                  │ OpenFeign / HTTP
-┌─────────────────────────────────▼────────────────────────────────────────┐
-│                         微服务层                                          │
+│                         后端服务（Spring Boot 单体应用）                   │
 │                                                                          │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐   │
-│  │ pp-auth  │ │ pp-core  │ │pp-keyword│ │pp-execu- │ │   Nacos    │   │
-│  │ 认证服务  │ │ 核心服务  │ │关键字服务│ │ tion     │ │  注册/配置  │   │
-│  │          │ │          │ │          │ │ 执行服务  │ │    中心    │   │
-│  │ M1认证   │ │ M2项目   │ │ M5接口KW │ │ M8用例   │ │            │   │
-│  │ 用户管理  │ │ M3环境   │ │ M6工具KW │ │ M9执行   │ │            │   │
-│  │ 系统配置  │ │ M4接口   │ │ M7Action │ │ M10报告  │ │            │   │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └────────────┘   │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐   │
+│  │ 认证模块  │ │ 项目管理  │ │ 接口文档  │ │关键字管理 │ │ 测试/执行/报告│   │
+│  │ M1认证   │ │ M2项目   │ │ M4接口   │ │ M5接口KW │ │ M8用例      │   │
+│  │ 用户管理  │ │ M3环境   │ │          │ │ M6工具KW │ │ M9执行      │   │
+│  │ 系统配置  │ │          │ │          │ │ M7Action │ │ M10报告     │   │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────────┘   │
 │                                                                          │
 │  ┌─── 基础设施 ───────────────────────────────────────────────────┐    │
-│  │ RabbitMQ 异步事件 │ XXL-Job 分布式调度 │ WebSocket(pp-execution) │    │
+│  │ RabbitMQ 异步事件 │ XXL-Job 分布式调度 │ WebSocket 实时推送        │    │
 │  │ EasyExcel/PDF 报告生成 │ Redis 缓存/分布式锁                       │    │
 │  └────────────────────────────────────────────────────────────────┘    │
+│                                                                          │
+│  ┌─── 执行引擎（内置） ────────────────────────────────────────────┐   │
+│  │ HTTP客户端(OkHttp) │ 断言引擎 │ Groovy沙箱 │ Swagger解析器      │   │
+│  │ Action流程执行器 │ AST解析器 │ 协议适配器(WSS/Nacos/Shell)         │   │
+│  └────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────┬────────────────────────────────────────┘
-                                  │ REST API
-┌─────────────────────────────────▼────────────────────────────────────────┐
-│                  引擎层（pp-execution 内置执行引擎，Java 实现）                       │
-│  OkHttp客户端 │ 断言引擎 │ Groovy沙箱 │ Swagger解析器 │ AST解析器    │
-│  Action流程执行器 │ 协议适配器(WSS/Nacos/Shell)                       │
-└──────────────────────────────────────────────────────────────────────────┘
        │                    │                    │
   ┌────▼────┐         ┌────▼────┐         ┌─────▼─────┐
   │  MySQL  │         │  Redis  │         │ 文件存储   │
@@ -377,12 +369,7 @@ Shell/SQL 链路：
 ```yaml
 services:
   nginx:          # 前端静态资源 + API 反向代理
-  pp-gateway:     # Spring Cloud Gateway（API 网关）
-  pp-auth:        # 认证服务（M1）
-  pp-core:        # 核心服务（M2/M3/M4）
-  pp-keyword:     # 关键字服务（M5/M6/M7）
-  pp-execution:   # 执行服务（M8/M9/M10 + 内置执行引擎）
-  nacos:          # 服务注册中心 + 配置中心
+  backend:        # 后端服务（Spring Boot 单体应用，内置执行引擎）
   rabbitmq:       # 消息队列（异步事件驱动）
   mysql:          # MySQL 8.0+
   redis:          # Redis 7.x
@@ -393,12 +380,10 @@ services:
 ```
 Nginx Ingress Controller
   ├── /static/*           → frontend (Deployment)
-  ├── /api/*              → pp-gateway (Deployment + HPA)
-  └── /ws/*               → pp-execution (Deployment)
+  ├── /api/*              → backend (Deployment + HPA)
+  └── /ws/*               → backend (Deployment)
       ↓
-Spring Cloud Gateway → pp-auth / pp-core / pp-keyword / pp-execution (Deployment + HPA)
-      ↓
-Nacos + RabbitMQ + MySQL + Redis
+RabbitMQ + MySQL + Redis
 ```
 
 ---
@@ -772,28 +757,33 @@ TestExecution 1──N TestResult
 TestResult N──1 TestCase
 ```
 
-### 3.3 微服务架构与执行引擎说明
+### 3.3 后端架构与执行引擎说明
 
-> postman-platform 后端采用 **Java 1.8 + Spring Cloud** 纯 Java 微服务架构，执行引擎内嵌于 pp-execution 服务中，无外部 Python 依赖。
+> postman-platform 后端采用 **Java 1.8 + Spring Boot 2.7** 单体应用架构，所有功能模块打包在一个 Spring Boot 应用中，执行引擎内嵌于应用内部，无外部 Python 依赖。
 >
-> **微服务拆分方案（4+1 纯 Java）：**
+> **后端服务包含以下功能模块：**
 >
-> | 微服务 | 服务名 | 包含模块 | 说明 |
-> |---|---|---|---|
-> | API 网关 | pp-gateway | — | Spring Cloud Gateway，统一入口、路由、鉴权、限流 |
-> | 认证服务 | pp-auth | M1 | JWT 签发/刷新、RBAC、用户管理、全局配置 |
-> | 核心服务 | pp-core | M2, M3, M4 | 项目、环境、接口文档 |
-> | 关键字服务 | pp-keyword | M5, M6, M7 | 接口关键字、工具方法、Action |
-> | 执行服务 | pp-execution | M8, M9, M10 | 套件、用例、执行调度、报告 + **内置执行引擎** |
+> | 模块 | 说明 |
+> |---|---|
+> | M1 认证与用户管理 | JWT 签发/刷新、RBAC、用户管理、全局配置 |
+> | M2 项目管理 | 项目 CRUD、概览仪表板、项目设置 |
+> | M3 环境配置 | 环境 CRUD、JSON 配置编辑、连接测试 |
+> | M4 接口文档 | 接口分组、Swagger 导入、接口 CRUD、调试、同步、批量操作 |
+> | M5 接口关键字管理 | 接口关键字 CRUD、测试数据配置、删除保护 |
+> | M6 工具方法关键字管理 | 工具方法 CRUD、代码沙箱执行、在线测试 |
+> | M7 Action 关键字管理 | Action CRUD、流程画布编排、调试、引用管理 |
+> | M8 测试用例管理 | 套件、用例 CRUD、步骤编排、参数化、四层 Setup/Teardown |
+> | M9 测试执行与调度 | 测试计划、执行触发、实时状态推送 |
+> | M10 测试报告与分析 | 执行详情、执行历史、趋势分析、报告导出 |
 >
-> **服务间通信：**
-> - 同步调用：OpenFeign + Spring Cloud LoadBalancer（实时数据查询）
-> - 异步消息：RabbitMQ + Spring Cloud Stream（执行触发、状态通知）
-> - 共享存储：MySQL 共享实例，各服务操作各自表
-> - 缓存共享：Redis 共享实例（JWT 黑名单、分布式锁、执行状态）
+> **模块间通信：**
+> - 所有模块在同一应用内，通过 Spring Bean 依赖注入直接调用，无网络开销
+> - 异步任务：RabbitMQ + Spring AMQP（执行触发、状态通知）
+> - 共享存储：MySQL 单实例，各模块操作各自表
+> - 缓存共享：Redis 单实例（JWT 黑名单、分布式锁、执行状态）
 >
-> **执行引擎（pp-execution 内置）：**
-> 原 postman-tool Python 引擎的全部能力已用 Java 重新实现，内嵌于 pp-execution 的 `engine` 包中：
+> **执行引擎（内置）：**
+> 原 postman-tool Python 引擎的全部能力已用 Java 重新实现，内嵌于后端的 `engine` 包中：
 >
 > | 能力 | Java 实现方案 |
 > |---|---|
@@ -804,16 +794,17 @@ TestResult N──1 TestCase
 > | AST 解析 | `com.github.javaparser`，解析工具方法源码结构 |
 > | 协议适配器 | OkHttp + WebSocket API，支持 WSS / Nacos HTTP / Shell 执行 |
 >
-> **执行引擎内部接口（pp-execution 内部调用，非 REST API）：**
+> **执行引擎内部接口（应用内部调用，非 REST API）：**
 > - `KeywordExecutor.execute()`：执行测试用例（加载环境配置、用例步骤、关键字数据）
 > - `SandboxEngine.execute()`：在线测试工具方法
 > - `ActionExecutor.debug()`：调试 Action
 > - `KeywordExecutor.debugCase()`：调试用例
 >
-> **注意事项：**
+> **架构优势：**
 > - 统一纯 Java 技术栈，无 Python 依赖，运维复杂度大幅降低
-> - 消除跨语言 HTTP 调用开销，执行链路延迟更低
-> - pp-execution 可通过 HPA 水平扩展，应对高并发执行场景
+> - 单体应用部署简单，开发调试效率高
+> - 模块间直接调用，无网络延迟开销
+> - 可通过多实例部署 + Nginx 负载均衡实现水平扩展
 
 ---
 
@@ -1688,12 +1679,12 @@ postman-engine/
 
 ```
 Web 触发执行
-  → pp-execution 创建 TestExecution 记录
-  → pp-execution 发布执行消息到 RabbitMQ
-  → pp-execution 消费者接收消息，启动异步执行任务
-  → Feign 调用 pp-core: 获取环境配置（Environment.config JSON）→ 注入引擎
-  → 本地查询: 加载测试用例 → 解析 steps JSON
-  → Feign 调用 pp-keyword: 获取关键字详情
+  → 后端创建 TestExecution 记录
+  → 发布执行消息到 RabbitMQ
+  → 消费者接收消息，启动异步执行任务
+  → 从数据库获取环境配置（Environment.config JSON）→ 注入引擎
+  → 从数据库加载测试用例 → 解析 steps JSON
+  → 从数据库获取关键字详情
   → 按顺序执行每个 step：
     → 解析 Action 关键字节点树（流程画布数据）
     → 按流程画布中节点连线的拓扑顺序执行：
@@ -1701,11 +1692,11 @@ Web 触发执行
       - 逻辑判断节点根据条件表达式选择「是」/「否」分支执行
       - 根据节点引用处理：
       - keyword 节点：从 Keyword 查找，根据 keyword_type 自动执行：
-        · API → 查找 ApiEndpoint + 测试数据 → REST 调用 pp-engine 执行 HTTP 请求
-        · TOOL → 查找 ToolMethod + args 传参 → REST 调用 pp-engine 沙箱执行
+        · API → 查找 ApiEndpoint + 测试数据 → 调用内置 HTTP 客户端执行请求
+        · TOOL → 查找 ToolMethod + args 传参 → 调用内置 Groovy 沙箱执行
         · ACTION → 递归解析子 Action 节点树执行
         · TEST_CASE → 递归解析子用例步骤树执行
-      - tool_method 节点：直接引用 ToolMethod + args 传参 → REST 调用 pp-engine
+      - tool_method 节点：直接引用 ToolMethod + args 传参 → 调用内置沙箱执行
     → 捕获请求/响应日志 → 写入 TestResult.logs JSON
     → 若步骤配置了 assertions 校验 → HandlerAssert 逐条断言校验 → 记录通过/失败
     → 若步骤未配置校验 → 跳过断言，仅记录执行结果
@@ -1716,27 +1707,21 @@ Web 触发执行
 ### 7.4 引擎依赖关系
 
 ```
-postman-platform 微服务集群 (Java)
-  ├── pp-gateway    → API 网关，路由分发，JWT 鉴权
-  ├── pp-auth       → 认证服务（M1）
-  ├── pp-core       → 核心服务（M2/M3/M4）
-  │     └── FeignClient: pp-auth（用户信息、权限校验）
-  ├── pp-keyword    → 关键字服务（M5/M6/M7）
-  │     └── FeignClient: pp-core（项目、接口信息）
-  ├── pp-execution  → 执行服务（M8/M9/M10）
-  │     ├── FeignClient: pp-core（环境配置）
-  │     ├── FeignClient: pp-keyword（关键字详情）
-  │     ├── RestClient: pp-engine（引擎执行）
-  │     ├── RabbitMQ Consumer: 执行消息
-  │     └── WebSocket: 实时推送
-  └── 数据库层（MyBatis-Plus）
-        └── MySQL 共享实例，各服务操作各自表
-
-pp-engine (Python 微服务)
-  ├── handlerKw   ← 关键字解析、封装、执行
-  ├── handlerSwagger ← Swagger 解析、API 客户端生成
-  ├── http        ← HTTP 请求发送
-  └── utils       ← 环境、断言、协议适配、配置中心、日志、工具
+postman-platform 后端服务 (Java / Spring Boot)
+  ├── controller/  → REST API 层，接收前端请求
+  ├── service/     → 业务逻辑层（M1~M10 所有模块）
+  │     └── 模块间直接通过 Spring Bean 调用，无网络开销
+  ├── engine/      → 执行引擎核心包
+  │     ├── KeywordExecutor    → 关键字执行器（统一入口）
+  │     ├── HttpClientEngine   → HTTP 客户端（OkHttp）
+  │     ├── AssertionEngine    → 断言引擎
+  │     ├── SandboxEngine      → 工具方法沙箱（Groovy）
+  │     ├── SwaggerParserEngine → Swagger 解析器
+  │     └── ActionExecutor     → Action 流程执行器
+  ├── mq/          → RabbitMQ 消息生产/消费
+  ├── websocket/   → WebSocket 实时推送
+  └── mapper/      → 数据库访问层（MyBatis-Plus）
+        └── MySQL 单实例，各模块操作各自表
 ```
 
 ---
@@ -1812,98 +1797,62 @@ postman-platform/
 │   ├── tsconfig.json
 │   └── Dockerfile
 │
-├── pp-gateway/                     # API 网关（Spring Cloud Gateway）
-│   ├── src/main/java/com/postman/platform/gateway/
-│   │   ├── GatewayApplication.java
-│   │   ├── config/                 #   路由配置、CORS、过滤器
-│   │   │   ├── RouteConfig.java
-│   │   │   └── AuthGlobalFilter.java  # JWT 鉴权过滤器
-│   │   └── filter/                 #   自定义过滤器
-│   └── src/main/resources/
-│       ├── application.yml         #   路由规则配置
-│       └── bootstrap.yml           #   Nacos 注册/配置中心连接
-│
-├── pp-auth/                        # 认证服务（M1）
-│   ├── src/main/java/com/postman/platform/auth/
-│   │   ├── AuthApplication.java
-│   │   ├── controller/             #   AuthController, UserController, SettingsController
-│   │   ├── service/                #   AuthService, UserService, SettingsService
-│   │   ├── mapper/                 #   UserMapper
-│   │   ├── entity/                 #   User
-│   │   ├── dto/                    #   请求/响应 DTO
-│   │   ├── security/               #   JwtTokenProvider, JwtAuthenticationFilter
-│   │   └── config/                 #   SecurityConfig
-│   └── src/main/resources/
-│       ├── application.yml
-│       ├── bootstrap.yml
-│       └── db/migration/           #   Flyway 迁移脚本（auth 相关表）
-│
-├── pp-core/                        # 核心服务（M2/M3/M4）
-│   ├── src/main/java/com/postman/platform/core/
-│   │   ├── CoreApplication.java
-│   │   ├── controller/             #   ProjectController, EnvironmentController, ApiController
-│   │   ├── service/                #   ProjectService, EnvironmentService, ApiService
-│   │   ├── mapper/                 #   ProjectMapper, EnvironmentMapper, ApiMapper
-│   │   ├── entity/                 #   Project, Environment, ApiModule, ApiEndpoint
-│   │   ├── dto/
-│   │   └── feign/                  #   AuthFeignClient（调用认证服务）
-│   └── src/main/resources/
-│       ├── application.yml
-│       ├── bootstrap.yml
-│       └── db/migration/           #   Flyway 迁移脚本（core 相关表）
-│
-├── pp-keyword/                     # 关键字服务（M5/M6/M7）
-│   ├── src/main/java/com/postman/platform/keyword/
-│   │   ├── KeywordApplication.java
-│   │   ├── controller/             #   KeywordController, ToolController, ActionController
-│   │   ├── service/                #   KeywordService, ToolService, ActionService
-│   │   ├── mapper/                 #   KeywordMapper, ToolMethodMapper, ActionMapper
-│   │   ├── entity/                 #   Keyword, ApiKeyword, ToolMethod, Action
-│   │   ├── dto/
-│   │   └── feign/                  #   CoreFeignClient（调用核心服务）
-│   └── src/main/resources/
-│       ├── application.yml
-│       ├── bootstrap.yml
-│       └── db/migration/           #   Flyway 迁移脚本（keyword 相关表）
-│
-├── pp-execution/                   # 执行服务（M8/M9/M10）
-│   ├── src/main/java/com/postman/platform/execution/
-│   │   ├── ExecutionApplication.java
-│   │   ├── controller/             #   SuiteController, CaseController, PlanController, ExecutionController, AnalyticsController
-│   │   ├── service/                #   SuiteService, CaseService, ExecutionService, AnalyticsService, ReportService
-│   │   ├── mapper/                 #   SuiteMapper, CaseMapper, ExecutionMapper, ResultMapper
-│   │   ├── entity/                 #   TestSuite, TestCase, TestPlan, TestExecution, TestResult
-│   │   ├── dto/
-│   │   ├── feign/                  #   CoreFeignClient, KeywordFeignClient
-│   │   ├── engine/                 #   EngineClient（REST 调用 pp-engine）
-│   │   ├── mq/                     #   ExecutionMessageProducer, ExecutionMessageConsumer
-│   │   ├── websocket/              #   ExecutionWebSocket
-│   │   └── config/                 #   RabbitMQConfig, AsyncConfig, WebSocketConfig
-│   └── src/main/resources/
-│       ├── application.yml
-│       ├── bootstrap.yml
-│       └── db/migration/           #   Flyway 迁移脚本（execution 相关表）
-│
-├── pp-engine/                      # 引擎服务（Python 微服务）
-│   ├── app/
-│   │   ├── main.py                 #   FastAPI 入口
-│   │   ├── routes/                 #   API 路由
-│   │   │   ├── execute.py          #   /engine/execute
-│   │   │   ├── tool.py             #   /engine/tool/test
-│   │   │   ├── action.py           #   /engine/action/debug
-│   │   │   └── case.py             #   /engine/case/debug
-│   │   └── engine/                 #   复用 postman-tool 的 common/ 模块
-│   ├── requirements.txt
+├── backend/                        # 后端服务（Spring Boot 单体应用）
+│   ├── src/main/java/com/postman/platform/
+│   │   ├── PostmanPlatformApplication.java  # Spring Boot 启动类
+│   │   ├── common/                 #   公共模块
+│   │   │   ├── response/           #     ApiResponse 统一响应格式
+│   │   │   ├── exception/          #     全局异常处理
+│   │   │   ├── config/             #     公共配置（Redis, MyBatis-Plus, RabbitMQ）
+│   │   │   └── util/               #     工具类
+│   │   ├── auth/                   #   认证模块（M1）
+│   │   │   ├── controller/         #     AuthController, UserController, SettingsController
+│   │   │   ├── service/            #     AuthService, UserService, SettingsService
+│   │   │   ├── mapper/             #     UserMapper
+│   │   │   ├── entity/             #     User
+│   │   │   ├── dto/                #     请求/响应 DTO
+│   │   │   ├── security/           #     JwtTokenProvider, JwtAuthenticationFilter
+│   │   │   └── config/             #     SecurityConfig, WebMvcConfig
+│   │   ├── project/                #   项目管理模块（M2）
+│   │   │   ├── controller/         #     ProjectController, EnvironmentController
+│   │   │   ├── service/            #     ProjectService, EnvironmentService
+│   │   │   ├── mapper/             #     ProjectMapper, EnvironmentMapper
+│   │   │   ├── entity/             #     Project, Environment
+│   │   │   └── dto/
+│   │   ├── api/                    #   接口管理模块（M3/M4）
+│   │   │   ├── controller/         #     ApiController, SwaggerController
+│   │   │   ├── service/            #     ApiService, SwaggerImportService
+│   │   │   ├── mapper/             #     ApiModuleMapper, ApiEndpointMapper
+│   │   │   ├── entity/             #     ApiModule, ApiEndpoint
+│   │   │   └── dto/
+│   │   ├── keyword/                #   关键字管理模块（M5/M6/M7）
+│   │   │   ├── controller/         #     KeywordController, ToolController, ActionController
+│   │   │   ├── service/            #     KeywordService, ToolService, ActionService
+│   │   │   ├── mapper/             #     KeywordMapper, ToolMethodMapper, ActionMapper
+│   │   │   ├── entity/             #     Keyword, ApiKeyword, ToolMethod, Action
+│   │   │   └── dto/
+│   │   ├── execution/              #   执行与报告模块（M8/M9/M10）
+│   │   │   ├── controller/         #     SuiteController, CaseController, PlanController, ExecutionController, AnalyticsController
+│   │   │   ├── service/            #     SuiteService, CaseService, ExecutionService, AnalyticsService, ReportService
+│   │   │   ├── mapper/             #     SuiteMapper, CaseMapper, ExecutionMapper, ResultMapper
+│   │   │   ├── entity/             #     TestSuite, TestCase, TestPlan, TestExecution, TestResult
+│   │   │   ├── dto/
+│   │   │   ├── engine/             #     内置执行引擎（Java 实现）
+│   │   │   ├── mq/                 #     ExecutionMessageProducer, ExecutionMessageConsumer
+│   │   │   ├── websocket/          #     ExecutionWebSocket
+│   │   │   └── config/             #     RabbitMQConfig, AsyncConfig, WebSocketConfig
+│   │   └── filter/                 #   全局过滤器（JWT 鉴权、CORS）
+│   │       ├── JwtAuthenticationFilter.java
+│   │       └── CorsFilter.java
+│   ├── src/main/resources/
+│   │   ├── application.yml         #   应用配置
+│   │   ├── application-dev.yml     #   开发环境配置
+│   │   ├── application-prod.yml    #   生产环境配置
+│   │   └── db/migration/           #   Flyway 迁移脚本
+│   ├── pom.xml                     #   Maven POM
 │   └── Dockerfile
 │
-├── pp-common/                      # 公共模块（Maven 多模块共享）
-│   └── src/main/java/com/postman/platform/common/
-│       ├── response/               #   ApiResponse 统一响应格式
-│       ├── exception/              #   全局异常处理
-│       ├── config/                 #   公共配置（Redis, MyBatis-Plus）
-│       └── util/                   #   工具类
-│
-├── pom.xml                         # Maven 父 POM（多模块管理）
+├── pom.xml                         # Maven POM（后端父工程）
 ├── docker-compose.yml              # Docker Compose 编排
 ├── docker-compose.prod.yml         # 生产环境配置
 ├── nginx/
@@ -1916,25 +1865,25 @@ postman-platform/
 
 ## 10. 开发里程碑
 
-### Phase 0：微服务基础设施（1 周）
+### Phase 0：项目基础设施（1 周）
 
 | 任务 | 工期 | 交付物 |
 |---|---|---|
-| Maven 多模块项目搭建（pp-common, pp-gateway, pp-auth, pp-core, pp-keyword, pp-execution） | 2 天 | 可编译的多模块工程 |
-| Nacos 注册中心 + 配置中心集成 | 1 天 | 服务注册与配置管理 |
-| Spring Cloud Gateway 路由配置 + JWT 鉴权过滤器 | 1 天 | 网关路由打通 |
-| RabbitMQ + Spring Cloud Stream 集成 | 1 天 | 异步消息通道 |
+| Spring Boot 单体项目搭建（Maven 工程 + 模块包结构） | 2 天 | 可编译运行的后端工程 |
+| JWT 认证 + Spring Security 配置 + 全局过滤器 | 1 天 | 认证鉴权框架 |
+| RabbitMQ + Spring AMQP 集成 | 1 天 | 异步消息通道 |
+| 数据库连接 + MyBatis-Plus + Redis 配置 | 1 天 | 数据访问层基础 |
 
 ### Phase 1：基础框架 & 核心功能（4 周）
 
 | 任务 | 工期 | 交付物 |
 |---|---|---|
-| 项目脚手架搭建（前端 + 微服务 + Docker） | 3 天 | 可运行的空项目框架 |
+| 项目脚手架搭建（前端 + 后端 + Docker） | 3 天 | 可运行的空项目框架 |
 | 数据库模型设计 + Flyway 迁移 | 2 天 | 完整数据库 Schema |
 | 用户认证（登录/JWT/用户管理） | 2 天 | 登录流程打通 |
 | 项目管理 CRUD | 2 天 | 项目列表 + 详情 |
 | 环境配置管理 + 配置编辑器 | 3 天 | 环境 CRUD + Monaco 编辑器 |
-| 核心引擎抽取 + pp-engine 微服务化 | 3 天 | pp-engine 容器 + REST API |
+| 核心执行引擎（Java 内置实现） | 3 天 | 引擎模块（HTTP 客户端 + Groovy 沙箱） |
 | 接口管理（Swagger 导入 + CRUD + 调试） | 5 天 | 接口管理完整功能 |
 | 接口关键字管理（创建 + CRUD + 测试数据 + 删除保护） | 4 天 | 接口关键字完整功能 |
 | 工具方法管理（内置 + 自定义 + 沙箱 + 在线测试） | 4 天 | 工具方法完整功能 |
@@ -1949,7 +1898,7 @@ postman-platform/
 | 用例编辑器（Action 调用 + 逻辑控制 + 拖拽） | 7 天 | 核心用例编排器 |
 | 参数化 & 数据驱动 | 2 天 | 多组数据配置 |
 | RabbitMQ 异步执行集成 | 2 天 | 异步执行框架 |
-| 测试执行引擎（手动触发 + Feign 调用） | 3 天 | 端到端执行打通 |
+| 测试执行引擎（手动触发 + 内置引擎调用） | 3 天 | 端到端执行打通 |
 | 实时日志推送（WebSocket） | 2 天 | 执行过程实时展示 |
 
 ### Phase 3：调度 & 报告分析（3 周）
@@ -1968,7 +1917,7 @@ postman-platform/
 | 任务 | 工期 | 交付物 |
 |---|---|---|
 | UI 细节打磨 + 交互优化 | 3 天 | 专业级 UI 体验 |
-| 微服务链路优化（缓存、熔断、降级） | 2 天 | 性能达标 |
+| 后端性能优化（缓存、连接池、异步处理） | 2 天 | 性能达标 |
 | Docker Compose 生产配置 | 2 天 | 一键部署 |
 | K8s 部署配置 + HPA 弹性伸缩 | 1 天 | 生产级部署方案 |
 | 集成测试 + Bug 修复 | 4 天 | 稳定可交付版本 |

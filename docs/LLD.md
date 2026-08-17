@@ -30,7 +30,7 @@
 | Mapper | MyBatis-Plus Mapper 接口，每个表对应一个 Mapper，通过 Spring 依赖注入获取 |
 | DTO | 请求/响应的数据传输对象，使用 javax.validation 注解进行校验 |
 | Service | 业务服务层类，封装领域逻辑，通过 @Service 注解和 Spring DI 使用 |
-| Engine | pp-execution 内置的执行引擎包，负责关键字执行、HTTP 客户端、断言引擎、Groovy 沙箱、Swagger 解析、Action 流程执行 |
+| Engine | execution 模块内置的执行引擎包，负责关键字执行、HTTP 客户端、断言引擎、Groovy 沙箱、Swagger 解析、Action 流程执行 |
 | Execution Context | 运行时变量上下文，存储 save_as 变量和步骤执行结果 |
 
 ### 1.4 设计约定
@@ -38,7 +38,7 @@
 | 约定项 | 规则 |
 |---|---|
 | 命名规范 | 类名 PascalCase，方法名 camelCase，常量 UPPER_SNAKE_CASE，路由路径 kebab-case |
-| 分层架构 | Controller → Service → Mapper 三层，Controller 仅做参数校验和响应封装；服务间调用通过 OpenFeign Client |
+| 分层架构 | Controller → Service → Mapper 三层，Controller 仅做参数校验和响应封装；模块间通过 Spring Bean 依赖注入直接调用 |
 | 依赖注入 | 使用 Spring @Autowired / 构造器注入，注入 Mapper、Service、当前用户等 |
 | 统一响应 | 所有 API 返回 `{ "code": 0, "message": "success", "data": {} }` 格式 |
 | 分页格式 | `{ "items": [], "total": N, "page": 1, "page_size": 20 }` |
@@ -118,143 +118,117 @@ postman-platform/
 │   ├── vite.config.ts
 │   └── tsconfig.json
 │
-├── pp-common/                         # 公共模块（Maven 共享依赖）
-│   └── src/main/java/com/postman/platform/common/
-│       ├── response/
-│       │   └── ApiResponse.java       #   统一响应格式
-│       ├── exception/
-│       │   ├── BusinessException.java #   业务异常
-│       │   ├── GlobalExceptionHandler.java  #   全局异常处理
-│       │   └── ErrorCode.java         #   错误码枚举
-│       ├── config/
-│       │   ├── MyBatisPlusConfig.java #   MyBatis-Plus 全局配置
-│       │   └── RedisConfig.java       #   Redis 序列化配置
-│       └── util/
-│           └── JsonUtils.java         #   JSON 工具类
+├── backend/                           # 后端服务（Spring Boot 单体应用）
+│   ├── src/main/java/com/postman/platform/
+│   │   ├── PostmanPlatformApplication.java  # Spring Boot 启动类
+│   │   ├── common/                        # 公共模块
+│   │   │   ├── response/
+│   │   │   │   └── ApiResponse.java       #   统一响应格式
+│   │   │   ├── exception/
+│   │   │   │   ├── BusinessException.java #   业务异常
+│   │   │   │   ├── GlobalExceptionHandler.java  #   全局异常处理
+│   │   │   │   └── ErrorCode.java         #   错误码枚举
+│   │   │   ├── config/
+│   │   │   │   ├── MyBatisPlusConfig.java #   MyBatis-Plus 全局配置
+│   │   │   │   ├── RedisConfig.java       #   Redis 序列化配置
+│   │   │   │   └── RabbitMQConfig.java    #   RabbitMQ 配置
+│   │   │   └── util/
+│   │   │       └── JsonUtils.java         #   JSON 工具类
+│   │   ├── auth/                           # 认证模块（M1）
+│   │   │   ├── controller/
+│   │   │   │   ├── AuthController.java
+│   │   │   │   ├── UserController.java
+│   │   │   │   └── SettingsController.java
+│   │   │   ├── service/
+│   │   │   │   ├── AuthService.java
+│   │   │   │   ├── UserService.java
+│   │   │   │   └── SettingsService.java
+│   │   │   ├── mapper/
+│   │   │   │   └── UserMapper.java
+│   │   │   ├── entity/
+│   │   │   │   └── User.java
+│   │   │   ├── dto/
+│   │   │   ├── security/
+│   │   │   │   ├── JwtTokenProvider.java
+│   │   │   │   ├── JwtAuthenticationFilter.java
+│   │   │   │   └── SecurityConfig.java
+│   │   │   └── config/
+│   │   │       └── WebMvcConfig.java      #   CORS 配置
+│   │   ├── project/                        # 项目管理模块（M2/M3）
+│   │   │   ├── controller/
+│   │   │   │   ├── ProjectController.java
+│   │   │   │   └── EnvironmentController.java
+│   │   │   ├── service/
+│   │   │   │   ├── ProjectService.java
+│   │   │   │   └── EnvironmentService.java
+│   │   │   ├── mapper/
+│   │   │   ├── entity/
+│   │   │   └── dto/
+│   │   ├── api/                            # 接口管理模块（M4）
+│   │   │   ├── controller/
+│   │   │   │   └── ApiController.java
+│   │   │   ├── service/
+│   │   │   │   ├── ApiService.java
+│   │   │   │   └── SwaggerImportService.java
+│   │   │   ├── mapper/
+│   │   │   ├── entity/
+│   │   │   └── dto/
+│   │   ├── keyword/                        # 关键字管理模块（M5/M6/M7）
+│   │   │   ├── controller/
+│   │   │   │   ├── KeywordController.java
+│   │   │   │   ├── ToolController.java
+│   │   │   │   └── ActionController.java
+│   │   │   ├── service/
+│   │   │   │   ├── KeywordService.java
+│   │   │   │   ├── ToolService.java
+│   │   │   │   └── ActionService.java
+│   │   │   ├── mapper/
+│   │   │   ├── entity/
+│   │   │   └── dto/
+│   │   ├── execution/                      # 执行与报告模块（M8/M9/M10）
+│   │   │   ├── controller/
+│   │   │   │   ├── SuiteController.java
+│   │   │   │   ├── CaseController.java
+│   │   │   │   ├── PlanController.java
+│   │   │   │   ├── ExecutionController.java
+│   │   │   │   └── AnalyticsController.java
+│   │   │   ├── service/
+│   │   │   │   ├── SuiteService.java
+│   │   │   │   ├── CaseService.java
+│   │   │   │   ├── ExecutionService.java
+│   │   │   │   ├── AnalyticsService.java
+│   │   │   │   └── ReportService.java
+│   │   │   ├── mapper/
+│   │   │   ├── entity/
+│   │   │   ├── dto/
+│   │   │   ├── engine/                     #   执行引擎核心包
+│   │   │   │   ├── KeywordExecutor.java    #     关键字执行器（统一入口，按类型分发）
+│   │   │   │   ├── HttpClientEngine.java   #     HTTP 客户端（OkHttp 4.12）
+│   │   │   │   ├── AssertionEngine.java    #     断言引擎（JSONPath + 断言 DSL）
+│   │   │   │   ├── SandboxEngine.java      #     工具方法沙箱（Groovy ScriptEngine）
+│   │   │   │   ├── SwaggerParserEngine.java #    Swagger 解析器
+│   │   │   │   └── ActionExecutor.java     #     Action 流程执行器（拓扑排序）
+│   │   │   ├── context/
+│   │   │   │   └── ExecutionContext.java    #     执行上下文（变量池、环境、步骤结果）
+│   │   │   ├── mq/
+│   │   │   │   ├── ExecutionMessageProducer.java
+│   │   │   │   └── ExecutionMessageConsumer.java
+│   │   │   ├── websocket/
+│   │   │   │   └── ExecutionWebSocket.java
+│   │   │   └── config/
+│   │   │       ├── AsyncConfig.java
+│   │   │       └── WebSocketConfig.java
+│   │   └── filter/                         # 全局过滤器
+│   │       └── CorsFilter.java
+│   ├── src/main/resources/
+│   │   ├── application.yml                 #   应用配置
+│   │   ├── application-dev.yml             #   开发环境配置
+│   │   ├── application-prod.yml            #   生产环境配置
+│   │   └── db/migration/                   #   Flyway 迁移脚本
+│   ├── pom.xml                             #   Maven POM
+│   └── Dockerfile
 │
-├── pp-gateway/                        # API 网关（Spring Cloud Gateway）
-│   ├── src/main/java/com/postman/platform/gateway/
-│   │   ├── GatewayApplication.java
-│   │   ├── config/
-│   │   │   └── RouteConfig.java       #   动态路由配置
-│   │   └── filter/
-│   │       └── AuthGlobalFilter.java  #   JWT 鉴权过滤器
-│   └── src/main/resources/
-│       ├── application.yml            #   路由规则 + Sentinel 限流
-│       └── bootstrap.yml              #   Nacos 连接配置
-│
-├── pp-auth/                           # 认证服务（M1）
-│   ├── src/main/java/com/postman/platform/auth/
-│   │   ├── AuthApplication.java
-│   │   ├── controller/
-│   │   │   ├── AuthController.java
-│   │   │   ├── UserController.java
-│   │   │   └── SettingsController.java
-│   │   ├── service/
-│   │   │   ├── AuthService.java
-│   │   │   ├── UserService.java
-│   │   │   └── SettingsService.java
-│   │   ├── mapper/
-│   │   │   └── UserMapper.java
-│   │   ├── entity/
-│   │   │   └── User.java
-│   │   ├── dto/
-│   │   ├── security/
-│   │   │   ├── JwtTokenProvider.java
-│   │   │   └── SecurityConfig.java
-│   │   └── config/
-│   └── src/main/resources/
-│       ├── application.yml
-│       ├── bootstrap.yml
-│       └── db/migration/
-│
-├── pp-core/                           # 核心服务（M2/M3/M4）
-│   ├── src/main/java/com/postman/platform/core/
-│   │   ├── CoreApplication.java
-│   │   ├── controller/
-│   │   │   ├── ProjectController.java
-│   │   │   ├── EnvironmentController.java
-│   │   │   └── ApiController.java
-│   │   ├── service/
-│   │   │   ├── ProjectService.java
-│   │   │   ├── EnvironmentService.java
-│   │   │   └── ApiService.java
-│   │   ├── mapper/
-│   │   ├── entity/
-│   │   ├── dto/
-│   │   └── feign/
-│   │       └── AuthFeignClient.java   #   调用认证服务
-│   └── src/main/resources/
-│       ├── application.yml
-│       ├── bootstrap.yml
-│       └── db/migration/
-│
-├── pp-keyword/                        # 关键字服务（M5/M6/M7）
-│   ├── src/main/java/com/postman/platform/keyword/
-│   │   ├── KeywordApplication.java
-│   │   ├── controller/
-│   │   │   ├── KeywordController.java
-│   │   │   ├── ToolController.java
-│   │   │   └── ActionController.java
-│   │   ├── service/
-│   │   │   ├── KeywordService.java
-│   │   │   ├── ToolService.java
-│   │   │   └── ActionService.java
-│   │   ├── mapper/
-│   │   ├── entity/
-│   │   ├── dto/
-│   │   └── feign/
-│   │       └── CoreFeignClient.java   #   调用核心服务
-│   └── src/main/resources/
-│       ├── application.yml
-│       ├── bootstrap.yml
-│       └── db/migration/
-│
-├── pp-execution/                      # 执行服务（M8/M9/M10）
-│   ├── src/main/java/com/postman/platform/execution/
-│   │   ├── ExecutionApplication.java
-│   │   ├── controller/
-│   │   │   ├── SuiteController.java
-│   │   │   ├── CaseController.java
-│   │   │   ├── PlanController.java
-│   │   │   ├── ExecutionController.java
-│   │   │   └── AnalyticsController.java
-│   │   ├── service/
-│   │   │   ├── SuiteService.java
-│   │   │   ├── CaseService.java
-│   │   │   ├── ExecutionService.java
-│   │   │   ├── AnalyticsService.java
-│   │   │   └── ReportService.java
-│   │   ├── mapper/
-│   │   ├── entity/
-│   │   ├── dto/
-│   │   ├── feign/
-│   │   │   ├── CoreFeignClient.java
-│   │   │   └── KeywordFeignClient.java
-│   │   ├── engine/                     #   执行引擎核心包
-│   │   │   ├── KeywordExecutor.java    #     关键字执行器（统一入口，按类型分发）
-│   │   │   ├── HttpClientEngine.java   #     HTTP 客户端（OkHttp 4.12）
-│   │   │   ├── AssertionEngine.java    #     断言引擎（JSONPath + 断言 DSL）
-│   │   │   ├── SandboxEngine.java      #     工具方法沙箱（Groovy ScriptEngine）
-│   │   │   ├── SwaggerParserEngine.java #    Swagger 解析器
-│   │   │   └── ActionExecutor.java     #     Action 流程执行器（拓扑排序）
-│   │   ├── context/
-│   │   │   └── ExecutionContext.java    #     执行上下文（变量池、环境、步骤结果）
-│   │   ├── mq/
-│   │   │   ├── ExecutionMessageProducer.java
-│   │   │   └── ExecutionMessageConsumer.java
-│   │   ├── websocket/
-│   │   │   └── ExecutionWebSocket.java
-│   │   └── config/
-│   │       ├── RabbitMQConfig.java
-│   │       ├── AsyncConfig.java
-│   │       └── WebSocketConfig.java
-│   └── src/main/resources/
-│       ├── application.yml
-│       ├── bootstrap.yml
-│       └── db/migration/
-│
-├── pom.xml                            # Maven 父 POM（多模块管理）
+├── pom.xml                            # Maven POM（后端父工程）
 ├── docker-compose.yml
 ├── docker-compose.prod.yml
 ├── nginx/
@@ -265,10 +239,10 @@ postman-platform/
 
 ### 2.2 数据库连接与连接池
 
-> 所有 Java 微服务共享同一个 MySQL 实例，各服务通过 Nacos 配置中心统一管理数据库连接参数。以下为公共配置模板：
+> 后端单体应用使用同一个 MySQL 实例，通过 application.yml 统一管理数据库连接参数。以下为公共配置模板：
 
 ```yaml
-# 通过 Nacos 配置中心统一管理，各微服务 bootstrap.yml 引入
+# application.yml 配置
 
 spring:
   datasource:
@@ -299,9 +273,9 @@ mybatis-plus:
 
 **设计要点：**
 - 使用 HikariCP 连接池（Spring Boot 默认），高性能、低延迟
-- 数据库连接参数通过 Nacos 配置中心统一管理，各微服务通过 `${DB_*}` 环境变量覆盖
+- 数据库连接参数通过 application.yml 配置，支持 `${DB_*}` 环境变量覆盖
 - `max-lifetime` 设置为 30 分钟，远低于 MySQL 8 小时空闲超时，避免连接被服务端主动断开
-- MyBatis-Plus 全局配置 UUID 主键、驼峰映射和软删除（pp-common 模块统一配置）
+- MyBatis-Plus 全局配置 UUID 主键、驼峰映射和软删除（common 包统一配置）
 
 ### 2.3 统一响应格式与错误码
 
@@ -362,10 +336,10 @@ public class ApiResponse<T> {
 
 ### 2.4 认证中间件
 
-> 认证分为两层：pp-gateway 的 AuthGlobalFilter 负责 JWT 解析和透传用户信息；pp-auth 负责 Token 签发/刷新和用户管理。
+> 认证通过全局过滤器 JwtAuthenticationFilter 负责 JWT 解析和验证，auth 模块负责 Token 签发/刷新和用户管理。
 
 ```java
-// pp-gateway: src/main/java/com/postman/platform/gateway/filter/AuthGlobalFilter.java
+// backend/src/main/java/com/postman/platform/auth/security/JwtTokenProvider.java
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -417,7 +391,7 @@ public class JwtTokenProvider {
 ```
 
 ```java
-// pp-auth: src/main/java/com/postman/platform/auth/security/JwtTokenProvider.java
+// backend/src/main/java/com/postman/platform/auth/security/JwtAuthenticationFilter.java
 
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
@@ -462,7 +436,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 ### 2.5 全局异常处理器
 
 ```java
-// pp-auth: src/main/java/com/postman/platform/auth/security/SecurityConfig.java
+// backend/src/main/java/com/postman/platform/auth/security/SecurityConfig.java
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -503,7 +477,7 @@ public class GlobalExceptionHandler {
 ```
 
 ```java
-// pp-common: src/main/java/com/postman/platform/common/exception/BusinessException.java
+// backend/src/main/java/com/postman/platform/common/exception/BusinessException.java
 
 public class BusinessException extends RuntimeException {
     private final int code;
@@ -535,7 +509,7 @@ public class NotFoundException extends BusinessException {
 ### 2.6 数据库实体基类
 
 ```java
-// pp-common: src/main/java/com/postman/platform/common/entity/BaseEntity.java
+// backend/src/main/java/com/postman/platform/common/entity/BaseEntity.java
 
 import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;
@@ -648,7 +622,7 @@ export function useWebSocket(url: string) {
 使用 Flyway 管理数据库 Schema 变更：
 
 ```bash
-# 迁移脚本命名规范（放在各微服务的 src/main/resources/db/migration/ 目录）
+# 迁移脚本命名规范（放在 backend/src/main/resources/db/migration/ 目录）
 V1__create_user_table.sql
 V2__create_global_settings_table.sql
 V3__create_project_table.sql

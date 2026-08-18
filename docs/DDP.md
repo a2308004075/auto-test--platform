@@ -1,4 +1,4 @@
-# postman-platform 开发环境准备 SOP
+qu# postman-platform 开发环境准备 SOP
 
 > 版本：v1.1  
 > 适用对象：编程初学者 / 项目新成员  
@@ -11,7 +11,7 @@
 
 - [一、总览：你需要准备什么](#一总览你需要准备什么)
 - [二、基础软件安装](#二基础软件安装)
-  - [2.1 JDK 1.8 验证](#21-jdk-18-验证)
+  - [2.1 JDK 1.8 安装与验证](#21-jdk-18-安装与验证)
   - [2.2 Node.js 安装](#22-nodejs-安装)
   - [2.3 Git 安装与配置](#23-git-安装与配置)
   - [2.4 IntelliJ IDEA 安装与配置](#24-intellij-idea-安装与配置)
@@ -30,7 +30,7 @@
     - [B.3 RabbitMQ 安装](#b3-rabbitmq-安装)
     - [B.4 各中间件访问信息汇总](#b4-各中间件访问信息汇总)
 - [四、后端项目工程搭建](#四后端项目工程搭建)
-  - [4.1 项目结构](#41-项目结构)
+  - [4.1 Maven 多模块项目结构](#41-maven-多模块项目结构)
   - [4.2 Maven POM 配置](#42-maven-pom-配置)
   - [4.3 包结构创建顺序](#43-包结构创建顺序)
   - [4.4 IDEA 后端项目导入](#44-idea-后端项目导入)
@@ -72,34 +72,64 @@
 
 ## 二、基础软件安装
 
-### 2.1 JDK 1.8 验证
+### 2.1 JDK 1.8 安装与验证
 
-后端使用 Java 1.8 版本，你的系统中已安装 JDK 1.8.0_451（`D:\software\jdk-1.8`）。
+后端使用 Java 1.8 版本，推荐安装 JDK 1.8.0_451 或更新版本。
 
-**步骤：**
+#### 第 1 步：下载 JDK
 
-1. **验证安装**：打开 PowerShell，执行：
-   ```powershell
-   java -version
-   javac -version
+**方式一：Oracle JDK（官方）**
+
+```
+https://www.oracle.com/java/technologies/javase/javase8u211-later-archive-downloads.html
+```
+
+> ⚠️ Oracle JDK 8 较新更新版本需要登录 Oracle 账号才能下载（免费注册）。
+
+**方式二（推荐）：免费 OpenJDK 发行版（无需登录，国内下载更快）**
+
+| 发行版 | 说明 | 国内下载地址 |
+|--------|------|-------------|
+| **Adoptium Temurin** | Eclipse 基金会维护，社区主流，完全兼容 Oracle JDK | 清华 TUNA：https://mirrors.tuna.tsinghua.edu.cn/Adoptium/8/jdk/x64/windows/ （选择 `.msi` 或 `.zip` 文件） |
+| **Amazon Corretto 8** | 亚马逊维护，免费商用，长期支持 | https://corretto.aws/corretto-8-Downloads.html （选择 `Windows x64 JDK` `.msi` 或 `.zip`） |
+| **Alibaba Dragonwell 8** | 阿里巴巴维护，针对国内优化，免费商用 | https://dragonwell-jdk.io/ （选择 Windows x64 版本） |
+
+> **说明**：以上三个发行版均完全兼容 Java 8 标准，可无缝替代 Oracle JDK，后端代码无需任何修改。**推荐优先使用 Adoptium Temurin**，清华镜像下载速度最快。
+
+#### 第 2 步：安装
+
+- 如果下载的是 `.msi` 安装包，双击运行，选择安装路径为 `D:\software\jdk-1.8`
+- 如果下载的是 `.zip` 压缩包，解压到 `D:\software\jdk-1.8`
+
+#### 第 3 步：配置环境变量
+
+1. 右键「此电脑」→「属性」→「高级系统设置」→「环境变量」
+2. 新建系统变量：
    ```
-   应显示 `java version "1.8.0_451"` 或类似版本号。
-
-2. **确认 JAVA_HOME 环境变量**：
-   ```powershell
-   echo $env:JAVA_HOME
+   变量名：JAVA_HOME
+   变量值：D:\software\jdk-1.8
    ```
-   应显示 `D:\software\jdk-1.8`。如果为空，需要手动配置：
-   - 右键「此电脑」→「属性」→「高级系统设置」→「环境变量」
-   - 新建系统变量：
-     ```
-     变量名：JAVA_HOME
-     变量值：D:\software\jdk-1.8
-     ```
-   - 编辑 `Path` 变量，添加：
-     ```
-     %JAVA_HOME%\bin
-     ```
+3. 编辑 `Path` 变量，添加：
+   ```
+   %JAVA_HOME%\bin
+   ```
+
+#### 第 4 步：验证安装
+
+打开 PowerShell，执行：
+
+```powershell
+java -version
+javac -version
+```
+
+应显示 `java version "1.8.0_xxx"` 或类似版本号（如 Temurin 可能显示 `openjdk version "1.8.0_xxx"`，这是正常的）。
+
+```powershell
+echo $env:JAVA_HOME
+```
+
+应显示 `D:\software\jdk-1.8`。
 
 ---
 
@@ -144,25 +174,38 @@
 
 ### 2.3 Git 安装与配置
 
-你的系统中已经安装了 Git（`C:\Program Files\Git\cmd\git.exe`），只需确认配置即可。
+#### 第 1 步：下载 Git
 
-**步骤：**
+**官方地址**：
+```
+https://git-scm.com/downloads
+```
+选择 `Windows` 版本下载并安装。
 
-1. **验证安装**：
-   ```powershell
-   git --version
-   ```
+> **国内加速下载**：如果官网下载速度慢，可使用以下国内镜像：
+> - 淘宝镜像：https://registry.npmmirror.com/binary.html?path=git-for-windows/ （选择最新版本目录下的 `Git-*-64-bit.exe` 文件）
+> - 华为云镜像：https://mirrors.huaweicloud.com/git-for-windows/ （选择最新版本目录下的 `Git-*-64-bit.exe` 文件）
+> - 清华 TUNA 镜像：https://mirrors.tuna.tsinghua.edu.cn/github-release/git-for-windows/git/ （选择最新版本的 `.exe` 安装包）
 
-2. **配置用户信息**（如未配置过）：
-   ```powershell
-   git config --global user.name "你的姓名"
-   git config --global user.email "你的邮箱@example.com"
-   ```
+#### 第 2 步：验证安装
 
-3. **配置换行符**（Windows 开发必备）：
-   ```powershell
-   git config --global core.autocrlf true
-   ```
+```powershell
+git --version
+```
+
+#### 第 3 步：配置用户信息
+
+如未配置过：
+```powershell
+git config --global user.name "你的姓名"
+git config --global user.email "你的邮箱@example.com"
+```
+
+#### 第 4 步：配置换行符（Windows 开发必备）
+
+```powershell
+git config --global core.autocrlf true
+```
 
 ---
 
@@ -642,13 +685,26 @@ D:\software\redis\redis-cli.exe PING
 
 RabbitMQ 依赖 **Erlang 运行时环境**，需要先安装 Erlang，再安装 RabbitMQ。两者都使用 ZIP 解压方式，无需管理员权限。
 
+> **⚠️ 版本兼容关系（非常重要）**
+>
+> RabbitMQ 与 Erlang 版本必须匹配，版本不兼容会导致启动失败（例如 `incompatible_feature_flags` / `unknown_instruction` 错误）。
+>
+> | RabbitMQ 版本 | 兼容的 Erlang 版本 | 说明 |
+> |--------------|-------------------|------|
+> | **3.13.x** | **26.0 ~ 26.2.x** | 推荐组合，与 Spring Boot 2.7 兼容性最好 |
+> | **4.0.x ~ 4.1.x** | **26.2 ~ 27.x** | 需要 Erlang 26.2 起步 |
+> | **4.2.x ~ 4.3.x** | **27.0 ~ 27.x** | 需要 Erlang 27 起步，**不支持 Erlang 28/29** |
+>
+> **本项目推荐**：RabbitMQ `3.13.x` + Erlang `26.2.x`。如果你已确定使用 RabbitMQ 4.3.4，则必须搭配 Erlang `27.x`（如 27.3.x），**切勿使用 Erlang 28 或 29**。
+
 #### 第 1 步：下载 Erlang
 
 ```
 https://www.erlang.org/downloads
 ```
 
-- 选择 `Windows 64-bit Binary File`（如 `OTP-26.x.x_win64.exe`）
+- 根据上面表格选择对应的 Erlang 大版本
+- 选择 `Windows 64-bit Binary File`（如 `OTP-26.2.x_win64.exe` 或 `OTP-27.x.x_win64.exe`）
 - 这是一个自解压安装包，运行后选择安装到 `D:\software\erlang`
 > 如果 .exe 安装器要求管理员权限，可以尝试从 https://github.com/erlang/otp/releases 下载 `otp_win64_x.x.zip` 手动解压到 `D:\software\erlang`。GitHub 下载加速可参考上方 Redis 章节中的 GitHub 加速代理方法。
 
@@ -658,7 +714,7 @@ https://www.erlang.org/downloads
 https://github.com/rabbitmq/rabbitmq-server/releases
 ```
 
-- 选择最新 3.x 版本
+- 根据上面表格选择 RabbitMQ 版本
 - 下载 `rabbitmq-server-windows-x86_64-x.x.x.zip`（注意是 ZIP 格式，不是 exe）
 
 > **国内加速下载**：如果 GitHub 下载速度慢，可使用 GitHub 加速代理（方法同 Redis 章节）：
@@ -1188,6 +1244,7 @@ export default defineConfig({
 ### Q7：RabbitMQ 启动失败（方式 B）
 
 **常见原因及解决方法**：
+- **Erlang 与 RabbitMQ 版本不兼容**：如果日志中出现 `incompatible_feature_flags`、`horus`、`extraction_denied` 或 `unknown_instruction` 等关键字，说明 Erlang 版本与 RabbitMQ 不匹配。请参考 §B.3 中的版本兼容表重新安装对应版本。例如 RabbitMQ 4.3.4 必须使用 Erlang 27.x，**不能使用 Erlang 28/29**。
 - **找不到 Erlang**：确认 `$env:ERLANG_HOME` 已正确设置，且路径下有 `bin\erl.exe`：
   ```powershell
   Test-Path "$env:ERLANG_HOME\bin\erl.exe"

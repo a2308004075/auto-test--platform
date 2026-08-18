@@ -115,6 +115,11 @@
    ```
    选择 `Windows Installer (.msi)` 下载并安装。
 
+   > **国内加速下载**：如果官网下载速度慢，可使用以下国内镜像：
+   > - 华为云镜像：https://mirrors.huaweicloud.com/nodejs/ （选择对应版本目录下的 `.msi` 文件）
+   > - 淘宝镜像：https://npmmirror.com/mirrors/node/ （选择对应版本目录下的 `.msi` 文件）
+   > - 清华 TUNA 镜像：https://mirrors.tuna.tsinghua.edu.cn/nodejs-release/ （选择对应版本目录下的 `.msi` 文件）
+
 2. 安装时勾选「Automatically install necessary tools」选项。
 
 3. **验证安装**：打开 PowerShell，执行：
@@ -196,7 +201,12 @@
 
 IDEA 自带 Maven，但建议使用外部 Maven 以获得更好的控制：
 
-1. 下载 Maven：https://maven.apache.org/download.cgi （选择 `Binary zip archive`）
+1. 下载 Maven：
+   - **官方地址**：https://maven.apache.org/download.cgi （选择 `Binary zip archive`）
+   - **国内加速下载**（推荐）：
+     - 阿里云镜像：https://mirrors.aliyun.com/apache/maven/maven-3/ （选择最新 3.9.x 版本目录下的 `-bin.zip` 文件）
+     - 清华 TUNA 镜像：https://mirrors.tuna.tsinghua.edu.cn/apache/maven/maven-3/ （选择最新 3.9.x 版本目录下的 `-bin.zip` 文件）
+     - 华为云镜像：https://mirrors.huaweicloud.com/apache/maven/maven-3/ （选择最新 3.9.x 版本目录下的 `-bin.zip` 文件）
 2. 解压到 `D:\software\apache-maven-3.9.x`（路径不要有中文和空格）
 3. 配置环境变量：
    ```
@@ -260,6 +270,10 @@ IDEA 自带 Maven，但建议使用外部 Maven 以获得更好的控制：
    ```
    https://www.docker.com/products/docker-desktop/
    ```
+
+   > **国内加速下载**：如果官网下载速度慢，可使用以下国内镜像：
+   > - 阿里云镜像：https://mirrors.aliyun.com/docker-toolbox/windows/docker-for-windows/ （选择最新版本 `.exe` 文件）
+   > - 中科大镜像：https://mirrors.ustc.edu.cn/docker-ce/ （需进入对应目录查找安装包）
 
 2. 安装前确保：
    - Windows 11 已启用 **WSL 2**（Windows Subsystem for Linux 2）
@@ -472,6 +486,11 @@ https://dev.mysql.com/downloads/mysql/
 - 下载 8.0.x 版本（如 `mysql-8.0.xx-winx64.zip`）
 - 文件大小约 200MB+
 
+> **国内加速下载**：如果官网下载速度慢，可使用以下国内镜像：
+> - 华为云镜像：https://mirrors.huaweicloud.com/mysql/Downloads/MySQL-8.0/ （选择 `mysql-8.0.xx-winx64.zip`）
+> - 清华 TUNA 镜像：https://mirrors.tuna.tsinghua.edu.cn/mysql/downloads/MySQL-8.0/ （选择 `mysql-8.0.xx-winx64.zip`）
+> - 中科大镜像：https://mirrors.ustc.edu.cn/mysql-ftp/Downloads/MySQL-8.0/ （选择 `mysql-8.0.xx-winx64.zip`）
+
 > **免登录提示**：页面底部有 `No thanks, just start my download.` 链接，点击即可跳过 Oracle 账号登录。
 
 #### 第 2 步：解压
@@ -577,6 +596,16 @@ https://github.com/tporadowski/redis/releases
 - 选择最新稳定版（如 5.0.14.1 或更新）
 - 下载 `Redis-x64-x.x.x.zip`（ZIP 格式，非 MSI）
 
+> **国内加速下载**：如果 GitHub 下载速度慢，可使用 GitHub 加速代理：
+> - ghfast 加速：将下载链接前缀替换为 `https://ghfast.top/`，例如：
+>   ```
+>   https://ghfast.top/https://github.com/tporadowski/redis/releases/download/v5.0.14.1/Redis-x64-5.0.14.1.zip
+>   ```
+> - ghproxy 加速：将下载链接前缀替换为 `https://gh-proxy.com/`，例如：
+>   ```
+>   https://gh-proxy.com/https://github.com/tporadowski/redis/releases/download/v5.0.14.1/Redis-x64-5.0.14.1.zip
+>   ```
+
 > **备选方案**：如果上述链接不可用，也可以使用 **Memurai**（Redis 兼容的 Windows 原生服务器）：
 > ```
 > https://www.memurai.com/get-memurai
@@ -621,8 +650,7 @@ https://www.erlang.org/downloads
 
 - 选择 `Windows 64-bit Binary File`（如 `OTP-26.x.x_win64.exe`）
 - 这是一个自解压安装包，运行后选择安装到 `D:\software\erlang`
-
-> 如果 .exe 安装器要求管理员权限，可以尝试从 https://github.com/erlang/otp/releases 下载 `otp_win64_x.x.zip` 手动解压到 `D:\software\erlang`。
+> 如果 .exe 安装器要求管理员权限，可以尝试从 https://github.com/erlang/otp/releases 下载 `otp_win64_x.x.zip` 手动解压到 `D:\software\erlang`。GitHub 下载加速可参考上方 Redis 章节中的 GitHub 加速代理方法。
 
 #### 第 2 步：下载 RabbitMQ
 
@@ -632,6 +660,15 @@ https://github.com/rabbitmq/rabbitmq-server/releases
 
 - 选择最新 3.x 版本
 - 下载 `rabbitmq-server-windows-x86_64-x.x.x.zip`（注意是 ZIP 格式，不是 exe）
+
+> **国内加速下载**：如果 GitHub 下载速度慢，可使用 GitHub 加速代理（方法同 Redis 章节）：
+> - ghfast 加速：在下载链接前加 `https://ghfast.top/`
+> - ghproxy 加速：在下载链接前加 `https://gh-proxy.com/`
+> 
+> 例如：
+> ```
+> https://ghfast.top/https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.13.x/rabbitmq-server-windows-x86_64-3.13.x.zip
+> ```
 
 #### 第 3 步：解压
 

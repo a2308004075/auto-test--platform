@@ -1,4 +1,4 @@
-# postman-platform 需求规格说明书
+# auto-test-platform 需求规格说明书
 
 > 版本：v1.3 | 通用关键字驱动测试管理平台（通用化修订）  
 > 文档状态：修订稿
@@ -9,7 +9,7 @@
 
 ### 1.1 项目背景
 
-postman-platform 是一个**通用的关键字驱动测试管理平台**，面向任意行业的 HTTP API 自动化测试场景，不绑定特定业务领域。平台提供 Web 化的全流程管理能力，覆盖接口管理、关键字编排、用例组织、执行调度和报告分析。
+auto-test-platform 是一个**通用的关键字驱动测试管理平台**，面向任意行业的 HTTP API 自动化测试场景，不绑定特定业务领域。平台提供 Web 化的全流程管理能力，覆盖接口管理、关键字编排、用例组织、执行调度和报告分析。
 
 平台的核心引擎源自 **postman-tool**——一个面向乘用车换电站站控系统的自动化测试工具（基于 Python 3.6.8 开发，采用关键字驱动测试方法论，通过四层业务模型组织测试代码）。引擎经过通用化抽象改造后，已脱离原始业务绑定，可服务于任意项目的关键字驱动测试。
 
@@ -33,7 +33,7 @@ postman-tool 引擎具备以下核心能力：
 
 ### 1.2 项目目标
 
-基于 postman-tool 的核心引擎，开发 **postman-platform**——一个通用的关键字驱动测试管理平台，提供 Web 化全流程管理能力：
+基于 postman-tool 的核心引擎，开发 **auto-test-platform**——一个通用的关键字驱动测试管理平台，提供 Web 化全流程管理能力：
 
 1. **关键字可视化操作**：在线浏览、搜索、管理关键字字典
 2. **测试用例编排**：拖拽式用例编排，支持参数化配置
@@ -84,7 +84,7 @@ postman-tool 引擎具备以下核心能力：
 
 ### 1.5 postman-tool 引擎参考实现
 
-> 以下基于 postman-tool 源码（refact-1.1 分支）的深入分析，展示引擎的具体实现方式，为平台引擎复用提供参考。postman-platform 作为通用测试平台，不绑定以下特定业务细节；这些内容仅作为引擎能力的一个实现示例。
+> 以下基于 postman-tool 源码（refact-1.1 分支）的深入分析，展示引擎的具体实现方式，为平台引擎复用提供参考。auto-test-platform 作为通用测试平台，不绑定以下特定业务细节；这些内容仅作为引擎能力的一个实现示例。
 
 #### 1.5.1 项目目录结构
 
@@ -759,7 +759,7 @@ TestResult N──1 TestCase
 
 ### 3.3 后端架构与执行引擎说明
 
-> postman-platform 后端采用 **Java 1.8 + Spring Boot 2.7** 单体应用架构，所有功能模块打包在一个 Spring Boot 应用中，执行引擎内嵌于应用内部，无外部 Python 依赖。
+> auto-test-platform 后端采用 **Java 1.8 + Spring Boot 2.7** 单体应用架构，所有功能模块打包在一个 Spring Boot 应用中，执行引擎内嵌于应用内部，无外部 Python 依赖。
 >
 > **后端服务包含以下功能模块：**
 >
@@ -1631,7 +1631,7 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 
 ### 7.1 引擎层抽取
 
-将 postman-tool 的 `common/` 目录抽取为独立 Python 包 `postman-engine`，作为 postman-platform 后端的内部依赖。以下模块直接复用源码，无需重写：
+将 postman-tool 的 `common/` 目录抽取为独立 Python 包 `postman-engine`，作为 auto-test-platform 后端的内部依赖。以下模块直接复用源码，无需重写：
 
 ```
 postman-engine/
@@ -1707,7 +1707,7 @@ Web 触发执行
 ### 7.4 引擎依赖关系
 
 ```
-postman-platform 后端服务 (Java / Spring Boot)
+auto-test-platform 后端服务 (Java / Spring Boot)
   ├── controller/  → REST API 层，接收前端请求
   ├── service/     → 业务逻辑层（M1~M10 所有模块）
   │     └── 模块间直接通过 Spring Bean 调用，无网络开销
@@ -1765,7 +1765,7 @@ postman-platform 后端服务 (Java / Spring Boot)
 ## 9. 项目目录结构
 
 ```
-postman-platform/
+auto-test-platform/
 ├── frontend/                       # 前端项目（Vue 3 SPA）
 │   ├── src/
 │   │   ├── api/                    #   API 接口定义

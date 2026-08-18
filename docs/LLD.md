@@ -1,8 +1,8 @@
-# postman-platform 详细设计文档
+# auto-test-platform 详细设计文档
 
 > 版本：v1.0  
 > 文档状态：初稿  
-> 基线文档：[SRS v1.3](./SRS.md) | [PRD V1.17](./PRD.md) | [HLD v1.0](./HLD.md) | [UI 原型](./ui/)
+> 基线文档：[SRS v1.3](./SRS.md) | [PRD V1.17](./PRD.md) | [HLD v1.0](./HLD.md) | [UI 原型](./ui/index.html)
 
 ---
 
@@ -10,7 +10,7 @@
 
 ### 1.1 文档目的
 
-本文档是 postman-platform 的详细设计文档（Low-Level Design），在概要设计文档（HLD）的基础上，对每个模块进行内部架构设计、类与接口签名定义、数据库完整 DDL、关键算法伪代码、错误处理和测试边界描述，为编码实现提供直接指导。
+本文档是 auto-test-platform 的详细设计文档（Low-Level Design），在概要设计文档（HLD）的基础上，对每个模块进行内部架构设计、类与接口签名定义、数据库完整 DDL、关键算法伪代码、错误处理和测试边界描述，为编码实现提供直接指导。
 
 ### 1.2 基线文档
 
@@ -19,7 +19,7 @@
 | [需求规格说明书 SRS](./SRS.md) | v1.3 | 数据模型、引擎复用方案、非功能需求的权威来源 |
 | [产品需求文档 PRD](./PRD.md) | V1.17 | 业务规则、操作步骤、字段说明、接口协议的权威来源 |
 | [概要设计文档 HLD](./HLD.md) | v1.0 | 模块划分、依赖关系、接口契约的直接上游 |
-| [UI 原型](./ui/) | v1.0 | 26 个核心页面的 HTML 高保真原型 |
+| [UI 原型](./ui/index.html) | v1.0 | 26 个核心页面的 HTML 高保真原型 |
 
 ### 1.3 术语约定
 
@@ -54,7 +54,7 @@
 ### 2.1 项目目录结构
 
 ```
-postman-platform/
+auto-test-platform/
 ├── frontend/                          # 前端项目（Vue 3 + TypeScript + Vite）
 │   ├── src/
 │   │   ├── api/                       # API 接口封装（按模块分文件）

@@ -1,8 +1,8 @@
-# postman-platform 概要设计文档
+# auto-test-platform 概要设计文档
 
 > 版本：v1.0  
 > 文档状态：初稿  
-> 基线文档：[SRS v1.3](./SRS.md) | [PRD V1.17](./PRD.md) | [UI 原型](./ui/)
+> 基线文档：[SRS v1.3](./SRS.md) | [PRD V1.17](./PRD.md) | [UI 原型](./ui/index.html)
 
 ---
 
@@ -10,11 +10,11 @@
 
 ### 1.1 文档目的
 
-本文档是 postman-platform 的概要设计文档（High-Level Design），在需求规格说明书（SRS）和产品需求文档（PRD）的基础上，对系统进行模块划分、明确各模块的职责边界与对外接口、描述模块间的依赖关系和数据流转，为后续详细设计和编码提供架构级指导。
+本文档是 auto-test-platform 的概要设计文档（High-Level Design），在需求规格说明书（SRS）和产品需求文档（PRD）的基础上，对系统进行模块划分、明确各模块的职责边界与对外接口、描述模块间的依赖关系和数据流转，为后续详细设计和编码提供架构级指导。
 
 ### 1.2 项目概述
 
-postman-platform 是一个**通用的关键字驱动测试管理平台**，面向任意行业的 HTTP API 自动化测试场景。平台基于 postman-tool 核心引擎，提供 Web 化的全流程管理能力，覆盖接口管理、关键字编排、用例组织、执行调度和报告分析。
+auto-test-platform 是一个**通用的关键字驱动测试管理平台**，面向任意行业的 HTTP API 自动化测试场景。平台基于 postman-tool 核心引擎，提供 Web 化的全流程管理能力，覆盖接口管理、关键字编排、用例组织、执行调度和报告分析。
 
 核心设计思想为**四层封装体系**：
 
@@ -972,7 +972,7 @@ Keyword
 |---|---|---|
 | 需求规格说明书 | [SRS.md](./SRS.md) | 技术架构、数据模型、API 设计、引擎复用方案、非功能需求 |
 | 产品需求文档 | [PRD.md](./PRD.md) | 功能需求规范（PM/ENV/API/KW/TOOL/ACT/CASE/EXEC/RPT/AUTH/SET）、UI 设计规范 |
-| UI 原型 | [docs/ui/](./ui/) | 26 个核心页面的 HTML 高保真原型 |
+| UI 原型 | [docs/ui/](./ui/index.html) | 26 个核心页面的 HTML 高保真原型 |
 
 ### 9.3 开发里程碑参照
 

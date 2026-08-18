@@ -1,4 +1,4 @@
-qu# postman-platform 开发环境准备 SOP
+# auto-test-platform 开发环境准备 SOP
 
 > 版本：v1.1  
 > 适用对象：编程初学者 / 项目新成员  
@@ -353,7 +353,7 @@ IDEA 自带 Maven，但建议使用外部 Maven 以获得更好的控制：
 
 ### A.2 MySQL 8.0 启动
 
-在项目根目录 `D:\develop\postman-platform` 下创建 `docker` 文件夹，用于存放 Docker 配置。
+在项目根目录 `D:\develop\auto-test-platform` 下创建 `docker` 文件夹，用于存放 Docker 配置。
 
 先单独启动 MySQL 验证：
 
@@ -482,13 +482,13 @@ volumes:
 
 **一键启动**：
 ```powershell
-cd D:\develop\postman-platform\docker
+cd D:\develop\auto-test-platform\docker
 docker compose up -d
 ```
 
 **一键停止**：
 ```powershell
-cd D:\develop\postman-platform\docker
+cd D:\develop\auto-test-platform\docker
 docker compose down
 ```
 
@@ -797,7 +797,7 @@ D:\software\rabbitmq\sbin\rabbitmq-server.bat
 后端采用 Spring Boot 单体应用结构，所有功能模块打包在同一个 Maven 工程中。目标目录结构如下：
 
 ```
-postman-platform/                  ← 项目根目录（已有）
+auto-test-platform/                  ← 项目根目录（已有）
 ├── backend/                       ← 后端工程（新建，Spring Boot 单体应用）
 │   ├── pom.xml                    ← Maven POM（Spring Boot 应用）
 │   └── src/main/
@@ -837,10 +837,10 @@ postman-platform/                  ← 项目根目录（已有）
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.postman</groupId>
-    <artifactId>postman-platform</artifactId>
+    <artifactId>auto-test-platform</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>postman-platform</name>
+    <name>auto-test-platform</name>
     <description>关键字驱动测试管理平台</description>
 
     <!-- 版本统一管理 -->
@@ -965,7 +965,7 @@ postman-platform/                  ← 项目根目录（已有）
 ### 4.4 IDEA 后端项目导入
 
 1. 打开 IDEA → `File` → `Open`
-2. 选择 `D:\develop\postman-platform\backend` 目录
+2. 选择 `D:\develop\auto-test-platform\backend` 目录
 3. 选择 `Open as Project`
 4. 等待 IDEA 自动下载 Maven 依赖（右下角进度条，首次可能需要 5-10 分钟）
 5. 确认 `Project Structure` → `Project SDK` 设置为 JDK 1.8
@@ -989,7 +989,7 @@ postman-platform/                  ← 项目根目录（已有）
 打开 PowerShell，执行：
 
 ```powershell
-cd D:\develop\postman-platform
+cd D:\develop\auto-test-platform
 npm create vite@latest frontend -- --template vue-ts
 ```
 
@@ -1000,7 +1000,7 @@ npm create vite@latest frontend -- --template vue-ts
 ### 5.2 安装核心依赖
 
 ```powershell
-cd D:\develop\postman-platform\frontend
+cd D:\develop\auto-test-platform\frontend
 
 # 安装基础依赖
 pnpm install
@@ -1078,12 +1078,12 @@ frontend/
 ### 5.4 IDEA 前端项目导入
 
 1. 打开 IDEA → `File` → `Open`
-2. 选择 `D:\develop\postman-platform\frontend` 目录
+2. 选择 `D:\develop\auto-test-platform\frontend` 目录
 3. 选择 `Open as Project`
 4. IDEA 会自动识别为 Vue 项目（需已安装 Vue.js 插件）
 5. 打开内置终端（`Alt + F12`）或外部 PowerShell，运行：
    ```powershell
-   cd D:\develop\postman-platform\frontend
+   cd D:\develop\auto-test-platform\frontend
    pnpm dev
    ```
 
@@ -1095,7 +1095,7 @@ frontend/
 
 在 PowerShell 中执行：
 ```powershell
-cd D:\develop\postman-platform\frontend
+cd D:\develop\auto-test-platform\frontend
 pnpm dev
 ```
 

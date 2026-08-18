@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI 原型目录 - auto-test-platform</title>
+    <link rel="stylesheet" href="./common/shared-styles.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 24px;
+            color: rgba(0,0,0,.88);
+        }
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        .subtitle {
+            color: rgba(0,0,0,.45);
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+        .module-group {
+            background: #fff;
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,.06);
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .module-title {
+            font-size: 15px;
+            font-weight: 600;
+            padding: 14px 20px;
+            background: #fafafa;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .module-title .icon {
+            font-size: 16px;
+        }
+        .module-title .badge {
+            background: #e6f4ff;
+            color: #1890ff;
+            font-size: 12px;
+            padding: 1px 8px;
+            border-radius: 10px;
+            font-weight: 400;
+            margin-left: auto;
+        }
+        .page-list {
+            list-style: none;
+            margin: 0;
+            padding: 8px 0;
+        }
+        .page-list li {
+            padding: 0;
+        }
+        .page-list a {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            color: rgba(0,0,0,.88);
+            text-decoration: none;
+            font-size: 14px;
+            transition: background .15s;
+            gap: 10px;
+        }
+        .page-list a:hover {
+            background: #e6f4ff;
+            color: #1890ff;
+        }
+        .page-list a .file-icon {
+            color: rgba(0,0,0,.25);
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .page-list a .page-name {
+            flex: 1;
+        }
+        .page-list a .page-desc {
+            color: rgba(0,0,0,.45);
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>UI 原型目录</h1>
+        <p class="subtitle">auto-test-platform · 26 个核心页面的 HTML 高保真原型</p>
+
+        <!-- 认证模块 -->
+        <div class="module-group">
+            <div class="module-title">
+                <span class="icon">🔐</span> 认证模块
+                <span class="badge">1 页面</span>
+            </div>
+            <ul class="page-list">
+                <li><a href="./auth/login.html"><span class="file-icon">📄</span><span class="page-name">login.html</span><span class="page-desc">用户登录</span></a></li>
+            </ul>
+        </div>
+
+        <!-- 项目管理 -->
+        <div class="module-group">
+            <div class="module-title">
+                <span class="icon">📊</span> 项目管理
+                <span class="badge">4 页面</span>
+            </div>
+            <ul class="page-list">
+                <li><a href="./project/project-list.html"><span class="file-icon">📄</span><span class="page-name">project-list.html</span><span class="page-desc">项目列表</span></a></li>
+                <li><a href="./project/project-dashboard.html"><span class="file-icon">📄</span><span class="page-name">project-dashboard.html</span><span class="page-desc">项目概览</span></a></li>
+                <li><a href="./project/environment-config.html"><span class="file-icon">📄</span><span class="page-name">environment-config.html</span><span class="page-desc">环境配置</span></a></li>
+                <li><a href="./project/environment-edit.html"><span class="file-icon">📄</span><span class="page-name">environment-edit.html</span><span class="page-desc">环境编辑</span></a></li>
+            </ul>
+        </div>
+
+        <!-- 接口文档 -->
+        <div class="module-group">
+            <div class="module-title">
+                <span class="icon">📄</span> 接口文档
+                <span class="badge">5 页面</span>
+            </div>
+            <ul class="page-list">
+                <li><a href="./api/api-list.html"><span class="file-icon">📄</span><span class="page-name">api-list.html</span><span class="page-desc">接口列表</span></a></li>
+                <li><a href="./api/api-create.html"><span class="file-icon">📄</span><span class="page-name">api-create.html</span><span class="page-desc">新建接口</span></a></li>
+                <li><a href="./api/api-edit.html"><span class="file-icon">📄</span><span class="page-name">api-edit.html</span><span class="page-desc">接口编辑</span></a></li>
+                <li><a href="./api/api-debug.html"><span class="file-icon">📄</span><span class="page-name">api-debug.html</span><span class="page-desc">接口调试</span></a></li>
+                <li><a href="./api/swagger-import.html"><span class="file-icon">📄</span><span class="page-name">swagger-import.html</span><span class="page-desc">Swagger 导入</span></a></li>
+            </ul>
+        </div>
+
+        <!-- 关键字管理 -->
+        <div class="module-group">
+            <div class="module-title">
+                <span class="icon">🔑</span> 关键字管理
+                <span class="badge">8 页面</span>
+            </div>
+            <ul class="page-list">
+                <li><a href="./keywords/keyword-create.html"><span class="file-icon">📄</span><span class="page-name">keyword-create.html</span><span class="page-desc">新建接口关键字</span></a></li>
+                <li><a href="./keywords/keyword-edit.html"><span class="file-icon">📄</span><span class="page-name">keyword-edit.html</span><span class="page-desc">编辑接口关键字</span></a></li>
+                <li><a href="./keywords/tool-list.html"><span class="file-icon">📄</span><span class="page-name">tool-list.html</span><span class="page-desc">工具方法列表</span></a></li>
+                <li><a href="./keywords/tool-create.html"><span class="file-icon">📄</span><span class="page-name">tool-create.html</span><span class="page-desc">新建工具方法</span></a></li>
+                <li><a href="./keywords/tool-edit.html"><span class="file-icon">📄</span><span class="page-name">tool-edit.html</span><span class="page-desc">编辑工具方法</span></a></li>
+                <li><a href="./keywords/action-list.html"><span class="file-icon">📄</span><span class="page-name">action-list.html</span><span class="page-desc">Action 列表</span></a></li>
+                <li><a href="./keywords/action-editor.html"><span class="file-icon">📄</span><span class="page-name">action-editor.html</span><span class="page-desc">Action 编辑器</span></a></li>
+                <li><a href="./keywords/action-debug.html"><span class="file-icon">📄</span><span class="page-name">action-debug.html</span><span class="page-desc">Action 调试</span></a></li>
+            </ul>
+        </div>
+
+        <!-- 测试管理 -->
+        <div class="module-group">
+            <div class="module-title">
+                <span class="icon">📋</span> 测试管理
+                <span class="badge">4 页面</span>
+            </div>
+            <ul class="page-list">
+                <li><a href="./cases/suite-list.html"><span class="file-icon">📄</span><span class="page-name">suite-list.html</span><span class="page-desc">测试套件列表</span></a></li>
+                <li><a href="./cases/suite-st-edit.html"><span class="file-icon">📄</span><span class="page-name">suite-st-edit.html</span><span class="page-desc">套件 Setup/Teardown 编辑</span></a></li>
+                <li><a href="./cases/case-list.html"><span class="file-icon">📄</span><span class="page-name">case-list.html</span><span class="page-desc">用例列表</span></a></li>
+                <li><a href="./cases/case-edit.html"><span class="file-icon">📄</span><span class="page-name">case-edit.html</span><span class="page-desc">用例编辑</span></a></li>
+            </ul>
+        </div>
+
+        <!-- 执行与报告 -->
+        <div class="module-group">
+            <div class="module-title">
+                <span class="icon">▶️</span> 执行与报告
+                <span class="badge">4 页面</span>
+            </div>
+            <ul class="page-list">
+                <li><a href="./execution/plan-list.html"><span class="file-icon">📄</span><span class="page-name">plan-list.html</span><span class="page-desc">测试计划列表</span></a></li>
+                <li><a href="./execution/plan-edit.html"><span class="file-icon">📄</span><span class="page-name">plan-edit.html</span><span class="page-desc">测试计划编辑</span></a></li>
+                <li><a href="./execution/execution-list.html"><span class="file-icon">📄</span><span class="page-name">execution-list.html</span><span class="page-desc">执行记录列表</span></a></li>
+                <li><a href="./execution/execution-detail.html"><span class="file-icon">📄</span><span class="page-name">execution-detail.html</span><span class="page-desc">执行详情</span></a></li>
+            </ul>
+        </div>
+
+        <!-- 系统设置 -->
+        <div class="module-group">
+            <div class="module-title">
+                <span class="icon">⚙️</span> 系统设置
+                <span class="badge">3 页面</span>
+            </div>
+            <ul class="page-list">
+                <li><a href="./settings/profile.html"><span class="file-icon">📄</span><span class="page-name">profile.html</span><span class="page-desc">个人资料</span></a></li>
+                <li><a href="./settings/user-management.html"><span class="file-icon">📄</span><span class="page-name">user-management.html</span><span class="page-desc">用户管理</span></a></li>
+                <li><a href="./settings/global-config.html"><span class="file-icon">📄</span><span class="page-name">global-config.html</span><span class="page-desc">全局配置</span></a></li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,1 +1,8 @@
 .idea
+
+# Maven 构建产物
+backend/target/
+
+# IDE 构建产物
+out/
+*.iml

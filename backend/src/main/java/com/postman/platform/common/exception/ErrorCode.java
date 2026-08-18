@@ -1,0 +1,119 @@
+package com.postman.platform.common.exception;
+
+/**
+ * 全局错误码定义
+ *
+ * <p>错误码范围分配：
+ * <ul>
+ *   <li>1000-1099: 公共（参数校验、认证、权限）</li>
+ *   <li>1100-1199: M1 认证与用户</li>
+ *   <li>1200-1299: M2 项目管理</li>
+ *   <li>1300-1399: M3 环境配置</li>
+ *   <li>1400-1499: M4 接口文档</li>
+ *   <li>1500-1599: M5 接口关键字</li>
+ *   <li>1600-1699: M6 工具方法</li>
+ *   <li>1700-1799: M7 Action</li>
+ *   <li>1800-1899: M8 测试用例</li>
+ *   <li>1900-1999: M9 测试执行</li>
+ *   <li>2000-2099: M10 报告分析</li>
+ * </ul>
+ *
+ * <p>使用示例：
+ * <pre>
+ *   throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "项目不存在");
+ * </pre>
+ */
+public final class ErrorCode {
+
+    private ErrorCode() {
+    }
+
+    // ===== 公共错误码 (1000-1099) =====
+    public static final int PARAM_VALIDATION_ERROR = 1001;
+    public static final int UNAUTHORIZED = 1002;
+    public static final int ACCESS_TOKEN_EXPIRED = 1003;
+    public static final int REFRESH_TOKEN_EXPIRED = 1004;
+    public static final int FORBIDDEN = 1005;
+    public static final int RESOURCE_NOT_FOUND = 1006;
+    public static final int RESOURCE_CONFLICT = 1007;
+    public static final int INTERNAL_ERROR = 1008;
+
+    // ===== M1 认证与用户 (1100-1199) =====
+    public static final int LOGIN_FAILED = 1100;
+    public static final int USER_NOT_FOUND = 1101;
+    public static final int USERNAME_DUPLICATE = 1102;
+    public static final int ACCOUNT_RESERVED = 1103;
+    public static final int ADMIN_PROTECTED = 1104;
+
+    // ===== M2 项目管理 (1200-1299) =====
+    public static final int PROJECT_NAME_DUPLICATE = 1200;
+    public static final int PROJECT_INACTIVE = 1201;
+
+    // ===== M3 环境配置 (1300-1399) =====
+    public static final int ENV_NAME_DUPLICATE = 1300;
+    public static final int ENV_JSON_INVALID = 1301;
+    public static final int ENV_CONNECTION_FAILED = 1302;
+    public static final int ENV_ACTIVE_DELETE = 1303;
+
+    // ===== M4 接口文档 (1400-1499) =====
+    public static final int API_PATH_DUPLICATE = 1400;
+    public static final int SWAGGER_PARSE_FAILED = 1401;
+    public static final int API_DEPENDENCY_CONFLICT = 1402;
+
+    // ===== M5 接口关键字 (1500-1599) =====
+    public static final int KEYWORD_NAME_DUPLICATE = 1500;
+    public static final int KEYWORD_DATA_INVALID = 1501;
+    public static final int KEYWORD_DEPENDENCY_CONFLICT = 1502;
+
+    // ===== M6 工具方法 (1600-1699) =====
+    public static final int TOOL_EXECUTION_TIMEOUT = 1600;
+    public static final int TOOL_SECURITY_CHECK_FAILED = 1601;
+
+    // ===== M7 Action (1700-1799) =====
+    public static final int ACTION_NODE_SERIALIZE_FAILED = 1700;
+    public static final int ACTION_CIRCULAR_REFERENCE = 1701;
+
+    // ===== M8 测试用例 (1800-1899) =====
+    public static final int STEP_VALIDATION_FAILED = 1800;
+    public static final int PARAM_DATA_INVALID = 1801;
+
+    // ===== M9 测试执行 (1900-1999) =====
+    public static final int EXECUTION_QUEUE_FULL = 1900;
+    public static final int PLAN_NO_ENVIRONMENT = 1901;
+
+    // ===== M10 报告分析 (2000-2099) =====
+    public static final int REPORT_GENERATE_FAILED = 2000;
+    public static final int REPORT_EXPORT_TIMEOUT = 2001;
+
+    // ===== 业务错误码 → HTTP 状态码映射 =====
+    private static final int[] UNAUTHORIZED_CODES = {UNAUTHORIZED, ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED};
+    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED};
+
+    public static int toHttpStatus(int errorCode) {
+        for (int code : UNAUTHORIZED_CODES) {
+            if (code == errorCode) return 401;
+        }
+        for (int code : FORBIDDEN_CODES) {
+            if (code == errorCode) return 403;
+        }
+        switch (errorCode) {
+            case PARAM_VALIDATION_ERROR:
+                return 400;
+            case RESOURCE_NOT_FOUND:
+                return 404;
+            case RESOURCE_CONFLICT:
+            case API_DEPENDENCY_CONFLICT:
+            case KEYWORD_DEPENDENCY_CONFLICT:
+            case USERNAME_DUPLICATE:
+            case PROJECT_NAME_DUPLICATE:
+            case ENV_NAME_DUPLICATE:
+            case API_PATH_DUPLICATE:
+            case KEYWORD_NAME_DUPLICATE:
+                return 409;
+            case EXECUTION_QUEUE_FULL:
+                return 429;
+            default:
+                return 500;
+        }
+    }
+}

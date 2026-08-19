@@ -561,7 +561,7 @@ basedir=D:/tools/mysql-8.0
 datadir=D:/tools/mysql-8.0/data
 character-set-server=utf8mb4
 collation-server=utf8mb4_unicode_ci
-default-authentication-plugin=mysql_native_password
+authentication_policy=caching_sha2_password
 
 [client]
 port=3306

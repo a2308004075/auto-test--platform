@@ -1,45 +1,44 @@
 @echo off
-chcp 65001 >nul
 setlocal EnableDelayedExpansion
 echo ============================================
-echo   ä¸€é”®åœæ­¢æ‰€æœ‰ä¸­é—´ä»¶
-echo   åœæ­¢é¡ºåºï¼šRabbitMQ -> Redis -> MySQL
+echo   Ò»¼üÍ£Ö¹ËùÓÐÖÐ¼ä¼þ
+echo   Í£Ö¹Ë³Ðò£ºRabbitMQ -> Redis -> MySQL
 echo ============================================
 echo.
 
-echo [1/3] åœæ­¢ RabbitMQ ...
+echo [1/3] Í£Ö¹ RabbitMQ ...
 set ERLANG_HOME=D:\software\erlang
-D:\software\rabbitmq\sbin\rabbitmqctl.bat stop >nul 2>&1
+call D:\software\rabbitmq\sbin\rabbitmqctl.bat stop >nul 2>&1
 if !errorlevel!==0 (
-    echo       RabbitMQ å·²åœæ­¢ã€‚
+    echo       RabbitMQ ÒÑÍ£Ö¹¡£
 ) else (
-    echo       RabbitMQ æœªåœ¨è¿è¡Œæˆ–åœæ­¢å¤±è´¥ï¼Œå°è¯•å¼ºåˆ¶ç»ˆæ­¢ ...
+    echo       RabbitMQ Î´ÔÚÔËÐÐ»òÍ£Ö¹Ê§°Ü£¬³¢ÊÔÇ¿ÖÆÖÕÖ¹ ...
     taskkill /F /IM erl.exe >nul 2>&1
     taskkill /F /IM epmd.exe >nul 2>&1
 )
-timeout /t 2 /nobreak >nul
+ping -n 3 127.0.0.1 >nul
 
-echo [2/3] åœæ­¢ Redis ...
+echo [2/3] Í£Ö¹ Redis ...
 taskkill /F /IM redis-server.exe >nul 2>&1
 if !errorlevel!==0 (
-    echo       Redis å·²åœæ­¢ã€‚
+    echo       Redis ÒÑÍ£Ö¹¡£
 ) else (
-    echo       Redis æœªåœ¨è¿è¡Œã€‚
+    echo       Redis Î´ÔÚÔËÐÐ¡£
 )
-timeout /t 1 /nobreak >nul
+ping -n 2 127.0.0.1 >nul
 
-echo [3/3] åœæ­¢ MySQL ...
+echo [3/3] Í£Ö¹ MySQL ...
 D:\software\mysql-8.0\bin\mysqladmin -uroot -ppp2024 shutdown >nul 2>&1
 if !errorlevel!==0 (
-    echo       MySQL å·²åœæ­¢ã€‚
+    echo       MySQL ÒÑÍ£Ö¹¡£
 ) else (
-    echo       MySQL æœªåœ¨è¿è¡Œæˆ–åœæ­¢å¤±è´¥ï¼Œå°è¯•å¼ºåˆ¶ç»ˆæ­¢ ...
+    echo       MySQL Î´ÔÚÔËÐÐ»òÍ£Ö¹Ê§°Ü£¬³¢ÊÔÇ¿ÖÆÖÕÖ¹ ...
     taskkill /F /IM mysqld.exe >nul 2>&1
 )
 
 echo.
 echo ============================================
-echo   æ‰€æœ‰ä¸­é—´ä»¶å·²åœæ­¢ï¼
+echo   ËùÓÐÖÐ¼ä¼þÒÑÍ£Ö¹£¡
 echo ============================================
 echo.
 ping -n 4 127.0.0.1 >nul

@@ -1,16 +1,15 @@
 @echo off
-chcp 65001 >nul
 setlocal EnableDelayedExpansion
 echo ============================================
-echo   åœæ­¢ Redis
+echo   Í£Ö¹ Redis
 echo ============================================
 echo.
 
 taskkill /F /IM redis-server.exe >nul 2>&1
 if !errorlevel!==0 (
-    echo Redis å·²åœæ­¢ã€‚
+    echo Redis ÒÑÍ£Ö¹¡£
 ) else (
-    echo Redis æœªåœ¨è¿è¡Œã€‚
+    echo Redis Î´ÔÚÔËĞĞ¡£
 )
 
 pause

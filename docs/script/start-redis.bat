@@ -1,8 +1,7 @@
 @echo off
-chcp 65001 >nul
 title Redis
 echo ============================================
-echo   ÂêØÂä® Redis
+echo   ∆Ù∂Ø Redis
 echo ============================================
 echo.
 

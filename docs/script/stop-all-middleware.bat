@@ -3,7 +3,6 @@ chcp 65001 >nul
 setlocal EnableDelayedExpansion
 echo ============================================
 echo   一键停止所有中间件
-echo   停止顺序：RabbitMQ -> Redis -> MySQL
 echo ============================================
 echo.
 

@@ -1,28 +1,28 @@
 @echo off
 echo ============================================
-echo   一键启动所有中间件
-echo   启动顺序：MySQL -> Redis -> RabbitMQ
+echo   涓�閿惎鍔ㄦ墍鏈変腑闂翠欢
+echo   鍚姩椤哄簭锛歁ySQL -> Redis -> RabbitMQ
 echo ============================================
 echo.
 
-echo [1/3] 启动 MySQL ...
+echo [1/3] 鍚姩 MySQL ...
 start "MySQL" cmd /k "D:\software\mysql-8.0\bin\mysqld --console"
 
-echo 等待 MySQL 就绪 ...
+echo 绛夊緟 MySQL 灏辩华 ...
 ping -n 6 127.0.0.1 >nul
 
-echo [2/3] 启动 Redis ...
+echo [2/3] 鍚姩 Redis ...
 start "Redis" cmd /k "D:\software\redis\redis-server.exe"
 
-echo 等待 Redis 就绪 ...
+echo 绛夊緟 Redis 灏辩华 ...
 ping -n 4 127.0.0.1 >nul
 
-echo [3/3] 启动 RabbitMQ ...
-start "RabbitMQ" cmd /k "set ERLANG_HOME=D:\software\erlang && call D:\software\rabbitmq\sbin\rabbitmq-server.bat"
+echo [3/3] 鍚姩 RabbitMQ ...
+start "RabbitMQ" cmd /k "call D:\develop\auto-test-platform\docs\script\start-rabbitmq.bat"
 
 echo.
 echo ============================================
-echo   所有中间件启动命令已发送！
+echo   鎵�鏈変腑闂翠欢鍚姩鍛戒护宸插彂閫侊紒
 echo   MySQL        : localhost:3306
 echo   Redis        : localhost:6379
 echo   RabbitMQ UI  : http://localhost:15672

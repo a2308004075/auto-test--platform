@@ -1,7 +1,8 @@
-@echo off
+Ôªø@echo off
+chcp 65001 >nul
 title MySQL 8.0
 echo ============================================
-echo   ∆Ù∂Ø MySQL 8.0
+echo   ÂêØÂä® MySQL 8.0
 echo ============================================
 echo.
 

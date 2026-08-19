@@ -1,4 +1,5 @@
-@echo off
+﻿@echo off
+chcp 65001 >nul
 title RabbitMQ
 echo ============================================
 echo   启动 RabbitMQ

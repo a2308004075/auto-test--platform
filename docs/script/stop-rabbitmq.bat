@@ -1,6 +1,7 @@
-@echo off
+﻿@echo off
+chcp 65001 >nul
 echo ============================================
-echo   ֹͣ RabbitMQ
+echo   停止 RabbitMQ
 echo ============================================
 echo.
 
@@ -8,5 +9,5 @@ set ERLANG_HOME=D:\software\erlang
 call D:\software\rabbitmq\sbin\rabbitmqctl.bat stop
 
 echo.
-echo RabbitMQ ��ֹͣ��
+echo RabbitMQ 已停止。
 pause

@@ -1,4 +1,5 @@
-@echo off
+﻿@echo off
+chcp 65001 >nul
 echo ============================================
 echo   一键启动所有中间件
 echo   启动顺序：MySQL -> Redis -> RabbitMQ

@@ -1,0 +1,43 @@
+/**
+ * Element Plus 全局样式覆盖
+ */
+
+// 弹窗打开时隐藏溢出
+.el-popup-parent--hidden {
+  overflow: hidden;
+}
+
+// 对话框标题加粗
+.el-message-box__title {
+  font-weight: bold;
+}
+
+// 表格表头加粗
+.el-table th.el-table__cell {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background-color: #fafafa;
+}
+
+// 卡片阴影统一
+.el-card {
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  box-shadow: none;
+  transition: box-shadow 0.3s;
+
+  &:hover {
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  }
+}
+
+// 表单标签对齐
+.el-form--label-top .el-form-item__label {
+  padding-bottom: 4px;
+  font-weight: 500;
+}
+
+// 标签页样式
+.el-tabs__header {
+  margin-bottom: 16px;
+}

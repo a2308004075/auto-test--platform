@@ -4,7 +4,7 @@
  */
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message, Modal } from 'ant-design-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getSuites, createSuite, updateSuite, deleteSuite } from '@/api/suite'
 
 const route = useRoute()
@@ -19,16 +19,7 @@ const modalVisible = ref(false)
 const editingId = ref<number>(0)
 const form = reactive({ name: '', description: '', priority: 'P2' })
 
-const columns = [
-  { title: '套件名称', dataIndex: 'name', width: 200 },
-  { title: '描述', dataIndex: 'description', ellipsis: true },
-  { title: '优先级', dataIndex: 'priority', width: 90 },
-  { title: '用例数', dataIndex: 'caseCount', width: 90 },
-  { title: '创建时间', dataIndex: 'createdAt', width: 120 },
-  { title: '操作', key: 'action', width: 260 },
-]
-
-const priorityColors: Record<string, string> = { P0: 'red', P1: 'orange', P2: 'blue', P3: 'default' }
+const priorityTypeMap: Record<string, string> = { P0: 'danger', P1: 'warning', P2: '', P3: 'info' }
 
 async function fetchList() {
   loading.value = true
@@ -54,25 +45,23 @@ function openEdit(record: any) {
 }
 
 async function handleSubmit() {
-  if (!form.name) { message.warning('请输入套件名称'); return }
+  if (!form.name) { ElMessage.warning('请输入套件名称'); return }
   try {
     if (editingId.value) {
       await updateSuite(projectId.value, editingId.value, { ...form })
-      message.success('更新成功')
+      ElMessage.success('更新成功')
     } else {
       await createSuite(projectId.value, { ...form })
-      message.success('创建成功')
+      ElMessage.success('创建成功')
     }
     modalVisible.value = false; fetchList()
-  } catch (e: any) { message.error(e?.response?.data?.message || '操作失败') }
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
 }
 
 function handleDelete(record: any) {
-  Modal.confirm({
-    title: '确认删除',
-    content: `确定删除套件「${record.name}」？其下所有用例将一并删除。`,
-    onOk: async () => { await deleteSuite(projectId.value, record.id); message.success('删除成功'); fetchList() },
-  })
+  ElMessageBox.confirm(`确定删除套件「${record.name}」？其下所有用例将一并删除。`, '确认删除', { type: 'warning' })
+    .then(async () => { await deleteSuite(projectId.value, record.id); ElMessage.success('删除成功'); fetchList() })
+    .catch(() => {})
 }
 
 onMounted(fetchList)
@@ -83,42 +72,61 @@ onMounted(fetchList)
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h2 style="margin:0">测试套件</h2>
       <div style="display:flex;gap:8px">
-        <a-input-search v-model:value="keyword" placeholder="搜索套件" style="width:220px" allow-clear @search="handleSearch" />
-        <a-button type="primary" @click="openCreate">新建套件</a-button>
+        <el-input v-model="keyword" placeholder="搜索套件" style="width:220px" clearable @keyup.enter="handleSearch" @clear="handleSearch">
+          <template #append><el-button @click="handleSearch">搜索</el-button></template>
+        </el-input>
+        <el-button type="primary" @click="openCreate">新建套件</el-button>
       </div>
     </div>
 
-    <a-table :columns="columns" :data-source="list" :loading="loading" row-key="id" size="middle"
-      :pagination="{ current: pagination.current, pageSize: pagination.pageSize, total: pagination.total, onChange: (p: number) => { pagination.current = p; fetchList() } }">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'priority'">
-          <a-tag :color="priorityColors[record.priority] || 'default'">{{ record.priority }}</a-tag>
+    <el-table v-loading="loading" :data="list" row-key="id" border style="width:100%">
+      <el-table-column prop="name" label="套件名称" width="200" />
+      <el-table-column prop="description" label="描述" show-overflow-tooltip />
+      <el-table-column label="优先级" width="90">
+        <template #default="{ row }">
+          <el-tag :type="(priorityTypeMap[row.priority] || 'info') as any" size="small">{{ row.priority }}</el-tag>
         </template>
-        <template v-if="column.dataIndex === 'createdAt'">{{ record.createdAt?.substring(0, 10) }}</template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a @click="router.push(`/project/${projectId}/cases?suiteId=${record.id}`)">查看用例</a>
-            <a @click="router.push(`/project/${projectId}/suites/${record.id}/edit`)">步骤配置</a>
-            <a @click="openEdit(record)">基本信息</a>
-            <a style="color:#ff4d4f" @click="handleDelete(record)">删除</a>
-          </a-space>
+      </el-table-column>
+      <el-table-column prop="caseCount" label="用例数" width="90" />
+      <el-table-column label="创建时间" width="120">
+        <template #default="{ row }">{{ row.createdAt?.substring(0, 10) }}</template>
+      </el-table-column>
+      <el-table-column label="操作" width="260">
+        <template #default="{ row }">
+          <el-button type="primary" link size="small" @click="router.push(`/project/${projectId}/cases?suiteId=${row.id}`)">查看用例</el-button>
+          <el-button type="primary" link size="small" @click="router.push(`/project/${projectId}/suites/${row.id}/edit`)">步骤配置</el-button>
+          <el-button type="primary" link size="small" @click="openEdit(row)">基本信息</el-button>
+          <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px">
+      <el-pagination background layout="total, prev, pager, next" :total="pagination.total"
+        :page-size="pagination.pageSize" :current-page="pagination.current"
+        @current-change="(p: number) => { pagination.current = p; fetchList() }" />
+    </div>
 
-    <a-modal v-model:open="modalVisible" :title="editingId ? '编辑套件' : '新建套件'" @ok="handleSubmit">
-      <a-form layout="vertical" style="margin-top:16px">
-        <a-form-item label="套件名称" required><a-input v-model:value="form.name" /></a-form-item>
-        <a-form-item label="描述"><a-textarea v-model:value="form.description" :rows="2" /></a-form-item>
-        <a-form-item label="优先级">
-          <a-select v-model:value="form.priority">
-            <a-select-option value="P0">P0</a-select-option>
-            <a-select-option value="P1">P1</a-select-option>
-            <a-select-option value="P2">P2</a-select-option>
-            <a-select-option value="P3">P3</a-select-option>
-          </a-select>
-        </a-form-item>
-      </a-form>
-    </a-modal>
+    <el-dialog v-model="modalVisible" :title="editingId ? '编辑套件' : '新建套件'" width="500px">
+      <el-form label-position="top">
+        <el-form-item label="套件名称" required>
+          <el-input v-model="form.name" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="form.description" type="textarea" :rows="2" />
+        </el-form-item>
+        <el-form-item label="优先级">
+          <el-select v-model="form.priority" style="width:100%">
+            <el-option value="P0" label="P0" />
+            <el-option value="P1" label="P1" />
+            <el-option value="P2" label="P2" />
+            <el-option value="P3" label="P3" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="modalVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>

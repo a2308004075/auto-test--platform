@@ -1,6 +1,6 @@
 import axios from 'axios'
 import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 
 /**
  * Axios 实例与拦截器
@@ -37,16 +37,16 @@ service.interceptors.response.use(
     if (status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('refreshToken')
-      message.error('登录已过期，请重新登录')
+      ElMessage.error('登录已过期，请重新登录')
       window.location.href = '/project'
     } else if (status === 403) {
-      message.error('没有操作权限')
+      ElMessage.error('没有操作权限')
     } else if (status === 400) {
-      message.error(data?.message || '请求参数错误')
+      ElMessage.error(data?.message || '请求参数错误')
     } else if (status >= 500) {
-      message.error(data?.message || '服务器错误')
+      ElMessage.error(data?.message || '服务器错误')
     } else if (!status) {
-      message.error('网络连接失败')
+      ElMessage.error('网络连接失败')
     }
 
     return Promise.reject(error)

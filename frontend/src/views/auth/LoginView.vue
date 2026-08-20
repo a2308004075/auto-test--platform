@@ -4,7 +4,7 @@
  */
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import { login } from '@/api/auth'
 import { useUserStore } from '@/stores'
 
@@ -16,7 +16,7 @@ const form = reactive({ username: '', password: '' })
 
 async function handleLogin() {
   if (!form.username || !form.password) {
-    message.warning('请输入用户名和密码')
+    ElMessage.warning('请输入用户名和密码')
     return
   }
   loading.value = true
@@ -25,11 +25,10 @@ async function handleLogin() {
     const data = res.data
     userStore.setToken(data.accessToken)
     if (data.refreshToken) userStore.setRefreshToken(data.refreshToken)
-    // 获取用户信息
-    message.success('登录成功')
+    ElMessage.success('登录成功')
     router.push('/project')
   } catch (e: any) {
-    message.error(e?.response?.data?.message || '登录失败')
+    ElMessage.error(e?.response?.data?.message || '登录失败')
   } finally {
     loading.value = false
   }
@@ -43,35 +42,37 @@ async function handleLogin() {
         <h2>项目管理平台</h2>
         <p>请登录您的账户</p>
       </div>
-      <a-form layout="vertical" @finish="handleLogin">
-        <a-form-item label="用户名" required>
-          <a-input
-            v-model:value="form.username"
+      <el-form label-position="top" @submit.prevent="handleLogin">
+        <el-form-item label="用户名">
+          <el-input
+            v-model="form.username"
             placeholder="请输入用户名"
             size="large"
-            @press-enter="handleLogin"
+            @keyup.enter="handleLogin"
           />
-        </a-form-item>
-        <a-form-item label="密码" required>
-          <a-input-password
-            v-model:value="form.password"
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input
+            v-model="form.password"
+            type="password"
+            show-password
             placeholder="请输入密码"
             size="large"
-            @press-enter="handleLogin"
+            @keyup.enter="handleLogin"
           />
-        </a-form-item>
-        <a-form-item>
-          <a-button
+        </el-form-item>
+        <el-form-item>
+          <el-button
             type="primary"
-            block
             size="large"
             :loading="loading"
+            style="width: 100%"
             @click="handleLogin"
           >
             登录
-          </a-button>
-        </a-form-item>
-      </a-form>
+          </el-button>
+        </el-form-item>
+      </el-form>
       <div class="login-footer">
         <span>默认账户: admin / admin123</span>
       </div>
@@ -100,15 +101,15 @@ async function handleLogin() {
 }
 .login-header h2 {
   margin: 0 0 8px;
-  color: #333;
+  color: #303133;
 }
 .login-header p {
   margin: 0;
-  color: #999;
+  color: #909399;
 }
 .login-footer {
   text-align: center;
-  color: #999;
+  color: #909399;
   font-size: 12px;
   margin-top: 16px;
 }

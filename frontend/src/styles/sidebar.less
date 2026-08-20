@@ -4,32 +4,60 @@
 .sidebar-container {
   transition: width 0.28s;
   height: 100%;
-  position: fixed;
-  font-size: 0;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 1001;
   overflow: hidden;
+  background-color: #001529;
 
-  // 重置 ant-layout-sider 冲突
-  .ant-layout-sider {
-    height: 100%;
+  .el-scrollbar {
+    height: calc(100% - 50px);
+  }
+
+  .scrollbar-wrapper {
+    overflow-x: hidden !important;
+  }
+
+  .el-menu {
+    border-right: none;
+    width: 100% !important;
+  }
+
+  .el-menu-item {
+    height: 50px;
+    line-height: 50px;
+
+    &:hover {
+      background-color: #263445 !important;
+    }
+
+    &.is-active {
+      background-color: #409eff !important;
+      color: #fff !important;
+    }
   }
 }
 
 .sidebar-logo {
-  height: 48px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   white-space: nowrap;
+  background-color: #001529;
 
   h1 {
     margin: 0;
     color: #fff;
     font-size: 16px;
     font-weight: 600;
+  }
+}
+
+.hide-sidebar {
+  .sidebar-container {
+    width: 50px;
+  }
+
+  .el-menu--collapse {
+    width: 50px;
   }
 }

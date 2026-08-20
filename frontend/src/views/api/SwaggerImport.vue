@@ -4,7 +4,7 @@
  */
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import { importSwagger, getModules } from '@/api/apidoc'
 
 const route = useRoute()
@@ -34,8 +34,8 @@ function handleFileUpload(e: Event) {
 }
 
 async function handleImport() {
-  if (!selectedModuleId.value) { message.warning('请选择目标分组'); return }
-  if (!swaggerJson.value) { message.warning('请提供 Swagger JSON'); return }
+  if (!selectedModuleId.value) { ElMessage.warning('请选择目标分组'); return }
+  if (!swaggerJson.value) { ElMessage.warning('请提供 Swagger JSON'); return }
   loading.value = true
   try {
     const res: any = await importSwagger(projectId.value, {
@@ -43,8 +43,8 @@ async function handleImport() {
     })
     importResult.value = res.data
     currentStep.value = 2
-    message.success('导入成功')
-  } catch (e: any) { message.error(e?.response?.data?.message || '导入失败') } finally { loading.value = false }
+    ElMessage.success('导入成功')
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '导入失败') } finally { loading.value = false }
 }
 
 fetchModules()
@@ -52,51 +52,53 @@ fetchModules()
 
 <template>
   <div>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
-      <a @click="router.back()">← 返回</a>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <el-button type="primary" link @click="router.back()">← 返回</el-button>
       <h2 style="margin:0">Swagger 导入</h2>
     </div>
-    <a-steps :current="currentStep" style="max-width:600px;margin:0 auto 32px">
-      <a-step title="选择分组" />
-      <a-step title="粘贴/上传 JSON" />
-      <a-step title="导入结果" />
-    </a-steps>
+    <el-steps :active="currentStep" style="max-width:600px;margin:0 auto 32px" align-center>
+      <el-step title="选择分组" />
+      <el-step title="粘贴/上传 JSON" />
+      <el-step title="导入结果" />
+    </el-steps>
 
     <div style="max-width:600px;margin:0 auto">
       <div v-if="currentStep === 0">
-        <a-form-item label="目标分组">
-          <a-select v-model:value="selectedModuleId" placeholder="选择接口分组">
-            <a-select-option v-for="m in modules" :key="m.id" :value="m.id">{{ m.name }}</a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-button type="primary" :disabled="!selectedModuleId" @click="currentStep = 1">下一步</a-button>
+        <el-form-item label="目标分组">
+          <el-select v-model="selectedModuleId" placeholder="选择接口分组" style="width:100%">
+            <el-option v-for="m in modules" :key="m.id" :value="m.id" :label="m.name" />
+          </el-select>
+        </el-form-item>
+        <el-button type="primary" :disabled="!selectedModuleId" @click="currentStep = 1">下一步</el-button>
       </div>
 
       <div v-if="currentStep === 1">
-        <a-form-item label="Swagger 2.0 JSON">
-          <a-textarea v-model:value="swaggerJson" :rows="12" placeholder="粘贴 Swagger JSON 内容" style="font-family:monospace" />
-        </a-form-item>
-        <a-form-item>
+        <el-form-item label="Swagger 2.0 JSON">
+          <el-input v-model="swaggerJson" type="textarea" :rows="12" placeholder="粘贴 Swagger JSON 内容" style="font-family:monospace" />
+        </el-form-item>
+        <el-form-item>
           <input type="file" accept=".json" @change="handleFileUpload" />
-        </a-form-item>
-        <a-space>
-          <a-button @click="currentStep = 0">上一步</a-button>
-          <a-button type="primary" :loading="loading" @click="handleImport">开始导入</a-button>
-        </a-space>
+        </el-form-item>
+        <div style="display:flex;gap:8px">
+          <el-button @click="currentStep = 0">上一步</el-button>
+          <el-button type="primary" :loading="loading" @click="handleImport">开始导入</el-button>
+        </div>
       </div>
 
       <div v-if="currentStep === 2 && importResult">
-        <a-result status="success" title="导入完成">
-          <template #extra>
-            <a-descriptions :column="2" bordered size="small">
-              <a-descriptions-item label="总计">{{ importResult.total }}</a-descriptions-item>
-              <a-descriptions-item label="新增">{{ importResult.created }}</a-descriptions-item>
-              <a-descriptions-item label="更新">{{ importResult.updated }}</a-descriptions-item>
-              <a-descriptions-item label="跳过">{{ importResult.skipped }}</a-descriptions-item>
-            </a-descriptions>
-            <a-button type="primary" style="margin-top:16px" @click="router.push(`/project/${projectId}/apis`)">查看接口列表</a-button>
+        <el-result icon="success" title="导入完成">
+          <template #sub-title>
+            <el-descriptions :column="2" border size="small" style="margin-top:16px">
+              <el-descriptions-item label="总计">{{ importResult.total }}</el-descriptions-item>
+              <el-descriptions-item label="新增">{{ importResult.created }}</el-descriptions-item>
+              <el-descriptions-item label="更新">{{ importResult.updated }}</el-descriptions-item>
+              <el-descriptions-item label="跳过">{{ importResult.skipped }}</el-descriptions-item>
+            </el-descriptions>
           </template>
-        </a-result>
+          <template #extra>
+            <el-button type="primary" @click="router.push(`/project/${projectId}/apis`)">查看接口列表</el-button>
+          </template>
+        </el-result>
       </div>
     </div>
   </div>

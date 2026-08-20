@@ -4,7 +4,7 @@
  */
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message, Modal } from 'ant-design-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getPlans, deletePlan } from '@/api/plan'
 import { startExecution } from '@/api/execution'
 
@@ -16,16 +16,6 @@ const loading = ref(false)
 const list = ref<any[]>([])
 const keyword = ref('')
 const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
-
-const columns = [
-  { title: '计划名称', dataIndex: 'name', width: 180 },
-  { title: '描述', dataIndex: 'description', ellipsis: true },
-  { title: '环境', dataIndex: 'environmentName', width: 120 },
-  { title: '套件数', key: 'suiteCount', width: 80 },
-  { title: '状态', dataIndex: 'isActive', width: 80 },
-  { title: '创建时间', dataIndex: 'createdAt', width: 120 },
-  { title: '操作', key: 'action', width: 260 },
-]
 
 async function fetchList() {
   loading.value = true
@@ -43,25 +33,21 @@ function handleEdit(record: any) {
 }
 
 function handleDelete(record: any) {
-  Modal.confirm({
-    title: '确认删除',
-    content: `确定删除计划「${record.name}」？`,
-    onOk: async () => { await deletePlan(record.id); message.success('删除成功'); fetchList() },
-  })
+  ElMessageBox.confirm(`确定删除计划「${record.name}」？`, '确认删除', { type: 'warning' })
+    .then(async () => { await deletePlan(record.id); ElMessage.success('删除成功'); fetchList() })
+    .catch(() => {})
 }
 
 async function handleRun(record: any) {
-  Modal.confirm({
-    title: '触发执行',
-    content: `确定执行计划「${record.name}」？`,
-    onOk: async () => {
+  ElMessageBox.confirm(`确定执行计划「${record.name}」？`, '触发执行', { type: 'info' })
+    .then(async () => {
       try {
         const res: any = await startExecution(record.id)
-        message.success('执行已触发')
+        ElMessage.success('执行已触发')
         router.push(`/project/${projectId}/executions/${res.data.id}`)
-      } catch { message.error('触发失败') }
-    },
-  })
+      } catch { ElMessage.error('触发失败') }
+    })
+    .catch(() => {})
 }
 
 onMounted(fetchList)
@@ -72,27 +58,40 @@ onMounted(fetchList)
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h2 style="margin:0">测试计划</h2>
       <div style="display:flex;gap:8px">
-        <a-input-search v-model:value="keyword" placeholder="搜索计划" style="width:220px" allow-clear @search="handleSearch" />
-        <a-button type="primary" @click="router.push(`/project/${projectId}/plans/new`)">新建计划</a-button>
+        <el-input v-model="keyword" placeholder="搜索计划" style="width:220px" clearable @keyup.enter="handleSearch" @clear="handleSearch">
+          <template #append><el-button @click="handleSearch">搜索</el-button></template>
+        </el-input>
+        <el-button type="primary" @click="router.push(`/project/${projectId}/plans/new`)">新建计划</el-button>
       </div>
     </div>
 
-    <a-table :columns="columns" :data-source="list" :loading="loading" row-key="id" size="middle"
-      :pagination="{ current: pagination.current, pageSize: pagination.pageSize, total: pagination.total, onChange: (p: number) => { pagination.current = p; fetchList() } }">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'suiteCount'">{{ record.suiteIds?.length || 0 }}</template>
-        <template v-if="column.dataIndex === 'isActive'">
-          <a-tag :color="record.isActive ? 'green' : 'default'">{{ record.isActive ? '启用' : '禁用' }}</a-tag>
+    <el-table v-loading="loading" :data="list" row-key="id" border style="width:100%">
+      <el-table-column prop="name" label="计划名称" width="180" />
+      <el-table-column prop="description" label="描述" show-overflow-tooltip />
+      <el-table-column prop="environmentName" label="环境" width="120" />
+      <el-table-column label="套件数" width="80">
+        <template #default="{ row }">{{ row.suiteIds?.length || 0 }}</template>
+      </el-table-column>
+      <el-table-column label="状态" width="80">
+        <template #default="{ row }">
+          <el-tag :type="row.isActive ? 'success' : 'info'" size="small">{{ row.isActive ? '启用' : '禁用' }}</el-tag>
         </template>
-        <template v-if="column.dataIndex === 'createdAt'">{{ record.createdAt?.substring(0, 10) }}</template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a-button type="link" size="small" @click="handleRun(record)">执行</a-button>
-            <a @click="handleEdit(record)">编辑</a>
-            <a style="color:#ff4d4f" @click="handleDelete(record)">删除</a>
-          </a-space>
+      </el-table-column>
+      <el-table-column label="创建时间" width="120">
+        <template #default="{ row }">{{ row.createdAt?.substring(0, 10) }}</template>
+      </el-table-column>
+      <el-table-column label="操作" width="260">
+        <template #default="{ row }">
+          <el-button type="success" link size="small" @click="handleRun(row)">执行</el-button>
+          <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
+          <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px">
+      <el-pagination background layout="total, prev, pager, next" :total="pagination.total"
+        :page-size="pagination.pageSize" :current-page="pagination.current"
+        @current-change="(p: number) => { pagination.current = p; fetchList() }" />
+    </div>
   </div>
 </template>

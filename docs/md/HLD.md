@@ -2,7 +2,7 @@
 
 > 版本：v1.0  
 > 文档状态：初稿  
-> 基线文档：[SRS v1.3](./SRS.md) | [PRD V1.17](./PRD.md) | [UI 原型](./ui/index.html)
+> 基线文档：[SRS v1.3](SRS.md) | [PRD V1.17](PRD.md) | [UI 原型](../ui/index.html)
 
 ---
 
@@ -970,9 +970,9 @@ Keyword
 
 | 文档 | 路径 | 说明 |
 |---|---|---|
-| 需求规格说明书 | [SRS.md](./SRS.md) | 技术架构、数据模型、API 设计、引擎复用方案、非功能需求 |
-| 产品需求文档 | [PRD.md](./PRD.md) | 功能需求规范（PM/ENV/API/KW/TOOL/ACT/CASE/EXEC/RPT/AUTH/SET）、UI 设计规范 |
-| UI 原型 | [docs/ui/](./ui/index.html) | 26 个核心页面的 HTML 高保真原型 |
+| 需求规格说明书 | [SRS.md](SRS.md) | 技术架构、数据模型、API 设计、引擎复用方案、非功能需求 |
+| 产品需求文档 | [PRD.md](PRD.md) | 功能需求规范（PM/ENV/API/KW/TOOL/ACT/CASE/EXEC/RPT/AUTH/SET）、UI 设计规范 |
+| UI 原型 | [docs/ui/](../ui/index.html) | 26 个核心页面的 HTML 高保真原型 |
 
 ### 9.3 开发里程碑参照
 

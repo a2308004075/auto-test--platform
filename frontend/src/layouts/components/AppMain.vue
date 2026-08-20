@@ -1,26 +1,27 @@
 <script setup lang="ts">
 /**
  * 主内容区
- * a-layout-content + router-view + transition
+ * 原生 main 标签 + router-view + transition
  */
 </script>
 
 <template>
-  <a-layout-content class="app-main">
+  <main class="app-main">
     <router-view v-slot="{ Component }">
       <transition name="fade-transform" mode="out-in">
         <component :is="Component" />
       </transition>
     </router-view>
-  </a-layout-content>
+  </main>
 </template>
 
 <style scoped>
 .app-main {
+  flex: 1;
   margin: 16px;
-  padding: 24px;
+  padding: 20px;
   background: #fff;
   border-radius: 4px;
-  min-height: calc(100vh - 48px);
+  min-height: 0;
 }
 </style>

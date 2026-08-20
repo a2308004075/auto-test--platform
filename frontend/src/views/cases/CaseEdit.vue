@@ -5,7 +5,7 @@
  */
 import { reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import { getCase, createCase, updateCase } from '@/api/case'
 
 const route = useRoute()
@@ -43,14 +43,14 @@ async function loadCase() {
       timeout: c.timeout || 30,
       suiteId: c.suiteId || null,
     })
-  } catch { message.error('加载用例失败') }
+  } catch { ElMessage.error('加载用例失败') }
 }
 
 function formatJson(field: 'setupSteps' | 'teardownSteps' | 'steps') {
   try {
     form[field] = JSON.stringify(JSON.parse(form[field] || '[]'), null, 2)
   } catch {
-    message.warning('JSON 格式错误，无法格式化')
+    ElMessage.warning('JSON 格式错误，无法格式化')
   }
 }
 
@@ -59,7 +59,7 @@ function validateJson(): boolean {
     try {
       JSON.parse(form[f] || '[]')
     } catch {
-      message.warning(`${f} 不是有效的 JSON`)
+      ElMessage.warning(`${f} 不是有效的 JSON`)
       return false
     }
   }
@@ -67,7 +67,7 @@ function validateJson(): boolean {
 }
 
 async function handleSave() {
-  if (!form.name) { message.warning('请输入用例名称'); return }
+  if (!form.name) { ElMessage.warning('请输入用例名称'); return }
   if (!validateJson()) return
   try {
     if (isEdit.value) {
@@ -76,17 +76,17 @@ async function handleSave() {
         setupSteps: form.setupSteps, teardownSteps: form.teardownSteps, steps: form.steps,
         priority: form.priority, timeout: form.timeout,
       })
-      message.success('保存成功')
+      ElMessage.success('保存成功')
     } else {
       await createCase(projectId.value, {
         ...form,
         suiteId: querySuiteId.value || form.suiteId,
       })
-      message.success('创建成功')
+      ElMessage.success('创建成功')
       router.push(`/project/${projectId}/cases?suiteId=${querySuiteId.value}`)
     }
   } catch (e: any) {
-    message.error(e?.response?.data?.message || '保存失败')
+    ElMessage.error(e?.response?.data?.message || '保存失败')
   }
 }
 
@@ -97,79 +97,82 @@ onMounted(() => { if (isEdit.value) loadCase() })
   <div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h2 style="margin:0">{{ isEdit ? '编辑用例' : '新建用例' }}</h2>
-      <a-space>
-        <a-button @click="router.back()">返回</a-button>
-        <a-button type="primary" @click="handleSave">保存</a-button>
-      </a-space>
+      <div style="display:flex;gap:8px">
+        <el-button @click="router.back()">返回</el-button>
+        <el-button type="primary" @click="handleSave">保存</el-button>
+      </div>
     </div>
 
-    <a-row :gutter="16">
-      <a-col :span="10">
-        <a-card title="基本信息" size="small">
-          <a-form layout="vertical">
-            <a-form-item label="用例名称" required><a-input v-model:value="form.name" /></a-form-item>
-            <a-form-item label="描述"><a-textarea v-model:value="form.description" :rows="2" /></a-form-item>
-            <a-form-item label="前置条件"><a-textarea v-model:value="form.preconditions" :rows="3" /></a-form-item>
-            <a-row :gutter="12">
-              <a-col :span="12">
-                <a-form-item label="优先级">
-                  <a-select v-model:value="form.priority">
-                    <a-select-option value="P0">P0</a-select-option>
-                    <a-select-option value="P1">P1</a-select-option>
-                    <a-select-option value="P2">P2</a-select-option>
-                    <a-select-option value="P3">P3</a-select-option>
-                  </a-select>
-                </a-form-item>
-              </a-col>
-              <a-col :span="12">
-                <a-form-item label="超时(秒)">
-                  <a-input-number v-model:value="form.timeout" :min="1" :max="3600" style="width:100%" />
-                </a-form-item>
-              </a-col>
-            </a-row>
-          </a-form>
-        </a-card>
-      </a-col>
+    <el-row :gutter="16">
+      <el-col :span="10">
+        <el-card>
+          <template #header><span>基本信息</span></template>
+          <el-form label-position="top">
+            <el-form-item label="用例名称" required>
+              <el-input v-model="form.name" />
+            </el-form-item>
+            <el-form-item label="描述">
+              <el-input v-model="form.description" type="textarea" :rows="2" />
+            </el-form-item>
+            <el-form-item label="前置条件">
+              <el-input v-model="form.preconditions" type="textarea" :rows="3" />
+            </el-form-item>
+            <el-row :gutter="12">
+              <el-col :span="12">
+                <el-form-item label="优先级">
+                  <el-select v-model="form.priority" style="width:100%">
+                    <el-option value="P0" label="P0" />
+                    <el-option value="P1" label="P1" />
+                    <el-option value="P2" label="P2" />
+                    <el-option value="P3" label="P3" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="超时(秒)">
+                  <el-input-number v-model="form.timeout" :min="1" :max="3600" style="width:100%" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </el-form>
+        </el-card>
+      </el-col>
 
-      <a-col :span="14">
-        <a-card size="small">
-          <template #title>
-            步骤树
+      <el-col :span="14">
+        <el-card>
+          <template #header>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span>步骤树</span>
+              <el-button size="small" @click="formatJson('steps')">格式化</el-button>
+            </div>
           </template>
-          <template #extra>
-            <a-button size="small" @click="formatJson('steps')">格式化</a-button>
-          </template>
-          <div style="color:#999;font-size:12px;margin-bottom:6px">
+          <div style="color:#909399;font-size:12px;margin-bottom:6px">
             JSON 数组，每个元素为一个关键字步骤，例如：
             <code>{ "keywordId": "xxx", "name": "步骤名", "params": {}, "assertions": [] }</code>
           </div>
-          <a-textarea
-            v-model:value="form.steps"
-            :rows="22"
-            style="font-family:monospace;font-size:12px"
-          />
-        </a-card>
-      </a-col>
-    </a-row>
+          <el-input v-model="form.steps" type="textarea" :rows="22" style="font-family:monospace;font-size:12px" />
+        </el-card>
+      </el-col>
+    </el-row>
 
-    <a-card size="small" style="margin-top:16px">
-      <template #title>Setup / Teardown 步骤树</template>
-      <a-row :gutter="16">
-        <a-col :span="12">
+    <el-card style="margin-top:16px">
+      <template #header><span>Setup / Teardown 步骤树</span></template>
+      <el-row :gutter="16">
+        <el-col :span="12">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
             <span style="font-weight:600">Setup</span>
-            <a-button size="small" @click="formatJson('setupSteps')">格式化</a-button>
+            <el-button size="small" @click="formatJson('setupSteps')">格式化</el-button>
           </div>
-          <a-textarea v-model:value="form.setupSteps" :rows="8" style="font-family:monospace;font-size:12px" />
-        </a-col>
-        <a-col :span="12">
+          <el-input v-model="form.setupSteps" type="textarea" :rows="8" style="font-family:monospace;font-size:12px" />
+        </el-col>
+        <el-col :span="12">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
             <span style="font-weight:600">Teardown</span>
-            <a-button size="small" @click="formatJson('teardownSteps')">格式化</a-button>
+            <el-button size="small" @click="formatJson('teardownSteps')">格式化</el-button>
           </div>
-          <a-textarea v-model:value="form.teardownSteps" :rows="8" style="font-family:monospace;font-size:12px" />
-        </a-col>
-      </a-row>
-    </a-card>
+          <el-input v-model="form.teardownSteps" type="textarea" :rows="8" style="font-family:monospace;font-size:12px" />
+        </el-col>
+      </el-row>
+    </el-card>
   </div>
 </template>

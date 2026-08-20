@@ -54,6 +54,6 @@ function toggleClick() {
   transition: color 0.2s;
 }
 .hamburger:hover .hamburger-icon {
-  color: #1890ff;
+  color: #409eff;
 }
 </style>

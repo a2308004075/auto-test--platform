@@ -4,7 +4,7 @@
  */
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message, Modal } from 'ant-design-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getActions, createAction, deleteAction } from '@/api/action'
 
 const route = useRoute()
@@ -15,14 +15,6 @@ const loading = ref(false)
 const list = ref<any[]>([])
 const keyword = ref('')
 const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
-
-const columns = [
-  { title: 'Action 名称', dataIndex: 'name', width: 200 },
-  { title: '描述', dataIndex: 'description', ellipsis: true },
-  { title: '引用次数', dataIndex: 'referenceCount', width: 100 },
-  { title: '创建时间', dataIndex: 'createdAt', width: 120 },
-  { title: '操作', key: 'action', width: 200 },
-]
 
 async function fetchList() {
   loading.value = true
@@ -40,19 +32,18 @@ async function handleCreate() {
     const res: any = await createAction(projectId.value, {
       projectId: projectId.value, name: `新建 Action ${Date.now() % 10000}`, description: '', nodes: [],
     })
-    message.success('创建成功')
+    ElMessage.success('创建成功')
     router.push(`/project/${projectId.value}/actions/${res.data.id}/edit`)
-  } catch (e: any) { message.error(e?.response?.data?.message || '创建失败') }
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '创建失败') }
 }
 
 function handleDelete(record: any) {
-  Modal.confirm({
-    title: '确认删除', content: `确定删除 Action「${record.name}」？`,
-    onOk: async () => {
+  ElMessageBox.confirm(`确定删除 Action「${record.name}」？`, '确认删除', { type: 'warning' })
+    .then(async () => {
       await deleteAction(projectId.value, record.id)
-      message.success('删除成功'); fetchList()
-    },
-  })
+      ElMessage.success('删除成功'); fetchList()
+    })
+    .catch(() => {})
 }
 
 function handleSearch() { pagination.current = 1; fetchList() }
@@ -64,22 +55,31 @@ onMounted(fetchList)
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h2>Action 关键字</h2>
       <div style="display:flex;gap:8px">
-        <a-input-search v-model:value="keyword" placeholder="搜索" style="width:200px" allow-clear @search="handleSearch" />
-        <a-button type="primary" @click="handleCreate">新建 Action</a-button>
+        <el-input v-model="keyword" placeholder="搜索" style="width:200px" clearable @keyup.enter="handleSearch" @clear="handleSearch">
+          <template #append><el-button @click="handleSearch">搜索</el-button></template>
+        </el-input>
+        <el-button type="primary" @click="handleCreate">新建 Action</el-button>
       </div>
     </div>
-    <a-table :columns="columns" :data-source="list" :loading="loading" row-key="id" size="middle"
-      :pagination="{ current: pagination.current, pageSize: pagination.pageSize, total: pagination.total, onChange: (p: number) => { pagination.current = p; fetchList() } }">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'createdAt'">{{ record.createdAt?.substring(0, 10) }}</template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a @click="router.push(`/project/${projectId}/actions/${record.id}/edit`)">编辑</a>
-            <a @click="router.push(`/project/${projectId}/actions/${record.id}/debug`)">调试</a>
-            <a style="color:#ff4d4f" @click="handleDelete(record)">删除</a>
-          </a-space>
+    <el-table v-loading="loading" :data="list" row-key="id" border style="width:100%">
+      <el-table-column prop="name" label="Action 名称" width="200" />
+      <el-table-column prop="description" label="描述" show-overflow-tooltip />
+      <el-table-column prop="referenceCount" label="引用次数" width="100" />
+      <el-table-column label="创建时间" width="120">
+        <template #default="{ row }">{{ row.createdAt?.substring(0, 10) }}</template>
+      </el-table-column>
+      <el-table-column label="操作" width="200">
+        <template #default="{ row }">
+          <el-button type="primary" link size="small" @click="router.push(`/project/${projectId}/actions/${row.id}/edit`)">编辑</el-button>
+          <el-button type="primary" link size="small" @click="router.push(`/project/${projectId}/actions/${row.id}/debug`)">调试</el-button>
+          <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px">
+      <el-pagination background layout="total, prev, pager, next" :total="pagination.total"
+        :page-size="pagination.pageSize" :current-page="pagination.current"
+        @current-change="(p: number) => { pagination.current = p; fetchList() }" />
+    </div>
   </div>
 </template>

@@ -5,7 +5,7 @@
  * Tab 2: 全局设置（预留）
  */
 import { ref, reactive, onMounted } from 'vue'
-import { message, Modal } from 'ant-design-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getUsers, createUser, updateUser, deleteUser, toggleUserStatus, resetPassword, getRoles } from '@/api/user'
 import { getSettings, updateSetting, type GlobalConfigItem } from '@/api/settings'
 
@@ -25,14 +25,6 @@ const newPassword = ref('')
 
 // 角色列表
 const roleList = ref<any[]>([])
-
-const userColumns = [
-  { title: '用户名', dataIndex: 'username', width: 140 },
-  { title: '角色', dataIndex: 'roleName', width: 100 },
-  { title: '状态', key: 'status', width: 80 },
-  { title: '创建时间', dataIndex: 'createdAt', width: 120 },
-  { title: '操作', key: 'action', width: 220 },
-]
 
 async function fetchUsers() {
   loading.value = true
@@ -63,26 +55,26 @@ function openEditUser(record: any) {
 }
 
 async function handleSubmitUser() {
-  if (!form.username) { message.warning('请输入用户名'); return }
-  if (!editingId.value && !form.password) { message.warning('请输入密码'); return }
+  if (!form.username) { ElMessage.warning('请输入用户名'); return }
+  if (!editingId.value && !form.password) { ElMessage.warning('请输入密码'); return }
   try {
     if (editingId.value) {
       await updateUser(editingId.value, { ...form, password: form.password || undefined })
-      message.success('更新成功')
+      ElMessage.success('更新成功')
     } else {
       await createUser(form)
-      message.success('创建成功')
+      ElMessage.success('创建成功')
     }
     modalVisible.value = false; fetchUsers()
-  } catch (e: any) { message.error(e?.response?.data?.message || '操作失败') }
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
 }
 
 async function handleToggleStatus(record: any) {
   try {
     await toggleUserStatus(record.id, { isActive: record.isActive === 1 ? 0 : 1 })
-    message.success(record.isActive === 1 ? '已禁用' : '已启用')
+    ElMessage.success(record.isActive === 1 ? '已禁用' : '已启用')
     fetchUsers()
-  } catch (e: any) { message.error('操作失败') }
+  } catch (e: any) { ElMessage.error('操作失败') }
 }
 
 function openResetPassword(record: any) {
@@ -92,19 +84,18 @@ function openResetPassword(record: any) {
 }
 
 async function handleResetPassword() {
-  if (!newPassword.value || newPassword.value.length < 6) { message.warning('密码至少 6 位'); return }
+  if (!newPassword.value || newPassword.value.length < 6) { ElMessage.warning('密码至少 6 位'); return }
   try {
     await resetPassword(resetUserId.value, { newPassword: newPassword.value })
-    message.success('密码已重置')
+    ElMessage.success('密码已重置')
     resetVisible.value = false
-  } catch (e: any) { message.error('重置失败') }
+  } catch (e: any) { ElMessage.error('重置失败') }
 }
 
 function handleDeleteUser(record: any) {
-  Modal.confirm({
-    title: '确认删除', content: `确定删除用户「${record.username}」？`,
-    onOk: async () => { await deleteUser(record.id); message.success('删除成功'); fetchUsers() },
-  })
+  ElMessageBox.confirm(`确定删除用户「${record.username}」？`, '确认删除', { type: 'warning' })
+    .then(async () => { await deleteUser(record.id); ElMessage.success('删除成功'); fetchUsers() })
+    .catch(() => {})
 }
 
 function handleSearchUser() { pagination.current = 1; fetchUsers() }
@@ -115,14 +106,6 @@ const configList = ref<GlobalConfigItem[]>([])
 const configModalVisible = ref(false)
 const editingConfigKey = ref('')
 const configForm = reactive({ configValue: '', description: '' })
-
-const configColumns = [
-  { title: '配置键', dataIndex: 'configKey', width: 220 },
-  { title: '配置值', dataIndex: 'configValue', ellipsis: true },
-  { title: '说明', dataIndex: 'description', ellipsis: true },
-  { title: '更新时间', dataIndex: 'updatedAt', width: 160 },
-  { title: '操作', key: 'action', width: 100 },
-]
 
 async function fetchSettings() {
   configLoading.value = true
@@ -139,12 +122,12 @@ function openEditConfig(record: GlobalConfigItem) {
 }
 
 async function handleSubmitConfig() {
-  if (!configForm.configValue) { message.warning('配置值不能为空'); return }
+  if (!configForm.configValue) { ElMessage.warning('配置值不能为空'); return }
   try {
     await updateSetting(editingConfigKey.value, { configValue: configForm.configValue, description: configForm.description })
-    message.success('更新成功')
+    ElMessage.success('更新成功')
     configModalVisible.value = false; fetchSettings()
-  } catch (e: any) { message.error(e?.response?.data?.message || '更新失败') }
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '更新失败') }
 }
 
 onMounted(() => { fetchUsers(); fetchRoles(); fetchSettings() })
@@ -153,79 +136,114 @@ onMounted(() => { fetchUsers(); fetchRoles(); fetchSettings() })
 <template>
   <div>
     <h2 style="margin-bottom:16px">系统设置</h2>
-    <a-tabs v-model:activeKey="activeTab">
-      <a-tab-pane key="users" tab="用户管理">
+    <el-tabs v-model="activeTab">
+      <el-tab-pane label="用户管理" name="users">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <a-input-search v-model:value="userKeyword" placeholder="搜索用户" style="width:240px" allow-clear @search="handleSearchUser" />
-          <a-button type="primary" @click="openCreateUser">新建用户</a-button>
+          <el-input v-model="userKeyword" placeholder="搜索用户" style="width:240px" clearable @keyup.enter="handleSearchUser" @clear="handleSearchUser">
+            <template #append><el-button @click="handleSearchUser">搜索</el-button></template>
+          </el-input>
+          <el-button type="primary" @click="openCreateUser">新建用户</el-button>
         </div>
-        <a-table :columns="userColumns" :data-source="userList" :loading="loading" row-key="id" size="middle"
-          :pagination="{ current: pagination.current, pageSize: pagination.pageSize, total: pagination.total, onChange: (p: number) => { pagination.current = p; fetchUsers() } }">
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.dataIndex === 'roleName'">
-              <a-tag :color="record.role === 'ADMIN' ? 'red' : 'blue'">{{ record.roleName || record.role }}</a-tag>
+        <el-table v-loading="loading" :data="userList" row-key="id" border style="width:100%">
+          <el-table-column prop="username" label="用户名" width="140" />
+          <el-table-column label="角色" width="100">
+            <template #default="{ row }">
+              <el-tag :type="row.role === 'ADMIN' ? 'danger' : ''" size="small">{{ row.roleName || row.role }}</el-tag>
             </template>
-            <template v-if="column.key === 'status'">
-              <a-tag :color="record.isActive === 1 ? 'green' : 'default'">{{ record.isActive === 1 ? '启用' : '禁用' }}</a-tag>
+          </el-table-column>
+          <el-table-column label="状态" width="80">
+            <template #default="{ row }">
+              <el-tag :type="row.isActive === 1 ? 'success' : 'info'" size="small">{{ row.isActive === 1 ? '启用' : '禁用' }}</el-tag>
             </template>
-            <template v-if="column.dataIndex === 'createdAt'">{{ record.createdAt?.substring(0, 10) }}</template>
-            <template v-if="column.key === 'action'">
-              <a-space>
-                <a @click="openEditUser(record)">编辑</a>
-                <a @click="handleToggleStatus(record)">{{ record.isActive === 1 ? '禁用' : '启用' }}</a>
-                <a @click="openResetPassword(record)">重置密码</a>
-                <a style="color:#ff4d4f" @click="handleDeleteUser(record)">删除</a>
-              </a-space>
+          </el-table-column>
+          <el-table-column label="创建时间" width="120">
+            <template #default="{ row }">{{ row.createdAt?.substring(0, 10) }}</template>
+          </el-table-column>
+          <el-table-column label="操作" width="220">
+            <template #default="{ row }">
+              <el-button type="primary" link size="small" @click="openEditUser(row)">编辑</el-button>
+              <el-button type="primary" link size="small" @click="handleToggleStatus(row)">{{ row.isActive === 1 ? '禁用' : '启用' }}</el-button>
+              <el-button type="warning" link size="small" @click="openResetPassword(row)">重置密码</el-button>
+              <el-button type="danger" link size="small" @click="handleDeleteUser(row)">删除</el-button>
             </template>
-          </template>
-        </a-table>
-      </a-tab-pane>
-      <a-tab-pane key="global" tab="全局配置">
-        <a-table :columns="configColumns" :data-source="configList" :loading="configLoading" row-key="id" size="middle" :pagination="false">
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.dataIndex === 'updatedAt'">
-              {{ record.updatedAt?.replace('T', ' ').substring(0, 19) }}
+          </el-table-column>
+        </el-table>
+        <div style="display:flex;justify-content:flex-end;margin-top:16px">
+          <el-pagination background layout="total, prev, pager, next" :total="pagination.total"
+            :page-size="pagination.pageSize" :current-page="pagination.current"
+            @current-change="(p: number) => { pagination.current = p; fetchUsers() }" />
+        </div>
+      </el-tab-pane>
+      <el-tab-pane label="全局配置" name="global">
+        <el-table v-loading="configLoading" :data="configList" row-key="id" border style="width:100%">
+          <el-table-column prop="configKey" label="配置键" width="220" />
+          <el-table-column prop="configValue" label="配置值" show-overflow-tooltip />
+          <el-table-column prop="description" label="说明" show-overflow-tooltip />
+          <el-table-column label="更新时间" width="160">
+            <template #default="{ row }">{{ row.updatedAt?.replace('T', ' ').substring(0, 19) }}</template>
+          </el-table-column>
+          <el-table-column label="操作" width="100">
+            <template #default="{ row }">
+              <el-button type="primary" link size="small" @click="openEditConfig(row)">编辑</el-button>
             </template>
-            <template v-if="column.key === 'action'">
-              <a @click="openEditConfig(record)">编辑</a>
-            </template>
-          </template>
-        </a-table>
-      </a-tab-pane>
-    </a-tabs>
+          </el-table-column>
+        </el-table>
+      </el-tab-pane>
+    </el-tabs>
 
     <!-- 新建/编辑用户弹窗 -->
-    <a-modal v-model:open="modalVisible" :title="editingId ? '编辑用户' : '新建用户'" @ok="handleSubmitUser">
-      <a-form layout="vertical" style="margin-top:16px">
-        <a-form-item label="用户名" required><a-input v-model:value="form.username" /></a-form-item>
-        <a-form-item :label="editingId ? '新密码（留空不修改）' : '密码'" :required="!editingId">
-          <a-input-password v-model:value="form.password" />
-        </a-form-item>
-        <a-form-item label="显示名"><a-input v-model:value="form.displayName" /></a-form-item>
-        <a-form-item label="角色" required>
-          <a-select v-model:value="form.roleId" placeholder="请选择角色">
-            <a-select-option v-for="role in roleList" :key="role.id" :value="role.id">
-              {{ role.roleName }}（{{ role.roleCode }}）
-            </a-select-option>
-          </a-select>
-        </a-form-item>
-      </a-form>
-    </a-modal>
+    <el-dialog v-model="modalVisible" :title="editingId ? '编辑用户' : '新建用户'" width="500px">
+      <el-form label-position="top">
+        <el-form-item label="用户名" required>
+          <el-input v-model="form.username" />
+        </el-form-item>
+        <el-form-item :label="editingId ? '新密码（留空不修改）' : '密码'" :required="!editingId">
+          <el-input v-model="form.password" type="password" show-password />
+        </el-form-item>
+        <el-form-item label="显示名">
+          <el-input v-model="form.displayName" />
+        </el-form-item>
+        <el-form-item label="角色" required>
+          <el-select v-model="form.roleId" placeholder="请选择角色" style="width:100%">
+            <el-option v-for="role in roleList" :key="role.id" :value="role.id"
+              :label="`${role.roleName}（${role.roleCode}）`" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="modalVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmitUser">确定</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 重置密码弹窗 -->
-    <a-modal v-model:open="resetVisible" title="重置密码" @ok="handleResetPassword">
-      <a-form-item label="新密码" style="margin-top:16px">
-        <a-input-password v-model:value="newPassword" placeholder="至少 6 位" />
-      </a-form-item>
-    </a-modal>
+    <el-dialog v-model="resetVisible" title="重置密码" width="400px">
+      <el-form-item label="新密码">
+        <el-input v-model="newPassword" type="password" show-password placeholder="至少 6 位" />
+      </el-form-item>
+      <template #footer>
+        <el-button @click="resetVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleResetPassword">确定</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 编辑配置弹窗 -->
-    <a-modal v-model:open="configModalVisible" title="编辑配置" @ok="handleSubmitConfig">
-      <a-form layout="vertical" style="margin-top:16px">
-        <a-form-item label="配置键"><a-input :value="editingConfigKey" disabled /></a-form-item>
-        <a-form-item label="配置值" required><a-input v-model:value="configForm.configValue" /></a-form-item>
-        <a-form-item label="说明"><a-input v-model:value="configForm.description" /></a-form-item>
-      </a-form>
-    </a-modal>
+    <el-dialog v-model="configModalVisible" title="编辑配置" width="500px">
+      <el-form label-position="top">
+        <el-form-item label="配置键">
+          <el-input :model-value="editingConfigKey" disabled />
+        </el-form-item>
+        <el-form-item label="配置值" required>
+          <el-input v-model="configForm.configValue" />
+        </el-form-item>
+        <el-form-item label="说明">
+          <el-input v-model="configForm.description" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="configModalVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmitConfig">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>

@@ -4,7 +4,7 @@
  */
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message, Modal } from 'ant-design-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getCases, deleteCase, toggleCaseStatus } from '@/api/case'
 import { getSuites } from '@/api/suite'
 
@@ -20,16 +20,7 @@ const keyword = ref('')
 const selectedSuiteId = ref<number>(suiteId.value)
 const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 
-const columns = [
-  { title: '用例名称', dataIndex: 'name', width: 220 },
-  { title: '优先级', dataIndex: 'priority', width: 90 },
-  { title: '超时(秒)', dataIndex: 'timeout', width: 100 },
-  { title: '状态', key: 'status', width: 90 },
-  { title: '创建时间', dataIndex: 'createdAt', width: 120 },
-  { title: '操作', key: 'action', width: 200 },
-]
-
-const priorityColors: Record<string, string> = { P0: 'red', P1: 'orange', P2: 'blue', P3: 'default' }
+const priorityTypeMap: Record<string, string> = { P0: 'danger', P1: 'warning', P2: '', P3: 'info' }
 
 async function fetchSuites() {
   try {
@@ -69,16 +60,15 @@ function handleEdit(record: any) {
 async function handleToggleStatus(record: any) {
   try {
     await toggleCaseStatus(projectId.value, record.id)
-    message.success(record.isActive ? '已禁用' : '已启用')
+    ElMessage.success(record.isActive ? '已禁用' : '已启用')
     fetchList()
-  } catch { message.error('操作失败') }
+  } catch { ElMessage.error('操作失败') }
 }
 
 function handleDelete(record: any) {
-  Modal.confirm({
-    title: '确认删除', content: `确定删除用例「${record.name}」？`,
-    onOk: async () => { await deleteCase(projectId.value, record.id); message.success('删除成功'); fetchList() },
-  })
+  ElMessageBox.confirm(`确定删除用例「${record.name}」？`, '确认删除', { type: 'warning' })
+    .then(async () => { await deleteCase(projectId.value, record.id); ElMessage.success('删除成功'); fetchList() })
+    .catch(() => {})
 }
 
 watch(suiteId, (v) => { selectedSuiteId.value = v })
@@ -90,32 +80,44 @@ onMounted(() => { fetchSuites(); fetchList() })
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h2 style="margin:0">测试用例</h2>
       <div style="display:flex;gap:8px;align-items:center">
-        <a-select v-model:value="selectedSuiteId" placeholder="全部套件" allow-clear style="width:200px" @change="handleSuiteChange">
-          <a-select-option v-for="s in suites" :key="s.id" :value="s.id">{{ s.name }}</a-select-option>
-        </a-select>
-        <a-input-search v-model:value="keyword" placeholder="搜索用例" style="width:200px" allow-clear @search="handleSearch" />
-        <a-button type="primary" @click="openCreate">新建用例</a-button>
+        <el-select v-model="selectedSuiteId" placeholder="全部套件" clearable style="width:200px" @change="handleSuiteChange">
+          <el-option v-for="s in suites" :key="s.id" :value="s.id" :label="s.name" />
+        </el-select>
+        <el-input v-model="keyword" placeholder="搜索用例" style="width:200px" clearable @keyup.enter="handleSearch" @clear="handleSearch">
+          <template #append><el-button @click="handleSearch">搜索</el-button></template>
+        </el-input>
+        <el-button type="primary" @click="openCreate">新建用例</el-button>
       </div>
     </div>
 
-    <a-table :columns="columns" :data-source="list" :loading="loading" row-key="id" size="middle"
-      :pagination="{ current: pagination.current, pageSize: pagination.pageSize, total: pagination.total, onChange: (p: number) => { pagination.current = p; fetchList() } }">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'priority'">
-          <a-tag :color="priorityColors[record.priority] || 'default'">{{ record.priority }}</a-tag>
+    <el-table v-loading="loading" :data="list" row-key="id" border style="width:100%">
+      <el-table-column prop="name" label="用例名称" width="220" />
+      <el-table-column label="优先级" width="90">
+        <template #default="{ row }">
+          <el-tag :type="(priorityTypeMap[row.priority] || 'info') as any" size="small">{{ row.priority }}</el-tag>
         </template>
-        <template v-if="column.key === 'status'">
-          <a-tag :color="record.isActive ? 'green' : 'default'">{{ record.isActive ? '启用' : '禁用' }}</a-tag>
+      </el-table-column>
+      <el-table-column prop="timeout" label="超时(秒)" width="100" />
+      <el-table-column label="状态" width="90">
+        <template #default="{ row }">
+          <el-tag :type="row.isActive ? 'success' : 'info'" size="small">{{ row.isActive ? '启用' : '禁用' }}</el-tag>
         </template>
-        <template v-if="column.dataIndex === 'createdAt'">{{ record.createdAt?.substring(0, 10) }}</template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a @click="handleEdit(record)">编辑</a>
-            <a @click="handleToggleStatus(record)">{{ record.isActive ? '禁用' : '启用' }}</a>
-            <a style="color:#ff4d4f" @click="handleDelete(record)">删除</a>
-          </a-space>
+      </el-table-column>
+      <el-table-column label="创建时间" width="120">
+        <template #default="{ row }">{{ row.createdAt?.substring(0, 10) }}</template>
+      </el-table-column>
+      <el-table-column label="操作" width="200">
+        <template #default="{ row }">
+          <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
+          <el-button type="primary" link size="small" @click="handleToggleStatus(row)">{{ row.isActive ? '禁用' : '启用' }}</el-button>
+          <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px">
+      <el-pagination background layout="total, prev, pager, next" :total="pagination.total"
+        :page-size="pagination.pageSize" :current-page="pagination.current"
+        @current-change="(p: number) => { pagination.current = p; fetchList() }" />
+    </div>
   </div>
 </template>

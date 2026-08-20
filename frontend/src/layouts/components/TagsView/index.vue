@@ -102,12 +102,12 @@ function handleClose(view: TagView) {
   transition: all 0.2s;
 }
 .tag-item:hover {
-  border-color: #1890ff;
-  color: #1890ff;
+  border-color: #409eff;
+  color: #409eff;
 }
 .tag-item.active {
-  background: #1890ff;
-  border-color: #1890ff;
+  background: #409eff;
+  border-color: #409eff;
   color: #fff;
 }
 .tag-close {

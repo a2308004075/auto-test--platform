@@ -5,7 +5,7 @@
  */
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import { useUserStore, useProjectStore } from '@/stores'
 import { logout as logoutApi } from '@/api/auth'
 import Hamburger from '@/components/Hamburger/index.vue'
@@ -27,7 +27,7 @@ async function handleLogout() {
   try { await logoutApi() } catch { /* ignore */ }
   userStore.logout()
   projectStore.clearCurrentProject()
-  message.success('已退出登录')
+  ElMessage.success('已退出登录')
   router.push('/project')
 }
 
@@ -48,16 +48,16 @@ function handleLoginSuccess() {
     <div class="navbar-right">
       <template v-if="userStore.isLoggedIn">
         <span v-if="userStore.username" class="user-info">{{ userStore.username }}</span>
-        <a-button type="link" size="small" @click="handleLogout">退出</a-button>
+        <el-button type="primary" link size="small" @click="handleLogout">退出</el-button>
       </template>
       <template v-else>
-        <a-button type="primary" size="small" @click="loginModalOpen = true">立即登录</a-button>
+        <el-button type="primary" size="small" @click="loginModalOpen = true">立即登录</el-button>
       </template>
     </div>
   </div>
 
   <!-- 登录弹窗 -->
-  <LoginModal v-model:open="loginModalOpen" @success="handleLoginSuccess" />
+  <LoginModal v-model="loginModalOpen" @success="handleLoginSuccess" />
 </template>
 
 <style scoped>
@@ -65,7 +65,7 @@ function handleLoginSuccess() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 48px;
+  height: 50px;
   background: #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   padding-right: 16px;
@@ -76,8 +76,8 @@ function handleLoginSuccess() {
   gap: 8px;
 }
 .project-badge {
-  background: #e6f7ff;
-  color: #1890ff;
+  background: #ecf5ff;
+  color: #409eff;
   padding: 2px 10px;
   border-radius: 4px;
   font-size: 13px;
@@ -88,7 +88,7 @@ function handleLoginSuccess() {
   gap: 8px;
 }
 .user-info {
-  color: #666;
+  color: #606266;
   font-size: 13px;
 }
 </style>

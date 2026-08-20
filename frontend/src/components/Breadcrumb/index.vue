@@ -15,11 +15,11 @@ const items = computed(() => {
 </script>
 
 <template>
-  <a-breadcrumb v-if="items.length" class="app-breadcrumb">
-    <a-breadcrumb-item v-for="(item, idx) in items" :key="idx">
+  <el-breadcrumb v-if="items.length" separator="/" class="app-breadcrumb">
+    <el-breadcrumb-item v-for="(item, idx) in items" :key="idx">
       {{ item.title }}
-    </a-breadcrumb-item>
-  </a-breadcrumb>
+    </el-breadcrumb-item>
+  </el-breadcrumb>
 </template>
 
 <style scoped>

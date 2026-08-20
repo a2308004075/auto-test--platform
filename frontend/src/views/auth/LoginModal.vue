@@ -4,13 +4,13 @@
  * 包含验证码图片和记住密码功能
  */
 import { ref, reactive, watch } from 'vue'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import { login, getCaptcha } from '@/api/auth'
 import { useUserStore } from '@/stores'
 
-const props = defineProps<{ open: boolean }>()
+const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{
-  (e: 'update:open', value: boolean): void
+  (e: 'update:modelValue', value: boolean): void
   (e: 'success'): void
 }>()
 
@@ -37,7 +37,7 @@ async function loadCaptcha() {
     captchaImage.value = res.data?.image || ''
     form.captchaId = res.data?.captchaId || ''
   } catch {
-    message.error('获取验证码失败，请刷新重试')
+    ElMessage.error('获取验证码失败，请刷新重试')
   } finally {
     captchaLoading.value = false
   }
@@ -46,9 +46,8 @@ async function loadCaptcha() {
 /**
  * 打开弹窗时初始化
  */
-watch(() => props.open, (val) => {
+watch(() => props.modelValue, (val) => {
   if (val) {
-    // 加载记住的凭据
     const remembered = userStore.loadRememberedCredentials()
     if (remembered) {
       form.username = remembered.username
@@ -69,11 +68,11 @@ watch(() => props.open, (val) => {
  */
 async function handleLogin() {
   if (!form.username || !form.password) {
-    message.warning('请输入用户名和密码')
+    ElMessage.warning('请输入用户名和密码')
     return
   }
   if (!form.captchaCode) {
-    message.warning('请输入验证码')
+    ElMessage.warning('请输入验证码')
     return
   }
   loading.value = true
@@ -94,18 +93,16 @@ async function handleLogin() {
         role: data.user.role,
       })
     }
-    // 记住密码
     if (form.rememberPassword) {
       userStore.saveRememberedCredentials(form.username, form.password)
     } else {
       userStore.clearRememberedCredentials()
     }
-    message.success('登录成功')
-    emit('update:open', false)
+    ElMessage.success('登录成功')
+    emit('update:modelValue', false)
     emit('success')
   } catch (e: any) {
-    message.error(e?.response?.data?.message || '登录失败')
-    // 登录失败后刷新验证码
+    ElMessage.error(e?.response?.data?.message || '登录失败')
     loadCaptcha()
     form.captchaCode = ''
   } finally {
@@ -115,76 +112,83 @@ async function handleLogin() {
 </script>
 
 <template>
-  <a-modal
-    :open="open"
-    @update:open="(val: boolean) => emit('update:open', val)"
-    :footer="null"
-    :width="420"
-    :mask-closable="false"
-    centered
+  <el-dialog
+    :model-value="modelValue"
+    @update:model-value="(val: boolean) => emit('update:modelValue', val)"
+    :show-close="true"
+    width="420px"
+    :close-on-click-modal="false"
+    align-center
   >
     <div class="login-modal">
       <div class="login-header">
         <h2>项目管理平台</h2>
         <p>请登录您的账户</p>
       </div>
-      <a-form layout="vertical" @finish="handleLogin">
-        <a-form-item label="用户名" required>
-          <a-input
-            v-model:value="form.username"
+      <el-form label-position="top" @submit.prevent="handleLogin">
+        <el-form-item label="用户名">
+          <el-input
+            v-model="form.username"
             placeholder="请输入用户名"
             size="large"
-            allow-clear
+            clearable
           />
-        </a-form-item>
-        <a-form-item label="密码" required>
-          <a-input-password
-            v-model:value="form.password"
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input
+            v-model="form.password"
+            type="password"
+            show-password
             placeholder="请输入密码"
             size="large"
-            @press-enter="handleLogin"
+            @keyup.enter="handleLogin"
           />
-        </a-form-item>
-        <a-form-item label="验证码" required>
-          <div style="display:flex;gap:8px;align-items:center">
-            <a-input
-              v-model:value="form.captchaCode"
+        </el-form-item>
+        <el-form-item label="验证码">
+          <div style="display:flex;gap:8px;align-items:center;width:100%">
+            <el-input
+              v-model="form.captchaCode"
               placeholder="请输入验证码"
               size="large"
               style="flex:1"
-              @press-enter="handleLogin"
+              @keyup.enter="handleLogin"
             />
             <div
               class="captcha-image"
               @click="loadCaptcha"
               :title="captchaLoading ? '加载中...' : '点击刷新验证码'"
             >
-              <a-spin v-if="captchaLoading" size="small" />
+              <el-icon v-if="captchaLoading" class="is-loading" :size="20"><Loading /></el-icon>
               <img v-else-if="captchaImage" :src="captchaImage" alt="验证码" style="height:40px;cursor:pointer;border-radius:4px" />
-              <div v-else style="height:40px;line-height:40px;color:#999;font-size:12px;text-align:center;width:120px;background:#f5f5f5;border-radius:4px">点击加载</div>
+              <div v-else style="height:40px;line-height:40px;color:#909399;font-size:12px;text-align:center;width:120px;background:#f5f7fa;border-radius:4px">点击加载</div>
             </div>
           </div>
-        </a-form-item>
-        <a-form-item>
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <a-checkbox v-model:checked="form.rememberPassword">记录密码</a-checkbox>
-            <a-button
+        </el-form-item>
+        <el-form-item>
+          <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+            <el-checkbox v-model="form.rememberPassword">记住密码</el-checkbox>
+            <el-button
               type="primary"
               size="large"
               :loading="loading"
               @click="handleLogin"
             >
               登录
-            </a-button>
+            </el-button>
           </div>
-        </a-form-item>
-      </a-form>
+        </el-form-item>
+      </el-form>
       <div class="login-footer">
         <span>默认账户: admin / admin123</span>
       </div>
     </div>
-  </a-modal>
+  </el-dialog>
 </template>
+
+<script lang="ts">
+import { Loading } from '@element-plus/icons-vue'
+export default { components: { Loading } }
+</script>
 
 <style scoped>
 .login-modal {
@@ -196,15 +200,15 @@ async function handleLogin() {
 }
 .login-header h2 {
   margin: 0 0 8px;
-  color: #333;
+  color: #303133;
 }
 .login-header p {
   margin: 0;
-  color: #999;
+  color: #909399;
 }
 .login-footer {
   text-align: center;
-  color: #999;
+  color: #909399;
   font-size: 12px;
   margin-top: 8px;
 }

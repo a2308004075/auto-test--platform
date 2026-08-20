@@ -4,7 +4,7 @@
  */
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { message, Modal } from 'ant-design-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTools, createTool, updateTool, deleteTool, testTool } from '@/api/tool'
 
 const route = useRoute()
@@ -22,14 +22,6 @@ const editingId = ref<number>(0)
 const form = reactive({ name: '', category: 'CUSTOM', description: '', code: 'return "Hello"', returnType: 'String', paramDefinitions: '[]' })
 const testInput = ref('{}')
 const currentTestId = ref<number>(0)
-
-const columns = [
-  { title: '名称', dataIndex: 'name', width: 200 },
-  { title: '分类', dataIndex: 'category', width: 100 },
-  { title: '返回类型', dataIndex: 'returnType', width: 100 },
-  { title: '描述', dataIndex: 'description', ellipsis: true },
-  { title: '操作', key: 'action', width: 180 },
-]
 
 async function fetchList() {
   loading.value = true
@@ -55,17 +47,17 @@ function openEdit(record: any) {
 }
 
 async function handleSubmit() {
-  if (!form.name || !form.code) { message.warning('请填写必填项'); return }
+  if (!form.name || !form.code) { ElMessage.warning('请填写必填项'); return }
   try {
     if (editingId.value) {
       await updateTool(projectId.value, editingId.value, form)
-      message.success('更新成功')
+      ElMessage.success('更新成功')
     } else {
       await createTool(projectId.value, { ...form, projectId: projectId.value })
-      message.success('创建成功')
+      ElMessage.success('创建成功')
     }
     modalVisible.value = false; fetchList()
-  } catch (e: any) { message.error(e?.response?.data?.message || '操作失败') }
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
 }
 
 function openTest(record: any) {
@@ -84,10 +76,9 @@ async function handleTest() {
 }
 
 function handleDelete(record: any) {
-  Modal.confirm({
-    title: '确认删除', content: `确定删除工具「${record.name}」？`,
-    onOk: async () => { await deleteTool(projectId.value, record.id); message.success('删除成功'); fetchList() },
-  })
+  ElMessageBox.confirm(`确定删除工具「${record.name}」？`, '确认删除', { type: 'warning' })
+    .then(async () => { await deleteTool(projectId.value, record.id); ElMessage.success('删除成功'); fetchList() })
+    .catch(() => {})
 }
 
 onMounted(fetchList)
@@ -98,43 +89,73 @@ onMounted(fetchList)
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h2>工具方法</h2>
       <div style="display:flex;gap:8px">
-        <a-radio-group v-model:value="category" button-style="solid" @change="fetchList">
-          <a-radio-button value="">全部</a-radio-button>
-          <a-radio-button value="BUILTIN">内置</a-radio-button>
-          <a-radio-button value="CUSTOM">自定义</a-radio-button>
-        </a-radio-group>
-        <a-button type="primary" @click="openCreate">新建工具</a-button>
+        <el-radio-group v-model="category" size="default" @change="fetchList">
+          <el-radio-button value="">全部</el-radio-button>
+          <el-radio-button value="BUILTIN">内置</el-radio-button>
+          <el-radio-button value="CUSTOM">自定义</el-radio-button>
+        </el-radio-group>
+        <el-button type="primary" @click="openCreate">新建工具</el-button>
       </div>
     </div>
-    <a-table :columns="columns" :data-source="list" :loading="loading" row-key="id" size="middle"
-      :pagination="{ current: pagination.current, pageSize: pagination.pageSize, total: pagination.total, onChange: (p: number) => { pagination.current = p; fetchList() } }">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'category'">
-          <a-tag :color="record.category === 'BUILTIN' ? 'blue' : 'green'">{{ record.category === 'BUILTIN' ? '内置' : '自定义' }}</a-tag>
+    <el-table v-loading="loading" :data="list" row-key="id" border style="width:100%">
+      <el-table-column prop="name" label="名称" width="200" />
+      <el-table-column label="分类" width="100">
+        <template #default="{ row }">
+          <el-tag :type="row.category === 'BUILTIN' ? '' : 'success'" size="small">{{ row.category === 'BUILTIN' ? '内置' : '自定义' }}</el-tag>
         </template>
-        <template v-if="column.key === 'action'">
-          <a-space><a @click="openTest(record)">测试</a><a @click="openEdit(record)">编辑</a><a style="color:#ff4d4f" @click="handleDelete(record)">删除</a></a-space>
+      </el-table-column>
+      <el-table-column prop="returnType" label="返回类型" width="100" />
+      <el-table-column prop="description" label="描述" show-overflow-tooltip />
+      <el-table-column label="操作" width="180">
+        <template #default="{ row }">
+          <el-button type="primary" link size="small" @click="openTest(row)">测试</el-button>
+          <el-button type="primary" link size="small" @click="openEdit(row)">编辑</el-button>
+          <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px">
+      <el-pagination background layout="total, prev, pager, next" :total="pagination.total"
+        :page-size="pagination.pageSize" :current-page="pagination.current"
+        @current-change="(p: number) => { pagination.current = p; fetchList() }" />
+    </div>
 
     <!-- 新建/编辑弹窗 -->
-    <a-modal v-model:open="modalVisible" :title="editingId ? '编辑工具' : '新建工具'" @ok="handleSubmit" :width="640">
-      <a-form layout="vertical" style="margin-top:16px">
-        <a-form-item label="名称" required><a-input v-model:value="form.name" /></a-form-item>
-        <a-form-item label="描述"><a-input v-model:value="form.description" /></a-form-item>
-        <a-form-item label="Groovy 代码" required><a-textarea v-model:value="form.code" :rows="8" style="font-family:monospace" /></a-form-item>
-        <a-form-item label="返回类型"><a-input v-model:value="form.returnType" /></a-form-item>
-      </a-form>
-    </a-modal>
+    <el-dialog v-model="modalVisible" :title="editingId ? '编辑工具' : '新建工具'" width="640px">
+      <el-form label-position="top">
+        <el-form-item label="名称" required>
+          <el-input v-model="form.name" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="form.description" />
+        </el-form-item>
+        <el-form-item label="Groovy 代码" required>
+          <el-input v-model="form.code" type="textarea" :rows="8" style="font-family:monospace" />
+        </el-form-item>
+        <el-form-item label="返回类型">
+          <el-input v-model="form.returnType" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="modalVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 测试弹窗 -->
-    <a-modal v-model:open="testVisible" title="在线测试" @ok="handleTest" :confirm-loading="testLoading" ok-text="执行">
-      <a-form-item label="输入参数 (JSON)"><a-textarea v-model:value="testInput" :rows="4" style="font-family:monospace" /></a-form-item>
+    <el-dialog v-model="testVisible" title="在线测试" width="560px">
+      <el-form-item label="输入参数 (JSON)">
+        <el-input v-model="testInput" type="textarea" :rows="4" style="font-family:monospace" />
+      </el-form-item>
       <div v-if="testResult" style="margin-top:12px">
-        <a-alert :type="testResult.success ? 'success' : 'error'" :message="testResult.success ? '执行成功' : '执行失败'" :description="testResult.output || testResult.error" show-icon />
-        <div v-if="testResult.executionTimeMs" style="color:#999;margin-top:4px">耗时: {{ testResult.executionTimeMs }}ms</div>
+        <el-alert :type="testResult.success ? 'success' : 'error'" :title="testResult.success ? '执行成功' : '执行失败'"
+          :description="testResult.output || testResult.error" show-icon :closable="false" />
+        <div v-if="testResult.executionTimeMs" style="color:#909399;margin-top:4px">耗时: {{ testResult.executionTimeMs }}ms</div>
       </div>
-    </a-modal>
+      <template #footer>
+        <el-button @click="testVisible = false">关闭</el-button>
+        <el-button type="primary" :loading="testLoading" @click="handleTest">执行</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>

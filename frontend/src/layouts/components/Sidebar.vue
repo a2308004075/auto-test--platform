@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 侧边栏组件
- * 项目上下文感知菜单（复用 MainLayout 菜单逻辑）
+ * 使用 Element Plus el-menu 实现暗色主题侧边菜单
  */
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -17,7 +17,7 @@ const inProject = computed(() => route.meta?.inProject === true)
 const projectId = computed(() => Number(route.params.id) || 0)
 
 // 侧边栏选中 key
-const selectedKey = computed(() => {
+const activeMenu = computed(() => {
   const name = (route.name as string) || ''
   if (name.startsWith('Api') || name === 'SwaggerImport') return 'apis'
   if (name.startsWith('Environment')) return 'environments'
@@ -33,6 +33,8 @@ const selectedKey = computed(() => {
   if (name === 'Settings') return 'settings'
   return ''
 })
+
+const isCollapse = computed(() => !appStore.sidebarOpened)
 
 const menuItems = computed(() => {
   if (inProject.value) {
@@ -56,34 +58,34 @@ const menuItems = computed(() => {
   ]
 })
 
-function handleMenuClick({ key }: { key: string }) {
-  const item = menuItems.value.find(m => m.key === key)
+function handleMenuSelect(index: string) {
+  const item = menuItems.value.find(m => m.key === index)
   if (item) router.push(item.path)
 }
 </script>
 
 <template>
-  <a-layout-sider
-    class="sidebar-container"
-    collapsible
-    :collapsed="!appStore.sidebarOpened"
-    :trigger="null"
-    :width="200"
-    :collapsed-width="48"
-  >
+  <div :class="{ 'has-logo': true }">
     <div class="sidebar-logo">
-      <h1 v-if="appStore.sidebarOpened">项目管理平台</h1>
+      <h1 v-if="!isCollapse">Auto-Test</h1>
       <h1 v-else>AT</h1>
     </div>
-    <a-menu
-      theme="dark"
-      mode="inline"
-      :selected-keys="[selectedKey]"
-      @click="handleMenuClick"
-    >
-      <a-menu-item v-for="item in menuItems" :key="item.key">
-        <span>{{ item.label }}</span>
-      </a-menu-item>
-    </a-menu>
-  </a-layout-sider>
+    <el-scrollbar wrap-class="scrollbar-wrapper">
+      <el-menu
+        :default-active="activeMenu"
+        :collapse="isCollapse"
+        background-color="#001529"
+        text-color="#bfcbd9"
+        active-text-color="#409eff"
+        :unique-opened="false"
+        :collapse-transition="false"
+        mode="vertical"
+        @select="handleMenuSelect"
+      >
+        <el-menu-item v-for="item in menuItems" :key="item.key" :index="item.key">
+          <span>{{ item.label }}</span>
+        </el-menu-item>
+      </el-menu>
+    </el-scrollbar>
+  </div>
 </template>

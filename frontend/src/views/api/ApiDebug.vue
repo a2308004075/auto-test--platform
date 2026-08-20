@@ -4,7 +4,7 @@
  */
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import { getApi, debugApi } from '@/api/apidoc'
 import { getEnvironments } from '@/api/environment'
 
@@ -17,13 +17,13 @@ const loading = ref(false)
 const apiInfo = ref<any>({})
 const environments = ref<any[]>([])
 const debugResult = ref<any>(null)
-const form = reactive({ environmentId: null, body: '', queryParams: '{}', headers: '{}' })
+const form = reactive({ environmentId: null as number | null, body: '', queryParams: '{}', headers: '{}' })
 
 async function fetchApi() {
   try {
     const res: any = await getApi(projectId.value, apiId.value)
     apiInfo.value = res.data || {}
-  } catch { message.error('加载接口信息失败') }
+  } catch { ElMessage.error('加载接口信息失败') }
 }
 
 async function fetchEnvironments() {
@@ -34,7 +34,7 @@ async function fetchEnvironments() {
 }
 
 async function handleDebug() {
-  if (!form.environmentId) { message.warning('请选择环境'); return }
+  if (!form.environmentId) { ElMessage.warning('请选择环境'); return }
   loading.value = true
   debugResult.value = null
   try {
@@ -56,50 +56,52 @@ onMounted(() => { fetchApi(); fetchEnvironments() })
 
 <template>
   <div>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
-      <a @click="router.back()">← 返回</a>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <el-button type="primary" link @click="router.back()">← 返回</el-button>
       <h2 style="margin:0">调试: {{ apiInfo.name }}</h2>
-      <a-tag :color="apiInfo.httpMethod === 'GET' ? 'blue' : 'green'">{{ apiInfo.httpMethod }}</a-tag>
-      <code>{{ apiInfo.path }}</code>
+      <el-tag :type="apiInfo.httpMethod === 'GET' ? '' : 'success'" size="small">{{ apiInfo.httpMethod }}</el-tag>
+      <code style="color:#606266">{{ apiInfo.path }}</code>
     </div>
-    <a-row :gutter="24">
-      <a-col :span="12">
-        <a-card title="请求配置" size="small">
-          <a-form layout="vertical">
-            <a-form-item label="环境">
-              <a-select v-model:value="form.environmentId" placeholder="选择环境">
-                <a-select-option v-for="e in environments" :key="e.id" :value="e.id">{{ e.name }}</a-select-option>
-              </a-select>
-            </a-form-item>
-            <a-form-item label="查询参数 (JSON)">
-              <a-textarea v-model:value="form.queryParams" :rows="3" style="font-family:monospace" />
-            </a-form-item>
-            <a-form-item label="请求头 (JSON)">
-              <a-textarea v-model:value="form.headers" :rows="3" style="font-family:monospace" />
-            </a-form-item>
-            <a-form-item label="请求体">
-              <a-textarea v-model:value="form.body" :rows="5" style="font-family:monospace" />
-            </a-form-item>
-            <a-button type="primary" :loading="loading" @click="handleDebug" block>发送请求</a-button>
-          </a-form>
-        </a-card>
-      </a-col>
-      <a-col :span="12">
-        <a-card title="响应结果" size="small">
-          <div v-if="!debugResult" style="color:#999;text-align:center;padding:40px">点击"发送请求"开始调试</div>
+    <el-row :gutter="24">
+      <el-col :span="12">
+        <el-card>
+          <template #header><span>请求配置</span></template>
+          <el-form label-position="top">
+            <el-form-item label="环境">
+              <el-select v-model="form.environmentId" placeholder="选择环境" style="width:100%">
+                <el-option v-for="e in environments" :key="e.id" :value="e.id" :label="e.name" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="查询参数 (JSON)">
+              <el-input v-model="form.queryParams" type="textarea" :rows="3" style="font-family:monospace" />
+            </el-form-item>
+            <el-form-item label="请求头 (JSON)">
+              <el-input v-model="form.headers" type="textarea" :rows="3" style="font-family:monospace" />
+            </el-form-item>
+            <el-form-item label="请求体">
+              <el-input v-model="form.body" type="textarea" :rows="5" style="font-family:monospace" />
+            </el-form-item>
+            <el-button type="primary" :loading="loading" @click="handleDebug" style="width:100%">发送请求</el-button>
+          </el-form>
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card>
+          <template #header><span>响应结果</span></template>
+          <div v-if="!debugResult" style="color:#909399;text-align:center;padding:40px">点击"发送请求"开始调试</div>
           <div v-else>
-            <a-descriptions :column="2" size="small" bordered style="margin-bottom:12px">
-              <a-descriptions-item label="状态码">
-                <a-tag :color="debugResult.success ? 'green' : 'red'">{{ debugResult.statusCode || 'ERROR' }}</a-tag>
-              </a-descriptions-item>
-              <a-descriptions-item label="耗时">{{ debugResult.responseTimeMs }}ms</a-descriptions-item>
-            </a-descriptions>
-            <div v-if="debugResult.errorMessage" style="color:red;margin-bottom:8px">{{ debugResult.errorMessage }}</div>
-            <a-typography-title :level="5">响应体</a-typography-title>
-            <pre style="background:#f5f5f5;padding:12px;border-radius:4px;max-height:400px;overflow:auto;font-size:12px">{{ debugResult.responseBody }}</pre>
+            <el-descriptions :column="2" size="small" border style="margin-bottom:12px">
+              <el-descriptions-item label="状态码">
+                <el-tag :type="debugResult.success ? 'success' : 'danger'" size="small">{{ debugResult.statusCode || 'ERROR' }}</el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="耗时">{{ debugResult.responseTimeMs }}ms</el-descriptions-item>
+            </el-descriptions>
+            <div v-if="debugResult.errorMessage" style="color:#f56c6c;margin-bottom:8px">{{ debugResult.errorMessage }}</div>
+            <h5 style="margin:12px 0 8px">响应体</h5>
+            <pre style="background:#f5f7fa;padding:12px;border-radius:4px;max-height:400px;overflow:auto;font-size:12px">{{ debugResult.responseBody }}</pre>
           </div>
-        </a-card>
-      </a-col>
-    </a-row>
+        </el-card>
+      </el-col>
+    </el-row>
   </div>
 </template>

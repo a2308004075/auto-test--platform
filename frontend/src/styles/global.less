@@ -2,6 +2,28 @@
 @import './variables.less';
 @import './sidebar.less';
 @import './transition.less';
+@import './element-plus.less';
+@import './scrollbar.less';
+
+:root {
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-primary: #409eff;
+  --color-success: #67c23a;
+  --color-warning: #e6a23c;
+  --color-danger: #f56c6c;
+  --color-info: #909399;
+  --color-text-primary: #303133;
+  --color-text-regular: #606266;
+  --color-text-secondary: #909399;
+  --color-text-placeholder: #c0c4cc;
+  --background-color-base: #f5f7fa;
+  --background-color-light: #fafafa;
+  --border-color-base: #dcdfe6;
+  --box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  --font-size-extra-small: 12px;
+  --line-height: 36px;
+}
 
 * {
   margin: 0;
@@ -21,4 +43,35 @@ body,
 
 body {
   background: @layoutContentBg;
+  min-width: 1280px;
+  overflow: hidden;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
+
+a:focus,
+a:active {
+  outline: none;
+}
+
+a,
+a:focus,
+a:hover {
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
+}
+
+div:focus {
+  outline: none;
+}
+
+// 全局辅助类
+.color-primary { color: var(--color-primary); }
+.color-success { color: var(--color-success); }
+.color-warning { color: var(--color-warning); }
+.color-danger { color: var(--color-danger); }
+.color-info { color: var(--color-info); }
+
+.box-shadow { box-shadow: var(--box-shadow); }

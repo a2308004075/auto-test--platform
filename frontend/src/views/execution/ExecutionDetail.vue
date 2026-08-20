@@ -5,7 +5,7 @@
  */
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { ElMessage } from 'element-plus'
 import { getExecution, getExecutionResults } from '@/api/execution'
 import { useExecutionWebSocket } from '@/composables/useExecutionWebSocket'
 
@@ -40,24 +40,16 @@ const liveExecution = computed(() => {
 
 const liveMessage = computed(() => progress.value?.message || '')
 
-const statusColors: Record<string, string> = {
-  PENDING: 'default', RUNNING: 'processing', COMPLETED: 'success',
-  FAILED: 'error', CANCELLED: 'warning',
-  PASSED: 'success', SKIPPED: 'default', ERROR: 'error',
+const statusTypeMap: Record<string, string> = {
+  PENDING: 'info', RUNNING: '', COMPLETED: 'success',
+  FAILED: 'danger', CANCELLED: 'warning',
+  PASSED: 'success', SKIPPED: 'info', ERROR: 'danger',
 }
 const statusLabels: Record<string, string> = {
   PENDING: '等待中', RUNNING: '执行中', COMPLETED: '已完成',
   FAILED: '执行失败', CANCELLED: '已取消',
   PASSED: '通过', SKIPPED: '跳过', ERROR: '错误',
 }
-
-const resultColumns = [
-  { title: '用例名称', dataIndex: 'caseName', width: 200 },
-  { title: '状态', key: 'status', width: 90 },
-  { title: '耗时(ms)', dataIndex: 'durationMs', width: 100 },
-  { title: '结果', dataIndex: 'actualResult', ellipsis: true },
-  { title: '操作', key: 'action', width: 80 },
-]
 
 async function loadData() {
   loading.value = true
@@ -72,7 +64,7 @@ async function loadData() {
     if (execution.value.status === 'RUNNING' || execution.value.status === 'PENDING') {
       connect()
     }
-  } catch { message.error('加载执行详情失败') } finally { loading.value = false }
+  } catch { ElMessage.error('加载执行详情失败') } finally { loading.value = false }
 }
 
 // 监听 WebSocket 进度，终态时自动刷新结果
@@ -101,99 +93,117 @@ onMounted(loadData)
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <div style="display:flex;align-items:center;gap:12px">
         <h2 style="margin:0">执行详情</h2>
-        <a-badge v-if="connected" status="processing" text="实时" />
+        <el-tag v-if="connected" type="success" size="small" effect="dark">实时</el-tag>
       </div>
-      <a-space>
-        <a-button @click="router.back()">返回</a-button>
-        <a-button @click="refresh">刷新</a-button>
-      </a-space>
+      <div style="display:flex;gap:8px">
+        <el-button @click="router.back()">返回</el-button>
+        <el-button @click="refresh">刷新</el-button>
+      </div>
     </div>
 
     <!-- 实时进度提示 -->
-    <a-alert v-if="liveMessage && connected" :message="liveMessage" type="info" show-icon
-      style="margin-bottom:16px" />
+    <el-alert v-if="liveMessage && connected" :title="liveMessage" type="info" show-icon
+      :closable="false" style="margin-bottom:16px" />
 
     <!-- 统计卡片 -->
-    <a-row :gutter="16" style="margin-bottom:16px">
-      <a-col :span="4">
-        <a-card size="small">
-          <a-statistic title="总用例" :value="liveExecution.totalCases || 0" />
-        </a-card>
-      </a-col>
-      <a-col :span="4">
-        <a-card size="small">
-          <a-statistic title="通过" :value="liveExecution.passedCases || 0" :value-style="{ color: '#52c41a' }" />
-        </a-card>
-      </a-col>
-      <a-col :span="4">
-        <a-card size="small">
-          <a-statistic title="失败" :value="liveExecution.failedCases || 0" :value-style="{ color: '#ff4d4f' }" />
-        </a-card>
-      </a-col>
-      <a-col :span="4">
-        <a-card size="small">
-          <a-statistic title="跳过" :value="liveExecution.skippedCases || 0" :value-style="{ color: '#999' }" />
-        </a-card>
-      </a-col>
-      <a-col :span="4">
-        <a-card size="small">
-          <a-statistic title="耗时(ms)" :value="liveExecution.durationMs || 0" />
-        </a-card>
-      </a-col>
-      <a-col :span="4">
-        <a-card size="small">
-          <div style="font-size:12px;color:#999;margin-bottom:4px">状态</div>
-          <a-tag :color="statusColors[liveExecution.status] || 'default'" style="font-size:14px">
-            {{ statusLabels[liveExecution.status] || liveExecution.status }}
-          </a-tag>
-        </a-card>
-      </a-col>
-    </a-row>
+    <el-row :gutter="16" style="margin-bottom:16px">
+      <el-col :span="4">
+        <el-card shadow="hover" class="stat-card">
+          <div class="stat-label">总用例</div>
+          <div class="stat-value">{{ liveExecution.totalCases || 0 }}</div>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
+        <el-card shadow="hover" class="stat-card">
+          <div class="stat-label">通过</div>
+          <div class="stat-value" style="color:#67c23a">{{ liveExecution.passedCases || 0 }}</div>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
+        <el-card shadow="hover" class="stat-card">
+          <div class="stat-label">失败</div>
+          <div class="stat-value" style="color:#f56c6c">{{ liveExecution.failedCases || 0 }}</div>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
+        <el-card shadow="hover" class="stat-card">
+          <div class="stat-label">跳过</div>
+          <div class="stat-value" style="color:#909399">{{ liveExecution.skippedCases || 0 }}</div>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
+        <el-card shadow="hover" class="stat-card">
+          <div class="stat-label">耗时(ms)</div>
+          <div class="stat-value">{{ liveExecution.durationMs || 0 }}</div>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
+        <el-card shadow="hover" class="stat-card">
+          <div class="stat-label">状态</div>
+          <div style="margin-top:4px">
+            <el-tag :type="(statusTypeMap[liveExecution.status] || 'info') as any" size="large">
+              {{ statusLabels[liveExecution.status] || liveExecution.status }}
+            </el-tag>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
 
     <!-- 基本信息 -->
-    <a-card size="small" style="margin-bottom:16px">
-      <a-descriptions :column="3" size="small">
-        <a-descriptions-item label="计划">{{ execution.planName }}</a-descriptions-item>
-        <a-descriptions-item label="环境">{{ execution.environmentName || '-' }}</a-descriptions-item>
-        <a-descriptions-item label="触发方式">{{ execution.triggerType }}</a-descriptions-item>
-        <a-descriptions-item label="开始时间">{{ execution.startedAt?.substring(0, 19).replace('T', ' ') || '-' }}</a-descriptions-item>
-        <a-descriptions-item label="结束时间">{{ execution.finishedAt?.substring(0, 19).replace('T', ' ') || '-' }}</a-descriptions-item>
-        <a-descriptions-item label="创建时间">{{ execution.createdAt?.substring(0, 19).replace('T', ' ') || '-' }}</a-descriptions-item>
-      </a-descriptions>
-    </a-card>
+    <el-card style="margin-bottom:16px">
+      <el-descriptions :column="3" size="small" border>
+        <el-descriptions-item label="计划">{{ execution.planName }}</el-descriptions-item>
+        <el-descriptions-item label="环境">{{ execution.environmentName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="触发方式">{{ execution.triggerType }}</el-descriptions-item>
+        <el-descriptions-item label="开始时间">{{ execution.startedAt?.substring(0, 19).replace('T', ' ') || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="结束时间">{{ execution.finishedAt?.substring(0, 19).replace('T', ' ') || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ execution.createdAt?.substring(0, 19).replace('T', ' ') || '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-card>
 
     <!-- 用例结果列表 -->
-    <a-table :columns="resultColumns" :data-source="results" :loading="loading" row-key="id" size="middle"
-      :pagination="false">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'status'">
-          <a-tag :color="statusColors[record.status] || 'default'">{{ statusLabels[record.status] || record.status }}</a-tag>
+    <el-table v-loading="loading" :data="results" row-key="id" border style="width:100%">
+      <el-table-column prop="caseName" label="用例名称" width="200" />
+      <el-table-column label="状态" width="90">
+        <template #default="{ row }">
+          <el-tag :type="(statusTypeMap[row.status] || 'info') as any" size="small">{{ statusLabels[row.status] || row.status }}</el-tag>
         </template>
-        <template v-if="column.key === 'action'">
-          <a @click="showLogs(record)">日志</a>
+      </el-table-column>
+      <el-table-column prop="durationMs" label="耗时(ms)" width="100" />
+      <el-table-column prop="actualResult" label="结果" show-overflow-tooltip />
+      <el-table-column label="操作" width="80">
+        <template #default="{ row }">
+          <el-button type="primary" link size="small" @click="showLogs(row)">日志</el-button>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
 
     <!-- 日志弹窗 -->
-    <a-modal v-model:open="logModalVisible" title="执行日志" width="800px" :footer="null">
-      <a-timeline>
-        <a-timeline-item v-for="(log, idx) in currentLogs" :key="idx"
-          :color="log.status === 'PASSED' ? 'green' : log.status === 'FAILED' ? 'red' : 'gray'">
+    <el-dialog v-model="logModalVisible" title="执行日志" width="800px">
+      <el-timeline v-if="currentLogs.length > 0">
+        <el-timeline-item v-for="(log, idx) in currentLogs" :key="idx"
+          :type="log.status === 'PASSED' ? 'success' : log.status === 'FAILED' ? 'danger' : 'info'"
+          :hollow="log.status !== 'PASSED'">
           <div style="font-weight:600">{{ log.stepName }} [{{ log.phase }}] - {{ log.status }}</div>
-          <div style="color:#999;font-size:12px">{{ log.message }}</div>
-          <div v-if="log.assertionSummary" style="color:#1890ff;font-size:12px;margin-top:2px">{{ log.assertionSummary }}</div>
+          <div style="color:#909399;font-size:12px">{{ log.message }}</div>
+          <div v-if="log.assertionSummary" style="color:#409eff;font-size:12px;margin-top:2px">{{ log.assertionSummary }}</div>
           <details v-if="log.request" style="margin-top:4px">
-            <summary style="cursor:pointer;font-size:12px;color:#1890ff">请求详情</summary>
-            <pre style="font-size:11px;background:#f5f5f5;padding:8px;max-height:200px;overflow:auto">{{ JSON.stringify(log.request, null, 2) }}</pre>
+            <summary style="cursor:pointer;font-size:12px;color:#409eff">请求详情</summary>
+            <pre style="font-size:11px;background:#f5f7fa;padding:8px;max-height:200px;overflow:auto">{{ JSON.stringify(log.request, null, 2) }}</pre>
           </details>
           <details v-if="log.response" style="margin-top:4px">
-            <summary style="cursor:pointer;font-size:12px;color:#1890ff">响应详情</summary>
-            <pre style="font-size:11px;background:#f5f5f5;padding:8px;max-height:200px;overflow:auto">{{ JSON.stringify(log.response, null, 2) }}</pre>
+            <summary style="cursor:pointer;font-size:12px;color:#409eff">响应详情</summary>
+            <pre style="font-size:11px;background:#f5f7fa;padding:8px;max-height:200px;overflow:auto">{{ JSON.stringify(log.response, null, 2) }}</pre>
           </details>
-        </a-timeline-item>
-      </a-timeline>
-      <a-empty v-if="currentLogs.length === 0" description="无日志" />
-    </a-modal>
+        </el-timeline-item>
+      </el-timeline>
+      <el-empty v-else description="无日志" />
+    </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.stat-card { text-align:center; }
+.stat-label { font-size:12px; color:#909399; margin-bottom:4px; }
+.stat-value { font-size:24px; font-weight:600; color:#303133; }
+</style>

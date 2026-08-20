@@ -4,7 +4,7 @@
  */
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { message, Modal } from 'ant-design-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getKeywords, createKeyword, updateKeyword, deleteKeyword, generateKeyword } from '@/api/keyword'
 import { getApis } from '@/api/apidoc'
 
@@ -22,15 +22,6 @@ const generateLoading = ref(false)
 const apis = ref<any[]>([])
 const selectedApiId = ref<number>(0)
 const form = reactive({ name: '', httpMethod: 'GET', path: '', description: '', requestParams: '[]', requestBody: '{}', responseBody: '{}' })
-
-const columns = [
-  { title: '关键字名称', dataIndex: 'name', width: 200 },
-  { title: 'HTTP 方法', dataIndex: 'httpMethod', width: 100 },
-  { title: '路径', dataIndex: 'path', ellipsis: true },
-  { title: '描述', dataIndex: 'description', ellipsis: true },
-  { title: '创建时间', dataIndex: 'createdAt', width: 120 },
-  { title: '操作', key: 'action', width: 180 },
-]
 
 async function fetchList() {
   loading.value = true
@@ -60,17 +51,17 @@ function openEdit(record: any) {
 }
 
 async function handleSubmit() {
-  if (!form.name || !form.path) { message.warning('请填写必填项'); return }
+  if (!form.name || !form.path) { ElMessage.warning('请填写必填项'); return }
   try {
     if (editingId.value) {
       await updateKeyword(projectId.value, editingId.value, form)
-      message.success('更新成功')
+      ElMessage.success('更新成功')
     } else {
       await createKeyword(projectId.value, { ...form, projectId: projectId.value })
-      message.success('创建成功')
+      ElMessage.success('创建成功')
     }
     modalVisible.value = false; fetchList()
-  } catch (e: any) { message.error(e?.response?.data?.message || '操作失败') }
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
 }
 
 async function openGenerate() {
@@ -83,21 +74,20 @@ async function openGenerate() {
 }
 
 async function handleGenerate() {
-  if (!selectedApiId.value) { message.warning('请选择接口'); return }
+  if (!selectedApiId.value) { ElMessage.warning('请选择接口'); return }
   generateLoading.value = true
   try {
     await generateKeyword(projectId.value, selectedApiId.value)
-    message.success('生成成功')
+    ElMessage.success('生成成功')
     generateVisible.value = false
     fetchList()
-  } catch (e: any) { message.error(e?.response?.data?.message || '生成失败') } finally { generateLoading.value = false }
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '生成失败') } finally { generateLoading.value = false }
 }
 
 function handleDelete(record: any) {
-  Modal.confirm({
-    title: '确认删除', content: `确定删除关键字「${record.name}」？`,
-    onOk: async () => { await deleteKeyword(projectId.value, record.id); message.success('删除成功'); fetchList() },
-  })
+  ElMessageBox.confirm(`确定删除关键字「${record.name}」？`, '确认删除', { type: 'warning' })
+    .then(async () => { await deleteKeyword(projectId.value, record.id); ElMessage.success('删除成功'); fetchList() })
+    .catch(() => {})
 }
 
 function handleSearch() { pagination.current = 1; fetchList() }
@@ -109,55 +99,79 @@ onMounted(fetchList)
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h2>接口关键字</h2>
       <div style="display:flex;gap:8px">
-        <a-input-search v-model:value="keyword" placeholder="搜索" style="width:200px" allow-clear @search="handleSearch" />
-        <a-button @click="openGenerate">从接口生成</a-button>
-        <a-button type="primary" @click="openCreate">新建关键字</a-button>
+        <el-input v-model="keyword" placeholder="搜索" style="width:200px" clearable @keyup.enter="handleSearch" @clear="handleSearch">
+          <template #append><el-button @click="handleSearch">搜索</el-button></template>
+        </el-input>
+        <el-button @click="openGenerate">从接口生成</el-button>
+        <el-button type="primary" @click="openCreate">新建关键字</el-button>
       </div>
     </div>
-    <a-table :columns="columns" :data-source="list" :loading="loading" row-key="id" size="middle"
-      :pagination="{ current: pagination.current, pageSize: pagination.pageSize, total: pagination.total, onChange: (p: number) => { pagination.current = p; fetchList() } }">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'httpMethod'">
-          <a-tag :color="record.httpMethod === 'GET' ? 'blue' : record.httpMethod === 'POST' ? 'green' : 'orange'">{{ record.httpMethod }}</a-tag>
+    <el-table v-loading="loading" :data="list" row-key="id" border style="width:100%">
+      <el-table-column prop="name" label="关键字名称" width="200" />
+      <el-table-column label="HTTP 方法" width="100">
+        <template #default="{ row }">
+          <el-tag :type="row.httpMethod === 'GET' ? '' : row.httpMethod === 'POST' ? 'success' : 'warning'" size="small">{{ row.httpMethod }}</el-tag>
         </template>
-        <template v-if="column.dataIndex === 'createdAt'">{{ record.createdAt?.substring(0, 10) }}</template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a @click="openEdit(record)">编辑</a>
-            <a style="color:#ff4d4f" @click="handleDelete(record)">删除</a>
-          </a-space>
+      </el-table-column>
+      <el-table-column prop="path" label="路径" show-overflow-tooltip />
+      <el-table-column prop="description" label="描述" show-overflow-tooltip />
+      <el-table-column label="创建时间" width="120">
+        <template #default="{ row }">{{ row.createdAt?.substring(0, 10) }}</template>
+      </el-table-column>
+      <el-table-column label="操作" width="180">
+        <template #default="{ row }">
+          <el-button type="primary" link size="small" @click="openEdit(row)">编辑</el-button>
+          <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
-      </template>
-    </a-table>
+      </el-table-column>
+    </el-table>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px">
+      <el-pagination background layout="total, prev, pager, next" :total="pagination.total"
+        :page-size="pagination.pageSize" :current-page="pagination.current"
+        @current-change="(p: number) => { pagination.current = p; fetchList() }" />
+    </div>
 
     <!-- 新建/编辑弹窗 -->
-    <a-modal v-model:open="modalVisible" :title="editingId ? '编辑关键字' : '新建关键字'" @ok="handleSubmit" :width="640">
-      <a-form layout="vertical" style="margin-top:16px">
-        <a-form-item label="名称" required><a-input v-model:value="form.name" /></a-form-item>
-        <a-row :gutter="12">
-          <a-col :span="6">
-            <a-form-item label="HTTP 方法">
-              <a-select v-model:value="form.httpMethod">
-                <a-select-option v-for="m in ['GET','POST','PUT','DELETE','PATCH']" :key="m" :value="m">{{ m }}</a-select-option>
-              </a-select>
-            </a-form-item>
-          </a-col>
-          <a-col :span="18"><a-form-item label="路径" required><a-input v-model:value="form.path" /></a-form-item></a-col>
-        </a-row>
-        <a-form-item label="描述"><a-textarea v-model:value="form.description" :rows="2" /></a-form-item>
-      </a-form>
-    </a-modal>
+    <el-dialog v-model="modalVisible" :title="editingId ? '编辑关键字' : '新建关键字'" width="640px">
+      <el-form label-position="top">
+        <el-form-item label="名称" required>
+          <el-input v-model="form.name" />
+        </el-form-item>
+        <el-row :gutter="12">
+          <el-col :span="6">
+            <el-form-item label="HTTP 方法">
+              <el-select v-model="form.httpMethod" style="width:100%">
+                <el-option v-for="m in ['GET','POST','PUT','DELETE','PATCH']" :key="m" :value="m" :label="m" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="18">
+            <el-form-item label="路径" required>
+              <el-input v-model="form.path" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="描述">
+          <el-input v-model="form.description" type="textarea" :rows="2" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="modalVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 从接口生成弹窗 -->
-    <a-modal v-model:open="generateVisible" title="从接口快速生成关键字" @ok="handleGenerate" :confirm-loading="generateLoading">
-      <a-form-item label="选择接口" style="margin-top:16px">
-        <a-select v-model:value="selectedApiId" placeholder="选择要生成关键字的接口" show-search option-filter-prop="label">
-          <a-select-option v-for="api in apis" :key="api.id" :value="api.id" :label="api.name">
-            <a-tag :color="api.httpMethod === 'GET' ? 'blue' : 'green'" size="small">{{ api.httpMethod }}</a-tag>
-            {{ api.name }}
-          </a-select-option>
-        </a-select>
-      </a-form-item>
-    </a-modal>
+    <el-dialog v-model="generateVisible" title="从接口快速生成关键字" width="500px">
+      <el-form-item label="选择接口">
+        <el-select v-model="selectedApiId" placeholder="选择要生成关键字的接口" filterable style="width:100%">
+          <el-option v-for="api in apis" :key="api.id" :value="api.id" :label="`[${api.httpMethod}] ${api.name}`" />
+        </el-select>
+      </el-form-item>
+      <template #footer>
+        <el-button @click="generateVisible = false">取消</el-button>
+        <el-button type="primary" :loading="generateLoading" @click="handleGenerate">生成</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>

@@ -10,20 +10,33 @@ SET NAMES utf8mb4;
 -- M1 认证与用户管理
 -- ============================================================
 
+CREATE TABLE IF NOT EXISTS `user_role` (
+  `id`              CHAR(36)      NOT NULL                    COMMENT 'UUID 主键',
+  `role_name`       VARCHAR(50)   NOT NULL                    COMMENT '角色名称（显示名）',
+  `role_code`       VARCHAR(50)   NOT NULL                    COMMENT '角色编码（如 ADMIN、USER）',
+  `description`     VARCHAR(255)  DEFAULT NULL                COMMENT '角色描述',
+  `is_active`       BOOLEAN       NOT NULL DEFAULT TRUE       COMMENT '是否启用',
+  `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_role_code` (`role_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户角色表';
+
 CREATE TABLE IF NOT EXISTS `user` (
   `id`              CHAR(36)      NOT NULL                    COMMENT 'UUID 主键',
   `username`        VARCHAR(50)   NOT NULL                    COMMENT '账号（登录名）',
   `password_hash`   VARCHAR(255)  NOT NULL                    COMMENT 'bcrypt 哈希密码',
   `display_name`    VARCHAR(50)   NOT NULL                    COMMENT '用户姓名（显示名）',
-  `role`            ENUM('ADMIN','USER') NOT NULL DEFAULT 'USER' COMMENT '角色',
+  `role_id`         CHAR(36)      NOT NULL                    COMMENT '角色 ID（关联 user_role.id）',
   `is_active`       BOOLEAN       NOT NULL DEFAULT TRUE       COMMENT '是否启用',
   `last_login_at`   DATETIME      DEFAULT NULL                COMMENT '最近登录时间',
   `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_user_username` (`username`),
-  KEY `idx_user_role` (`role`),
-  KEY `idx_user_is_active` (`is_active`)
+  KEY `idx_user_role_id` (`role_id`),
+  KEY `idx_user_is_active` (`is_active`),
+  CONSTRAINT `fk_user_role_id` FOREIGN KEY (`role_id`) REFERENCES `user_role` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 CREATE TABLE IF NOT EXISTS `global_settings` (

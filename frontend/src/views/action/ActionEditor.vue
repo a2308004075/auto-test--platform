@@ -11,8 +11,8 @@ import { getAction, updateAction } from '@/api/action'
 
 const route = useRoute()
 const router = useRouter()
-const projectId = computed(() => route.params.id as string)
-const actionId = computed(() => route.params.actionId as string)
+const projectId = computed(() => Number(route.params.id))
+const actionId = computed(() => Number(route.params.actionId))
 
 const containerRef = ref<HTMLDivElement>()
 const actionName = ref('')

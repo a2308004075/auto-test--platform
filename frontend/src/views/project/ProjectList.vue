@@ -18,7 +18,7 @@ const list = ref<any[]>([])
 const keyword = ref('')
 const pagination = reactive({ current: 1, pageSize: 12, total: 0 })
 const modalVisible = ref(false)
-const editingId = ref('')
+const editingId = ref<number>(0)
 const form = reactive({ name: '', description: '' })
 
 async function fetchList() {
@@ -44,7 +44,7 @@ function openCreate() {
     message.info('请先登录后再创建项目')
     return
   }
-  editingId.value = ''
+  editingId.value = 0
   form.name = ''
   form.description = ''
   modalVisible.value = true

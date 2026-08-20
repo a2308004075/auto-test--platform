@@ -8,7 +8,7 @@ import { message, Modal } from 'ant-design-vue'
 import { getTools, createTool, updateTool, deleteTool, testTool } from '@/api/tool'
 
 const route = useRoute()
-const projectId = computed(() => route.params.id as string)
+const projectId = computed(() => Number(route.params.id))
 
 const loading = ref(false)
 const list = ref<any[]>([])
@@ -18,10 +18,10 @@ const modalVisible = ref(false)
 const testVisible = ref(false)
 const testResult = ref<any>(null)
 const testLoading = ref(false)
-const editingId = ref('')
+const editingId = ref<number>(0)
 const form = reactive({ name: '', category: 'CUSTOM', description: '', code: 'return "Hello"', returnType: 'String', paramDefinitions: '[]' })
 const testInput = ref('{}')
-const currentTestId = ref('')
+const currentTestId = ref<number>(0)
 
 const columns = [
   { title: '名称', dataIndex: 'name', width: 200 },
@@ -43,7 +43,7 @@ async function fetchList() {
 }
 
 function openCreate() {
-  editingId.value = ''
+  editingId.value = 0
   Object.assign(form, { name: '', category: 'CUSTOM', description: '', code: 'return "Hello"', returnType: 'String', paramDefinitions: '[]' })
   modalVisible.value = true
 }

@@ -10,8 +10,8 @@ import { getSuite, updateSuite } from '@/api/suite'
 
 const route = useRoute()
 const router = useRouter()
-const projectId = computed(() => route.params.id as string)
-const suiteId = computed(() => route.params.suiteId as string)
+const projectId = computed(() => Number(route.params.id))
+const suiteId = computed(() => Number(route.params.suiteId))
 
 const loading = ref(false)
 const saving = ref(false)

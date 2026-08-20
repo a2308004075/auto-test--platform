@@ -9,14 +9,14 @@ import { getApi, createApi, updateApi, getModules } from '@/api/apidoc'
 
 const route = useRoute()
 const router = useRouter()
-const projectId = computed(() => route.params.id as string)
-const apiId = computed(() => route.params.apiId as string)
+const projectId = computed(() => Number(route.params.id))
+const apiId = computed(() => Number(route.params.apiId))
 const isEdit = computed(() => !!apiId.value)
 
 const loading = ref(false)
 const modules = ref<any[]>([])
 const form = reactive({
-  name: '', httpMethod: 'GET', path: '', service: '', moduleId: '',
+  name: '', httpMethod: 'GET', path: '', service: '', moduleId: null,
   description: '', requestParams: '[]', requestBody: '{}', responseBody: '{}', headers: '[]',
 })
 

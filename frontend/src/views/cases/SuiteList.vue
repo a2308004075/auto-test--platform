@@ -9,14 +9,14 @@ import { getSuites, createSuite, updateSuite, deleteSuite } from '@/api/suite'
 
 const route = useRoute()
 const router = useRouter()
-const projectId = computed(() => route.params.id as string)
+const projectId = computed(() => Number(route.params.id))
 
 const loading = ref(false)
 const list = ref<any[]>([])
 const keyword = ref('')
 const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 const modalVisible = ref(false)
-const editingId = ref('')
+const editingId = ref<number>(0)
 const form = reactive({ name: '', description: '', priority: 'P2' })
 
 const columns = [
@@ -42,7 +42,7 @@ async function fetchList() {
 function handleSearch() { pagination.current = 1; fetchList() }
 
 function openCreate() {
-  editingId.value = ''
+  editingId.value = 0
   Object.assign(form, { name: '', description: '', priority: 'P2' })
   modalVisible.value = true
 }

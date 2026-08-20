@@ -11,12 +11,12 @@ import { getEnvironments } from '@/api/environment'
 
 const route = useRoute()
 const router = useRouter()
-const projectId = computed(() => route.params.id as string)
-const actionId = computed(() => route.params.actionId as string)
+const projectId = computed(() => Number(route.params.id))
+const actionId = computed(() => Number(route.params.actionId))
 
 const action = ref<any>(null)
 const environments = ref<any[]>([])
-const selectedEnvId = ref('')
+const selectedEnvId = ref<number>(0)
 const inputParams = ref('{}')
 const debugResult = ref<any>(null)
 const loading = ref(false)

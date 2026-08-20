@@ -9,18 +9,18 @@ import { getKeywords, createKeyword, updateKeyword, deleteKeyword, generateKeywo
 import { getApis } from '@/api/apidoc'
 
 const route = useRoute()
-const projectId = computed(() => route.params.id as string)
+const projectId = computed(() => Number(route.params.id))
 
 const loading = ref(false)
 const list = ref<any[]>([])
 const keyword = ref('')
 const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 const modalVisible = ref(false)
-const editingId = ref('')
+const editingId = ref<number>(0)
 const generateVisible = ref(false)
 const generateLoading = ref(false)
 const apis = ref<any[]>([])
-const selectedApiId = ref('')
+const selectedApiId = ref<number>(0)
 const form = reactive({ name: '', httpMethod: 'GET', path: '', description: '', requestParams: '[]', requestBody: '{}', responseBody: '{}' })
 
 const columns = [
@@ -44,7 +44,7 @@ async function fetchList() {
 }
 
 function openCreate() {
-  editingId.value = ''
+  editingId.value = 0
   Object.assign(form, { name: '', httpMethod: 'GET', path: '', description: '', requestParams: '[]', requestBody: '{}', responseBody: '{}' })
   modalVisible.value = true
 }
@@ -78,7 +78,7 @@ async function openGenerate() {
     const res: any = await getApis(projectId.value, { page: 1, pageSize: 100 })
     apis.value = res.data?.items || []
   } catch { apis.value = [] }
-  selectedApiId.value = ''
+  selectedApiId.value = 0
   generateVisible.value = true
 }
 

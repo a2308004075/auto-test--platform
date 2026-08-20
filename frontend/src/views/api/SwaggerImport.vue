@@ -9,12 +9,12 @@ import { importSwagger, getModules } from '@/api/apidoc'
 
 const route = useRoute()
 const router = useRouter()
-const projectId = computed(() => route.params.id as string)
+const projectId = computed(() => Number(route.params.id))
 
 const currentStep = ref(0)
 const loading = ref(false)
 const modules = ref<any[]>([])
-const selectedModuleId = ref('')
+const selectedModuleId = ref<number>(0)
 const swaggerJson = ref('')
 const importResult = ref<any>(null)
 

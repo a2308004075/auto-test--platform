@@ -10,9 +10,9 @@ import { getCase, createCase, updateCase } from '@/api/case'
 
 const route = useRoute()
 const router = useRouter()
-const projectId = computed(() => route.params.id as string)
-const caseId = computed(() => route.params.caseId as string)
-const querySuiteId = computed(() => (route.query.suiteId as string) || '')
+const projectId = computed(() => Number(route.params.id))
+const caseId = computed(() => Number(route.params.caseId))
+const querySuiteId = computed(() => Number(route.query.suiteId) || 0)
 const isEdit = computed(() => !!caseId.value)
 
 const form = reactive({
@@ -24,7 +24,7 @@ const form = reactive({
   steps: '[]',
   priority: 'P2',
   timeout: 30,
-  suiteId: '',
+  suiteId: null,
 })
 
 async function loadCase() {
@@ -41,7 +41,7 @@ async function loadCase() {
       steps: c.steps || '[]',
       priority: c.priority || 'P2',
       timeout: c.timeout || 30,
-      suiteId: c.suiteId || '',
+      suiteId: c.suiteId || null,
     })
   } catch { message.error('加载用例失败') }
 }

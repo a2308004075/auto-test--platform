@@ -9,7 +9,7 @@ import { getProjectDashboard } from '@/api/project'
 
 const route = useRoute()
 const router = useRouter()
-const projectId = computed(() => route.params.id as string)
+const projectId = computed(() => Number(route.params.id))
 
 const loading = ref(false)
 const dashboard = ref<any>({})

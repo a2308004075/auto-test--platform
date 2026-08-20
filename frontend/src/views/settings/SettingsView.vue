@@ -17,10 +17,10 @@ const userList = ref<any[]>([])
 const userKeyword = ref('')
 const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 const modalVisible = ref(false)
-const editingId = ref('')
+const editingId = ref<number>(0)
 const form = reactive({ username: '', password: '', roleId: '', displayName: '' })
 const resetVisible = ref(false)
-const resetUserId = ref('')
+const resetUserId = ref<number>(0)
 const newPassword = ref('')
 
 // 角色列表
@@ -51,7 +51,7 @@ async function fetchRoles() {
 }
 
 function openCreateUser() {
-  editingId.value = ''
+  editingId.value = 0
   Object.assign(form, { username: '', password: '', roleId: roleList.value[0]?.id || '', displayName: '' })
   modalVisible.value = true
 }

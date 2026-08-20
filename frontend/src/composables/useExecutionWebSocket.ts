@@ -17,7 +17,7 @@ export interface ExecutionProgress {
  * 连接 /ws/execution/{executionId}，实时接收执行进度推送。
  * 当收到 PROGRESS 消息时更新 progress ref，收到终态时自动断开。
  */
-export function useExecutionWebSocket(executionId: Ref<string>) {
+export function useExecutionWebSocket(executionId: Ref<number>) {
   const progress = ref<ExecutionProgress | null>(null)
   const connected = ref(false)
   let ws: WebSocket | null = null

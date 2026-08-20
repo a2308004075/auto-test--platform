@@ -11,7 +11,7 @@ import { useExecutionWebSocket } from '@/composables/useExecutionWebSocket'
 
 const route = useRoute()
 const router = useRouter()
-const executionId = computed(() => route.params.executionId as string)
+const executionId = computed(() => Number(route.params.executionId))
 
 const execution = ref<any>({})
 const results = ref<any[]>([])

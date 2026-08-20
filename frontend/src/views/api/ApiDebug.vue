@@ -10,14 +10,14 @@ import { getEnvironments } from '@/api/environment'
 
 const route = useRoute()
 const router = useRouter()
-const projectId = computed(() => route.params.id as string)
-const apiId = computed(() => route.params.apiId as string)
+const projectId = computed(() => Number(route.params.id))
+const apiId = computed(() => Number(route.params.apiId))
 
 const loading = ref(false)
 const apiInfo = ref<any>({})
 const environments = ref<any[]>([])
 const debugResult = ref<any>(null)
-const form = reactive({ environmentId: '', body: '', queryParams: '{}', headers: '{}' })
+const form = reactive({ environmentId: null, body: '', queryParams: '{}', headers: '{}' })
 
 async function fetchApi() {
   try {

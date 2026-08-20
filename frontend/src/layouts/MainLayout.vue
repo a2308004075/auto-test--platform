@@ -21,7 +21,7 @@ const loginModalOpen = ref(false)
 
 // 判断当前是否在项目内页面
 const inProject = computed(() => route.meta?.inProject === true)
-const projectId = computed(() => route.params.id as string || '')
+const projectId = computed(() => Number(route.params.id) || 0)
 
 // 侧边栏选中 key
 const selectedKey = computed(() => {

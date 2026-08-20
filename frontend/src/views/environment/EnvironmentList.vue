@@ -11,12 +11,12 @@ import {
 } from '@/api/environment'
 
 const route = useRoute()
-const projectId = computed(() => route.params.id as string)
+const projectId = computed(() => Number(route.params.id))
 
 const loading = ref(false)
 const list = ref<any[]>([])
 const modalVisible = ref(false)
-const editingId = ref('')
+const editingId = ref<number>(0)
 const testLoading = ref('')
 const form = reactive({ name: '', host: '', port: 3306, databaseName: '', username: '', password: '', configJson: '' })
 
@@ -37,7 +37,7 @@ async function fetchList() {
 }
 
 function openCreate() {
-  editingId.value = ''
+  editingId.value = 0
   Object.assign(form, { name: '', host: '', port: 3306, databaseName: '', username: '', password: '', configJson: '' })
   modalVisible.value = true
 }

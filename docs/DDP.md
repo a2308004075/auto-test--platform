@@ -619,7 +619,7 @@ D:\software\mysql-8.0\bin\mysql -uroot -ppp2024 -e "SELECT VERSION();"
 #### 创建项目数据库
 
 ```powershell
-D:\software\mysql-8.0\bin\mysql -uroot -ppp2024 -e "CREATE DATABASE IF NOT EXISTS postman_platform DEFAULT CHARACTER SET utf8mb4;"
+D:\software\mysql-8.0\bin\mysql -uroot -ppp2024 -e "CREATE DATABASE IF NOT EXISTS auto_test_platform DEFAULT CHARACTER SET utf8mb4;"
 ```
 
 ---

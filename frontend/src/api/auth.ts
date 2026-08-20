@@ -11,7 +11,12 @@ export function login(data: { username: string; password: string }) {
 
 // 获取当前用户信息
 export function getCurrentUser() {
-  return request.get('/v1/auth/current-user')
+  return request.get('/v1/auth/me')
+}
+
+// 刷新 Token
+export function refreshToken(refreshToken: string) {
+  return request.post('/v1/auth/refresh', { refreshToken })
 }
 
 // 退出登录

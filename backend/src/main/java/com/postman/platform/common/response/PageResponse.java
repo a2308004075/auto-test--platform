@@ -68,6 +68,18 @@ public class PageResponse<T> implements Serializable {
     }
 
     /**
+     * 从列表和分页参数构造分页响应
+     *
+     * @param items    当前页数据
+     * @param total    总记录数
+     * @param page     当前页码
+     * @param pageSize 每页大小
+     */
+    public static <T> PageResponse<T> of(List<T> items, long total, int page, int pageSize) {
+        return new PageResponse<>(items, (long) total, (long) page, (long) pageSize);
+    }
+
+    /**
      * 构造空分页响应
      *
      * @param page     当前页码

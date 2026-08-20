@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
+import { message } from 'ant-design-vue'
 
 /**
  * Axios 实例与拦截器
@@ -7,7 +8,7 @@ import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'a
  */
 const service: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  timeout: 15000,
+  timeout: 30000,
 })
 
 // 请求拦截器
@@ -30,10 +31,24 @@ service.interceptors.response.use(
     return response.data
   },
   (error) => {
-    if (error.response?.status === 401) {
-      // Token 过期或未登录，跳转登录页
+    const status = error.response?.status
+    const data = error.response?.data
+
+    if (status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('refreshToken')
+      message.error('登录已过期，请重新登录')
       window.location.href = '/login'
+    } else if (status === 403) {
+      message.error('没有操作权限')
+    } else if (status === 400) {
+      message.error(data?.message || '请求参数错误')
+    } else if (status >= 500) {
+      message.error(data?.message || '服务器错误')
+    } else if (!status) {
+      message.error('网络连接失败')
     }
+
     return Promise.reject(error)
   },
 )

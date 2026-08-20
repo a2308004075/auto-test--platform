@@ -46,40 +46,59 @@ public final class ErrorCode {
     public static final int ADMIN_PROTECTED = 1104;
 
     // ===== M2 项目管理 (1200-1299) =====
-    public static final int PROJECT_NAME_DUPLICATE = 1200;
-    public static final int PROJECT_INACTIVE = 1201;
+    public static final int PROJECT_NOT_FOUND = 1200;
+    public static final int PROJECT_NAME_DUPLICATE = 1201;
+    public static final int PROJECT_INACTIVE = 1202;
 
     // ===== M3 环境配置 (1300-1399) =====
-    public static final int ENV_NAME_DUPLICATE = 1300;
-    public static final int ENV_JSON_INVALID = 1301;
-    public static final int ENV_CONNECTION_FAILED = 1302;
-    public static final int ENV_ACTIVE_DELETE = 1303;
+    public static final int ENV_NOT_FOUND = 1300;
+    public static final int ENV_NAME_DUPLICATE = 1301;
+    public static final int ENV_JSON_INVALID = 1302;
+    public static final int ENV_CONNECTION_FAILED = 1303;
+    public static final int ENV_ACTIVE_DELETE = 1304;
 
     // ===== M4 接口文档 (1400-1499) =====
-    public static final int API_PATH_DUPLICATE = 1400;
-    public static final int SWAGGER_PARSE_FAILED = 1401;
-    public static final int API_DEPENDENCY_CONFLICT = 1402;
+    public static final int API_NOT_FOUND = 1400;
+    public static final int API_PATH_DUPLICATE = 1401;
+    public static final int SWAGGER_PARSE_FAILED = 1402;
+    public static final int API_DEPENDENCY_CONFLICT = 1403;
+    public static final int API_MODULE_NOT_FOUND = 1410;
+    public static final int API_MODULE_SYSTEM = 1411;
+    public static final int API_MODULE_HAS_APIS = 1412;
 
     // ===== M5 接口关键字 (1500-1599) =====
-    public static final int KEYWORD_NAME_DUPLICATE = 1500;
-    public static final int KEYWORD_DATA_INVALID = 1501;
-    public static final int KEYWORD_DEPENDENCY_CONFLICT = 1502;
+    public static final int KEYWORD_NOT_FOUND = 1500;
+    public static final int KEYWORD_NAME_DUPLICATE = 1501;
+    public static final int KEYWORD_DATA_INVALID = 1502;
+    public static final int KEYWORD_DEPENDENCY_CONFLICT = 1503;
 
     // ===== M6 工具方法 (1600-1699) =====
-    public static final int TOOL_EXECUTION_TIMEOUT = 1600;
-    public static final int TOOL_SECURITY_CHECK_FAILED = 1601;
+    public static final int TOOL_NOT_FOUND = 1600;
+    public static final int TOOL_NAME_DUPLICATE = 1601;
+    public static final int TOOL_EXECUTION_TIMEOUT = 1602;
+    public static final int TOOL_SECURITY_CHECK_FAILED = 1603;
 
     // ===== M7 Action (1700-1799) =====
-    public static final int ACTION_NODE_SERIALIZE_FAILED = 1700;
-    public static final int ACTION_CIRCULAR_REFERENCE = 1701;
+    public static final int ACTION_NOT_FOUND = 1700;
+    public static final int ACTION_NAME_DUPLICATE = 1701;
+    public static final int ACTION_NODE_SERIALIZE_FAILED = 1702;
+    public static final int ACTION_CIRCULAR_REFERENCE = 1703;
+    public static final int ACTION_DEPENDENCY_CONFLICT = 1704;
 
     // ===== M8 测试用例 (1800-1899) =====
     public static final int STEP_VALIDATION_FAILED = 1800;
     public static final int PARAM_DATA_INVALID = 1801;
+    public static final int SUITE_NOT_FOUND = 1802;
+    public static final int SUITE_NAME_DUPLICATE = 1803;
+    public static final int CASE_NOT_FOUND = 1804;
+    public static final int CASE_NAME_DUPLICATE = 1805;
 
     // ===== M9 测试执行 (1900-1999) =====
     public static final int EXECUTION_QUEUE_FULL = 1900;
     public static final int PLAN_NO_ENVIRONMENT = 1901;
+    public static final int PLAN_NOT_FOUND = 1902;
+    public static final int PLAN_NAME_DUPLICATE = 1903;
+    public static final int EXECUTION_NOT_FOUND = 1904;
 
     // ===== M10 报告分析 (2000-2099) =====
     public static final int REPORT_GENERATE_FAILED = 2000;
@@ -100,6 +119,9 @@ public final class ErrorCode {
             case PARAM_VALIDATION_ERROR:
                 return 400;
             case RESOURCE_NOT_FOUND:
+            case SUITE_NOT_FOUND:
+            case CASE_NOT_FOUND:
+            case PLAN_NOT_FOUND:
                 return 404;
             case RESOURCE_CONFLICT:
             case API_DEPENDENCY_CONFLICT:
@@ -109,6 +131,9 @@ public final class ErrorCode {
             case ENV_NAME_DUPLICATE:
             case API_PATH_DUPLICATE:
             case KEYWORD_NAME_DUPLICATE:
+            case SUITE_NAME_DUPLICATE:
+            case CASE_NAME_DUPLICATE:
+            case PLAN_NAME_DUPLICATE:
                 return 409;
             case EXECUTION_QUEUE_FULL:
                 return 429;

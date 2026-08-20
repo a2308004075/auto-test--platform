@@ -15,45 +15,150 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: 'project',
-        name: 'Project',
+        name: 'ProjectList',
         component: () => import('@/views/project/ProjectList.vue'),
         meta: { title: '项目管理' },
-      },
-      {
-        path: 'api',
-        name: 'Api',
-        component: () => import('@/views/api/ApiList.vue'),
-        meta: { title: '接口管理' },
-      },
-      {
-        path: 'keywords',
-        name: 'Keywords',
-        component: () => import('@/views/keywords/KeywordList.vue'),
-        meta: { title: '关键字管理' },
-      },
-      {
-        path: 'cases',
-        name: 'Cases',
-        component: () => import('@/views/cases/CaseList.vue'),
-        meta: { title: '测试用例' },
-      },
-      {
-        path: 'execution',
-        name: 'Execution',
-        component: () => import('@/views/execution/ExecutionList.vue'),
-        meta: { title: '执行管理' },
-      },
-      {
-        path: 'environment',
-        name: 'Environment',
-        component: () => import('@/views/environment/EnvironmentList.vue'),
-        meta: { title: '环境配置' },
       },
       {
         path: 'settings',
         name: 'Settings',
         component: () => import('@/views/settings/SettingsView.vue'),
         meta: { title: '系统设置' },
+      },
+      // ===== 项目内路由 =====
+      {
+        path: 'project/:id/dashboard',
+        name: 'ProjectDashboard',
+        component: () => import('@/views/project/ProjectDashboard.vue'),
+        meta: { title: '仪表板', inProject: true },
+      },
+      {
+        path: 'project/:id/apis',
+        name: 'ApiList',
+        component: () => import('@/views/api/ApiList.vue'),
+        meta: { title: '接口管理', inProject: true },
+      },
+      {
+        path: 'project/:id/apis/new',
+        name: 'ApiNew',
+        component: () => import('@/views/api/ApiEdit.vue'),
+        meta: { title: '新建接口', inProject: true },
+      },
+      {
+        path: 'project/:id/apis/:apiId/edit',
+        name: 'ApiEdit',
+        component: () => import('@/views/api/ApiEdit.vue'),
+        meta: { title: '编辑接口', inProject: true },
+      },
+      {
+        path: 'project/:id/apis/:apiId/debug',
+        name: 'ApiDebug',
+        component: () => import('@/views/api/ApiDebug.vue'),
+        meta: { title: '接口调试', inProject: true },
+      },
+      {
+        path: 'project/:id/apis/swagger-import',
+        name: 'SwaggerImport',
+        component: () => import('@/views/api/SwaggerImport.vue'),
+        meta: { title: 'Swagger 导入', inProject: true },
+      },
+      {
+        path: 'project/:id/environments',
+        name: 'EnvironmentList',
+        component: () => import('@/views/environment/EnvironmentList.vue'),
+        meta: { title: '环境配置', inProject: true },
+      },
+      {
+        path: 'project/:id/keywords',
+        name: 'KeywordList',
+        component: () => import('@/views/keywords/KeywordList.vue'),
+        meta: { title: '接口关键字', inProject: true },
+      },
+      {
+        path: 'project/:id/tools',
+        name: 'ToolList',
+        component: () => import('@/views/tool/ToolList.vue'),
+        meta: { title: '工具方法', inProject: true },
+      },
+      {
+        path: 'project/:id/actions',
+        name: 'ActionList',
+        component: () => import('@/views/action/ActionList.vue'),
+        meta: { title: 'Action', inProject: true },
+      },
+      {
+        path: 'project/:id/actions/:actionId/edit',
+        name: 'ActionEditor',
+        component: () => import('@/views/action/ActionEditor.vue'),
+        meta: { title: 'Action 编辑', inProject: true },
+      },
+      {
+        path: 'project/:id/actions/:actionId/debug',
+        name: 'ActionDebug',
+        component: () => import('@/views/action/ActionDebug.vue'),
+        meta: { title: 'Action 调试', inProject: true },
+      },
+      // ===== M8 测试套件/用例 =====
+      {
+        path: 'project/:id/suites',
+        name: 'SuiteList',
+        component: () => import('@/views/cases/SuiteList.vue'),
+        meta: { title: '测试套件', inProject: true },
+      },
+      {
+        path: 'project/:id/suites/:suiteId/edit',
+        name: 'SuiteEdit',
+        component: () => import('@/views/cases/SuiteEdit.vue'),
+        meta: { title: '编辑套件', inProject: true },
+      },
+      {
+        path: 'project/:id/cases',
+        name: 'CaseList',
+        component: () => import('@/views/cases/CaseList.vue'),
+        meta: { title: '测试用例', inProject: true },
+      },
+      {
+        path: 'project/:id/cases/new',
+        name: 'CaseNew',
+        component: () => import('@/views/cases/CaseEdit.vue'),
+        meta: { title: '新建用例', inProject: true },
+      },
+      {
+        path: 'project/:id/cases/:caseId/edit',
+        name: 'CaseEdit',
+        component: () => import('@/views/cases/CaseEdit.vue'),
+        meta: { title: '编辑用例', inProject: true },
+      },
+      // ===== M9 测试计划/执行 =====
+      {
+        path: 'project/:id/plans',
+        name: 'PlanList',
+        component: () => import('@/views/execution/PlanList.vue'),
+        meta: { title: '测试计划', inProject: true },
+      },
+      {
+        path: 'project/:id/plans/new',
+        name: 'PlanNew',
+        component: () => import('@/views/execution/PlanEdit.vue'),
+        meta: { title: '新建计划', inProject: true },
+      },
+      {
+        path: 'project/:id/plans/:planId/edit',
+        name: 'PlanEdit',
+        component: () => import('@/views/execution/PlanEdit.vue'),
+        meta: { title: '编辑计划', inProject: true },
+      },
+      {
+        path: 'project/:id/executions',
+        name: 'ExecutionList',
+        component: () => import('@/views/execution/ExecutionList.vue'),
+        meta: { title: '执行记录', inProject: true },
+      },
+      {
+        path: 'project/:id/executions/:executionId',
+        name: 'ExecutionDetail',
+        component: () => import('@/views/execution/ExecutionDetail.vue'),
+        meta: { title: '执行详情', inProject: true },
       },
     ],
   },
@@ -62,6 +167,16 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+})
+
+// 登录守卫
+router.beforeEach((to, _from, next) => {
+  const token = localStorage.getItem('token')
+  if (to.path !== '/login' && !token) {
+    next('/login')
+  } else {
+    next()
+  }
 })
 
 export default router

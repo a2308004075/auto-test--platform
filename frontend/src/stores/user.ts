@@ -1,41 +1,45 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 /**
  * 用户状态管理
  */
 export const useUserStore = defineStore('user', () => {
   const token = ref<string>(localStorage.getItem('token') || '')
+  const refreshTokenValue = ref<string>(localStorage.getItem('refreshToken') || '')
   const username = ref<string>('')
-  const isLoggedIn = ref<boolean>(false)
+  const role = ref<string>('')
+  const userId = ref<string>('')
+  const isLoggedIn = computed(() => !!token.value)
 
   function setToken(newToken: string) {
     token.value = newToken
     localStorage.setItem('token', newToken)
   }
 
-  function setUsername(name: string) {
-    username.value = name
+  function setRefreshToken(rt: string) {
+    refreshTokenValue.value = rt
+    localStorage.setItem('refreshToken', rt)
   }
 
-  function setLoggedIn(status: boolean) {
-    isLoggedIn.value = status
+  function setUserInfo(info: { id: string; username: string; role?: string }) {
+    userId.value = info.id
+    username.value = info.username
+    role.value = info.role || 'USER'
   }
 
   function logout() {
     token.value = ''
+    refreshTokenValue.value = ''
     username.value = ''
-    isLoggedIn.value = false
+    role.value = ''
+    userId.value = ''
     localStorage.removeItem('token')
+    localStorage.removeItem('refreshToken')
   }
 
   return {
-    token,
-    username,
-    isLoggedIn,
-    setToken,
-    setUsername,
-    setLoggedIn,
-    logout,
+    token, refreshTokenValue, username, role, userId, isLoggedIn,
+    setToken, setRefreshToken, setUserInfo, logout,
   }
 })

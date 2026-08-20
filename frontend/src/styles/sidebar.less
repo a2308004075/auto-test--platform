@@ -1,0 +1,35 @@
+/**
+ * 侧边栏样式
+ */
+.sidebar-container {
+  transition: width 0.28s;
+  height: 100%;
+  position: fixed;
+  font-size: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1001;
+  overflow: hidden;
+
+  // 重置 ant-layout-sider 冲突
+  .ant-layout-sider {
+    height: 100%;
+  }
+}
+
+.sidebar-logo {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+
+  h1 {
+    margin: 0;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+  }
+}

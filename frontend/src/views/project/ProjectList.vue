@@ -6,8 +6,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { getProjects, createProject, updateProject, deleteProject } from '@/api/project'
-import { useProjectStore } from '@/stores/project'
-import { useUserStore } from '@/stores/user'
+import { useProjectStore, useUserStore } from '@/stores'
 
 const router = useRouter()
 const projectStore = useProjectStore()

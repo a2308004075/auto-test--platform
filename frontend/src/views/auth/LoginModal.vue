@@ -6,7 +6,7 @@
 import { ref, reactive, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { login, getCaptcha } from '@/api/auth'
-import { useUserStore } from '@/stores/user'
+import { useUserStore } from '@/stores'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{

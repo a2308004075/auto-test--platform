@@ -4,8 +4,13 @@ import request from './request'
  * 认证模块 API
  */
 
+// 获取验证码图片
+export function getCaptcha() {
+  return request.get('/v1/auth/captcha')
+}
+
 // 登录
-export function login(data: { username: string; password: string }) {
+export function login(data: { username: string; password: string; captchaId: string; captchaCode: string }) {
   return request.post('/v1/auth/login', data)
 }
 

@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.postman.platform.auth.dto.*;
 import com.postman.platform.auth.entity.User;
+import com.postman.platform.auth.entity.UserRole;
 import com.postman.platform.auth.mapper.UserMapper;
+import com.postman.platform.auth.mapper.UserRoleMapper;
 import com.postman.platform.common.exception.BusinessException;
 import com.postman.platform.common.exception.ErrorCode;
 import com.postman.platform.common.exception.NotFoundException;
@@ -28,24 +30,26 @@ public class UserService {
     private static final String RESERVED_DISPLAY_NAME = "管理员";
 
     private final UserMapper userMapper;
+    private final UserRoleMapper userRoleMapper;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserMapper userMapper, PasswordEncoder passwordEncoder) {
+    public UserService(UserMapper userMapper, UserRoleMapper userRoleMapper, PasswordEncoder passwordEncoder) {
         this.userMapper = userMapper;
+        this.userRoleMapper = userRoleMapper;
         this.passwordEncoder = passwordEncoder;
     }
 
     /**
      * 分页查询用户列表
      */
-    public PageResponse<UserResponse> listUsers(String keyword, String role, int page, int pageSize) {
+    public PageResponse<UserResponse> listUsers(String keyword, String roleId, int page, int pageSize) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isEmpty()) {
             wrapper.and(w -> w.like(User::getUsername, keyword)
                     .or().like(User::getDisplayName, keyword));
         }
-        if (role != null && !role.isEmpty()) {
-            wrapper.eq(User::getRole, role);
+        if (roleId != null && !roleId.isEmpty()) {
+            wrapper.eq(User::getRoleId, roleId);
         }
         wrapper.orderByDesc(User::getCreatedAt);
 
@@ -72,11 +76,11 @@ public class UserService {
         user.setUsername(request.getUsername());
         user.setDisplayName(request.getDisplayName());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setRole(request.getRole());
+        user.setRoleId(request.getRoleId());
         user.setIsActive(Boolean.TRUE);
         userMapper.insert(user);
 
-        log.info("创建用户成功: username={}, role={}", user.getUsername(), user.getRole());
+        log.info("创建用户成功: username={}, roleId={}", user.getUsername(), user.getRoleId());
         return toResponse(user);
     }
 
@@ -95,7 +99,7 @@ public class UserService {
             if (request.getDisplayName() != null && !request.getDisplayName().equals(user.getDisplayName())) {
                 throw new BusinessException(ErrorCode.ADMIN_PROTECTED, "系统管理员账号不允许修改显示名");
             }
-            if (request.getRole() != null && !request.getRole().equals(user.getRole())) {
+            if (request.getRoleId() != null && !request.getRoleId().equals(user.getRoleId())) {
                 throw new BusinessException(ErrorCode.ADMIN_PROTECTED, "系统管理员账号不允许修改角色");
             }
         }
@@ -104,8 +108,8 @@ public class UserService {
             validateReservedDisplayName(request.getDisplayName());
             user.setDisplayName(request.getDisplayName());
         }
-        if (request.getRole() != null) {
-            user.setRole(request.getRole());
+        if (request.getRoleId() != null) {
+            user.setRoleId(request.getRoleId());
         }
 
         userMapper.updateById(user);
@@ -198,7 +202,14 @@ public class UserService {
         response.setId(user.getId());
         response.setUsername(user.getUsername());
         response.setDisplayName(user.getDisplayName());
-        response.setRole(user.getRole());
+        response.setRoleId(user.getRoleId());
+        if (user.getRoleId() != null) {
+            UserRole role = userRoleMapper.selectById(user.getRoleId());
+            if (role != null) {
+                response.setRoleName(role.getRoleName());
+                response.setRole(role.getRoleCode());
+            }
+        }
         response.setIsActive(user.getIsActive());
         response.setLastLoginAt(user.getLastLoginAt());
         response.setCreatedAt(user.getCreatedAt());

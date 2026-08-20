@@ -362,7 +362,7 @@ docker run -d `
   --name pp-mysql `
   -p 3306:3306 `
   -e MYSQL_ROOT_PASSWORD=pp2024 `
-  -e MYSQL_DATABASE=postman_platform `
+  -e MYSQL_DATABASE=auto_test_platform `
   -v pp-mysql-data:/var/lib/mysql `
   mysql:8.0
 ```
@@ -448,7 +448,7 @@ services:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: pp2024
-      MYSQL_DATABASE: postman_platform
+      MYSQL_DATABASE: auto_test_platform
       TZ: Asia/Shanghai
     volumes:
       - pp-mysql-data:/var/lib/mysql

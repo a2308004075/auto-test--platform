@@ -38,7 +38,7 @@ service.interceptors.response.use(
       localStorage.removeItem('token')
       localStorage.removeItem('refreshToken')
       message.error('登录已过期，请重新登录')
-      window.location.href = '/login'
+      window.location.href = '/project'
     } else if (status === 403) {
       message.error('没有操作权限')
     } else if (status === 400) {

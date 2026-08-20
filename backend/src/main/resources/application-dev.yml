@@ -2,7 +2,7 @@
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/postman_platform?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://localhost:3306/auto_test_platform?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: root
     password: pp2024
 
@@ -24,7 +24,7 @@ spring:
 
 # JWT 密钥（开发环境，生产环境必须更换）
 jwt:
-  secret: dev-secret-key-postman-platform-2024-change-in-production
+  secret: dev-secret-key-auto-test-platform-2024-change-in-production
 
 # 开发环境日志级别
 logging:

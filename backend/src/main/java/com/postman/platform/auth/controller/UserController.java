@@ -29,10 +29,10 @@ public class UserController {
     @GetMapping
     public ApiResponse<PageResponse<UserResponse>> list(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String roleId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
-        PageResponse<UserResponse> response = userService.listUsers(keyword, role, page, pageSize);
+        PageResponse<UserResponse> response = userService.listUsers(keyword, roleId, page, pageSize);
         return ApiResponse.success(response);
     }
 

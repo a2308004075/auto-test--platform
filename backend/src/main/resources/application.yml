@@ -25,7 +25,7 @@ server:
 
 # 应用基础配置
 application:
-  name: postman-platform
+  name: auto-test-platform
 
 # MyBatis-Plus 全局配置
 mybatis-plus:

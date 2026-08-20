@@ -4,7 +4,7 @@ import request from './request'
  * 用户管理模块 API（ADMIN）
  */
 
-export function getUsers(params?: { keyword?: string; role?: string; page?: number; pageSize?: number }) {
+export function getUsers(params?: { keyword?: string; roleId?: string; page?: number; pageSize?: number }) {
   return request.get('/v1/users', { params })
 }
 
@@ -26,4 +26,11 @@ export function toggleUserStatus(userId: string, data: { isActive: number }) {
 
 export function resetPassword(userId: string, data: { newPassword: string }) {
   return request.post(`/v1/users/${userId}/reset-password`, data)
+}
+
+/**
+ * 获取角色列表
+ */
+export function getRoles() {
+  return request.get('/v1/roles')
 }

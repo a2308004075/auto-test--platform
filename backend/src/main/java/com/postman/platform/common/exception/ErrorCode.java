@@ -44,6 +44,8 @@ public final class ErrorCode {
     public static final int USERNAME_DUPLICATE = 1102;
     public static final int ACCOUNT_RESERVED = 1103;
     public static final int ADMIN_PROTECTED = 1104;
+    public static final int CAPTCHA_INVALID = 1105;
+    public static final int CAPTCHA_EXPIRED = 1106;
 
     // ===== M2 项目管理 (1200-1299) =====
     public static final int PROJECT_NOT_FOUND = 1200;
@@ -117,6 +119,8 @@ public final class ErrorCode {
         }
         switch (errorCode) {
             case PARAM_VALIDATION_ERROR:
+            case CAPTCHA_INVALID:
+            case CAPTCHA_EXPIRED:
                 return 400;
             case RESOURCE_NOT_FOUND:
             case SUITE_NOT_FOUND:

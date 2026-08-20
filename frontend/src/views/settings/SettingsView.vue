@@ -6,7 +6,7 @@
  */
 import { ref, reactive, onMounted } from 'vue'
 import { message, Modal } from 'ant-design-vue'
-import { getUsers, createUser, updateUser, deleteUser, toggleUserStatus, resetPassword } from '@/api/user'
+import { getUsers, createUser, updateUser, deleteUser, toggleUserStatus, resetPassword, getRoles } from '@/api/user'
 import { getSettings, updateSetting, type GlobalConfigItem } from '@/api/settings'
 
 const activeTab = ref('users')
@@ -18,16 +18,17 @@ const userKeyword = ref('')
 const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 const modalVisible = ref(false)
 const editingId = ref('')
-const form = reactive({ username: '', password: '', role: 'USER', email: '', phone: '' })
+const form = reactive({ username: '', password: '', roleId: '', displayName: '' })
 const resetVisible = ref(false)
 const resetUserId = ref('')
 const newPassword = ref('')
 
+// 角色列表
+const roleList = ref<any[]>([])
+
 const userColumns = [
   { title: '用户名', dataIndex: 'username', width: 140 },
-  { title: '角色', dataIndex: 'role', width: 80 },
-  { title: '邮箱', dataIndex: 'email', width: 180 },
-  { title: '手机', dataIndex: 'phone', width: 130 },
+  { title: '角色', dataIndex: 'roleName', width: 100 },
   { title: '状态', key: 'status', width: 80 },
   { title: '创建时间', dataIndex: 'createdAt', width: 120 },
   { title: '操作', key: 'action', width: 220 },
@@ -42,15 +43,22 @@ async function fetchUsers() {
   } catch { userList.value = [] } finally { loading.value = false }
 }
 
+async function fetchRoles() {
+  try {
+    const res: any = await getRoles()
+    roleList.value = res.data || []
+  } catch { roleList.value = [] }
+}
+
 function openCreateUser() {
   editingId.value = ''
-  Object.assign(form, { username: '', password: '', role: 'USER', email: '', phone: '' })
+  Object.assign(form, { username: '', password: '', roleId: roleList.value[0]?.id || '', displayName: '' })
   modalVisible.value = true
 }
 
 function openEditUser(record: any) {
   editingId.value = record.id
-  Object.assign(form, { username: record.username, password: '', role: record.role, email: record.email || '', phone: record.phone || '' })
+  Object.assign(form, { username: record.username, password: '', roleId: record.roleId || '', displayName: record.displayName || '' })
   modalVisible.value = true
 }
 
@@ -139,7 +147,7 @@ async function handleSubmitConfig() {
   } catch (e: any) { message.error(e?.response?.data?.message || '更新失败') }
 }
 
-onMounted(() => { fetchUsers(); fetchSettings() })
+onMounted(() => { fetchUsers(); fetchRoles(); fetchSettings() })
 </script>
 
 <template>
@@ -154,8 +162,8 @@ onMounted(() => { fetchUsers(); fetchSettings() })
         <a-table :columns="userColumns" :data-source="userList" :loading="loading" row-key="id" size="middle"
           :pagination="{ current: pagination.current, pageSize: pagination.pageSize, total: pagination.total, onChange: (p: number) => { pagination.current = p; fetchUsers() } }">
           <template #bodyCell="{ column, record }">
-            <template v-if="column.dataIndex === 'role'">
-              <a-tag :color="record.role === 'ADMIN' ? 'red' : 'blue'">{{ record.role }}</a-tag>
+            <template v-if="column.dataIndex === 'roleName'">
+              <a-tag :color="record.role === 'ADMIN' ? 'red' : 'blue'">{{ record.roleName || record.role }}</a-tag>
             </template>
             <template v-if="column.key === 'status'">
               <a-tag :color="record.isActive === 1 ? 'green' : 'default'">{{ record.isActive === 1 ? '启用' : '禁用' }}</a-tag>
@@ -193,16 +201,14 @@ onMounted(() => { fetchUsers(); fetchSettings() })
         <a-form-item :label="editingId ? '新密码（留空不修改）' : '密码'" :required="!editingId">
           <a-input-password v-model:value="form.password" />
         </a-form-item>
-        <a-form-item label="角色">
-          <a-select v-model:value="form.role">
-            <a-select-option value="USER">普通用户</a-select-option>
-            <a-select-option value="ADMIN">管理员</a-select-option>
+        <a-form-item label="显示名"><a-input v-model:value="form.displayName" /></a-form-item>
+        <a-form-item label="角色" required>
+          <a-select v-model:value="form.roleId" placeholder="请选择角色">
+            <a-select-option v-for="role in roleList" :key="role.id" :value="role.id">
+              {{ role.roleName }}（{{ role.roleCode }}）
+            </a-select-option>
           </a-select>
         </a-form-item>
-        <a-row :gutter="12">
-          <a-col :span="12"><a-form-item label="邮箱"><a-input v-model:value="form.email" /></a-form-item></a-col>
-          <a-col :span="12"><a-form-item label="手机"><a-input v-model:value="form.phone" /></a-form-item></a-col>
-        </a-row>
       </a-form>
     </a-modal>
 

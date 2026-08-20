@@ -59,12 +59,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         String userId = jwtTokenProvider.getUserId(claims);
                         User user = userMapper.selectActiveById(userId);
                         if (user != null) {
+                            // 权限信息从 JWT claims 中获取（登录时已写入 role_code）
+                            String role = jwtTokenProvider.getRole(claims);
                             UsernamePasswordAuthenticationToken auth =
                                     new UsernamePasswordAuthenticationToken(
                                             user,
                                             null,
                                             Collections.singletonList(
-                                                    new SimpleGrantedAuthority("ROLE_" + user.getRole()))
+                                                    new SimpleGrantedAuthority("ROLE_" + role))
                                     );
                             SecurityContextHolder.getContext().setAuthentication(auth);
                         }

@@ -1,8 +1,9 @@
 package com.postman.platform.common.config;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.postman.platform.auth.entity.User;
+import com.postman.platform.auth.entity.UserRole;
 import com.postman.platform.auth.mapper.UserMapper;
+import com.postman.platform.auth.mapper.UserRoleMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -19,7 +20,10 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class DataInitializer implements ApplicationRunner {
 
+    private static final String ADMIN_ROLE_ID = "00000000-0000-0000-0000-000000000020";
+
     private final UserMapper userMapper;
+    private final UserRoleMapper userRoleMapper;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -34,12 +38,19 @@ public class DataInitializer implements ApplicationRunner {
             return;
         }
 
+        // 确认 ADMIN 角色存在
+        UserRole adminRole = userRoleMapper.selectByCode("ADMIN");
+        if (adminRole == null) {
+            log.error("ADMIN 角色不存在，请检查 user_role 表初始化数据");
+            return;
+        }
+
         User admin = new User();
         admin.setId("00000000-0000-0000-0000-000000000001");
         admin.setUsername("admin");
         admin.setPasswordHash(passwordEncoder.encode("admin123"));
         admin.setDisplayName("管理员");
-        admin.setRole("ADMIN");
+        admin.setRoleId(adminRole.getId());
         admin.setIsActive(true);
         userMapper.insert(admin);
         log.info("已创建默认 admin 用户（密码：admin123）");

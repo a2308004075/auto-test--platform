@@ -3,6 +3,7 @@ package com.postman.platform.auth.controller;
 import com.postman.platform.auth.dto.*;
 import com.postman.platform.auth.entity.User;
 import com.postman.platform.auth.service.AuthService;
+import com.postman.platform.auth.service.CaptchaService;
 import com.postman.platform.common.response.ApiResponse;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -20,9 +21,19 @@ public class AuthController {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final AuthService authService;
+    private final CaptchaService captchaService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, CaptchaService captchaService) {
         this.authService = authService;
+        this.captchaService = captchaService;
+    }
+
+    /**
+     * 获取验证码图片
+     */
+    @GetMapping("/captcha")
+    public ApiResponse<CaptchaResponse> captcha() {
+        return ApiResponse.success(captchaService.generateCaptcha());
     }
 
     /**

@@ -7,9 +7,11 @@ import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { getProjects, createProject, updateProject, deleteProject } from '@/api/project'
 import { useProjectStore } from '@/stores/project'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const projectStore = useProjectStore()
+const userStore = useUserStore()
 
 const loading = ref(false)
 const list = ref<any[]>([])
@@ -29,11 +31,19 @@ async function fetchList() {
 }
 
 function enterProject(project: any) {
+  if (!userStore.isLoggedIn) {
+    message.info('请先登录后再进入项目')
+    return
+  }
   projectStore.setCurrentProject(project.id, project.name)
   router.push(`/project/${project.id}/dashboard`)
 }
 
 function openCreate() {
+  if (!userStore.isLoggedIn) {
+    message.info('请先登录后再创建项目')
+    return
+  }
   editingId.value = ''
   form.name = ''
   form.description = ''
@@ -91,7 +101,7 @@ onMounted(fetchList)
           allow-clear
           @search="handleSearch"
         />
-        <a-button type="primary" @click="openCreate">新建项目</a-button>
+        <a-button v-if="userStore.isLoggedIn" type="primary" @click="openCreate">新建项目</a-button>
       </div>
     </div>
 
@@ -108,7 +118,7 @@ onMounted(fetchList)
               </div>
             </template>
             <template #extra>
-              <a-dropdown @click.stop>
+              <a-dropdown v-if="userStore.isLoggedIn" @click.stop>
                 <a @click.stop>···</a>
                 <template #overlay>
                   <a-menu>
@@ -126,7 +136,7 @@ onMounted(fetchList)
         </a-col>
       </a-row>
       <div v-if="!list.length && !loading" style="text-align:center;padding:60px;color:#999">
-        暂无项目，点击「新建项目」开始
+        暂无项目{{ userStore.isLoggedIn ? '，点击「新建项目」开始' : '' }}
       </div>
     </a-spin>
 

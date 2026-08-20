@@ -172,8 +172,20 @@ const router = createRouter({
 // 登录守卫
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token')
-  if (to.path !== '/login' && !token) {
-    next('/login')
+  // /login 路由重定向到 /project（登录已改为弹窗形式）
+  if (to.path === '/login') {
+    next('/project')
+    return
+  }
+  // 允许未登录访问的公开路由
+  const publicPaths = ['/', '/project']
+  if (publicPaths.includes(to.path)) {
+    next()
+    return
+  }
+  // 其他路由需要登录
+  if (!token) {
+    next('/project')
   } else {
     next()
   }

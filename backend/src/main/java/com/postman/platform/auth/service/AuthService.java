@@ -3,8 +3,10 @@ package com.postman.platform.auth.service;
 import com.postman.platform.auth.dto.*;
 import com.postman.platform.auth.entity.TokenBlacklist;
 import com.postman.platform.auth.entity.User;
+import com.postman.platform.auth.entity.UserRole;
 import com.postman.platform.auth.mapper.TokenBlacklistMapper;
 import com.postman.platform.auth.mapper.UserMapper;
+import com.postman.platform.auth.mapper.UserRoleMapper;
 import com.postman.platform.auth.security.JwtTokenProvider;
 import com.postman.platform.common.exception.BusinessException;
 import com.postman.platform.common.exception.ErrorCode;
@@ -27,27 +29,52 @@ import java.util.Date;
 public class AuthService {
 
     private final UserMapper userMapper;
+    private final UserRoleMapper userRoleMapper;
     private final TokenBlacklistMapper tokenBlacklistMapper;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
+    private final CaptchaService captchaService;
 
     public AuthService(UserMapper userMapper,
+                       UserRoleMapper userRoleMapper,
                        TokenBlacklistMapper tokenBlacklistMapper,
                        JwtTokenProvider jwtTokenProvider,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       CaptchaService captchaService) {
         this.userMapper = userMapper;
+        this.userRoleMapper = userRoleMapper;
         this.tokenBlacklistMapper = tokenBlacklistMapper;
         this.jwtTokenProvider = jwtTokenProvider;
         this.passwordEncoder = passwordEncoder;
+        this.captchaService = captchaService;
+    }
+
+    /**
+     * 根据 roleId 查询角色编码
+     *
+     * @param roleId 角色 ID
+     * @return 角色编码（如 ADMIN、USER），找不到时返回 null
+     */
+    private String getRoleCode(String roleId) {
+        if (roleId == null) {
+            return null;
+        }
+        UserRole role = userRoleMapper.selectById(roleId);
+        return role != null ? role.getRoleCode() : null;
     }
 
     /**
      * 用户登录
      *
-     * <p>流程：查询用户 → 检查启用状态 → bcrypt 验证密码 → 生成双 Token → 更新 lastLoginAt
+     * <p>流程：验证验证码 → 查询用户 → 检查启用状态 → bcrypt 验证密码 → 生成双 Token → 更新 lastLoginAt
      */
     @Transactional(rollbackFor = Exception.class)
     public LoginResponse login(LoginRequest request) {
+        // 验证码校验
+        if (!captchaService.verifyCaptcha(request.getCaptchaId(), request.getCaptchaCode())) {
+            throw new BusinessException(ErrorCode.CAPTCHA_INVALID, "验证码错误或已过期");
+        }
+
         User user = userMapper.selectByUsername(request.getUsername());
         if (user == null) {
             throw new BusinessException(ErrorCode.LOGIN_FAILED, "用户名或密码错误");
@@ -59,7 +86,8 @@ public class AuthService {
             throw new BusinessException(ErrorCode.LOGIN_FAILED, "用户名或密码错误");
         }
 
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
+        String roleCode = getRoleCode(user.getRoleId());
+        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), roleCode);
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
 
         // 更新最后登录时间
@@ -108,7 +136,7 @@ public class AuthService {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND, "用户不存在或已禁用");
         }
 
-        String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
+        String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), getRoleCode(user.getRoleId()));
 
         TokenResponse response = new TokenResponse();
         response.setAccessToken(newAccessToken);
@@ -158,7 +186,13 @@ public class AuthService {
         response.setId(user.getId());
         response.setUsername(user.getUsername());
         response.setDisplayName(user.getDisplayName());
-        response.setRole(user.getRole());
+        response.setRoleId(user.getRoleId());
+        String roleCode = getRoleCode(user.getRoleId());
+        response.setRole(roleCode);
+        UserRole role = userRoleMapper.selectById(user.getRoleId());
+        if (role != null) {
+            response.setRoleName(role.getRoleName());
+        }
         response.setIsActive(user.getIsActive());
         response.setLastLoginAt(user.getLastLoginAt());
         response.setCreatedAt(user.getCreatedAt());
@@ -170,7 +204,7 @@ public class AuthService {
         brief.setId(user.getId());
         brief.setUsername(user.getUsername());
         brief.setDisplayName(user.getDisplayName());
-        brief.setRole(user.getRole());
+        brief.setRole(getRoleCode(user.getRoleId()));
         return brief;
     }
 }

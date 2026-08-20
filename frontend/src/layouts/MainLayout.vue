@@ -3,17 +3,21 @@
  * 主布局组件
  * 项目上下文感知侧边栏 + 顶部栏 + 内容区域
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useProjectStore } from '@/stores/project'
 import { message } from 'ant-design-vue'
 import { logout as logoutApi } from '@/api/auth'
+import LoginModal from '@/views/auth/LoginModal.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const projectStore = useProjectStore()
+
+// 登录弹窗
+const loginModalOpen = ref(false)
 
 // 判断当前是否在项目内页面
 const inProject = computed(() => route.meta?.inProject === true)
@@ -55,7 +59,7 @@ const menuItems = computed(() => {
   }
   return [
     { key: 'project', label: '项目管理', path: '/project' },
-    { key: 'settings', label: '系统设置', path: '/settings' },
+    ...(userStore.isLoggedIn ? [{ key: 'settings', label: '系统设置', path: '/settings' }] : []),
   ]
 })
 
@@ -69,7 +73,7 @@ async function handleLogout() {
   userStore.logout()
   projectStore.clearCurrentProject()
   message.success('已退出登录')
-  router.push('/login')
+  router.push('/project')
 }
 </script>
 
@@ -77,7 +81,7 @@ async function handleLogout() {
   <a-layout class="main-layout">
     <a-layout-sider collapsible :width="200">
       <div class="logo">
-        <h1>测试平台</h1>
+        <h1>项目管理平台</h1>
       </div>
       <a-menu
         theme="dark"
@@ -99,14 +103,22 @@ async function handleLogout() {
           <span>{{ route.meta?.title || '' }}</span>
         </div>
         <div class="header-right">
-          <span v-if="userStore.username" class="user-info">{{ userStore.username }}</span>
-          <a-button type="link" size="small" @click="handleLogout">退出</a-button>
+          <template v-if="userStore.isLoggedIn">
+            <span v-if="userStore.username" class="user-info">{{ userStore.username }}</span>
+            <a-button type="link" size="small" @click="handleLogout">退出</a-button>
+          </template>
+          <template v-else>
+            <a-button type="primary" size="small" @click="loginModalOpen = true">立即登录</a-button>
+          </template>
         </div>
       </a-layout-header>
       <a-layout-content class="layout-content">
         <router-view />
       </a-layout-content>
     </a-layout>
+
+    <!-- 登录弹窗 -->
+    <LoginModal v-model:open="loginModalOpen" @success="() => {}" />
   </a-layout>
 </template>
 

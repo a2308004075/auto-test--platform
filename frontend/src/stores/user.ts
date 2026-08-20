@@ -12,6 +12,9 @@ export const useUserStore = defineStore('user', () => {
   const userId = ref<string>('')
   const isLoggedIn = computed(() => !!token.value)
 
+  // ===== 记住密码 =====
+  const REMEMBER_KEY = 'rememberedCredentials'
+
   function setToken(newToken: string) {
     token.value = newToken
     localStorage.setItem('token', newToken)
@@ -38,8 +41,36 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('refreshToken')
   }
 
+  /**
+   * 加载已记住的登录凭据
+   */
+  function loadRememberedCredentials(): { username: string; password: string } | null {
+    const raw = localStorage.getItem(REMEMBER_KEY)
+    if (!raw) return null
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * 保存登录凭据（记住密码）
+   */
+  function saveRememberedCredentials(username: string, password: string) {
+    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ username, password }))
+  }
+
+  /**
+   * 清除已记住的登录凭据
+   */
+  function clearRememberedCredentials() {
+    localStorage.removeItem(REMEMBER_KEY)
+  }
+
   return {
     token, refreshTokenValue, username, role, userId, isLoggedIn,
     setToken, setRefreshToken, setUserInfo, logout,
+    loadRememberedCredentials, saveRememberedCredentials, clearRememberedCredentials,
   }
 })

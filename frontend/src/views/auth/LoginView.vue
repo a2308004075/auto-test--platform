@@ -40,7 +40,7 @@ async function handleLogin() {
   <div class="login-view">
     <div class="login-card">
       <div class="login-header">
-        <h2>关键字驱动测试平台</h2>
+        <h2>项目管理平台</h2>
         <p>请登录您的账户</p>
       </div>
       <a-form layout="vertical" @finish="handleLogin">

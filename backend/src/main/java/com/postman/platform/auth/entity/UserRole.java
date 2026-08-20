@@ -6,44 +6,32 @@ import com.postman.platform.common.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.time.LocalDateTime;
-
 /**
- * 用户实体
+ * 用户角色实体
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("user")
-public class User extends BaseEntity {
+@TableName("user_role")
+public class UserRole extends BaseEntity {
 
     /**
-     * 账号（登录名）
+     * 角色名称（显示名）
      */
-    private String username;
+    private String roleName;
 
     /**
-     * bcrypt 哈希密码
+     * 角色编码（如 ADMIN、USER）
      */
-    private String passwordHash;
+    private String roleCode;
 
     /**
-     * 显示名
+     * 角色描述
      */
-    private String displayName;
-
-    /**
-     * 角色 ID（关联 user_role.id）
-     */
-    private String roleId;
+    private String description;
 
     /**
      * 是否启用（软删除）
      */
     @TableLogic
     private Boolean isActive;
-
-    /**
-     * 最近登录时间
-     */
-    private LocalDateTime lastLoginAt;
 }

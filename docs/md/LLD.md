@@ -55,13 +55,15 @@
 
 ```
 auto-test-platform/
-├── frontend/                          # 前端项目（Vue 3 + TypeScript + Vite）
+├── frontend/                              # 前端项目（Vue 3 + TypeScript + Vite）
 │   ├── src/
-│   │   ├── api/                       # API 接口封装（按模块分文件）
+│   │   ├── api/                           # API 接口封装（按模块分文件）
+│   │   │   ├── request.ts                 #   Axios 实例 + 拦截器
 │   │   │   ├── auth.ts
 │   │   │   ├── project.ts
+│   │   │   ├── user.ts
+│   │   │   ├── apidoc.ts
 │   │   │   ├── environment.ts
-│   │   │   ├── api.ts
 │   │   │   ├── keyword.ts
 │   │   │   ├── tool.ts
 │   │   │   ├── action.ts
@@ -69,173 +71,109 @@ auto-test-platform/
 │   │   │   ├── case.ts
 │   │   │   ├── plan.ts
 │   │   │   ├── execution.ts
-│   │   │   ├── analytics.ts
 │   │   │   └── settings.ts
-│   │   ├── assets/                    # 静态资源（图片、字体）
-│   │   ├── components/                # 通用组件
-│   │   │   ├── AppLayout.vue          #   主布局（顶栏+侧栏+内容区）
-│   │   │   ├── MonacoEditor.vue       #   Monaco Editor 封装（JSON/Python 模式）
-│   │   │   ├── FlowCanvas.vue         #   AntV X6 流程画布封装
-│   │   │   ├── StepEditor.vue         #   步骤编排器（用例/Setup/Teardown 复用）
-│   │   │   ├── DependencyDialog.vue   #   依赖检查弹窗
-│   │   │   ├── BatchToolbar.vue       #   批量操作浮动工具栏
-│   │   │   └── StatusBadge.vue        #   状态徽章组件
-│   │   ├── composables/               # Composition API hooks
-│   │   │   ├── useAuth.ts             #   认证状态与 Token 管理
-│   │   │   ├── usePagination.ts       #   分页逻辑封装
-│   │   │   ├── useWebSocket.ts        #   WebSocket 连接管理
-│   │   │   └── useConfirm.ts          #   确认弹窗封装
-│   │   ├── layouts/                   # 布局组件
-│   │   │   ├── AuthLayout.vue         #   登录页布局
-│   │   │   └── ProjectLayout.vue      #   项目内布局（含侧栏）
-│   │   ├── router/                    # 路由配置
+│   │   ├── assets/                        # 静态资源（图片、图标）
+│   │   ├── components/                    # 通用组件
+│   │   │   ├── Breadcrumb/index.vue       #   面包屑导航组件
+│   │   │   └── Hamburger/index.vue        #   侧边栏折叠按钮组件
+│   │   ├── composables/                   # Composition API hooks
+│   │   │   └── useExecutionWebSocket.ts   #   执行 WebSocket 连接管理
+│   │   ├── layouts/                       # 布局组件
+│   │   │   ├── Layout.vue                 #   主布局编排容器（Sidebar + 主区）
+│   │   │   └── components/                #   布局子组件
+│   │   │       ├── Sidebar.vue            #     侧边栏
+│   │   │       ├── Navbar.vue             #     顶部导航栏
+│   │   │       ├── AppMain.vue            #     主内容区
+│   │   │       └── TagsView/              #     标签页导航
+│   │   ├── router/                        # 路由配置
 │   │   │   └── index.ts
-│   │   ├── stores/                    # Pinia 状态管理
-│   │   │   ├── auth.ts                #   用户认证状态
-│   │   │   ├── project.ts             #   当前项目上下文
-│   │   │   └── environment.ts         #   当前激活环境
-│   │   ├── views/                     # 页面视图（26 个核心页面）
-│   │   │   ├── login/
-│   │   │   ├── project/
-│   │   │   ├── environment/
-│   │   │   ├── api/
-│   │   │   ├── keyword/
-│   │   │   ├── tool/
-│   │   │   ├── action/
-│   │   │   ├── suite/
-│   │   │   ├── case/
-│   │   │   ├── plan/
-│   │   │   ├── execution/
-│   │   │   ├── analytics/
-│   │   │   └── settings/
-│   │   ├── utils/                     # 工具函数
-│   │   │   ├── request.ts             #   Axios 实例 + 拦截器
-│   │   │   ├── variable.ts            #   ${var} 变量解析工具
-│   │   │   └── formatter.ts           #   日期、字节数格式化
+│   │   ├── stores/                        # Pinia 状态管理
+│   │   │   ├── index.ts                   #   统一导出
+│   │   │   └── modules/                   #   按功能分模块
+│   │   │       ├── app.ts                 #     应用全局状态（侧边栏等）
+│   │   │       ├── user.ts                #     用户认证状态
+│   │   │       ├── project.ts             #     当前项目上下文
+│   │   │       ├── permission.ts          #     权限管理（桩）
+│   │   │       └── tagsView.ts            #     标签页状态
+│   │   ├── styles/                        # 全局样式
+│   │   │   ├── global.less                #   全局样式
+│   │   │   ├── variables.less             #   CSS 变量
+│   │   │   ├── sidebar.less               #   侧边栏样式
+│   │   │   ├── scrollbar.less             #   滚动条样式
+│   │   │   ├── transition.less            #   过渡动画
+│   │   │   └── element-plus.less          #   Element Plus 主题覆盖
+│   │   ├── views/                         # 页面视图
+│   │   │   ├── auth/                      #   登录页
+│   │   │   ├── project/                   #   项目管理页面
+│   │   │   ├── api/                       #   接口文档页面
+│   │   │   ├── environment/               #   环境配置页面
+│   │   │   ├── keywords/                  #   接口关键字页面
+│   │   │   ├── tool/                      #   工具方法页面
+│   │   │   ├── action/                    #   Action 关键字页面
+│   │   │   ├── cases/                     #   测试套件/用例页面
+│   │   │   ├── execution/                 #   测试计划/执行记录页面
+│   │   │   └── settings/                  #   系统设置页面
 │   │   ├── App.vue
 │   │   └── main.ts
 │   ├── package.json
 │   ├── vite.config.ts
 │   └── tsconfig.json
 │
-├── backend/                           # 后端服务（Spring Boot 单体应用）
-│   ├── src/main/java/com/postman/platform/
-│   │   ├── PostmanPlatformApplication.java  # Spring Boot 启动类
-│   │   ├── common/                        # 公共模块
-│   │   │   ├── response/
-│   │   │   │   └── ApiResponse.java       #   统一响应格式
-│   │   │   ├── exception/
-│   │   │   │   ├── BusinessException.java #   业务异常
-│   │   │   │   ├── GlobalExceptionHandler.java  #   全局异常处理
-│   │   │   │   └── ErrorCode.java         #   错误码枚举
-│   │   │   ├── config/
-│   │   │   │   ├── MyBatisPlusConfig.java #   MyBatis-Plus 全局配置
-│   │   │   │   ├── RedisConfig.java       #   Redis 序列化配置
-│   │   │   │   └── RabbitMQConfig.java    #   RabbitMQ 配置
-│   │   │   └── util/
-│   │   │       └── JsonUtils.java         #   JSON 工具类
-│   │   ├── auth/                           # 认证模块（M1）
-│   │   │   ├── controller/
-│   │   │   │   ├── AuthController.java
-│   │   │   │   ├── UserController.java
-│   │   │   │   └── SettingsController.java
-│   │   │   ├── service/
-│   │   │   │   ├── AuthService.java
-│   │   │   │   ├── UserService.java
-│   │   │   │   └── SettingsService.java
-│   │   │   ├── mapper/
-│   │   │   │   └── UserMapper.java
-│   │   │   ├── entity/
-│   │   │   │   └── User.java
-│   │   │   ├── dto/
-│   │   │   ├── security/
-│   │   │   │   ├── JwtTokenProvider.java
-│   │   │   │   ├── JwtAuthenticationFilter.java
-│   │   │   │   └── SecurityConfig.java
-│   │   │   └── config/
-│   │   │       └── WebMvcConfig.java      #   CORS 配置
-│   │   ├── project/                        # 项目管理模块（M2/M3）
-│   │   │   ├── controller/
-│   │   │   │   ├── ProjectController.java
-│   │   │   │   └── EnvironmentController.java
-│   │   │   ├── service/
-│   │   │   │   ├── ProjectService.java
-│   │   │   │   └── EnvironmentService.java
-│   │   │   ├── mapper/
-│   │   │   ├── entity/
-│   │   │   └── dto/
-│   │   ├── api/                            # 接口管理模块（M4）
-│   │   │   ├── controller/
-│   │   │   │   └── ApiController.java
-│   │   │   ├── service/
-│   │   │   │   ├── ApiService.java
-│   │   │   │   └── SwaggerImportService.java
-│   │   │   ├── mapper/
-│   │   │   ├── entity/
-│   │   │   └── dto/
-│   │   ├── keyword/                        # 关键字管理模块（M5/M6/M7）
-│   │   │   ├── controller/
-│   │   │   │   ├── KeywordController.java
-│   │   │   │   ├── ToolController.java
-│   │   │   │   └── ActionController.java
-│   │   │   ├── service/
-│   │   │   │   ├── KeywordService.java
-│   │   │   │   ├── ToolService.java
-│   │   │   │   └── ActionService.java
-│   │   │   ├── mapper/
-│   │   │   ├── entity/
-│   │   │   └── dto/
-│   │   ├── execution/                      # 执行与报告模块（M8/M9/M10）
-│   │   │   ├── controller/
-│   │   │   │   ├── SuiteController.java
-│   │   │   │   ├── CaseController.java
-│   │   │   │   ├── PlanController.java
-│   │   │   │   ├── ExecutionController.java
-│   │   │   │   └── AnalyticsController.java
-│   │   │   ├── service/
-│   │   │   │   ├── SuiteService.java
-│   │   │   │   ├── CaseService.java
-│   │   │   │   ├── ExecutionService.java
-│   │   │   │   ├── AnalyticsService.java
-│   │   │   │   └── ReportService.java
-│   │   │   ├── mapper/
-│   │   │   ├── entity/
-│   │   │   ├── dto/
-│   │   │   ├── engine/                     #   执行引擎核心包
-│   │   │   │   ├── KeywordExecutor.java    #     关键字执行器（统一入口，按类型分发）
-│   │   │   │   ├── HttpClientEngine.java   #     HTTP 客户端（OkHttp 4.12）
-│   │   │   │   ├── AssertionEngine.java    #     断言引擎（JSONPath + 断言 DSL）
-│   │   │   │   ├── SandboxEngine.java      #     工具方法沙箱（Groovy ScriptEngine）
-│   │   │   │   ├── SwaggerParserEngine.java #    Swagger 解析器
-│   │   │   │   └── ActionExecutor.java     #     Action 流程执行器（拓扑排序）
-│   │   │   ├── context/
-│   │   │   │   └── ExecutionContext.java    #     执行上下文（变量池、环境、步骤结果）
-│   │   │   ├── mq/
-│   │   │   │   ├── ExecutionMessageProducer.java
-│   │   │   │   └── ExecutionMessageConsumer.java
-│   │   │   ├── websocket/
-│   │   │   │   └── ExecutionWebSocket.java
-│   │   │   └── config/
-│   │   │       ├── AsyncConfig.java
-│   │   │       └── WebSocketConfig.java
-│   │   └── filter/                         # 全局过滤器
-│   │       └── CorsFilter.java
-│   ├── src/main/resources/
-│   │   ├── application.yml                 #   应用配置
-│   │   ├── application-dev.yml             #   开发环境配置
-│   │   ├── application-prod.yml            #   生产环境配置
-│   │   └── db/migration/                   #   Flyway 迁移脚本
-│   ├── pom.xml                             #   Maven POM
-│   └── Dockerfile
+├── backend/                               # 后端服务（Maven 多模块聚合）
+│   ├── pom.xml                            #   父 POM（packaging=pom, 聚合三模块）
+│   ├── platform-api/                      #   契约层（DTO/响应/异常/基类）
+│   │   ├── pom.xml
+│   │   └── src/main/java/com/platform/
+│   │       ├── common/
+│   │       │   ├── response/              #   ApiResponse, PageResponse
+│   │       │   ├── exception/             #   ErrorCode, BusinessException, DependencyException, NotFoundException
+│   │       │   ├── entity/                #   BaseEntity（id/createdAt/updatedAt/isActive）
+│   │       │   └── util/                  #   JsonUtils, SpringContextHolder
+│   │       └── {feature}/dto/             #   action/apidoc/auth/environment/execution/keyword/project/tool 的 DTO
+│   ├── platform-data/                     #   持久层（Entity + Mapper）
+│   │   ├── pom.xml
+│   │   └── src/main/java/com/platform/
+│   │       └── {feature}/                 #   api/auth/environment/execution/keyword/project 的 entity + mapper
+│   └── platform-server/                   #   应用层（Controller/Service/Config/引擎）
+│       ├── pom.xml
+│       ├── src/main/java/com/platform/
+│       │   ├── PostmanPlatformApplication.java  # Spring Boot 启动类 + @MapperScan
+│       │   ├── common/
+│       │   │   ├── config/                #   MyBatisPlusConfig, RedisConfig, RabbitMQConfig, DataInitializer
+│       │   │   └── exception/             #   GlobalExceptionHandler
+│       │   ├── filter/                    #   CorsFilter
+│       │   ├── auth/                      #   认证模块（M1）— controller/service/security/config
+│       │   ├── project/                   #   项目管理模块（M2/M3）— controller/service
+│       │   ├── environment/               #   环境配置模块 — controller/service
+│       │   ├── apidoc/                    #   接口文档模块（M4）— controller/service/util
+│       │   ├── keyword/                   #   关键字管理模块（M5/M6/M7）— controller/service
+│       │   ├── tool/                      #   工具方法模块 — controller/service
+│       │   ├── action/                    #   Action 模块 — controller/service
+│       │   └── execution/                 #   执行与报告模块（M8/M9/M10）
+│       │       ├── controller/
+│       │       ├── service/
+│       │       ├── engine/                #     执行引擎核心包
+│       │       ├── context/               #     执行上下文
+│       │       ├── mq/                    #     RabbitMQ 消息生产/消费
+│       │       ├── websocket/             #     WebSocket 实时推送
+│       │       └── config/                #     异步/WebSocket 配置
+│       └── src/main/resources/
+│           ├── application.yml
+│           ├── application-dev.yml
+│           ├── application-prod.yml
+│           └── db/migration/              #     Flyway 迁移脚本（V1/V2/V3）
 │
-├── pom.xml                            # Maven POM（后端父工程）
-├── docker-compose.yml
-├── docker-compose.prod.yml
-├── nginx/
-│   └── nginx.conf
-└── scripts/
-    └── init_data.sh
+├── docs/                                  # 文档
+│   ├── md/                                #   PRD/SRS/HLD/LLD/DDP 设计文档
+│   ├── ui/                                #   UI 原型 HTML
+│   ├── script/                            #   中间件启停脚本
+│   └── vbPrompt/                          #   AI 提示词模板
+│
+└── .qoder/rules/                          # 开发规范规则文件
 ```
+
+> **多模块依赖方向**：`platform-server` → `platform-data` → `platform-api`  
+> **Maven groupId**：`com.postman`（POM 配置）；**Java 包路径**：`com.platform`（源码包声明）
 
 ### 2.2 数据库连接与连接池
 
@@ -280,7 +218,7 @@ mybatis-plus:
 ### 2.3 统一响应格式与错误码
 
 ```java
-// src/main/java/com/postman/platform/dto/ApiResponse.java
+// src/main/java/com/platform/dto/ApiResponse.java
 
 public class ApiResponse<T> {
     private int code;
@@ -339,7 +277,7 @@ public class ApiResponse<T> {
 > 认证通过全局过滤器 JwtAuthenticationFilter 负责 JWT 解析和验证，auth 模块负责 Token 签发/刷新和用户管理。
 
 ```java
-// backend/src/main/java/com/postman/platform/auth/security/JwtTokenProvider.java
+// backend/platform-server/src/main/java/com/platform/auth/security/JwtTokenProvider.java
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -391,7 +329,7 @@ public class JwtTokenProvider {
 ```
 
 ```java
-// backend/src/main/java/com/postman/platform/auth/security/JwtAuthenticationFilter.java
+// backend/platform-server/src/main/java/com/platform/auth/security/JwtAuthenticationFilter.java
 
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
@@ -436,7 +374,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 ### 2.5 全局异常处理器
 
 ```java
-// backend/src/main/java/com/postman/platform/auth/security/SecurityConfig.java
+// backend/platform-server/src/main/java/com/platform/auth/security/SecurityConfig.java
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -477,7 +415,7 @@ public class GlobalExceptionHandler {
 ```
 
 ```java
-// backend/src/main/java/com/postman/platform/common/exception/BusinessException.java
+// backend/platform-server/src/main/java/com/platform/common/exception/BusinessException.java
 
 public class BusinessException extends RuntimeException {
     private final int code;
@@ -509,7 +447,7 @@ public class NotFoundException extends BusinessException {
 ### 2.6 数据库实体基类
 
 ```java
-// backend/src/main/java/com/postman/platform/common/entity/BaseEntity.java
+// backend/platform-server/src/main/java/com/platform/common/entity/BaseEntity.java
 
 import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;

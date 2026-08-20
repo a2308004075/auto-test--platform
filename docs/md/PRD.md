@@ -2537,7 +2537,7 @@ JWT 认证流程：
 
 ### 12.1 设计系统
 
-平台采用 Ant Design 4.x 风格的设计系统，通过 CSS 变量统一管理视觉令牌，定义于 [shared-styles.css](../ui/common/shared-styles.css)。
+平台采用 Element Plus 风格的设计系统，通过 CSS 变量统一管理视觉令牌，定义于 [shared-styles.css](../ui/common/shared-styles.css)。
 
 #### 12.1.1 色彩体系
 

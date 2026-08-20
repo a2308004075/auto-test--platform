@@ -28,14 +28,14 @@ auto-test-platform 是一个**通用的关键字驱动测试管理平台**，面
 
 | 层 | 技术选型 |
 |---|---|
-| 前端 | Vue 3 + TypeScript + Vite + Ant Design Vue 4.x + Pinia + ECharts + Monaco Editor + AntV X6 |
+| 前端 | Vue 3 + TypeScript + Vite + Element Plus 2.x + Pinia + ECharts + Monaco Editor + AntV X6 |
 | 后端 | Java 1.8 + Spring Boot 2.7（单体应用） |
 | 后端组件 | Spring Security 5.7 + JJWT 0.11（JWT 认证）+ Spring AMQP（异步消息）+ OkHttp 4.12（HTTP 客户端） |
-| 数据持久层 | MyBatis-Plus 3.5 + Flyway 8 + Spring Security 5.7 + Sa-Token + JJWT 0.11 |
+| 数据持久层 | MyBatis-Plus 3.5 + Flyway 8 + JJWT 0.11 |
 | 数据库 | MySQL 8.0+ + Redis 7.x |
 | 消息队列 | RabbitMQ 3.x（异步事件驱动：测试执行触发、状态通知） |
 | 任务调度 | XXL-Job 2.4+（分布式定时调度）+ Spring Async（服务内异步） |
-| 执行引擎 | 内嵌于 pp-execution（OkHttp 4.12 客户端 + Groovy ScriptEngine 沙箱 + swagger-parser + JavaParser） |
+| 执行引擎 | 内嵌于 execution 模块（OkHttp 4.12 客户端 + Groovy ScriptEngine 沙箱 + swagger-parser） |
 | 部署 | Docker Compose（推荐）/ Nginx + Spring Boot 单体应用 |
 
 ### 1.4 术语约定

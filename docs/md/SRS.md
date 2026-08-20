@@ -286,10 +286,10 @@ Shell/SQL 链路：
 | 技术 | 版本 | 选型理由 |
 |---|---|---|
 | Vue 3 | 3.5+ | Composition API，性能优异，生态成熟 |
-| TypeScript | 5.x | 类型安全，提升大型项目可维护性 |
-| Vite | 6.x | 极速开发体验，HMR 即时生效 |
-| Ant Design Vue | 4.x | 企业级组件库，专业、克制、无 AI 感 |
-| Pinia | 2.x | Vue 3 官方状态管理，轻量直观 |
+| TypeScript | 6.x | 类型安全，提升大型项目可维护性 |
+| Vite | 8.x | 极速开发体验，HMR 即时生效 |
+| Element Plus | 2.x | 企业级组件库，专业、克制、无 AI 感 |
+| Pinia | 4.x | Vue 3 官方状态管理，轻量直观 |
 | Vue Router | 4.x | 路由管理 |
 | Axios | 1.x | HTTP 客户端，拦截器统一处理 |
 | ECharts | 5.x | 数据可视化图表 |
@@ -304,7 +304,6 @@ Shell/SQL 链路：
 | Java | 1.8 | 主流企业级语言，LTS 版本保证长期支持，生态成熟稳定 |
 | Spring Boot | 2.7 | 企业级框架标杆，自动配置、内嵌容器、生态成熟、社区活跃 |
 | Spring Security | 5.7 | 认证鉴权框架，与 Spring Boot 深度集成，支持 OAuth2/JWT |
-| Sa-Token | 1.39+ | 轻量级权限认证框架，API 简洁，与 Spring Security 互补 |
 | JJWT | 0.11 | JWT 认证，成熟的 Java JWT 库 |
 | MyBatis-Plus | 3.5+ | 增强型 ORM，简化 CRUD，支持代码生成、分页、多租户 |
 | Flyway | 8.x | 数据库版本迁移工具，SQL 脚本管理、自动执行、回滚支持 |

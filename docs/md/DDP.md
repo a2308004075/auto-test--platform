@@ -53,7 +53,7 @@
 
 | 类别 | 技术栈 | 说明 |
 |------|--------|------|
-| **前端** | Vue 3 + TypeScript + Vite + Ant Design Vue 4.x | 独立的 SPA 工程，用 IDEA 打开 |
+| **前端** | Vue 3 + TypeScript + Vite + Element Plus 2.x | 独立的 SPA 工程，用 IDEA 打开 |
 | **后端** | Java 1.8 + Spring Boot 2.7（单体应用） | Maven 工程，用 IDEA 打开 |
 | **中间件** | MySQL 8.0 + Redis 7.x + RabbitMQ | Docker 容器 或 原生 Windows 安装（二选一） |
 
@@ -794,39 +794,56 @@ D:\software\rabbitmq\sbin\rabbitmq-server.bat
 
 ### 4.1 Maven 多模块项目结构
 
-后端采用 Spring Boot 单体应用结构，所有功能模块打包在同一个 Maven 工程中。目标目录结构如下：
+后端采用 Maven 多模块聚合结构，将代码按职责拆分到三个子模块中。目标目录结构如下：
 
 ```
-auto-test-platform/                  ← 项目根目录（已有）
-├── backend/                       ← 后端工程（新建，Spring Boot 单体应用）
-│   ├── pom.xml                    ← Maven POM（Spring Boot 应用）
-│   └── src/main/
-│       ├── java/com/postman/platform/
+auto-test-platform/                      ← 项目根目录（已有）
+├── backend/                             ← 后端工程（Maven 多模块聚合）
+│   ├── pom.xml                          ← 父 POM（packaging=pom, 聚合三模块）
+│   ├── platform-api/                    ← 契约层（DTO/响应/异常/基类）
+│   │   ├── pom.xml
+│   │   └── src/main/java/com/platform/
+│   │       ├── common/                  ← 公共模块（ApiResponse/ErrorCode/BaseEntity/JsonUtils）
+│   │       └── {feature}/dto/           ← 各功能模块的请求/响应 DTO
+│   ├── platform-data/                   ← 持久层（Entity + Mapper）
+│   │   ├── pom.xml
+│   │   └── src/main/java/com/platform/
+│   │       └── {feature}/              ← 各功能模块的 entity + mapper
+│   └── platform-server/                 ← 应用层（Controller/Service/Config/引擎）
+│       ├── pom.xml
+│       ├── src/main/java/com/platform/
 │       │   ├── PostmanPlatformApplication.java
-│       │   ├── common/             ← 公共模块（实体、工具类、通用配置）
-│       │   ├── auth/               ← 认证模块（M1）
-│       │   ├── project/            ← 项目管理模块（M2/M3）
-│       │   ├── api/                ← 接口管理模块（M4）
-│       │   ├── keyword/            ← 关键字管理模块（M5/M6/M7）
-│       │   ├── execution/          ← 执行与报告模块（M8/M9/M10）
-│       │   └── filter/             ← 全局过滤器
-│       └── resources/
+│       │   ├── common/config/           ← MyBatisPlusConfig, RedisConfig, RabbitMQConfig
+│       │   ├── common/exception/        ← GlobalExceptionHandler
+│       │   ├── auth/                    ← 认证模块（M1）
+│       │   ├── project/                 ← 项目管理模块（M2/M3）
+│       │   ├── environment/             ← 环境配置模块
+│       │   ├── apidoc/                  ← 接口文档模块（M4）
+│       │   ├── keyword/                 ← 关键字管理模块（M5/M6/M7）
+│       │   ├── tool/                    ← 工具方法模块
+│       │   ├── action/                  ← Action 模块
+│       │   ├── execution/               ← 执行与报告模块（M8/M9/M10）
+│       │   └── filter/                  ← 全局过滤器
+│       └── src/main/resources/
 │           ├── application.yml
 │           ├── application-dev.yml
 │           ├── application-prod.yml
 │           └── db/migration/
-├── frontend/                      ← 前端工程根目录（新建）
+├── frontend/                            ← 前端工程根目录（新建）
 │   ├── package.json
 │   └── src/
-├── docker/                        ← Docker 配置（已创建）
-└── docs/                          ← 文档（已有）
+├── docker/                              ← Docker 配置（已创建）
+└── docs/                                ← 文档（已有）
 ```
+
+> **多模块依赖方向**：`platform-server` → `platform-data` → `platform-api`  
+> **Maven groupId**：`com.postman`（POM 配置）；**Java 包路径**：`com.platform`（源码包声明）
 
 ---
 
 ### 4.2 Maven POM 配置
 
-以下是 `backend/pom.xml` 的核心配置：
+以下是 `backend/pom.xml` 父 POM 的核心配置（聚合三子模块，统一版本管理）：
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -836,12 +853,27 @@ auto-test-platform/                  ← 项目根目录（已有）
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- Spring Boot 父 POM -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.7.18</version>
+        <relativePath/>
+    </parent>
+
     <groupId>com.postman</groupId>
     <artifactId>auto-test-platform</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
     <name>auto-test-platform</name>
-    <description>关键字驱动测试管理平台</description>
+    <description>关键字驱动测试管理平台 - 多模块聚合</description>
+
+    <!-- 聚合子模块 -->
+    <modules>
+        <module>platform-api</module>
+        <module>platform-data</module>
+        <module>platform-server</module>
+    </modules>
 
     <!-- 版本统一管理 -->
     <properties>
@@ -851,30 +883,46 @@ auto-test-platform/                  ← 项目根目录（已有）
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <spring-boot.version>2.7.18</spring-boot.version>
-        <mybatis-plus.version>3.5.9</mybatis-plus.version>
+        <mybatis-plus.version>3.5.7</mybatis-plus.version>
         <flyway.version>8.5.13</flyway.version>
         <mysql.version>8.0.33</mysql.version>
         <jjwt.version>0.11.5</jjwt.version>
         <hutool.version>5.8.34</hutool.version>
         <okhttp.version>4.12.0</okhttp.version>
+        <groovy.version>3.0.9</groovy.version>
     </properties>
 
-    <!-- Spring Boot 父 POM -->
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.18</version>
-        <relativePath/>
-    </parent>
-
-    <!-- 依赖管理 -->
+    <!-- 依赖管理：子模块声明即可，版本由父 POM 统一锁定 -->
     <dependencyManagement>
         <dependencies>
-            <!-- MyBatis-Plus -->
+            <!-- 平台内部模块 -->
+            <dependency>
+                <groupId>com.postman</groupId>
+                <artifactId>platform-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.postman</groupId>
+                <artifactId>platform-data</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- MyBatis-Plus（3.5.7：兼容 Java 1.8） -->
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-boot-starter</artifactId>
                 <version>${mybatis-plus.version}</version>
+            </dependency>
+            <!-- Flyway（数据库版本迁移） -->
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-core</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-mysql</artifactId>
+                <version>${flyway.version}</version>
             </dependency>
             <!-- JJWT -->
             <dependency>
@@ -906,36 +954,21 @@ auto-test-platform/                  ← 项目根目录（已有）
                 <artifactId>hutool-all</artifactId>
                 <version>${hutool.version}</version>
             </dependency>
+            <!-- Groovy 脚本引擎（工具方法沙箱执行） -->
+            <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy</artifactId>
+                <version>${groovy.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                    <encoding>UTF-8</encoding>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
 ```
+
+> **子模块说明**：  
+> - `platform-api`（契约层）：仅依赖 lombok、validation-api、jackson、spring-context、mybatis-plus-annotation  
+> - `platform-data`（持久层）：依赖 platform-api + mybatis-plus-boot-starter + mysql-connector-java  
+> - `platform-server`（应用层）：依赖 platform-api + platform-data + spring-boot-starter-web/security/redis/amqp + flyway + jjwt + okhttp + hutool + groovy；包含 spring-boot-maven-plugin 打包插件
 
 ---
 
@@ -945,16 +978,20 @@ auto-test-platform/                  ← 项目根目录（已有）
 
 | 顺序 | 包名 | 说明 |
 |------|--------|------|
-| 1 | common | 公共模块（实体、工具类、通用配置、异常处理） |
-| 2 | auth | 认证模块（登录、JWT、用户管理） |
-| 3 | project | 项目管理模块（项目、环境配置） |
-| 4 | api | 接口管理模块（接口文档、Swagger 导入） |
-| 5 | keyword | 关键字管理模块（接口关键字、工具方法、Action） |
-| 6 | execution | 执行与报告模块（用例、执行、报告） |
+| 1 | common | 公共模块（响应格式、异常体系、基类实体、工具类、通用配置） |
+| 2 | auth | 认证模块（登录、JWT、用户管理、系统配置） |
+| 3 | project | 项目管理模块（项目 CRUD、仪表板） |
+| 4 | environment | 环境配置模块（环境 CRUD、连接测试） |
+| 5 | apidoc | 接口文档模块（接口 CRUD、Swagger 导入、接口调试） |
+| 6 | keyword | 关键字管理模块（接口关键字 CRUD） |
+| 7 | tool | 工具方法模块（工具方法 CRUD、沙箱执行） |
+| 8 | action | Action 模块（Action CRUD、流程画布、调试） |
+| 9 | execution | 执行与报告模块（套件、用例、计划、执行、报告） |
+| 10 | filter | 全局过滤器（CORS） |
 
 **在 IDEA 中创建包的步骤**：
 
-1. 右键点击 `src/main/java/com/postman/platform` → `New` → `Package`
+1. 右键点击 `platform-server/src/main/java/com/platform` → `New` → `Package`
 2. 填写包名（如 `auth`）
 3. 点击 `Create`
 
@@ -1006,7 +1043,7 @@ cd D:\develop\auto-test-platform\frontend
 pnpm install
 
 # 安装 UI 组件库
-pnpm add ant-design-vue@4
+pnpm add element-plus @element-plus/icons-vue
 
 # 安装状态管理
 pnpm add pinia
@@ -1036,32 +1073,52 @@ pnpm add -D @types/node unplugin-auto-import unplugin-vue-components
 
 ```
 frontend/
-├── public/                    ← 静态资源
+├── public/                    ← 静态资源（图标）
 ├── src/
 │   ├── api/                   ← 后端 API 接口封装
+│   │   ├── request.ts         ← Axios 实例与拦截器
 │   │   ├── auth.ts
 │   │   ├── project.ts
-│   │   └── request.ts         ← Axios 实例与拦截器
+│   │   ├── user.ts
+│   │   ├── apidoc.ts
+│   │   ├── environment.ts
+│   │   ├── keyword.ts
+│   │   ├── tool.ts
+│   │   ├── action.ts
+│   │   ├── suite.ts
+│   │   ├── case.ts
+│   │   ├── plan.ts
+│   │   ├── execution.ts
+│   │   └── settings.ts
 │   ├── assets/                ← 图片、图标等资源
-│   ├── components/            ← 公共组件
-│   ├── composables/           ← 组合式函数（hooks）
-│   ├── layouts/               ← 页面布局（侧边栏、顶栏）
+│   ├── components/            ← 公共组件（Breadcrumb、Hamburger）
+│   ├── composables/           ← 组合式函数（useExecutionWebSocket）
+│   ├── layouts/               ← 页面布局
+│   │   ├── Layout.vue         ←   主布局编排容器
+│   │   └── components/        ←   Sidebar、Navbar、AppMain、TagsView
 │   ├── router/                ← 路由配置
 │   │   └── index.ts
 │   ├── stores/                ← Pinia 状态管理
-│   │   ├── user.ts
-│   │   └── project.ts
+│   │   ├── index.ts           ←   统一导出
+│   │   └── modules/           ←   按功能分模块（app、user、project、permission、tagsView）
 │   ├── styles/                ← 全局样式
-│   │   └── global.less
+│   │   ├── global.less
+│   │   ├── variables.less
+│   │   ├── sidebar.less
+│   │   ├── scrollbar.less
+│   │   ├── transition.less
+│   │   └── element-plus.less
 │   ├── utils/                 ← 工具函数
 │   ├── views/                 ← 页面组件
 │   │   ├── auth/              ← 登录页
 │   │   ├── project/           ← 项目相关页面
-│   │   ├── api/               ← 接口管理页面
-│   │   ├── keywords/          ← 关键字管理页面
-│   │   ├── cases/             ← 测试用例页面
-│   │   ├── execution/         ← 执行管理页面
+│   │   ├── api/               ← 接口文档页面
 │   │   ├── environment/       ← 环境配置页面
+│   │   ├── keywords/          ← 接口关键字页面
+│   │   ├── tool/              ← 工具方法页面
+│   │   ├── action/            ← Action 关键字页面
+│   │   ├── cases/             ← 测试套件/用例页面
+│   │   ├── execution/         ← 测试计划/执行记录页面
 │   │   └── settings/          ← 系统设置页面
 │   ├── App.vue                ← 根组件
 │   └── main.ts                ← 入口文件
@@ -1121,7 +1178,7 @@ pnpm dev
 | 类命名 | 大驼峰：`UserController`、`ApiEndpointService` |
 | 方法/变量 | 小驼峰：`getUserById`、`projectName` |
 | 常量 | 全大写下划线：`MAX_RETRY_COUNT` |
-| 包名 | 全小写：`com.postman.auth.controller` |
+| 包名 | 全小写：`com.platform.auth.controller` |
 | RESTful 路径 | 全小写短横线：`/api/v1/test-suites` |
 | 日志框架 | SLF4J + Lombok `@Slf4j` 注解 |
 
@@ -1167,8 +1224,8 @@ pnpm dev
 
 ### 后端工程
 
-- [ ] `backend/` 目录已创建，包含 `pom.xml`
-- [ ] 包结构已创建（common / auth / project / api / keyword / execution）
+- [ ] `backend/` 目录已创建，包含父 `pom.xml` 和三个子模块（platform-api / platform-data / platform-server）
+- [ ] 各子模块包结构已创建（common / auth / project / api / keyword / execution）
 - [ ] IDEA 中 Maven 依赖下载完成（无红色错误标记）
 
 ### 前端工程

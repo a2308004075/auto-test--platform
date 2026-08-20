@@ -31,7 +31,7 @@ public class ToolMethodService {
     /**
      * 分页查询工具方法
      */
-    public PageResponse<ToolMethodResponse> list(String projectId, String category,
+    public PageResponse<ToolMethodResponse> list(Long projectId, String category,
                                                    String keyword, int page, int pageSize) {
         LambdaQueryWrapper<ToolMethod> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ToolMethod::getProjectId, projectId);
@@ -86,7 +86,7 @@ public class ToolMethodService {
     /**
      * 更新工具方法
      */
-    public ToolMethodResponse update(String toolId, ToolMethodUpdateRequest request) {
+    public ToolMethodResponse update(Long toolId, ToolMethodUpdateRequest request) {
         ToolMethod tm = findById(toolId);
 
         if (StringUtils.hasText(request.getName()) && !request.getName().equals(tm.getName())) {
@@ -120,14 +120,14 @@ public class ToolMethodService {
     /**
      * 获取工具方法详情
      */
-    public ToolMethodResponse getById(String toolId) {
+    public ToolMethodResponse getById(Long toolId) {
         return toResponse(findById(toolId));
     }
 
     /**
      * 删除工具方法（软删除）
      */
-    public void delete(String toolId) {
+    public void delete(Long toolId) {
         findById(toolId);
         toolMethodMapper.deleteById(toolId);
     }
@@ -135,7 +135,7 @@ public class ToolMethodService {
     /**
      * 在线测试工具方法
      */
-    public ToolTestResult testTool(String toolId, ToolTestRequest request) {
+    public ToolTestResult testTool(Long toolId, ToolTestRequest request) {
         ToolMethod tm = findById(toolId);
 
         ToolTestResult result = groovySandboxExecutor.execute(tm.getCode(), request.getTestInput());
@@ -150,7 +150,7 @@ public class ToolMethodService {
 
     // ───────────────────── 私有方法 ─────────────────────
 
-    private ToolMethod findById(String toolId) {
+    private ToolMethod findById(Long toolId) {
         ToolMethod tm = toolMethodMapper.selectById(toolId);
         if (tm == null) {
             throw new BusinessException(ErrorCode.TOOL_NOT_FOUND, "工具方法不存在：" + toolId);

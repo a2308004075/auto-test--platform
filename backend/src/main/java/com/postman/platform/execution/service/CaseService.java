@@ -37,9 +37,9 @@ public class CaseService {
     /**
      * 分页查询测试用例
      */
-    public PageResponse<CaseResponse> listCases(String suiteId, String keyword, int page, int pageSize) {
+    public PageResponse<CaseResponse> listCases(Long suiteId, String keyword, int page, int pageSize) {
         LambdaQueryWrapper<TestCase> wrapper = new LambdaQueryWrapper<>();
-        if (StringUtils.hasText(suiteId)) {
+        if (suiteId != null) {
             wrapper.eq(TestCase::getSuiteId, suiteId);
         }
         if (StringUtils.hasText(keyword)) {
@@ -59,7 +59,7 @@ public class CaseService {
     /**
      * 获取用例详情
      */
-    public CaseResponse getCase(String caseId) {
+    public CaseResponse getCase(Long caseId) {
         TestCase c = testCaseMapper.selectById(caseId);
         if (c == null) {
             throw new BusinessException(ErrorCode.CASE_NOT_FOUND, "测试用例不存在：" + caseId);
@@ -71,7 +71,7 @@ public class CaseService {
      * 创建测试用例
      */
     @Transactional(rollbackFor = Exception.class)
-    public CaseResponse createCase(String suiteId, CaseCreateRequest request) {
+    public CaseResponse createCase(Long suiteId, CaseCreateRequest request) {
         TestSuite suite = testSuiteMapper.selectById(suiteId);
         if (suite == null) {
             throw new BusinessException(ErrorCode.SUITE_NOT_FOUND, "测试套件不存在：" + suiteId);
@@ -102,7 +102,7 @@ public class CaseService {
      * 更新测试用例
      */
     @Transactional(rollbackFor = Exception.class)
-    public CaseResponse updateCase(String caseId, CaseUpdateRequest request) {
+    public CaseResponse updateCase(Long caseId, CaseUpdateRequest request) {
         TestCase c = testCaseMapper.selectById(caseId);
         if (c == null) {
             throw new BusinessException(ErrorCode.CASE_NOT_FOUND, "测试用例不存在：" + caseId);
@@ -145,7 +145,7 @@ public class CaseService {
      * 删除测试用例
      */
     @Transactional(rollbackFor = Exception.class)
-    public void deleteCase(String caseId) {
+    public void deleteCase(Long caseId) {
         TestCase c = testCaseMapper.selectById(caseId);
         if (c == null) {
             throw new BusinessException(ErrorCode.CASE_NOT_FOUND, "测试用例不存在：" + caseId);
@@ -157,7 +157,7 @@ public class CaseService {
      * 启用/禁用测试用例
      */
     @Transactional(rollbackFor = Exception.class)
-    public CaseResponse toggleStatus(String caseId) {
+    public CaseResponse toggleStatus(Long caseId) {
         TestCase c = testCaseMapper.selectById(caseId);
         if (c == null) {
             throw new BusinessException(ErrorCode.CASE_NOT_FOUND, "测试用例不存在：" + caseId);
@@ -167,7 +167,7 @@ public class CaseService {
         return toResponse(c);
     }
 
-    private long countByName(String suiteId, String name, String excludeId) {
+    private long countByName(Long suiteId, String name, Long excludeId) {
         LambdaQueryWrapper<TestCase> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TestCase::getSuiteId, suiteId);
         wrapper.eq(TestCase::getName, name);
@@ -183,7 +183,7 @@ public class CaseService {
         return r;
     }
 
-    private String getCurrentUserId() {
+    private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof User) {
             return ((User) auth.getPrincipal()).getId();

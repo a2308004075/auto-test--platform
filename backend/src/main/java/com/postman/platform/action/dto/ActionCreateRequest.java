@@ -3,14 +3,15 @@ package com.postman.platform.action.dto;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.List;
 
 @Data
 public class ActionCreateRequest {
 
-    @NotBlank(message = "项目 ID 不能为空")
-    private String projectId;
+    @NotNull(message = "项目 ID 不能为空")
+    private Long projectId;
 
     @NotBlank(message = "Action 名称不能为空")
     @Size(max = 100, message = "Action 名称长度不能超过 100")

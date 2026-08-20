@@ -24,7 +24,7 @@ public class PlanController {
      * 分页查询测试计划
      */
     @GetMapping("/api/v1/projects/{projectId}/plans")
-    public ApiResponse<PageResponse<PlanResponse>> list(@PathVariable String projectId,
+    public ApiResponse<PageResponse<PlanResponse>> list(@PathVariable Long projectId,
                                                          @RequestParam(required = false) String keyword,
                                                          @RequestParam(defaultValue = "1") int page,
                                                          @RequestParam(defaultValue = "20") int pageSize) {
@@ -35,7 +35,7 @@ public class PlanController {
      * 创建测试计划
      */
     @PostMapping("/api/v1/projects/{projectId}/plans")
-    public ApiResponse<PlanResponse> create(@PathVariable String projectId,
+    public ApiResponse<PlanResponse> create(@PathVariable Long projectId,
                                             @Valid @RequestBody PlanCreateRequest request) {
         request.setProjectId(projectId);
         return ApiResponse.ok(planService.createPlan(request));
@@ -45,7 +45,7 @@ public class PlanController {
      * 获取计划详情
      */
     @GetMapping("/api/v1/plans/{planId}")
-    public ApiResponse<PlanResponse> get(@PathVariable String planId) {
+    public ApiResponse<PlanResponse> get(@PathVariable Long planId) {
         return ApiResponse.ok(planService.getPlan(planId));
     }
 
@@ -53,7 +53,7 @@ public class PlanController {
      * 更新计划
      */
     @PutMapping("/api/v1/plans/{planId}")
-    public ApiResponse<PlanResponse> update(@PathVariable String planId,
+    public ApiResponse<PlanResponse> update(@PathVariable Long planId,
                                             @Valid @RequestBody PlanUpdateRequest request) {
         return ApiResponse.ok(planService.updatePlan(planId, request));
     }
@@ -62,7 +62,7 @@ public class PlanController {
      * 删除计划
      */
     @DeleteMapping("/api/v1/plans/{planId}")
-    public ApiResponse<Void> delete(@PathVariable String planId) {
+    public ApiResponse<Void> delete(@PathVariable Long planId) {
         planService.deletePlan(planId);
         return ApiResponse.ok();
     }

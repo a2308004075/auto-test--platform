@@ -99,14 +99,14 @@ public class ProjectService {
     /**
      * 获取项目详情
      */
-    public ProjectResponse getProject(String projectId) {
+    public ProjectResponse getProject(Long projectId) {
         return toResponse(findActiveById(projectId));
     }
 
     /**
      * 更新项目
      */
-    public ProjectResponse updateProject(String projectId, ProjectUpdateRequest request) {
+    public ProjectResponse updateProject(Long projectId, ProjectUpdateRequest request) {
         Project project = findActiveById(projectId);
 
         // 名称唯一性检查（排除自身）
@@ -133,7 +133,7 @@ public class ProjectService {
     /**
      * 删除项目（软删除）
      */
-    public void deleteProject(String projectId) {
+    public void deleteProject(Long projectId) {
         findActiveById(projectId);
         projectMapper.deleteById(projectId);
     }
@@ -141,7 +141,7 @@ public class ProjectService {
     /**
      * 启停项目
      */
-    public ProjectResponse toggleStatus(String projectId) {
+    public ProjectResponse toggleStatus(Long projectId) {
         Project project = findActiveById(projectId);
         project.setIsActive(!project.getIsActive());
         projectMapper.updateById(project);
@@ -151,7 +151,7 @@ public class ProjectService {
     /**
      * 获取项目仪表板
      */
-    public ProjectDashboardResponse getDashboard(String projectId) {
+    public ProjectDashboardResponse getDashboard(Long projectId) {
         Project project = findActiveById(projectId);
 
         DashboardStats stats = new DashboardStats();
@@ -170,7 +170,7 @@ public class ProjectService {
         stats.setSuiteCount((long) getSuiteIds(projectId).size());
 
         // 用例数
-        List<String> suiteIds = getSuiteIds(projectId);
+        List<Long> suiteIds = getSuiteIds(projectId);
         if (!suiteIds.isEmpty()) {
             LambdaQueryWrapper<TestCase> caseWrapper = new LambdaQueryWrapper<>();
             caseWrapper.in(TestCase::getSuiteId, suiteIds);
@@ -181,7 +181,7 @@ public class ProjectService {
         stats.setPlanCount((long) getPlanIds(projectId).size());
 
         // 执行统计
-        List<String> planIds = getPlanIds(projectId);
+        List<Long> planIds = getPlanIds(projectId);
         if (!planIds.isEmpty()) {
             LambdaQueryWrapper<TestExecution> execWrapper = new LambdaQueryWrapper<>();
             execWrapper.in(TestExecution::getPlanId, planIds);
@@ -229,7 +229,7 @@ public class ProjectService {
     /**
      * 根据 ID 查找有效项目
      */
-    public Project findActiveById(String projectId) {
+    public Project findActiveById(Long projectId) {
         Project project = projectMapper.selectById(projectId);
         if (project == null || !project.getIsActive()) {
             throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND, "项目不存在：" + projectId);
@@ -239,7 +239,7 @@ public class ProjectService {
 
     // ───────────────────── 私有方法 ─────────────────────
 
-    private List<String> getSuiteIds(String projectId) {
+    private List<Long> getSuiteIds(Long projectId) {
         LambdaQueryWrapper<TestSuite> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TestSuite::getProjectId, projectId)
                 .select(TestSuite::getId);
@@ -247,7 +247,7 @@ public class ProjectService {
                 .map(TestSuite::getId).collect(Collectors.toList());
     }
 
-    private List<String> getPlanIds(String projectId) {
+    private List<Long> getPlanIds(Long projectId) {
         LambdaQueryWrapper<TestPlan> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TestPlan::getProjectId, projectId)
                 .select(TestPlan::getId);
@@ -255,7 +255,7 @@ public class ProjectService {
                 .map(TestPlan::getId).collect(Collectors.toList());
     }
 
-    private void createSystemModule(String projectId, String name, String prefix, String description) {
+    private void createSystemModule(Long projectId, String name, String prefix, String description) {
         ApiModule module = new ApiModule();
         module.setProjectId(projectId);
         module.setName(name);

@@ -10,9 +10,9 @@ import java.time.LocalDateTime;
 @Data
 public class ApiInfoResponse {
 
-    private String id;
-    private String projectId;
-    private String moduleId;
+    private Long id;
+    private Long projectId;
+    private Long moduleId;
     private String name;
     private String service;
     private String httpMethod;

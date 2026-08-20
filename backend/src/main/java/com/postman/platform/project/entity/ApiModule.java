@@ -16,7 +16,7 @@ public class ApiModule extends BaseEntity {
     /**
      * 所属项目 ID
      */
-    private String projectId;
+    private Long projectId;
 
     /**
      * 分组名称

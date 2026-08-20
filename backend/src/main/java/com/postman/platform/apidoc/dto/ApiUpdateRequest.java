@@ -10,7 +10,7 @@ import javax.validation.constraints.Size;
 @Data
 public class ApiUpdateRequest {
 
-    private String moduleId;
+    private Long moduleId;
 
     @Size(max = 200, message = "接口名称长度不能超过 200")
     private String name;

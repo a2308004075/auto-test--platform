@@ -20,12 +20,12 @@ public class TestExecution implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(type = IdType.ASSIGN_UUID)
-    private String id;
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
-    private String planId;
+    private Long planId;
 
-    private String environmentId;
+    private Long environmentId;
 
     /**
      * 触发方式：MANUAL / SCHEDULED / CI
@@ -54,7 +54,7 @@ public class TestExecution implements Serializable {
 
     private LocalDateTime finishedAt;
 
-    private String triggeredBy;
+    private Long triggeredBy;
 
     @TableField("created_at")
     private LocalDateTime createdAt;

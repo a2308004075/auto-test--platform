@@ -14,7 +14,7 @@ import lombok.EqualsAndHashCode;
 @TableName("tool_method")
 public class ToolMethod extends BaseEntity {
 
-    private String projectId;
+    private Long projectId;
 
     private String name;
 
@@ -44,7 +44,7 @@ public class ToolMethod extends BaseEntity {
 
     private String testResult;
 
-    private String createdBy;
+    private Long createdBy;
 
-    private String updatedBy;
+    private Long updatedBy;
 }

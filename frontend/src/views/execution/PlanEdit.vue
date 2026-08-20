@@ -12,15 +12,15 @@ import { getEnvironments } from '@/api/environment'
 
 const route = useRoute()
 const router = useRouter()
-const projectId = computed(() => route.params.id as string)
-const planId = computed(() => route.params.planId as string)
+const projectId = computed(() => Number(route.params.id))
+const planId = computed(() => Number(route.params.planId))
 const isEdit = computed(() => !!planId.value)
 
 const form = reactive({
   name: '',
   description: '',
-  suiteIds: [] as string[],
-  environmentId: '' as string,
+  suiteIds: [] as number[],
+  environmentId: 0 as number,
   scheduleCron: '',
 })
 
@@ -50,7 +50,7 @@ async function loadPlan() {
       name: p.name || '',
       description: p.description || '',
       suiteIds: p.suiteIds || [],
-      environmentId: p.environmentId || '',
+      environmentId: p.environmentId ?? null,
       scheduleCron: p.scheduleCron || '',
     })
   } catch { message.error('加载计划失败') }

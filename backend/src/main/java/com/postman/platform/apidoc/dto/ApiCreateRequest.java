@@ -3,6 +3,7 @@ package com.postman.platform.apidoc.dto;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 /**
@@ -11,11 +12,11 @@ import javax.validation.constraints.Size;
 @Data
 public class ApiCreateRequest {
 
-    @NotBlank(message = "项目 ID 不能为空")
-    private String projectId;
+    @NotNull(message = "项目 ID 不能为空")
+    private Long projectId;
 
-    @NotBlank(message = "分组 ID 不能为空")
-    private String moduleId;
+    @NotNull(message = "分组 ID 不能为空")
+    private Long moduleId;
 
     @NotBlank(message = "接口名称不能为空")
     @Size(max = 200, message = "接口名称长度不能超过 200")

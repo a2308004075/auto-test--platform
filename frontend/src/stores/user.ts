@@ -9,7 +9,7 @@ export const useUserStore = defineStore('user', () => {
   const refreshTokenValue = ref<string>(localStorage.getItem('refreshToken') || '')
   const username = ref<string>('')
   const role = ref<string>('')
-  const userId = ref<string>('')
+  const userId = ref<number>(0)
   const isLoggedIn = computed(() => !!token.value)
 
   // ===== 记住密码 =====
@@ -25,7 +25,7 @@ export const useUserStore = defineStore('user', () => {
     localStorage.setItem('refreshToken', rt)
   }
 
-  function setUserInfo(info: { id: string; username: string; role?: string }) {
+  function setUserInfo(info: { id: number; username: string; role?: string }) {
     userId.value = info.id
     username.value = info.username
     role.value = info.role || 'USER'
@@ -36,7 +36,7 @@ export const useUserStore = defineStore('user', () => {
     refreshTokenValue.value = ''
     username.value = ''
     role.value = ''
-    userId.value = ''
+    userId.value = 0
     localStorage.removeItem('token')
     localStorage.removeItem('refreshToken')
   }

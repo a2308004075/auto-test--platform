@@ -13,5 +13,5 @@ public class UserUpdateRequest {
     @Size(max = 50, message = "显示名长度不能超过 50")
     private String displayName;
 
-    private String roleId;
+    private Long roleId;
 }

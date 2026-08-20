@@ -22,5 +22,5 @@ public interface UserMapper extends BaseMapper<User> {
      * 根据 ID 查询启用的用户
      */
     @Select("SELECT * FROM user WHERE id = #{id} AND is_active = 1")
-    User selectActiveById(@Param("id") String id);
+    User selectActiveById(@Param("id") Long id);
 }

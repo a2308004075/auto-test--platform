@@ -23,7 +23,7 @@ public class ActionController {
 
     @GetMapping
     public ApiResponse<PageResponse<ActionResponse>> list(
-            @PathVariable String projectId,
+            @PathVariable Long projectId,
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
@@ -31,42 +31,42 @@ public class ActionController {
     }
 
     @PostMapping
-    public ApiResponse<ActionResponse> create(@PathVariable String projectId,
+    public ApiResponse<ActionResponse> create(@PathVariable Long projectId,
                                                 @Valid @RequestBody ActionCreateRequest request) {
         request.setProjectId(projectId);
         return ApiResponse.ok(actionService.create(request));
     }
 
     @GetMapping("/{actionId}")
-    public ApiResponse<ActionResponse> get(@PathVariable String projectId,
-                                            @PathVariable String actionId) {
+    public ApiResponse<ActionResponse> get(@PathVariable Long projectId,
+                                            @PathVariable Long actionId) {
         return ApiResponse.ok(actionService.getById(actionId));
     }
 
     @PutMapping("/{actionId}")
-    public ApiResponse<ActionResponse> update(@PathVariable String projectId,
-                                                @PathVariable String actionId,
+    public ApiResponse<ActionResponse> update(@PathVariable Long projectId,
+                                                @PathVariable Long actionId,
                                                 @Valid @RequestBody ActionUpdateRequest request) {
         return ApiResponse.ok(actionService.update(actionId, request));
     }
 
     @DeleteMapping("/{actionId}")
-    public ApiResponse<Void> delete(@PathVariable String projectId,
-                                     @PathVariable String actionId) {
+    public ApiResponse<Void> delete(@PathVariable Long projectId,
+                                     @PathVariable Long actionId) {
         actionService.delete(actionId);
         return ApiResponse.ok();
     }
 
     @PostMapping("/{actionId}/debug")
-    public ApiResponse<ActionDebugResponse> debug(@PathVariable String projectId,
-                                                    @PathVariable String actionId,
+    public ApiResponse<ActionDebugResponse> debug(@PathVariable Long projectId,
+                                                    @PathVariable Long actionId,
                                                     @Valid @RequestBody ActionDebugRequest request) {
         return ApiResponse.ok(actionService.debug(actionId, request));
     }
 
     @GetMapping("/{actionId}/references")
-    public ApiResponse<List<Map<String, Object>>> references(@PathVariable String projectId,
-                                                               @PathVariable String actionId) {
+    public ApiResponse<List<Map<String, Object>>> references(@PathVariable Long projectId,
+                                                               @PathVariable Long actionId) {
         return ApiResponse.ok(actionService.getReferences(actionId));
     }
 }

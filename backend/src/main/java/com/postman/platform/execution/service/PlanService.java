@@ -45,7 +45,7 @@ public class PlanService {
     /**
      * 分页查询测试计划
      */
-    public PageResponse<PlanResponse> listPlans(String projectId, String keyword,
+    public PageResponse<PlanResponse> listPlans(Long projectId, String keyword,
                                                  int page, int pageSize) {
         LambdaQueryWrapper<TestPlan> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TestPlan::getProjectId, projectId);
@@ -66,7 +66,7 @@ public class PlanService {
     /**
      * 获取计划详情
      */
-    public PlanResponse getPlan(String planId) {
+    public PlanResponse getPlan(Long planId) {
         return toResponse(findById(planId));
     }
 
@@ -98,7 +98,7 @@ public class PlanService {
      * 更新测试计划
      */
     @Transactional(rollbackFor = Exception.class)
-    public PlanResponse updatePlan(String planId, PlanUpdateRequest request) {
+    public PlanResponse updatePlan(Long planId, PlanUpdateRequest request) {
         TestPlan plan = findById(planId);
 
         if (StringUtils.hasText(request.getName()) && !request.getName().equals(plan.getName())) {
@@ -135,12 +135,12 @@ public class PlanService {
      * 删除测试计划
      */
     @Transactional(rollbackFor = Exception.class)
-    public void deletePlan(String planId) {
+    public void deletePlan(Long planId) {
         findById(planId);
         testPlanMapper.deleteById(planId);
     }
 
-    private TestPlan findById(String planId) {
+    private TestPlan findById(Long planId) {
         TestPlan plan = testPlanMapper.selectById(planId);
         if (plan == null) {
             throw new BusinessException(ErrorCode.PLAN_NOT_FOUND, "测试计划不存在：" + planId);
@@ -163,7 +163,7 @@ public class PlanService {
     }
 
     @SuppressWarnings("unchecked")
-    private List<String> parseSuiteIds(String json) {
+    private List<Long> parseSuiteIds(String json) {
         if (json == null || json.trim().isEmpty()) {
             return Collections.emptyList();
         }
@@ -174,7 +174,7 @@ public class PlanService {
         }
     }
 
-    private String serializeSuiteIds(List<String> suiteIds) {
+    private String serializeSuiteIds(List<Long> suiteIds) {
         if (suiteIds == null || suiteIds.isEmpty()) {
             return "[]";
         }
@@ -185,7 +185,7 @@ public class PlanService {
         }
     }
 
-    private String getCurrentUserId() {
+    private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof User) {
             return ((User) auth.getPrincipal()).getId();

@@ -10,14 +10,14 @@ import { getSuites } from '@/api/suite'
 
 const route = useRoute()
 const router = useRouter()
-const projectId = computed(() => route.params.id as string)
-const suiteId = computed(() => (route.query.suiteId as string) || '')
+const projectId = computed(() => Number(route.params.id))
+const suiteId = computed(() => Number(route.query.suiteId) || 0)
 
 const loading = ref(false)
 const list = ref<any[]>([])
 const suites = ref<any[]>([])
 const keyword = ref('')
-const selectedSuiteId = ref<string>(suiteId.value)
+const selectedSuiteId = ref<number>(suiteId.value)
 const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 
 const columns = [

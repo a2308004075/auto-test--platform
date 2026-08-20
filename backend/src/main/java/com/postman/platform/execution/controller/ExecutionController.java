@@ -25,7 +25,7 @@ public class ExecutionController {
      * 触发执行
      */
     @PostMapping("/api/v1/plans/{planId}/executions")
-    public ApiResponse<ExecutionResponse> start(@PathVariable String planId,
+    public ApiResponse<ExecutionResponse> start(@PathVariable Long planId,
                                                 @Valid @RequestBody(required = false) ExecutionStartRequest request) {
         if (request == null) {
             request = new ExecutionStartRequest();
@@ -37,7 +37,7 @@ public class ExecutionController {
      * 分页查询执行记录
      */
     @GetMapping("/api/v1/projects/{projectId}/executions")
-    public ApiResponse<PageResponse<ExecutionResponse>> list(@PathVariable String projectId,
+    public ApiResponse<PageResponse<ExecutionResponse>> list(@PathVariable Long projectId,
                                                              @RequestParam(required = false) String status,
                                                              @RequestParam(defaultValue = "1") int page,
                                                              @RequestParam(defaultValue = "20") int pageSize) {
@@ -48,7 +48,7 @@ public class ExecutionController {
      * 获取执行详情
      */
     @GetMapping("/api/v1/executions/{executionId}")
-    public ApiResponse<ExecutionResponse> get(@PathVariable String executionId) {
+    public ApiResponse<ExecutionResponse> get(@PathVariable Long executionId) {
         return ApiResponse.ok(executionService.getExecution(executionId));
     }
 
@@ -56,7 +56,7 @@ public class ExecutionController {
      * 获取执行结果明细
      */
     @GetMapping("/api/v1/executions/{executionId}/results")
-    public ApiResponse<List<TestResultResponse>> getResults(@PathVariable String executionId) {
+    public ApiResponse<List<TestResultResponse>> getResults(@PathVariable Long executionId) {
         return ApiResponse.ok(executionService.getResults(executionId));
     }
 
@@ -64,7 +64,7 @@ public class ExecutionController {
      * 取消执行
      */
     @PostMapping("/api/v1/executions/{executionId}/cancel")
-    public ApiResponse<ExecutionResponse> cancel(@PathVariable String executionId) {
+    public ApiResponse<ExecutionResponse> cancel(@PathVariable Long executionId) {
         return ApiResponse.ok(executionService.cancelExecution(executionId));
     }
 }

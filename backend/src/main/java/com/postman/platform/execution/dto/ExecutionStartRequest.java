@@ -11,7 +11,7 @@ public class ExecutionStartRequest {
     /**
      * 执行环境 ID（可选，为空则使用计划默认环境）
      */
-    private String environmentId;
+    private Long environmentId;
 
     /**
      * 触发方式：MANUAL / SCHEDULED / CI

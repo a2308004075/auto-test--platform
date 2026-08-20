@@ -14,7 +14,7 @@ import lombok.EqualsAndHashCode;
 @TableName("action")
 public class Action extends BaseEntity {
 
-    private String projectId;
+    private Long projectId;
 
     private String name;
 
@@ -38,7 +38,7 @@ public class Action extends BaseEntity {
     @TableLogic
     private Boolean isActive;
 
-    private String createdBy;
+    private Long createdBy;
 
-    private String updatedBy;
+    private Long updatedBy;
 }

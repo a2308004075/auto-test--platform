@@ -44,12 +44,12 @@ public class ApiService {
     /**
      * 分页查询接口列表
      */
-    public PageResponse<ApiInfoResponse> list(String projectId, String moduleId, String keyword,
+    public PageResponse<ApiInfoResponse> list(Long projectId, Long moduleId, String keyword,
                                                String httpMethod, int page, int pageSize) {
         LambdaQueryWrapper<Api> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Api::getProjectId, projectId);
 
-        if (StringUtils.hasText(moduleId)) {
+        if (moduleId != null) {
             wrapper.eq(Api::getModuleId, moduleId);
         }
         if (StringUtils.hasText(keyword)) {
@@ -89,7 +89,7 @@ public class ApiService {
     /**
      * 更新接口
      */
-    public ApiInfoResponse update(String apiId, ApiUpdateRequest request) {
+    public ApiInfoResponse update(Long apiId, ApiUpdateRequest request) {
         Api api = findById(apiId);
 
         if (request.getModuleId() != null) {
@@ -130,14 +130,14 @@ public class ApiService {
     /**
      * 获取接口详情
      */
-    public ApiInfoResponse getById(String apiId) {
+    public ApiInfoResponse getById(Long apiId) {
         return toResponse(findById(apiId));
     }
 
     /**
      * 删除接口
      */
-    public void delete(String apiId) {
+    public void delete(Long apiId) {
         findById(apiId);
         // 删除保护检查 - 被 ApiKeyword 引用时不可删除
         LambdaQueryWrapper<ApiKeyword> kwWrapper = new LambdaQueryWrapper<>();
@@ -154,8 +154,8 @@ public class ApiService {
      * 批量删除接口
      */
     @Transactional(rollbackFor = Exception.class)
-    public void batchDelete(List<String> apiIds) {
-        for (String apiId : apiIds) {
+    public void batchDelete(List<Long> apiIds) {
+        for (Long apiId : apiIds) {
             delete(apiId);
         }
     }
@@ -164,8 +164,8 @@ public class ApiService {
      * 批量移动接口到指定分组
      */
     @Transactional(rollbackFor = Exception.class)
-    public void batchMove(List<String> apiIds, String targetModuleId) {
-        for (String apiId : apiIds) {
+    public void batchMove(List<Long> apiIds, Long targetModuleId) {
+        for (Long apiId : apiIds) {
             Api api = findById(apiId);
             api.setModuleId(targetModuleId);
             apiMapper.updateById(api);
@@ -230,7 +230,7 @@ public class ApiService {
     /**
      * 接口调试
      */
-    public ApiDebugResponse debug(String apiId, ApiDebugRequest request) {
+    public ApiDebugResponse debug(Long apiId, ApiDebugRequest request) {
         Api api = findById(apiId);
 
         // 获取环境配置
@@ -330,7 +330,7 @@ public class ApiService {
 
     // ───────────────────── 私有方法 ─────────────────────
 
-    private Api findById(String apiId) {
+    private Api findById(Long apiId) {
         Api api = apiMapper.selectById(apiId);
         if (api == null) {
             throw new BusinessException(ErrorCode.API_NOT_FOUND, "接口不存在：" + apiId);

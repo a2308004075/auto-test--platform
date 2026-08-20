@@ -10,13 +10,13 @@ import java.time.LocalDateTime;
 @Data
 public class ExecutionResponse {
 
-    private String id;
+    private Long id;
 
-    private String planId;
+    private Long planId;
 
     private String planName;
 
-    private String environmentId;
+    private Long environmentId;
 
     private String environmentName;
 
@@ -44,7 +44,7 @@ public class ExecutionResponse {
 
     private LocalDateTime finishedAt;
 
-    private String triggeredBy;
+    private Long triggeredBy;
 
     private String triggeredByName;
 

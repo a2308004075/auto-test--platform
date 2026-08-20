@@ -46,10 +46,10 @@ public class JwtTokenProvider {
      * @param role   用户角色
      * @return JWT Access Token
      */
-    public String createAccessToken(String userId, String role) {
+    public String createAccessToken(Long userId, String role) {
         return Jwts.builder()
                 .setId(UUID.randomUUID().toString())
-                .setSubject(userId)
+                .setSubject(String.valueOf(userId))
                 .claim(CLAIM_ROLE, role)
                 .claim(CLAIM_TYPE, TOKEN_TYPE_ACCESS)
                 .setIssuedAt(new Date())
@@ -64,10 +64,10 @@ public class JwtTokenProvider {
      * @param userId 用户 ID
      * @return JWT Refresh Token
      */
-    public String createRefreshToken(String userId) {
+    public String createRefreshToken(Long userId) {
         return Jwts.builder()
                 .setId(UUID.randomUUID().toString())
-                .setSubject(userId)
+                .setSubject(String.valueOf(userId))
                 .claim(CLAIM_TYPE, TOKEN_TYPE_REFRESH)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + refreshTokenExpireMs))

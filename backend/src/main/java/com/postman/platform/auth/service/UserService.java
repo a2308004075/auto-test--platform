@@ -42,13 +42,13 @@ public class UserService {
     /**
      * 分页查询用户列表
      */
-    public PageResponse<UserResponse> listUsers(String keyword, String roleId, int page, int pageSize) {
+    public PageResponse<UserResponse> listUsers(String keyword, Long roleId, int page, int pageSize) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isEmpty()) {
             wrapper.and(w -> w.like(User::getUsername, keyword)
                     .or().like(User::getDisplayName, keyword));
         }
-        if (roleId != null && !roleId.isEmpty()) {
+        if (roleId != null) {
             wrapper.eq(User::getRoleId, roleId);
         }
         wrapper.orderByDesc(User::getCreatedAt);
@@ -88,7 +88,7 @@ public class UserService {
      * 更新用户
      */
     @Transactional(rollbackFor = Exception.class)
-    public UserResponse updateUser(String userId, UserUpdateRequest request) {
+    public UserResponse updateUser(Long userId, UserUpdateRequest request) {
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new NotFoundException("用户", userId);
@@ -121,7 +121,7 @@ public class UserService {
      * 删除用户（软删除）
      */
     @Transactional(rollbackFor = Exception.class)
-    public void deleteUser(String userId) {
+    public void deleteUser(Long userId) {
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new NotFoundException("用户", userId);
@@ -138,7 +138,7 @@ public class UserService {
      * 启用/禁用用户
      */
     @Transactional(rollbackFor = Exception.class)
-    public UserResponse toggleStatus(String userId, StatusToggleRequest request) {
+    public UserResponse toggleStatus(Long userId, StatusToggleRequest request) {
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new NotFoundException("用户", userId);
@@ -156,7 +156,7 @@ public class UserService {
      * 管理员重置用户密码
      */
     @Transactional(rollbackFor = Exception.class)
-    public void resetPassword(String userId, ResetPasswordRequest request) {
+    public void resetPassword(Long userId, ResetPasswordRequest request) {
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new NotFoundException("用户", userId);
@@ -171,14 +171,14 @@ public class UserService {
     /**
      * 根据 ID 查询启用的用户（供 JwtAuthenticationFilter 使用）
      */
-    public User findActiveById(String userId) {
+    public User findActiveById(Long userId) {
         return userMapper.selectActiveById(userId);
     }
 
     /**
      * 更新最后登录时间
      */
-    public void updateLastLoginAt(String userId) {
+    public void updateLastLoginAt(Long userId) {
         LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(User::getId, userId)
                 .set(User::getLastLoginAt, LocalDateTime.now());

@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 @Data
 public class RecentExecution {
 
-    private String id;
-    private String planId;
+    private Long id;
+    private Long planId;
     private String planName;
     private String status;
     private Integer totalCases;

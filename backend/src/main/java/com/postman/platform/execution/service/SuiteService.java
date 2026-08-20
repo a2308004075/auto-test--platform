@@ -37,7 +37,7 @@ public class SuiteService {
     /**
      * 分页查询测试套件
      */
-    public PageResponse<SuiteResponse> listSuites(String projectId, String keyword, int page, int pageSize) {
+    public PageResponse<SuiteResponse> listSuites(Long projectId, String keyword, int page, int pageSize) {
         LambdaQueryWrapper<TestSuite> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TestSuite::getProjectId, projectId);
         if (StringUtils.hasText(keyword)) {
@@ -57,7 +57,7 @@ public class SuiteService {
     /**
      * 获取套件详情
      */
-    public SuiteResponse getSuite(String suiteId) {
+    public SuiteResponse getSuite(Long suiteId) {
         TestSuite suite = testSuiteMapper.selectById(suiteId);
         if (suite == null) {
             throw new BusinessException(ErrorCode.SUITE_NOT_FOUND, "测试套件不存在：" + suiteId);
@@ -69,7 +69,7 @@ public class SuiteService {
      * 创建测试套件
      */
     @Transactional(rollbackFor = Exception.class)
-    public SuiteResponse createSuite(String projectId, SuiteCreateRequest request) {
+    public SuiteResponse createSuite(Long projectId, SuiteCreateRequest request) {
         // 名称唯一性校验
         if (countByName(projectId, request.getName(), null) > 0) {
             throw new BusinessException(ErrorCode.SUITE_NAME_DUPLICATE, "套件名称已存在：" + request.getName());
@@ -96,7 +96,7 @@ public class SuiteService {
      * 更新测试套件
      */
     @Transactional(rollbackFor = Exception.class)
-    public SuiteResponse updateSuite(String suiteId, SuiteUpdateRequest request) {
+    public SuiteResponse updateSuite(Long suiteId, SuiteUpdateRequest request) {
         TestSuite suite = testSuiteMapper.selectById(suiteId);
         if (suite == null) {
             throw new BusinessException(ErrorCode.SUITE_NOT_FOUND, "测试套件不存在：" + suiteId);
@@ -142,7 +142,7 @@ public class SuiteService {
      * 删除测试套件（用例由外键 ON DELETE CASCADE 级联删除）
      */
     @Transactional(rollbackFor = Exception.class)
-    public void deleteSuite(String suiteId) {
+    public void deleteSuite(Long suiteId) {
         TestSuite suite = testSuiteMapper.selectById(suiteId);
         if (suite == null) {
             throw new BusinessException(ErrorCode.SUITE_NOT_FOUND, "测试套件不存在：" + suiteId);
@@ -150,7 +150,7 @@ public class SuiteService {
         testSuiteMapper.deleteById(suiteId);
     }
 
-    private long countByName(String projectId, String name, String excludeId) {
+    private long countByName(Long projectId, String name, Long excludeId) {
         LambdaQueryWrapper<TestSuite> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TestSuite::getProjectId, projectId);
         wrapper.eq(TestSuite::getName, name);
@@ -171,7 +171,7 @@ public class SuiteService {
         return r;
     }
 
-    private String getCurrentUserId() {
+    private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof User) {
             return ((User) auth.getPrincipal()).getId();

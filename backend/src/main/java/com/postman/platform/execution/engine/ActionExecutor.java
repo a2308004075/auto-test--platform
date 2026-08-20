@@ -118,15 +118,15 @@ public class ActionExecutor {
      */
     private StepResult executeKeywordNode(ActionNode node, ExecutionContext context) {
         // 优先使用 refKeywordId
-        String keywordId = node.getRefKeywordId();
-        if (keywordId == null || keywordId.isEmpty()) {
+        Long keywordId = node.getRefKeywordId();
+        if (keywordId == null) {
             // 对于 TOOL_METHOD 类型，使用 refToolId（需要通过 ToolMethod.keyword 查找对应 Keyword）
             if (node.getRefToolId() != null) {
                 keywordId = node.getRefToolId();
             }
         }
 
-        if (keywordId == null || keywordId.isEmpty()) {
+        if (keywordId == null) {
             return StepResult.error("节点未引用关键字：" + node.getNodeKey());
         }
 

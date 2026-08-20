@@ -34,7 +34,7 @@ public class EnvironmentService {
     /**
      * 查询项目下的环境列表
      */
-    public List<EnvironmentResponse> listByProject(String projectId) {
+    public List<EnvironmentResponse> listByProject(Long projectId) {
         LambdaQueryWrapper<Environment> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Environment::getProjectId, projectId);
         wrapper.orderByDesc(Environment::getIsCurrent, Environment::getCreatedAt);
@@ -71,7 +71,7 @@ public class EnvironmentService {
     /**
      * 更新环境
      */
-    public EnvironmentResponse update(String envId, EnvironmentUpdateRequest request) {
+    public EnvironmentResponse update(Long envId, EnvironmentUpdateRequest request) {
         Environment env = findById(envId);
 
         if (StringUtils.hasText(request.getName())) {
@@ -103,7 +103,7 @@ public class EnvironmentService {
     /**
      * 删除环境
      */
-    public void delete(String envId) {
+    public void delete(Long envId) {
         findById(envId);
         environmentMapper.deleteById(envId);
     }
@@ -112,7 +112,7 @@ public class EnvironmentService {
      * 激活环境（互斥：同一项目下只能有一个激活环境）
      */
     @Transactional(rollbackFor = Exception.class)
-    public EnvironmentResponse activate(String envId) {
+    public EnvironmentResponse activate(Long envId) {
         Environment env = findById(envId);
 
         if (Boolean.TRUE.equals(env.getIsCurrent())) {
@@ -138,7 +138,7 @@ public class EnvironmentService {
     /**
      * 测试环境连接
      */
-    public TestResult testConnection(String envId) {
+    public TestResult testConnection(Long envId) {
         Environment env = findById(envId);
         return doTestConnection(env);
     }
@@ -155,14 +155,14 @@ public class EnvironmentService {
     /**
      * 获取环境详情
      */
-    public EnvironmentResponse getDetail(String envId) {
+    public EnvironmentResponse getDetail(Long envId) {
         return toResponse(findById(envId));
     }
 
     /**
      * 获取当前激活的环境
      */
-    public EnvironmentResponse getActiveEnvironment(String projectId) {
+    public EnvironmentResponse getActiveEnvironment(Long projectId) {
         LambdaQueryWrapper<Environment> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Environment::getProjectId, projectId)
                 .eq(Environment::getIsCurrent, true)
@@ -176,7 +176,7 @@ public class EnvironmentService {
 
     // ───────────────────── 私有方法 ─────────────────────
 
-    private Environment findById(String envId) {
+    private Environment findById(Long envId) {
         Environment env = environmentMapper.selectById(envId);
         if (env == null) {
             throw new BusinessException(ErrorCode.ENV_NOT_FOUND, "环境不存在：" + envId);

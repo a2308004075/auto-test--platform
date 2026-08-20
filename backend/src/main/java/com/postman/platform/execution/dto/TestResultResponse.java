@@ -10,11 +10,11 @@ import java.time.LocalDateTime;
 @Data
 public class TestResultResponse {
 
-    private String id;
+    private Long id;
 
-    private String executionId;
+    private Long executionId;
 
-    private String caseId;
+    private Long caseId;
 
     private String caseName;
 

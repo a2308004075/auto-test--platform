@@ -33,7 +33,7 @@ public class ApiModuleService {
     /**
      * 查询项目下的分组列表
      */
-    public List<ApiModuleResponse> listByProject(String projectId) {
+    public List<ApiModuleResponse> listByProject(Long projectId) {
         LambdaQueryWrapper<ApiModule> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ApiModule::getProjectId, projectId);
         wrapper.orderByDesc(ApiModule::getIsSystem, ApiModule::getCreatedAt);
@@ -72,7 +72,7 @@ public class ApiModuleService {
     /**
      * 更新分组
      */
-    public ApiModuleResponse update(String moduleId, ApiModuleUpdateRequest request) {
+    public ApiModuleResponse update(Long moduleId, ApiModuleUpdateRequest request) {
         ApiModule module = findById(moduleId);
 
         if (Boolean.TRUE.equals(module.getIsSystem())) {
@@ -96,7 +96,7 @@ public class ApiModuleService {
     /**
      * 删除分组（系统分组不允许删除）
      */
-    public void delete(String moduleId) {
+    public void delete(Long moduleId) {
         ApiModule module = findById(moduleId);
 
         if (Boolean.TRUE.equals(module.getIsSystem())) {
@@ -116,7 +116,7 @@ public class ApiModuleService {
     /**
      * 获取分组详情
      */
-    public ApiModuleResponse getById(String moduleId) {
+    public ApiModuleResponse getById(Long moduleId) {
         ApiModule module = findById(moduleId);
         ApiModuleResponse resp = toResponse(module);
         LambdaQueryWrapper<Api> apiWrapper = new LambdaQueryWrapper<>();
@@ -127,7 +127,7 @@ public class ApiModuleService {
 
     // ───────────────────── 私有方法 ─────────────────────
 
-    private ApiModule findById(String moduleId) {
+    private ApiModule findById(Long moduleId) {
         ApiModule module = apiModuleMapper.selectById(moduleId);
         if (module == null) {
             throw new BusinessException(ErrorCode.API_MODULE_NOT_FOUND, "分组不存在：" + moduleId);

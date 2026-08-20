@@ -3,6 +3,7 @@ package com.postman.platform.auth.dto;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 /**
@@ -23,6 +24,6 @@ public class UserCreateRequest {
     @Size(min = 8, max = 128, message = "密码长度必须在 8-128 之间")
     private String password;
 
-    @NotBlank(message = "角色 ID 不能为空")
-    private String roleId;
+    @NotNull(message = "角色 ID 不能为空")
+    private Long roleId;
 }

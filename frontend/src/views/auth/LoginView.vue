@@ -21,7 +21,7 @@ async function handleLogin() {
   }
   loading.value = true
   try {
-    const res: any = await login(form)
+    const res: any = await login(form as any)
     const data = res.data
     userStore.setToken(data.accessToken)
     if (data.refreshToken) userStore.setRefreshToken(data.refreshToken)

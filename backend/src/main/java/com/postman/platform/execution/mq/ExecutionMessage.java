@@ -12,13 +12,13 @@ public class ExecutionMessage implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private String executionId;
+    private Long executionId;
 
-    private String planId;
+    private Long planId;
 
-    private String environmentId;
+    private Long environmentId;
 
-    private String triggeredBy;
+    private Long triggeredBy;
 
     private String triggerType;
 }

@@ -2,7 +2,7 @@ package com.postman.platform.apidoc.dto;
 
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.util.Map;
 
 /**
@@ -11,8 +11,8 @@ import java.util.Map;
 @Data
 public class ApiDebugRequest {
 
-    @NotBlank(message = "环境 ID 不能为空")
-    private String environmentId;
+    @NotNull(message = "环境 ID 不能为空")
+    private Long environmentId;
 
     /**
      * 路径参数（键值对）

@@ -5,55 +5,55 @@ import request from './request'
  */
 
 // 接口列表
-export function getApis(projectId: string, params?: any) {
+export function getApis(projectId: number, params?: any) {
   return request.get(`/v1/projects/${projectId}/apis`, { params })
 }
 
-export function getApi(projectId: string, apiId: string) {
+export function getApi(projectId: number, apiId: number) {
   return request.get(`/v1/projects/${projectId}/apis/${apiId}`)
 }
 
-export function createApi(projectId: string, data: any) {
+export function createApi(projectId: number, data: any) {
   return request.post(`/v1/projects/${projectId}/apis`, data)
 }
 
-export function updateApi(projectId: string, apiId: string, data: any) {
+export function updateApi(projectId: number, apiId: number, data: any) {
   return request.put(`/v1/projects/${projectId}/apis/${apiId}`, data)
 }
 
-export function deleteApi(projectId: string, apiId: string) {
+export function deleteApi(projectId: number, apiId: number) {
   return request.delete(`/v1/projects/${projectId}/apis/${apiId}`)
 }
 
-export function batchDeleteApis(projectId: string, apiIds: string[]) {
+export function batchDeleteApis(projectId: number, apiIds: number[]) {
   return request.post(`/v1/projects/${projectId}/apis/batch-delete`, apiIds)
 }
 
-export function batchMoveApis(projectId: string, targetModuleId: string, apiIds: string[]) {
+export function batchMoveApis(projectId: number, targetModuleId: number, apiIds: number[]) {
   return request.post(`/v1/projects/${projectId}/apis/batch-move`, apiIds, { params: { targetModuleId } })
 }
 
-export function importSwagger(projectId: string, data: any) {
+export function importSwagger(projectId: number, data: any) {
   return request.post(`/v1/projects/${projectId}/apis/swagger-import`, data)
 }
 
-export function debugApi(projectId: string, apiId: string, data: any) {
+export function debugApi(projectId: number, apiId: number, data: any) {
   return request.post(`/v1/projects/${projectId}/apis/${apiId}/debug`, data)
 }
 
 // 接口分组
-export function getModules(projectId: string) {
+export function getModules(projectId: number) {
   return request.get(`/v1/projects/${projectId}/modules`)
 }
 
-export function createModule(projectId: string, data: any) {
+export function createModule(projectId: number, data: any) {
   return request.post(`/v1/projects/${projectId}/modules`, data)
 }
 
-export function updateModule(projectId: string, moduleId: string, data: any) {
+export function updateModule(projectId: number, moduleId: number, data: any) {
   return request.put(`/v1/projects/${projectId}/modules/${moduleId}`, data)
 }
 
-export function deleteModule(projectId: string, moduleId: string) {
+export function deleteModule(projectId: number, moduleId: number) {
   return request.delete(`/v1/projects/${projectId}/modules/${moduleId}`)
 }

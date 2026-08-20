@@ -19,7 +19,7 @@ public class TestSuite extends BaseEntity {
     /**
      * 所属项目 ID
      */
-    private String projectId;
+    private Long projectId;
 
     /**
      * 套件名称
@@ -74,5 +74,5 @@ public class TestSuite extends BaseEntity {
     /**
      * 创建人 ID
      */
-    private String createdBy;
+    private Long createdBy;
 }

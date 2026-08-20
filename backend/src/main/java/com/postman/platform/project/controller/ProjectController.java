@@ -44,7 +44,7 @@ public class ProjectController {
      * 获取项目详情
      */
     @GetMapping("/{projectId}")
-    public ApiResponse<ProjectResponse> get(@PathVariable String projectId) {
+    public ApiResponse<ProjectResponse> get(@PathVariable Long projectId) {
         return ApiResponse.ok(projectService.getProject(projectId));
     }
 
@@ -53,7 +53,7 @@ public class ProjectController {
      */
     @PutMapping("/{projectId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<ProjectResponse> update(@PathVariable String projectId,
+    public ApiResponse<ProjectResponse> update(@PathVariable Long projectId,
                                                 @Valid @RequestBody ProjectUpdateRequest request) {
         return ApiResponse.ok(projectService.updateProject(projectId, request));
     }
@@ -63,7 +63,7 @@ public class ProjectController {
      */
     @DeleteMapping("/{projectId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<Void> delete(@PathVariable String projectId) {
+    public ApiResponse<Void> delete(@PathVariable Long projectId) {
         projectService.deleteProject(projectId);
         return ApiResponse.ok();
     }
@@ -73,7 +73,7 @@ public class ProjectController {
      */
     @PatchMapping("/{projectId}/status")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<ProjectResponse> toggleStatus(@PathVariable String projectId) {
+    public ApiResponse<ProjectResponse> toggleStatus(@PathVariable Long projectId) {
         return ApiResponse.ok(projectService.toggleStatus(projectId));
     }
 
@@ -81,7 +81,7 @@ public class ProjectController {
      * 获取项目仪表板
      */
     @GetMapping("/{projectId}/dashboard")
-    public ApiResponse<ProjectDashboardResponse> dashboard(@PathVariable String projectId) {
+    public ApiResponse<ProjectDashboardResponse> dashboard(@PathVariable Long projectId) {
         return ApiResponse.ok(projectService.getDashboard(projectId));
     }
 }

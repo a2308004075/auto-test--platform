@@ -29,7 +29,7 @@ public class UserController {
     @GetMapping
     public ApiResponse<PageResponse<UserResponse>> list(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String roleId,
+            @RequestParam(required = false) Long roleId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
         PageResponse<UserResponse> response = userService.listUsers(keyword, roleId, page, pageSize);
@@ -49,7 +49,7 @@ public class UserController {
      * 更新用户
      */
     @PutMapping("/{userId}")
-    public ApiResponse<UserResponse> update(@PathVariable String userId,
+    public ApiResponse<UserResponse> update(@PathVariable Long userId,
                                             @Valid @RequestBody UserUpdateRequest request) {
         UserResponse response = userService.updateUser(userId, request);
         return ApiResponse.success(response);
@@ -59,7 +59,7 @@ public class UserController {
      * 删除用户
      */
     @DeleteMapping("/{userId}")
-    public ApiResponse<Void> delete(@PathVariable String userId) {
+    public ApiResponse<Void> delete(@PathVariable Long userId) {
         userService.deleteUser(userId);
         return ApiResponse.success(null, "删除成功");
     }
@@ -68,7 +68,7 @@ public class UserController {
      * 启用/禁用用户
      */
     @PatchMapping("/{userId}/status")
-    public ApiResponse<UserResponse> toggleStatus(@PathVariable String userId,
+    public ApiResponse<UserResponse> toggleStatus(@PathVariable Long userId,
                                                   @Valid @RequestBody StatusToggleRequest request) {
         UserResponse response = userService.toggleStatus(userId, request);
         return ApiResponse.success(response);
@@ -78,7 +78,7 @@ public class UserController {
      * 重置密码
      */
     @PostMapping("/{userId}/reset-password")
-    public ApiResponse<Void> resetPassword(@PathVariable String userId,
+    public ApiResponse<Void> resetPassword(@PathVariable Long userId,
                                            @Valid @RequestBody ResetPasswordRequest request) {
         userService.resetPassword(userId, request);
         return ApiResponse.success(null, "密码重置成功");

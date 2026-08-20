@@ -55,14 +55,14 @@ public class ExecutionService {
     /**
      * 分页查询项目下的执行记录
      */
-    public PageResponse<ExecutionResponse> listExecutions(String projectId, String status,
+    public PageResponse<ExecutionResponse> listExecutions(Long projectId, String status,
                                                           int page, int pageSize) {
         // 先查项目下的 planIds
         LambdaQueryWrapper<TestPlan> planWrapper = new LambdaQueryWrapper<>();
         planWrapper.eq(TestPlan::getProjectId, projectId)
                 .select(TestPlan::getId);
         List<TestPlan> plans = testPlanMapper.selectList(planWrapper);
-        List<String> planIds = plans.stream().map(TestPlan::getId).collect(Collectors.toList());
+        List<Long> planIds = plans.stream().map(TestPlan::getId).collect(Collectors.toList());
 
         if (planIds.isEmpty()) {
             return PageResponse.empty((long) page, (long) pageSize);
@@ -86,7 +86,7 @@ public class ExecutionService {
     /**
      * 获取执行详情
      */
-    public ExecutionResponse getExecution(String executionId) {
+    public ExecutionResponse getExecution(Long executionId) {
         TestExecution execution = testExecutionMapper.selectById(executionId);
         if (execution == null) {
             throw new BusinessException(ErrorCode.EXECUTION_NOT_FOUND, "执行记录不存在：" + executionId);
@@ -97,7 +97,7 @@ public class ExecutionService {
     /**
      * 获取执行结果明细
      */
-    public List<TestResultResponse> getResults(String executionId) {
+    public List<TestResultResponse> getResults(Long executionId) {
         LambdaQueryWrapper<TestResult> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TestResult::getExecutionId, executionId)
                 .orderByAsc(TestResult::getStartedAt);
@@ -114,7 +114,7 @@ public class ExecutionService {
      * 触发执行
      */
     @Transactional(rollbackFor = Exception.class)
-    public ExecutionResponse startExecution(String planId, ExecutionStartRequest request) {
+    public ExecutionResponse startExecution(Long planId, ExecutionStartRequest request) {
         TestPlan plan = testPlanMapper.selectById(planId);
         if (plan == null) {
             throw new BusinessException(ErrorCode.PLAN_NOT_FOUND, "测试计划不存在：" + planId);
@@ -153,7 +153,7 @@ public class ExecutionService {
      * 取消执行
      */
     @Transactional(rollbackFor = Exception.class)
-    public ExecutionResponse cancelExecution(String executionId) {
+    public ExecutionResponse cancelExecution(Long executionId) {
         TestExecution execution = testExecutionMapper.selectById(executionId);
         if (execution == null) {
             throw new BusinessException(ErrorCode.EXECUTION_NOT_FOUND, "执行记录不存在：" + executionId);
@@ -204,7 +204,7 @@ public class ExecutionService {
         return resp;
     }
 
-    private String getCurrentUserId() {
+    private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof User) {
             return ((User) auth.getPrincipal()).getId();

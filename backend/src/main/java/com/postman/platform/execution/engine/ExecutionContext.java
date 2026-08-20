@@ -20,11 +20,11 @@ public class ExecutionContext {
 
     private static final Pattern VAR_PATTERN = Pattern.compile("\\$\\{([^}]+)}");
 
-    private String executionId;
+    private Long executionId;
 
-    private String projectId;
+    private Long projectId;
 
-    private String environmentId;
+    private Long environmentId;
 
     /**
      * 从环境配置解析的 baseUrl（如 http://localhost:8080）

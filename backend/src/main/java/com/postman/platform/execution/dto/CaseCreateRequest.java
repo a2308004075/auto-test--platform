@@ -17,7 +17,7 @@ public class CaseCreateRequest implements Serializable {
     /**
      * 所属套件 ID（可由 path 注入）
      */
-    private String suiteId;
+    private Long suiteId;
 
     @NotBlank(message = "用例名称不能为空")
     @Size(max = 100, message = "用例名称长度不能超过 100")

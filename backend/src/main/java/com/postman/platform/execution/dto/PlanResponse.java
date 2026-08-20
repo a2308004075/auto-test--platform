@@ -11,9 +11,9 @@ import java.util.List;
 @Data
 public class PlanResponse {
 
-    private String id;
+    private Long id;
 
-    private String projectId;
+    private Long projectId;
 
     private String name;
 
@@ -22,9 +22,9 @@ public class PlanResponse {
     /**
      * 关联的测试套件 ID 列表
      */
-    private List<String> suiteIds;
+    private List<Long> suiteIds;
 
-    private String environmentId;
+    private Long environmentId;
 
     private String environmentName;
 
@@ -32,7 +32,7 @@ public class PlanResponse {
 
     private Boolean isActive;
 
-    private String createdBy;
+    private Long createdBy;
 
     private LocalDateTime createdAt;
 

@@ -25,7 +25,7 @@ public class ApiModuleController {
      * 查询分组列表
      */
     @GetMapping
-    public ApiResponse<List<ApiModuleResponse>> list(@PathVariable String projectId) {
+    public ApiResponse<List<ApiModuleResponse>> list(@PathVariable Long projectId) {
         return ApiResponse.ok(apiModuleService.listByProject(projectId));
     }
 
@@ -33,7 +33,7 @@ public class ApiModuleController {
      * 创建分组
      */
     @PostMapping
-    public ApiResponse<ApiModuleResponse> create(@PathVariable String projectId,
+    public ApiResponse<ApiModuleResponse> create(@PathVariable Long projectId,
                                                   @Valid @RequestBody ApiModuleCreateRequest request) {
         request.setProjectId(projectId);
         return ApiResponse.ok(apiModuleService.create(request));
@@ -43,8 +43,8 @@ public class ApiModuleController {
      * 更新分组
      */
     @PutMapping("/{moduleId}")
-    public ApiResponse<ApiModuleResponse> update(@PathVariable String projectId,
-                                                  @PathVariable String moduleId,
+    public ApiResponse<ApiModuleResponse> update(@PathVariable Long projectId,
+                                                  @PathVariable Long moduleId,
                                                   @Valid @RequestBody ApiModuleUpdateRequest request) {
         return ApiResponse.ok(apiModuleService.update(moduleId, request));
     }
@@ -53,8 +53,8 @@ public class ApiModuleController {
      * 删除分组
      */
     @DeleteMapping("/{moduleId}")
-    public ApiResponse<Void> delete(@PathVariable String projectId,
-                                     @PathVariable String moduleId) {
+    public ApiResponse<Void> delete(@PathVariable Long projectId,
+                                     @PathVariable Long moduleId) {
         apiModuleService.delete(moduleId);
         return ApiResponse.ok();
     }

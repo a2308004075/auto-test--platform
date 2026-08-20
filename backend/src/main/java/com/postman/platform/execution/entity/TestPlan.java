@@ -16,7 +16,7 @@ import lombok.EqualsAndHashCode;
 @TableName("test_plan")
 public class TestPlan extends BaseEntity {
 
-    private String projectId;
+    private Long projectId;
 
     private String name;
 
@@ -30,7 +30,7 @@ public class TestPlan extends BaseEntity {
     /**
      * 默认执行环境 ID
      */
-    private String environmentId;
+    private Long environmentId;
 
     /**
      * 定时执行 cron 表达式
@@ -40,5 +40,5 @@ public class TestPlan extends BaseEntity {
     @TableLogic
     private Boolean isActive;
 
-    private String createdBy;
+    private Long createdBy;
 }

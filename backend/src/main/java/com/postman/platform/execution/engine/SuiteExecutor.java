@@ -96,7 +96,7 @@ public class SuiteExecutor {
      */
     @lombok.Data
     public static class CaseExecutionSummary {
-        private String caseId;
+        private Long caseId;
         private String caseName;
         private String status;
         private String message;

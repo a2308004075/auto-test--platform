@@ -3,6 +3,7 @@ package com.postman.platform.execution.dto;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 /**
@@ -11,8 +12,8 @@ import java.util.List;
 @Data
 public class PlanCreateRequest {
 
-    @NotBlank(message = "项目 ID 不能为空")
-    private String projectId;
+    @NotNull(message = "项目 ID 不能为空")
+    private Long projectId;
 
     @NotBlank(message = "计划名称不能为空")
     private String name;
@@ -22,12 +23,12 @@ public class PlanCreateRequest {
     /**
      * 关联的测试套件 ID 列表
      */
-    private List<String> suiteIds;
+    private List<Long> suiteIds;
 
     /**
      * 默认执行环境 ID
      */
-    private String environmentId;
+    private Long environmentId;
 
     /**
      * 定时执行 cron 表达式

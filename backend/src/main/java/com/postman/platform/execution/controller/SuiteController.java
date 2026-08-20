@@ -25,7 +25,7 @@ public class SuiteController {
      * 分页查询测试套件
      */
     @GetMapping
-    public ApiResponse<PageResponse<SuiteResponse>> list(@PathVariable String projectId,
+    public ApiResponse<PageResponse<SuiteResponse>> list(@PathVariable Long projectId,
                                                          @RequestParam(required = false) String keyword,
                                                          @RequestParam(defaultValue = "1") int page,
                                                          @RequestParam(defaultValue = "20") int pageSize) {
@@ -36,7 +36,7 @@ public class SuiteController {
      * 创建测试套件
      */
     @PostMapping
-    public ApiResponse<SuiteResponse> create(@PathVariable String projectId,
+    public ApiResponse<SuiteResponse> create(@PathVariable Long projectId,
                                              @Valid @RequestBody SuiteCreateRequest request) {
         return ApiResponse.ok(suiteService.createSuite(projectId, request));
     }
@@ -45,8 +45,8 @@ public class SuiteController {
      * 获取套件详情
      */
     @GetMapping("/{suiteId}")
-    public ApiResponse<SuiteResponse> get(@PathVariable String projectId,
-                                          @PathVariable String suiteId) {
+    public ApiResponse<SuiteResponse> get(@PathVariable Long projectId,
+                                          @PathVariable Long suiteId) {
         return ApiResponse.ok(suiteService.getSuite(suiteId));
     }
 
@@ -54,8 +54,8 @@ public class SuiteController {
      * 更新测试套件
      */
     @PutMapping("/{suiteId}")
-    public ApiResponse<SuiteResponse> update(@PathVariable String projectId,
-                                             @PathVariable String suiteId,
+    public ApiResponse<SuiteResponse> update(@PathVariable Long projectId,
+                                             @PathVariable Long suiteId,
                                              @Valid @RequestBody SuiteUpdateRequest request) {
         return ApiResponse.ok(suiteService.updateSuite(suiteId, request));
     }
@@ -64,8 +64,8 @@ public class SuiteController {
      * 删除测试套件
      */
     @DeleteMapping("/{suiteId}")
-    public ApiResponse<Void> delete(@PathVariable String projectId,
-                                     @PathVariable String suiteId) {
+    public ApiResponse<Void> delete(@PathVariable Long projectId,
+                                     @PathVariable Long suiteId) {
         suiteService.deleteSuite(suiteId);
         return ApiResponse.ok();
     }

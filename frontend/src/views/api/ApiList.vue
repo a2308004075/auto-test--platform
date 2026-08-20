@@ -10,13 +10,13 @@ import { getApis, deleteApi, batchDeleteApis, getModules } from '@/api/apidoc'
 
 const route = useRoute()
 const router = useRouter()
-const projectId = computed(() => route.params.id as string)
+const projectId = computed(() => Number(route.params.id))
 
 const loading = ref(false)
 const list = ref<any[]>([])
 const modules = ref<any[]>([])
-const selectedModuleId = ref<string>('')
-const selectedRowKeys = ref<string[]>([])
+const selectedModuleId = ref<number>(0)
+const selectedRowKeys = ref<number[]>([])
 const keyword = ref('')
 const httpMethodFilter = ref('')
 const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
@@ -53,8 +53,8 @@ async function fetchList() {
   } catch { list.value = [] } finally { loading.value = false }
 }
 
-function selectModule(moduleId: string) {
-  selectedModuleId.value = moduleId === selectedModuleId.value ? '' : moduleId
+function selectModule(moduleId: number) {
+  selectedModuleId.value = moduleId === selectedModuleId.value ? 0 : moduleId
   pagination.current = 1
   fetchList()
 }
@@ -115,7 +115,7 @@ onMounted(() => { fetchModules(); fetchList() })
       <div style="flex:1">
         <a-table
           :columns="columns" :data-source="list" :loading="loading" row-key="id" size="middle"
-          :row-selection="{ selectedRowKeys, onChange: (keys: string[]) => selectedRowKeys = keys }"
+          :row-selection="{ selectedRowKeys, onChange: (keys: number[]) => selectedRowKeys = keys }"
           :pagination="{ current: pagination.current, pageSize: pagination.pageSize, total: pagination.total, onChange: (p: number) => { pagination.current = p; fetchList() } }"
         >
           <template #bodyCell="{ column, record }">

@@ -57,7 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         log.debug("Token 已在黑名单中, jti={}", jti);
                     } else {
                         String userId = jwtTokenProvider.getUserId(claims);
-                        User user = userMapper.selectActiveById(userId);
+                        User user = userMapper.selectActiveById(userId != null ? Long.valueOf(userId) : null);
                         if (user != null) {
                             // 权限信息从 JWT claims 中获取（登录时已写入 role_code）
                             String role = jwtTokenProvider.getRole(claims);

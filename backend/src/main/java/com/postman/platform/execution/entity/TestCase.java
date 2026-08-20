@@ -18,7 +18,7 @@ public class TestCase extends BaseEntity {
     /**
      * 所属测试套件 ID
      */
-    private String suiteId;
+    private Long suiteId;
 
     /**
      * 用例名称
@@ -68,5 +68,5 @@ public class TestCase extends BaseEntity {
     /**
      * 创建人 ID
      */
-    private String createdBy;
+    private Long createdBy;
 }

@@ -23,7 +23,7 @@ public class TokenBlacklist extends BaseEntity {
     /**
      * 用户 ID
      */
-    private String userId;
+    private Long userId;
 
     /**
      * Token 原始过期时间（用于定期清理）

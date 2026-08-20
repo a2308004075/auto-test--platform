@@ -13,8 +13,8 @@ public class CaseResponse implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private String id;
-    private String suiteId;
+    private Long id;
+    private Long suiteId;
     private String name;
     private String description;
     private String preconditions;
@@ -24,7 +24,7 @@ public class CaseResponse implements Serializable {
     private String priority;
     private Integer timeout;
     private Boolean isActive;
-    private String createdBy;
+    private Long createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

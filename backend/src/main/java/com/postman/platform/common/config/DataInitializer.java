@@ -19,9 +19,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Slf4j
 public class DataInitializer implements ApplicationRunner {
-
-    private static final String ADMIN_ROLE_ID = "00000000-0000-0000-0000-000000000020";
-
     private final UserMapper userMapper;
     private final UserRoleMapper userRoleMapper;
     private final PasswordEncoder passwordEncoder;
@@ -46,7 +43,7 @@ public class DataInitializer implements ApplicationRunner {
         }
 
         User admin = new User();
-        admin.setId("00000000-0000-0000-0000-000000000001");
+        admin.setId(1L);
         admin.setUsername("admin");
         admin.setPasswordHash(passwordEncoder.encode("admin123"));
         admin.setDisplayName("管理员");

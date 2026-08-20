@@ -17,7 +17,7 @@ public class StepNode {
     /**
      * 关键字 ID
      */
-    private String keywordId;
+    private Long keywordId;
 
     /**
      * 步骤名称

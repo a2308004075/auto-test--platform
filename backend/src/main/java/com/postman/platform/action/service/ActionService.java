@@ -46,7 +46,7 @@ public class ActionService {
     /**
      * 分页查询 Action 列表
      */
-    public PageResponse<ActionResponse> list(String projectId, String keyword,
+    public PageResponse<ActionResponse> list(Long projectId, String keyword,
                                                int page, int pageSize) {
         LambdaQueryWrapper<Action> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Action::getProjectId, projectId);
@@ -117,7 +117,7 @@ public class ActionService {
      * 更新 Action
      */
     @Transactional(rollbackFor = Exception.class)
-    public ActionResponse update(String actionId, ActionUpdateRequest request) {
+    public ActionResponse update(Long actionId, ActionUpdateRequest request) {
         Action action = findById(actionId);
 
         if (StringUtils.hasText(request.getName()) && !request.getName().equals(action.getName())) {
@@ -160,7 +160,7 @@ public class ActionService {
     /**
      * 获取 Action 详情
      */
-    public ActionResponse getById(String actionId) {
+    public ActionResponse getById(Long actionId) {
         return toResponse(findById(actionId));
     }
 
@@ -168,7 +168,7 @@ public class ActionService {
      * 删除 Action（软删除）
      */
     @Transactional(rollbackFor = Exception.class)
-    public void delete(String actionId) {
+    public void delete(Long actionId) {
         findById(actionId);
 
         // 删除保护检查 - 被 test_case_step 引用时不可删除
@@ -188,7 +188,7 @@ public class ActionService {
     /**
      * 调试执行 Action
      */
-    public ActionDebugResponse debug(String actionId, ActionDebugRequest request) {
+    public ActionDebugResponse debug(Long actionId, ActionDebugRequest request) {
         Action action = findById(actionId);
 
         // 获取节点列表
@@ -225,14 +225,14 @@ public class ActionService {
     /**
      * 获取引用该 Action 的用例列表
      */
-    public List<Map<String, Object>> getReferences(String actionId) {
+    public List<Map<String, Object>> getReferences(Long actionId) {
         findById(actionId);
         Keyword actionKeyword = findActionKeyword(actionId);
         if (actionKeyword == null) {
             return Collections.emptyList();
         }
 
-        String keywordId = actionKeyword.getId();
+        Long keywordId = actionKeyword.getId();
         LambdaQueryWrapper<TestCase> wrapper = new LambdaQueryWrapper<>();
         wrapper.and(w -> w.like(TestCase::getSteps, keywordId)
                 .or().like(TestCase::getSetupSteps, keywordId)
@@ -252,7 +252,7 @@ public class ActionService {
 
     // ───────────────────── 私有方法 ─────────────────────
 
-    private Action findById(String actionId) {
+    private Action findById(Long actionId) {
         Action action = actionMapper.selectById(actionId);
         if (action == null) {
             throw new BusinessException(ErrorCode.ACTION_NOT_FOUND, "Action 不存在：" + actionId);
@@ -323,7 +323,7 @@ public class ActionService {
         return false;
     }
 
-    private void saveNodes(String actionId, List<ActionNodeDTO> nodeDTOs) {
+    private void saveNodes(Long actionId, List<ActionNodeDTO> nodeDTOs) {
         if (nodeDTOs == null || nodeDTOs.isEmpty()) {
             return;
         }
@@ -341,7 +341,7 @@ public class ActionService {
         }
     }
 
-    private void deleteNodes(String actionId) {
+    private void deleteNodes(Long actionId) {
         LambdaQueryWrapper<ActionNode> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ActionNode::getActionId, actionId);
         actionNodeMapper.delete(wrapper);
@@ -350,7 +350,7 @@ public class ActionService {
     /**
      * 查找 Action 对应的 Keyword 记录（type=ACTION, refId=actionId）
      */
-    private Keyword findActionKeyword(String actionId) {
+    private Keyword findActionKeyword(Long actionId) {
         LambdaQueryWrapper<Keyword> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Keyword::getType, "ACTION")
                 .eq(Keyword::getRefId, actionId)
@@ -361,7 +361,7 @@ public class ActionService {
     /**
      * 统计引用指定关键字的测试用例数量（搜索 steps / setup_steps / teardown_steps JSON）
      */
-    private long countTestCaseReferences(String keywordId) {
+    private long countTestCaseReferences(Long keywordId) {
         LambdaQueryWrapper<TestCase> wrapper = new LambdaQueryWrapper<>();
         wrapper.and(w -> w.like(TestCase::getSteps, keywordId)
                 .or().like(TestCase::getSetupSteps, keywordId)

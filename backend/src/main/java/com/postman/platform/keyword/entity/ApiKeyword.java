@@ -14,11 +14,11 @@ import lombok.EqualsAndHashCode;
 @TableName("api_keyword")
 public class ApiKeyword extends BaseEntity {
 
-    private String keywordId;
+    private Long keywordId;
 
-    private String projectId;
+    private Long projectId;
 
-    private String apiId;
+    private Long apiId;
 
     /**
      * 测试数据（JSON 格式）

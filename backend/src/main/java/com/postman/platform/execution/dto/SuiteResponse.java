@@ -13,8 +13,8 @@ public class SuiteResponse implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private String id;
-    private String projectId;
+    private Long id;
+    private Long projectId;
     private String name;
     private String description;
     private String tags;
@@ -25,7 +25,7 @@ public class SuiteResponse implements Serializable {
     private Boolean enablePerCaseSetupTeardown;
     private String perCaseSetupSteps;
     private String perCaseTeardownSteps;
-    private String createdBy;
+    private Long createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

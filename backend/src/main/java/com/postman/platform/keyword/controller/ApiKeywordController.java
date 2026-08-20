@@ -26,7 +26,7 @@ public class ApiKeywordController {
      */
     @GetMapping
     public ApiResponse<PageResponse<ApiKeywordResponse>> list(
-            @PathVariable String projectId,
+            @PathVariable Long projectId,
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
@@ -37,7 +37,7 @@ public class ApiKeywordController {
      * 创建接口关键字
      */
     @PostMapping
-    public ApiResponse<ApiKeywordResponse> create(@PathVariable String projectId,
+    public ApiResponse<ApiKeywordResponse> create(@PathVariable Long projectId,
                                                     @Valid @RequestBody ApiKeywordCreateRequest request) {
         request.setProjectId(projectId);
         return ApiResponse.ok(apiKeywordService.create(request));
@@ -47,8 +47,8 @@ public class ApiKeywordController {
      * 获取关键字详情
      */
     @GetMapping("/{keywordId}")
-    public ApiResponse<ApiKeywordResponse> get(@PathVariable String projectId,
-                                                @PathVariable String keywordId) {
+    public ApiResponse<ApiKeywordResponse> get(@PathVariable Long projectId,
+                                                @PathVariable Long keywordId) {
         return ApiResponse.ok(apiKeywordService.getById(keywordId));
     }
 
@@ -56,8 +56,8 @@ public class ApiKeywordController {
      * 更新关键字
      */
     @PutMapping("/{keywordId}")
-    public ApiResponse<ApiKeywordResponse> update(@PathVariable String projectId,
-                                                    @PathVariable String keywordId,
+    public ApiResponse<ApiKeywordResponse> update(@PathVariable Long projectId,
+                                                    @PathVariable Long keywordId,
                                                     @Valid @RequestBody ApiKeywordUpdateRequest request) {
         return ApiResponse.ok(apiKeywordService.update(keywordId, request));
     }
@@ -66,8 +66,8 @@ public class ApiKeywordController {
      * 删除关键字
      */
     @DeleteMapping("/{keywordId}")
-    public ApiResponse<Void> delete(@PathVariable String projectId,
-                                     @PathVariable String keywordId) {
+    public ApiResponse<Void> delete(@PathVariable Long projectId,
+                                     @PathVariable Long keywordId) {
         apiKeywordService.delete(keywordId);
         return ApiResponse.ok();
     }
@@ -76,8 +76,8 @@ public class ApiKeywordController {
      * 从接口快速生成关键字
      */
     @PostMapping("/generate")
-    public ApiResponse<ApiKeywordResponse> generate(@PathVariable String projectId,
-                                                     @RequestParam String apiId) {
+    public ApiResponse<ApiKeywordResponse> generate(@PathVariable Long projectId,
+                                                     @RequestParam Long apiId) {
         return ApiResponse.ok(apiKeywordService.generateFromApi(projectId, apiId));
     }
 }

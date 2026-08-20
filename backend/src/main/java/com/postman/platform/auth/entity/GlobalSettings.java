@@ -20,8 +20,8 @@ public class GlobalSettings implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(type = IdType.ASSIGN_UUID)
-    private String id;
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
     /**
      * 配置键

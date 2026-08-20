@@ -7,8 +7,8 @@ public class ActionNodeDTO {
 
     private String nodeKey;
     private String nodeType;
-    private String refKeywordId;
-    private String refToolId;
+    private Long refKeywordId;
+    private Long refToolId;
     private String config;
     private Integer positionX;
     private Integer positionY;

@@ -13,7 +13,7 @@ package com.postman.platform.common.exception;
  */
 public class NotFoundException extends BusinessException {
 
-    public NotFoundException(String resource, String id) {
+    public NotFoundException(String resource, Object id) {
         super(ErrorCode.RESOURCE_NOT_FOUND, buildMessage(resource, id));
     }
 
@@ -21,10 +21,14 @@ public class NotFoundException extends BusinessException {
         this(resource, null);
     }
 
-    private static String buildMessage(String resource, String id) {
-        if (id == null || id.isEmpty()) {
+    private static String buildMessage(String resource, Object id) {
+        if (id == null) {
             return resource + " 不存在";
         }
-        return resource + " 不存在 (id=" + id + ")";
+        String idStr = id.toString();
+        if (idStr.isEmpty()) {
+            return resource + " 不存在";
+        }
+        return resource + " 不存在 (id=" + idStr + ")";
     }
 }

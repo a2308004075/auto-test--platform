@@ -19,12 +19,12 @@ public class TestResult implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(type = IdType.ASSIGN_UUID)
-    private String id;
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
-    private String executionId;
+    private Long executionId;
 
-    private String caseId;
+    private Long caseId;
 
     /**
      * 用例执行结果：PASSED / FAILED / SKIPPED / ERROR

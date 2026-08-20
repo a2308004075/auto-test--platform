@@ -3,6 +3,7 @@ package com.postman.platform.apidoc.dto;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 /**
  * Swagger 导入请求
@@ -10,11 +11,11 @@ import javax.validation.constraints.NotBlank;
 @Data
 public class SwaggerImportRequest {
 
-    @NotBlank(message = "项目 ID 不能为空")
-    private String projectId;
+    @NotNull(message = "项目 ID 不能为空")
+    private Long projectId;
 
-    @NotBlank(message = "分组 ID 不能为空")
-    private String moduleId;
+    @NotNull(message = "分组 ID 不能为空")
+    private Long moduleId;
 
     /**
      * Swagger 2.0 JSON 内容

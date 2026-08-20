@@ -232,7 +232,7 @@ public class SwaggerParser {
     /**
      * 将 ApiEntry 转为 Api 实体
      */
-    public static Api toApiEntity(ApiEntry entry, String projectId, String moduleId) {
+    public static Api toApiEntity(ApiEntry entry, Long projectId, Long moduleId) {
         Api api = new Api();
         api.setProjectId(projectId);
         api.setModuleId(moduleId);

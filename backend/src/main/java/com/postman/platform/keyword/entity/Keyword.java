@@ -20,16 +20,16 @@ public class Keyword extends BaseEntity {
      */
     private String type;
 
-    private String projectId;
+    private Long projectId;
 
     /**
      * 指向源实体 ID（api_keyword.id / tool_method.id / action.id / test_case.id）
      */
-    private String refId;
+    private Long refId;
 
     private String description;
 
-    private String createdBy;
+    private Long createdBy;
 
-    private String updatedBy;
+    private Long updatedBy;
 }

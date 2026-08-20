@@ -44,7 +44,7 @@ public class ApiKeywordService {
     /**
      * 分页查询接口关键字列表
      */
-    public PageResponse<ApiKeywordResponse> list(String projectId, String keyword,
+    public PageResponse<ApiKeywordResponse> list(Long projectId, String keyword,
                                                    int page, int pageSize) {
         LambdaQueryWrapper<Keyword> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Keyword::getProjectId, projectId)
@@ -104,7 +104,7 @@ public class ApiKeywordService {
      * 更新接口关键字
      */
     @Transactional(rollbackFor = Exception.class)
-    public ApiKeywordResponse update(String keywordId, ApiKeywordUpdateRequest request) {
+    public ApiKeywordResponse update(Long keywordId, ApiKeywordUpdateRequest request) {
         Keyword kw = findKeywordById(keywordId);
 
         // 名称唯一性检查（排除自身）
@@ -144,7 +144,7 @@ public class ApiKeywordService {
     /**
      * 获取关键字详情
      */
-    public ApiKeywordResponse getById(String keywordId) {
+    public ApiKeywordResponse getById(Long keywordId) {
         Keyword kw = findKeywordById(keywordId);
         return buildResponse(kw);
     }
@@ -153,7 +153,7 @@ public class ApiKeywordService {
      * 删除接口关键字（含删除保护检查）
      */
     @Transactional(rollbackFor = Exception.class)
-    public void delete(String keywordId) {
+    public void delete(Long keywordId) {
         Keyword kw = findKeywordById(keywordId);
 
         // 删除保护检查 - 被 action_node 引用时不可删除
@@ -185,7 +185,7 @@ public class ApiKeywordService {
      * 从接口快速生成关键字
      */
     @Transactional(rollbackFor = Exception.class)
-    public ApiKeywordResponse generateFromApi(String projectId, String apiId) {
+    public ApiKeywordResponse generateFromApi(Long projectId, Long apiId) {
         projectService.findActiveById(projectId);
 
         Api api = apiMapper.selectById(apiId);
@@ -229,7 +229,7 @@ public class ApiKeywordService {
 
     // ───────────────────── 私有方法 ─────────────────────
 
-    private Keyword findKeywordById(String keywordId) {
+    private Keyword findKeywordById(Long keywordId) {
         Keyword kw = keywordMapper.selectById(keywordId);
         if (kw == null) {
             throw new BusinessException(ErrorCode.KEYWORD_NOT_FOUND, "关键字不存在：" + keywordId);
@@ -237,7 +237,7 @@ public class ApiKeywordService {
         return kw;
     }
 
-    private ApiKeyword findApiKeywordByKeywordId(String keywordId) {
+    private ApiKeyword findApiKeywordByKeywordId(Long keywordId) {
         LambdaQueryWrapper<ApiKeyword> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ApiKeyword::getKeywordId, keywordId)
                 .last("LIMIT 1");
@@ -247,7 +247,7 @@ public class ApiKeywordService {
     /**
      * 统计引用指定关键字的测试用例数量（搜索 steps / setup_steps / teardown_steps JSON）
      */
-    private long countTestCaseReferences(String keywordId) {
+    private long countTestCaseReferences(Long keywordId) {
         LambdaQueryWrapper<TestCase> wrapper = new LambdaQueryWrapper<>();
         wrapper.and(w -> w.like(TestCase::getSteps, keywordId)
                 .or().like(TestCase::getSetupSteps, keywordId)

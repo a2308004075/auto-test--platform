@@ -21,7 +21,7 @@ public class ToolMethodController {
 
     @GetMapping
     public ApiResponse<PageResponse<ToolMethodResponse>> list(
-            @PathVariable String projectId,
+            @PathVariable Long projectId,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
@@ -30,35 +30,35 @@ public class ToolMethodController {
     }
 
     @PostMapping
-    public ApiResponse<ToolMethodResponse> create(@PathVariable String projectId,
+    public ApiResponse<ToolMethodResponse> create(@PathVariable Long projectId,
                                                     @Valid @RequestBody ToolMethodCreateRequest request) {
         request.setProjectId(projectId);
         return ApiResponse.ok(toolMethodService.create(request));
     }
 
     @GetMapping("/{toolId}")
-    public ApiResponse<ToolMethodResponse> get(@PathVariable String projectId,
-                                                @PathVariable String toolId) {
+    public ApiResponse<ToolMethodResponse> get(@PathVariable Long projectId,
+                                                @PathVariable Long toolId) {
         return ApiResponse.ok(toolMethodService.getById(toolId));
     }
 
     @PutMapping("/{toolId}")
-    public ApiResponse<ToolMethodResponse> update(@PathVariable String projectId,
-                                                    @PathVariable String toolId,
+    public ApiResponse<ToolMethodResponse> update(@PathVariable Long projectId,
+                                                    @PathVariable Long toolId,
                                                     @Valid @RequestBody ToolMethodUpdateRequest request) {
         return ApiResponse.ok(toolMethodService.update(toolId, request));
     }
 
     @DeleteMapping("/{toolId}")
-    public ApiResponse<Void> delete(@PathVariable String projectId,
-                                     @PathVariable String toolId) {
+    public ApiResponse<Void> delete(@PathVariable Long projectId,
+                                     @PathVariable Long toolId) {
         toolMethodService.delete(toolId);
         return ApiResponse.ok();
     }
 
     @PostMapping("/{toolId}/test")
-    public ApiResponse<ToolTestResult> test(@PathVariable String projectId,
-                                             @PathVariable String toolId,
+    public ApiResponse<ToolTestResult> test(@PathVariable Long projectId,
+                                             @PathVariable Long toolId,
                                              @Valid @RequestBody ToolTestRequest request) {
         return ApiResponse.ok(toolMethodService.testTool(toolId, request));
     }

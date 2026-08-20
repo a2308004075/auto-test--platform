@@ -13,9 +13,9 @@ import lombok.EqualsAndHashCode;
 @TableName("api")
 public class Api extends BaseEntity {
 
-    private String projectId;
+    private Long projectId;
 
-    private String moduleId;
+    private Long moduleId;
 
     private String name;
 

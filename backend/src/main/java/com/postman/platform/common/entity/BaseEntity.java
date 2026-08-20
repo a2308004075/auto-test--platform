@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  *
  * <p>包含绝大多数业务表的公共字段：
  * <ul>
- *   <li>{@code id} - UUID 主键（CHAR(36)，由 MyBatis-Plus assign_uuid 策略生成）</li>
+ *   <li>{@code id} - 自增主键（bigint，由数据库 AUTO_INCREMENT 生成）</li>
  *   <li>{@code createdAt} - 创建时间（对应数据库 {@code created_at}，DEFAULT CURRENT_TIMESTAMP）</li>
  *   <li>{@code updatedAt} - 更新时间（对应数据库 {@code updated_at}，ON UPDATE CURRENT_TIMESTAMP）</li>
  * </ul>
@@ -29,10 +29,10 @@ public class BaseEntity implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * UUID 主键
+     * 自增主键
      */
-    @TableId(type = IdType.ASSIGN_UUID)
-    private String id;
+    @TableId(type = IdType.AUTO)
+    private Long id;
 
     /**
      * 创建时间

@@ -10,17 +10,17 @@ import java.time.LocalDateTime;
 @Data
 public class ApiKeywordResponse {
 
-    private String id;
-    private String keywordId;
-    private String projectId;
+    private Long id;
+    private Long keywordId;
+    private Long projectId;
     private String name;
     private String type;
-    private String apiId;
+    private Long apiId;
     private String testData;
     private String responseAssertion;
     private String description;
-    private String createdBy;
-    private String updatedBy;
+    private Long createdBy;
+    private Long updatedBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

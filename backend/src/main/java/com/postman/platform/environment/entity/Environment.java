@@ -14,7 +14,7 @@ import lombok.EqualsAndHashCode;
 @TableName("environment")
 public class Environment extends BaseEntity {
 
-    private String projectId;
+    private Long projectId;
 
     private String name;
 

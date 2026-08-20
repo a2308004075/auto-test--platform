@@ -10,7 +10,7 @@ import java.util.List;
 @Data
 public class ProjectDashboardResponse {
 
-    private String projectId;
+    private Long projectId;
     private String projectName;
     private DashboardStats stats;
     private List<RecentExecution> recentExecutions;

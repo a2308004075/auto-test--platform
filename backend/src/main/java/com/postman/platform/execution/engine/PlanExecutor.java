@@ -50,7 +50,7 @@ public class PlanExecutor {
      *
      * @param executionId 执行记录 ID
      */
-    public void execute(String executionId) {
+    public void execute(Long executionId) {
         TestExecution execution = testExecutionMapper.selectById(executionId);
         if (execution == null) {
             log.error("执行记录不存在：{}", executionId);
@@ -82,13 +82,13 @@ public class PlanExecutor {
             log.info("开始执行计划: plan={}, execution={}, env={}", plan.getName(), executionId, context.getEnvironmentId());
 
             // 解析 suiteIds
-            List<String> suiteIds = parseSuiteIds(plan.getSuiteIds());
+            List<Long> suiteIds = parseSuiteIds(plan.getSuiteIds());
             if (suiteIds.isEmpty()) {
                 log.warn("计划未关联任何套件: {}", plan.getName());
             }
 
             // 遍历套件执行
-            for (String suiteId : suiteIds) {
+            for (Long suiteId : suiteIds) {
                 TestSuite suite = testSuiteMapper.selectById(suiteId);
                 if (suite == null) {
                     log.warn("套件不存在，跳过: {}", suiteId);
@@ -162,7 +162,7 @@ public class PlanExecutor {
         context.setEnvironmentId(execution.getEnvironmentId());
 
         // 加载环境配置
-        String envId = execution.getEnvironmentId() != null
+        Long envId = execution.getEnvironmentId() != null
                 ? execution.getEnvironmentId() : plan.getEnvironmentId();
         if (envId != null) {
             Environment env = environmentMapper.selectById(envId);
@@ -195,12 +195,12 @@ public class PlanExecutor {
     /**
      * 解析套件 ID 列表
      */
-    private List<String> parseSuiteIds(String suiteIdsJson) {
+    private List<Long> parseSuiteIds(String suiteIdsJson) {
         if (suiteIdsJson == null || suiteIdsJson.trim().isEmpty()) {
             return Collections.emptyList();
         }
         try {
-            return objectMapper.readValue(suiteIdsJson, new TypeReference<List<String>>() {});
+            return objectMapper.readValue(suiteIdsJson, new TypeReference<List<Long>>() {});
         } catch (Exception e) {
             log.warn("解析 suiteIds 失败: {}", e.getMessage());
             return Collections.emptyList();
@@ -210,7 +210,7 @@ public class PlanExecutor {
     /**
      * 通过 WebSocket 推送执行进度
      */
-    private void sendProgress(String executionId, String status, int totalCases,
+    private void sendProgress(Long executionId, String status, int totalCases,
                               int passedCases, int failedCases, int skippedCases,
                               int durationMs, String message) {
         try {
@@ -223,7 +223,7 @@ public class PlanExecutor {
             payload.put("skippedCases", skippedCases);
             payload.put("durationMs", durationMs);
             payload.put("message", message);
-            executionWebSocketHandler.sendProgress(executionId, objectMapper.writeValueAsString(payload));
+            executionWebSocketHandler.sendProgress(String.valueOf(executionId), objectMapper.writeValueAsString(payload));
         } catch (Exception e) {
             log.warn("推送执行进度失败: {}", e.getMessage());
         }

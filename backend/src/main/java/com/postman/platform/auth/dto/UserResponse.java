@@ -10,10 +10,10 @@ import java.time.LocalDateTime;
 @Data
 public class UserResponse {
 
-    private String id;
+    private Long id;
     private String username;
     private String displayName;
-    private String roleId;
+    private Long roleId;
     private String roleName;
     /**
      * 角色编码（如 ADMIN、USER），供前端兼容展示

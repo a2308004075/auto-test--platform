@@ -34,7 +34,7 @@ public class User extends BaseEntity {
     /**
      * 角色 ID（关联 user_role.id）
      */
-    private String roleId;
+    private Long roleId;
 
     /**
      * 是否启用（软删除）

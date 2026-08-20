@@ -55,7 +55,7 @@ public class AuthService {
      * @param roleId 角色 ID
      * @return 角色编码（如 ADMIN、USER），找不到时返回 null
      */
-    private String getRoleCode(String roleId) {
+    private String getRoleCode(Long roleId) {
         if (roleId == null) {
             return null;
         }
@@ -131,7 +131,7 @@ public class AuthService {
 
         // 验证用户有效性
         String userId = jwtTokenProvider.getUserId(claims);
-        User user = userMapper.selectActiveById(userId);
+        User user = userMapper.selectActiveById(userId != null ? Long.valueOf(userId) : null);
         if (user == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND, "用户不存在或已禁用");
         }
@@ -167,7 +167,7 @@ public class AuthService {
 
         TokenBlacklist blacklist = new TokenBlacklist();
         blacklist.setTokenJti(jti);
-        blacklist.setUserId(userId);
+        blacklist.setUserId(userId != null ? Long.valueOf(userId) : null);
         blacklist.setExpiresAt(LocalDateTime.ofInstant(expiration.toInstant(), ZoneId.systemDefault()));
         tokenBlacklistMapper.insert(blacklist);
 
@@ -177,8 +177,8 @@ public class AuthService {
     /**
      * 获取当前登录用户信息
      */
-    public UserResponse getCurrentUser(String userId) {
-        User user = userMapper.selectActiveById(userId);
+    public UserResponse getCurrentUser(Long userId) {
+        User user = userMapper.selectActiveById(userId != null ? Long.valueOf(userId) : null);
         if (user == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND, "用户不存在");
         }

@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 @TableName("action_node")
 public class ActionNode extends BaseEntity {
 
-    private String actionId;
+    private Long actionId;
 
     private String nodeKey;
 
@@ -22,9 +22,9 @@ public class ActionNode extends BaseEntity {
      */
     private String nodeType;
 
-    private String refKeywordId;
+    private Long refKeywordId;
 
-    private String refToolId;
+    private Long refToolId;
 
     /**
      * 节点配置（JSON）

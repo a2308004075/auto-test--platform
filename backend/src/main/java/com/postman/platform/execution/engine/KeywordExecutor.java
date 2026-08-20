@@ -217,7 +217,7 @@ public class KeywordExecutor {
      * 执行 TOOL 类型关键字
      */
     private StepResult executeToolKeyword(StepNode step, Keyword keyword, ExecutionContext context) {
-        String refId = keyword.getRefId();
+        Long refId = keyword.getRefId();
         if (refId == null) {
             return StepResult.error("TOOL 关键字缺少 refId：" + keyword.getName());
         }
@@ -262,7 +262,7 @@ public class KeywordExecutor {
      * 执行 ACTION 类型关键字
      */
     private StepResult executeActionKeyword(StepNode step, Keyword keyword, ExecutionContext context) {
-        String refId = keyword.getRefId();
+        Long refId = keyword.getRefId();
         if (refId == null) {
             return StepResult.error("ACTION 关键字缺少 refId：" + keyword.getName());
         }

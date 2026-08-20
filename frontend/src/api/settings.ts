@@ -5,7 +5,7 @@ import request from './request'
  */
 
 export interface GlobalConfigItem {
-  id: string
+  id: number
   configKey: string
   configValue: string
   description?: string

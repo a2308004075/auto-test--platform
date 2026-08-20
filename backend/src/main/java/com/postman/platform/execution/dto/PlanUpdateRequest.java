@@ -14,9 +14,9 @@ public class PlanUpdateRequest {
 
     private String description;
 
-    private List<String> suiteIds;
+    private List<Long> suiteIds;
 
-    private String environmentId;
+    private Long environmentId;
 
     private String scheduleCron;
 

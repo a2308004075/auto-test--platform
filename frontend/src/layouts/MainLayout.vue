@@ -75,6 +75,13 @@ async function handleLogout() {
   message.success('已退出登录')
   router.push('/project')
 }
+
+/**
+ * 登录成功后跳转到项目列表页
+ */
+function handleLoginSuccess() {
+  router.push('/project')
+}
 </script>
 
 <template>
@@ -118,7 +125,7 @@ async function handleLogout() {
     </a-layout>
 
     <!-- 登录弹窗 -->
-    <LoginModal v-model:open="loginModalOpen" @success="() => {}" />
+    <LoginModal v-model:open="loginModalOpen" @success="handleLoginSuccess" />
   </a-layout>
 </template>
 

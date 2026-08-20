@@ -22,6 +22,16 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     /**
+     * 依赖冲突异常（删除保护） - 返回 409 + 依赖项数据
+     */
+    @ExceptionHandler(DependencyException.class)
+    public ResponseEntity<ApiResponse<Object>> handleDependencyException(DependencyException e, HttpServletRequest request) {
+        log.warn("依赖冲突 [{}]: {}", request.getRequestURI(), e.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(e.getCode(), e.getMessage(), e.getDependencies()));
+    }
+
+    /**
      * 业务异常
      */
     @ExceptionHandler(BusinessException.class)

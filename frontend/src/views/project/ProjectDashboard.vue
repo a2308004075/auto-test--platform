@@ -175,8 +175,8 @@ watch(projectId, fetchDashboard)
       <div class="overview-header-left">
         <h1>
           {{ dash.projectName || '项目' }}
-          <span class="status-tag" :class="dash.isActive !== false ? '' : 'disabled'">
-            {{ dash.isActive !== false ? '运行中' : '已停用' }}
+          <span class="status-tag" :class="dash.status === 1 ? '' : 'disabled'">
+            {{ dash.status === 1 ? '运行中' : '已停用' }}
           </span>
         </h1>
         <p class="overview-desc">{{ dash.projectDescription || '' }}</p>

@@ -44,8 +44,8 @@ async function fetchList() {
       page: pagination.current,
       pageSize: pagination.pageSize,
     }
-    if (statusFilter.value === 'active') params.status = true
-    else if (statusFilter.value === 'disabled') params.status = false
+    if (statusFilter.value === 'active') params.status = 1
+    else if (statusFilter.value === 'disabled') params.status = 0
     const res: any = await getProjects(params)
     list.value = res.data?.items || []
     pagination.total = res.data?.total || 0
@@ -57,7 +57,7 @@ async function fetchList() {
 }
 
 function enterProject(project: any) {
-  if (project.isActive === false) return
+  if (project.status === 0) return
   if (!userStore.isLoggedIn) {
     ElMessage.info('请先登录后再进入项目')
     return
@@ -114,7 +114,7 @@ function handleDelete(project: any) {
 }
 
 function handleToggleStatus(project: any) {
-  const isActive = project.isActive !== false
+  const isActive = project.status === 1
   const title = isActive ? '停用项目' : '启用项目'
   const msg = isActive
     ? `确定停用项目「${project.name}」？停用后项目将无法访问，已有数据不会被删除，重新启用后可恢复使用。`
@@ -173,7 +173,7 @@ onMounted(fetchList)
         v-for="project in list"
         :key="project.id"
         class="project-card"
-        :class="{ disabled: project.isActive === false }"
+        :class="{ disabled: project.status === 0 }"
         @click="enterProject(project)"
       >
         <div class="card-body">
@@ -188,10 +188,10 @@ onMounted(fetchList)
             <div class="card-actions" @click.stop>
               <span
                 class="status-tag"
-                :class="project.isActive !== false ? 'tag-active' : 'tag-disabled'"
+                :class="project.status === 1 ? 'tag-active' : 'tag-disabled'"
                 @click="userStore.isLoggedIn && handleToggleStatus(project)"
               >
-                {{ project.isActive !== false ? '启用' : '停用' }}
+                {{ project.status === 1 ? '启用' : '停用' }}
               </span>
               <template v-if="userStore.isLoggedIn">
                 <button class="btn-edit" @click="openEdit(project)">编辑</button>

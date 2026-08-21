@@ -13,7 +13,8 @@ public class ProjectDashboardResponse {
     private Long projectId;
     private String projectName;
     private String projectDescription;
-    private Boolean isActive;
+    /** 状态：0-停用，1-启用 */
+    private Integer status;
     private DashboardStats stats;
     private DashboardTrendResponse trend;
     private List<RecentExecution> recentExecutions;

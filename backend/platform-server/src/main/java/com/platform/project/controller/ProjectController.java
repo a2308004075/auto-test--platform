@@ -26,7 +26,7 @@ public class ProjectController {
     @GetMapping
     public ApiResponse<PageResponse<ProjectResponse>> list(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Boolean status,
+            @RequestParam(required = false) Integer status,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
         return ApiResponse.ok(projectService.listProjects(keyword, status, page, pageSize));

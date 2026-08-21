@@ -30,9 +30,9 @@ public class Project extends BaseEntity {
     private String sourcePath;
 
     /**
-     * 是否启用（启用/停用切换，非软删除）
+     * 状态：0-停用，1-启用
      */
-    private Boolean isActive;
+    private Integer status;
 
     /**
      * 软删除标记（true=已删除）

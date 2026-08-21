@@ -60,14 +60,14 @@ public class ProjectService {
     /**
      * 分页查询项目列表（含卡片统计）
      */
-    public PageResponse<ProjectResponse> listProjects(String keyword, Boolean status, int page, int pageSize) {
+    public PageResponse<ProjectResponse> listProjects(String keyword, Integer status, int page, int pageSize) {
         LambdaQueryWrapper<Project> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(Project::getName, keyword)
                     .or().like(Project::getDescription, keyword));
         }
         if (status != null) {
-            wrapper.eq(Project::getIsActive, status);
+            wrapper.eq(Project::getStatus, status);
         }
         wrapper.orderByDesc(Project::getCreatedAt);
 
@@ -143,7 +143,7 @@ public class ProjectService {
         project.setName(request.getName());
         project.setDescription(request.getDescription());
         project.setSourcePath(request.getSourcePath());
-        project.setIsActive(true);
+        project.setStatus(1);
         project.setDeleted(false);
         projectMapper.insert(project);
 
@@ -195,11 +195,11 @@ public class ProjectService {
     }
 
     /**
-     * 启停项目（切换 isActive 字段，与软删除无关）
+     * 启停项目（切换 status 字段，与软删除无关）
      */
     public ProjectResponse toggleStatus(Long projectId) {
         Project project = findActiveById(projectId);
-        project.setIsActive(!project.getIsActive());
+        project.setStatus(project.getStatus() == 1 ? 0 : 1);
         projectMapper.updateById(project);
         return toResponse(project);
     }
@@ -356,7 +356,7 @@ public class ProjectService {
         response.setProjectId(project.getId());
         response.setProjectName(project.getName());
         response.setProjectDescription(project.getDescription());
-        response.setIsActive(project.getIsActive());
+        response.setStatus(project.getStatus());
         response.setStats(stats);
         response.setTrend(trend);
         response.setRecentExecutions(recentExecutions);

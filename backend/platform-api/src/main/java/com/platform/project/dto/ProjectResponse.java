@@ -14,7 +14,8 @@ public class ProjectResponse {
     private String name;
     private String description;
     private String sourcePath;
-    private Boolean isActive;
+    /** 状态：0-停用，1-启用 */
+    private Integer status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

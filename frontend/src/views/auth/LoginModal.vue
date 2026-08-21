@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
  * 登录弹窗组件
- * 包含验证码图片和记住密码功能
+ * 包含验证码图片
  */
 import { ref, reactive, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { User, Lock, View, Hide, CircleCheck, Loading } from '@element-plus/icons-vue'
 import { login, getCaptcha } from '@/api/auth'
 import { useUserStore } from '@/stores'
 
@@ -17,6 +18,7 @@ const emit = defineEmits<{
 const userStore = useUserStore()
 
 const loading = ref(false)
+const showPassword = ref(false)
 const captchaLoading = ref(false)
 const captchaImage = ref('')
 const form = reactive({
@@ -24,7 +26,6 @@ const form = reactive({
   password: '',
   captchaId: '',
   captchaCode: '',
-  rememberPassword: false,
 })
 
 /**
@@ -48,17 +49,10 @@ async function loadCaptcha() {
  */
 watch(() => props.modelValue, (val) => {
   if (val) {
-    const remembered = userStore.loadRememberedCredentials()
-    if (remembered) {
-      form.username = remembered.username
-      form.password = remembered.password
-      form.rememberPassword = true
-    } else {
-      form.username = ''
-      form.password = ''
-      form.rememberPassword = false
-    }
+    form.username = ''
+    form.password = ''
     form.captchaCode = ''
+    showPassword.value = false
     loadCaptcha()
   }
 })
@@ -93,11 +87,6 @@ async function handleLogin() {
         role: data.user.role,
       })
     }
-    if (form.rememberPassword) {
-      userStore.saveRememberedCredentials(form.username, form.password)
-    } else {
-      userStore.clearRememberedCredentials()
-    }
     ElMessage.success('登录成功')
     emit('update:modelValue', false)
     emit('success')
@@ -119,103 +108,128 @@ async function handleLogin() {
     width="420px"
     :close-on-click-modal="false"
     align-center
+    class="login-dialog"
   >
     <div class="login-modal">
-      <div class="login-header">
-        <h2>项目管理平台</h2>
-        <p>请登录您的账户</p>
-      </div>
-      <el-form label-position="top" @submit.prevent="handleLogin">
-        <el-form-item label="用户名">
+      <h2 class="login-title">账号登录</h2>
+      <el-form @submit.prevent="handleLogin">
+        <el-form-item>
           <el-input
             v-model="form.username"
-            placeholder="请输入用户名"
+            placeholder="请输入账号"
             size="large"
             clearable
-          />
+          >
+            <template #prefix>
+              <el-icon><User /></el-icon>
+            </template>
+          </el-input>
         </el-form-item>
-        <el-form-item label="密码">
+        <el-form-item>
           <el-input
             v-model="form.password"
-            type="password"
-            show-password
+            :type="showPassword ? 'text' : 'password'"
             placeholder="请输入密码"
             size="large"
             @keyup.enter="handleLogin"
-          />
+          >
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+            <template #suffix>
+              <el-icon class="eye-icon" @click.stop="showPassword = !showPassword">
+                <View v-if="showPassword" />
+                <Hide v-else />
+              </el-icon>
+            </template>
+          </el-input>
         </el-form-item>
-        <el-form-item label="验证码">
-          <div style="display:flex;gap:8px;align-items:center;width:100%">
+        <el-form-item>
+          <div class="captcha-row">
             <el-input
               v-model="form.captchaCode"
-              placeholder="请输入验证码"
+              placeholder="请输入安全验证码"
               size="large"
-              style="flex:1"
+              class="captcha-input"
               @keyup.enter="handleLogin"
-            />
+            >
+              <template #prefix>
+                <el-icon><CircleCheck /></el-icon>
+              </template>
+            </el-input>
             <div
               class="captcha-image"
               @click="loadCaptcha"
               :title="captchaLoading ? '加载中...' : '点击刷新验证码'"
             >
               <el-icon v-if="captchaLoading" class="is-loading" :size="20"><Loading /></el-icon>
-              <img v-else-if="captchaImage" :src="captchaImage" alt="验证码" style="height:40px;cursor:pointer;border-radius:4px" />
-              <div v-else style="height:40px;line-height:40px;color:#909399;font-size:12px;text-align:center;width:120px;background:#f5f7fa;border-radius:4px">点击加载</div>
+              <img v-else-if="captchaImage" :src="captchaImage" alt="验证码" />
+              <div v-else class="captcha-placeholder">点击加载</div>
             </div>
           </div>
         </el-form-item>
         <el-form-item>
-          <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
-            <el-checkbox v-model="form.rememberPassword">记住密码</el-checkbox>
-            <el-button
-              type="primary"
-              size="large"
-              :loading="loading"
-              @click="handleLogin"
-            >
-              登录
-            </el-button>
-          </div>
+          <el-button
+            type="primary"
+            size="large"
+            :loading="loading"
+            style="width: 100%"
+            @click="handleLogin"
+          >
+            登录
+          </el-button>
         </el-form-item>
       </el-form>
-      <div class="login-footer">
-        <span>默认账户: admin / admin123</span>
-      </div>
     </div>
   </el-dialog>
 </template>
-
-<script lang="ts">
-import { Loading } from '@element-plus/icons-vue'
-export default { components: { Loading } }
-</script>
 
 <style scoped>
 .login-modal {
   padding: 8px 0;
 }
-.login-header {
-  text-align: center;
-  margin-bottom: 24px;
-}
-.login-header h2 {
-  margin: 0 0 8px;
+.login-title {
+  margin: 0 0 32px;
+  text-align: left;
   color: #303133;
+  font-size: 24px;
+  font-weight: 500;
 }
-.login-header p {
-  margin: 0;
+.eye-icon {
+  cursor: pointer;
   color: #909399;
 }
-.login-footer {
-  text-align: center;
-  color: #909399;
-  font-size: 12px;
-  margin-top: 8px;
+.captcha-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+.captcha-input {
+  flex: 1;
 }
 .captcha-image {
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: 120px;
+  height: 40px;
+  cursor: pointer;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.captcha-image img {
+  height: 40px;
+  border-radius: 4px;
+}
+.captcha-placeholder {
+  height: 40px;
+  line-height: 40px;
+  color: #909399;
+  font-size: 12px;
+  text-align: center;
+  width: 120px;
+  background: #f5f7fa;
+  border-radius: 4px;
 }
 </style>

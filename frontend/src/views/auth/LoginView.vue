@@ -73,9 +73,6 @@ async function handleLogin() {
           </el-button>
         </el-form-item>
       </el-form>
-      <div class="login-footer">
-        <span>默认账户: admin / admin123</span>
-      </div>
     </div>
   </div>
 </template>
@@ -106,11 +103,5 @@ async function handleLogin() {
 .login-header p {
   margin: 0;
   color: #909399;
-}
-.login-footer {
-  text-align: center;
-  color: #909399;
-  font-size: 12px;
-  margin-top: 16px;
 }
 </style>

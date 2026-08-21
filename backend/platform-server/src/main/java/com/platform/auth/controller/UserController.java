@@ -48,7 +48,7 @@ public class UserController {
     /**
      * 更新用户
      */
-    @PutMapping("/{userId}")
+    @PostMapping("/{userId}")
     public ApiResponse<UserResponse> update(@PathVariable Long userId,
                                             @Valid @RequestBody UserUpdateRequest request) {
         UserResponse response = userService.updateUser(userId, request);
@@ -58,7 +58,7 @@ public class UserController {
     /**
      * 删除用户
      */
-    @DeleteMapping("/{userId}")
+    @PostMapping("/{userId}/delete")
     public ApiResponse<Void> delete(@PathVariable Long userId) {
         userService.deleteUser(userId);
         return ApiResponse.success(null, "删除成功");
@@ -67,7 +67,7 @@ public class UserController {
     /**
      * 启用/禁用用户
      */
-    @PatchMapping("/{userId}/status")
+    @PostMapping("/{userId}/status")
     public ApiResponse<UserResponse> toggleStatus(@PathVariable Long userId,
                                                   @Valid @RequestBody StatusToggleRequest request) {
         UserResponse response = userService.toggleStatus(userId, request);

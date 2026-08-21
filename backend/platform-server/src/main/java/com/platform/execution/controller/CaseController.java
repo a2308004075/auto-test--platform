@@ -60,7 +60,7 @@ public class CaseController {
     /**
      * 更新测试用例
      */
-    @PutMapping("/{caseId}")
+    @PostMapping("/{caseId}")
     public ApiResponse<CaseResponse> update(@PathVariable Long projectId,
                                              @PathVariable Long caseId,
                                              @Valid @RequestBody CaseUpdateRequest request) {
@@ -70,7 +70,7 @@ public class CaseController {
     /**
      * 删除测试用例
      */
-    @DeleteMapping("/{caseId}")
+    @PostMapping("/{caseId}/delete")
     public ApiResponse<Void> delete(@PathVariable Long projectId,
                                      @PathVariable Long caseId) {
         caseService.deleteCase(caseId);
@@ -80,7 +80,7 @@ public class CaseController {
     /**
      * 启用/禁用测试用例
      */
-    @PatchMapping("/{caseId}/status")
+    @PostMapping("/{caseId}/status")
     public ApiResponse<CaseResponse> toggleStatus(@PathVariable Long projectId,
                                                    @PathVariable Long caseId) {
         return ApiResponse.ok(caseService.toggleStatus(caseId));

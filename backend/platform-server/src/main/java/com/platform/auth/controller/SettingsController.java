@@ -41,7 +41,7 @@ public class SettingsController {
     /**
      * 更新配置项
      */
-    @PutMapping("/{configKey}")
+    @PostMapping("/{configKey}")
     public ApiResponse<GlobalConfigResponse> update(@PathVariable String configKey,
                                                     @Valid @RequestBody GlobalConfigUpdateRequest request) {
         return ApiResponse.ok(settingsService.update(configKey, request));

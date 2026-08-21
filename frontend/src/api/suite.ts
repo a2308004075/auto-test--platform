@@ -17,9 +17,9 @@ export function createSuite(projectId: number, data: any) {
 }
 
 export function updateSuite(projectId: number, suiteId: number, data: any) {
-  return request.put(`/v1/projects/${projectId}/suites/${suiteId}`, data)
+  return request.post(`/v1/projects/${projectId}/suites/${suiteId}`, data)
 }
 
 export function deleteSuite(projectId: number, suiteId: number) {
-  return request.delete(`/v1/projects/${projectId}/suites/${suiteId}`)
+  return request.post(`/v1/projects/${projectId}/suites/${suiteId}/delete`)
 }

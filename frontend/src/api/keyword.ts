@@ -17,11 +17,11 @@ export function createKeyword(projectId: number, data: any) {
 }
 
 export function updateKeyword(projectId: number, keywordId: number, data: any) {
-  return request.put(`/v1/projects/${projectId}/keywords/${keywordId}`, data)
+  return request.post(`/v1/projects/${projectId}/keywords/${keywordId}`, data)
 }
 
 export function deleteKeyword(projectId: number, keywordId: number) {
-  return request.delete(`/v1/projects/${projectId}/keywords/${keywordId}`)
+  return request.post(`/v1/projects/${projectId}/keywords/${keywordId}/delete`)
 }
 
 export function generateKeyword(projectId: number, apiId: number) {

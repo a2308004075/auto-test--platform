@@ -42,14 +42,14 @@ public class ToolMethodController {
         return ApiResponse.ok(toolMethodService.getById(toolId));
     }
 
-    @PutMapping("/{toolId}")
+    @PostMapping("/{toolId}")
     public ApiResponse<ToolMethodResponse> update(@PathVariable Long projectId,
                                                     @PathVariable Long toolId,
                                                     @Valid @RequestBody ToolMethodUpdateRequest request) {
         return ApiResponse.ok(toolMethodService.update(toolId, request));
     }
 
-    @DeleteMapping("/{toolId}")
+    @PostMapping("/{toolId}/delete")
     public ApiResponse<Void> delete(@PathVariable Long projectId,
                                      @PathVariable Long toolId) {
         toolMethodService.delete(toolId);

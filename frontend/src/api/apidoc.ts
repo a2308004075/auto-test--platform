@@ -18,11 +18,11 @@ export function createApi(projectId: number, data: any) {
 }
 
 export function updateApi(projectId: number, apiId: number, data: any) {
-  return request.put(`/v1/projects/${projectId}/apis/${apiId}`, data)
+  return request.post(`/v1/projects/${projectId}/apis/${apiId}`, data)
 }
 
 export function deleteApi(projectId: number, apiId: number) {
-  return request.delete(`/v1/projects/${projectId}/apis/${apiId}`)
+  return request.post(`/v1/projects/${projectId}/apis/${apiId}/delete`)
 }
 
 export function batchDeleteApis(projectId: number, apiIds: number[]) {
@@ -51,11 +51,11 @@ export function createModule(projectId: number, data: any) {
 }
 
 export function updateModule(projectId: number, moduleId: number, data: any) {
-  return request.put(`/v1/projects/${projectId}/modules/${moduleId}`, data)
+  return request.post(`/v1/projects/${projectId}/modules/${moduleId}`, data)
 }
 
 export function deleteModule(projectId: number, moduleId: number) {
-  return request.delete(`/v1/projects/${projectId}/modules/${moduleId}`)
+  return request.post(`/v1/projects/${projectId}/modules/${moduleId}/delete`)
 }
 
 // 接口被关键字引用的关系（后端端点待实现，调用需 try/catch 容错）

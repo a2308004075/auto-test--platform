@@ -17,15 +17,15 @@ export function createProject(data: { name: string; description?: string }) {
 }
 
 export function updateProject(id: number, data: { name?: string; description?: string }) {
-  return request.put(`/v1/projects/${id}`, data)
+  return request.post(`/v1/projects/${id}`, data)
 }
 
 export function deleteProject(id: number) {
-  return request.delete(`/v1/projects/${id}`)
+  return request.post(`/v1/projects/${id}/delete`)
 }
 
 export function toggleProjectStatus(id: number) {
-  return request.patch(`/v1/projects/${id}/status`)
+  return request.post(`/v1/projects/${id}/status`)
 }
 
 export function getProjectDashboard(id: number) {

@@ -47,7 +47,7 @@ public class ApiController {
     /**
      * 更新接口
      */
-    @PutMapping("/{apiId}")
+    @PostMapping("/{apiId}")
     public ApiResponse<ApiInfoResponse> update(@PathVariable Long projectId,
                                                 @PathVariable Long apiId,
                                                 @Valid @RequestBody ApiUpdateRequest request) {
@@ -66,7 +66,7 @@ public class ApiController {
     /**
      * 删除接口
      */
-    @DeleteMapping("/{apiId}")
+    @PostMapping("/{apiId}/delete")
     public ApiResponse<Void> delete(@PathVariable Long projectId,
                                      @PathVariable Long apiId) {
         apiService.delete(apiId);

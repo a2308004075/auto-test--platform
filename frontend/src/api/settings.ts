@@ -21,5 +21,5 @@ export function getSetting(configKey: string) {
 }
 
 export function updateSetting(configKey: string, data: { configValue: string; description?: string }) {
-  return request.put(`/v1/settings/${configKey}`, data)
+  return request.post(`/v1/settings/${configKey}`, data)
 }

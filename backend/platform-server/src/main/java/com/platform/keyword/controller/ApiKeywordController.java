@@ -57,7 +57,7 @@ public class ApiKeywordController {
     /**
      * 更新关键字
      */
-    @PutMapping("/{keywordId}")
+    @PostMapping("/{keywordId}")
     public ApiResponse<ApiKeywordResponse> update(@PathVariable Long projectId,
                                                     @PathVariable Long keywordId,
                                                     @Valid @RequestBody ApiKeywordUpdateRequest request) {
@@ -67,7 +67,7 @@ public class ApiKeywordController {
     /**
      * 删除关键字
      */
-    @DeleteMapping("/{keywordId}")
+    @PostMapping("/{keywordId}/delete")
     public ApiResponse<Void> delete(@PathVariable Long projectId,
                                      @PathVariable Long keywordId) {
         apiKeywordService.delete(keywordId);

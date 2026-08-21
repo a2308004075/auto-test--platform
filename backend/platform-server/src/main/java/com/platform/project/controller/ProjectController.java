@@ -52,7 +52,7 @@ public class ProjectController {
     /**
      * 更新项目
      */
-    @PutMapping("/{projectId}")
+    @PostMapping("/{projectId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ProjectResponse> update(@PathVariable Long projectId,
                                                 @Valid @RequestBody ProjectUpdateRequest request) {
@@ -62,7 +62,7 @@ public class ProjectController {
     /**
      * 删除项目
      */
-    @DeleteMapping("/{projectId}")
+    @PostMapping("/{projectId}/delete")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> delete(@PathVariable Long projectId) {
         projectService.deleteProject(projectId);
@@ -72,7 +72,7 @@ public class ProjectController {
     /**
      * 启停项目
      */
-    @PatchMapping("/{projectId}/status")
+    @PostMapping("/{projectId}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ProjectResponse> toggleStatus(@PathVariable Long projectId) {
         return ApiResponse.ok(projectService.toggleStatus(projectId));

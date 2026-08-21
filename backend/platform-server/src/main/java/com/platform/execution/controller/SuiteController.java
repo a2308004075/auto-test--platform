@@ -53,7 +53,7 @@ public class SuiteController {
     /**
      * 更新测试套件
      */
-    @PutMapping("/{suiteId}")
+    @PostMapping("/{suiteId}")
     public ApiResponse<SuiteResponse> update(@PathVariable Long projectId,
                                              @PathVariable Long suiteId,
                                              @Valid @RequestBody SuiteUpdateRequest request) {
@@ -63,7 +63,7 @@ public class SuiteController {
     /**
      * 删除测试套件
      */
-    @DeleteMapping("/{suiteId}")
+    @PostMapping("/{suiteId}/delete")
     public ApiResponse<Void> delete(@PathVariable Long projectId,
                                      @PathVariable Long suiteId) {
         suiteService.deleteSuite(suiteId);

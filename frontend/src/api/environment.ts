@@ -17,15 +17,15 @@ export function createEnvironment(projectId: number, data: any) {
 }
 
 export function updateEnvironment(projectId: number, envId: number, data: any) {
-  return request.put(`/v1/projects/${projectId}/environments/${envId}`, data)
+  return request.post(`/v1/projects/${projectId}/environments/${envId}`, data)
 }
 
 export function deleteEnvironment(projectId: number, envId: number) {
-  return request.delete(`/v1/projects/${projectId}/environments/${envId}`)
+  return request.post(`/v1/projects/${projectId}/environments/${envId}/delete`)
 }
 
 export function activateEnvironment(projectId: number, envId: number) {
-  return request.patch(`/v1/projects/${projectId}/environments/${envId}/activate`)
+  return request.post(`/v1/projects/${projectId}/environments/${envId}/activate`)
 }
 
 export function testEnvironment(projectId: number, envId: number) {

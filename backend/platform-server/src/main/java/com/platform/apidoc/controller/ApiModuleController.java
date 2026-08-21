@@ -42,7 +42,7 @@ public class ApiModuleController {
     /**
      * 更新分组
      */
-    @PutMapping("/{moduleId}")
+    @PostMapping("/{moduleId}")
     public ApiResponse<ApiModuleResponse> update(@PathVariable Long projectId,
                                                   @PathVariable Long moduleId,
                                                   @Valid @RequestBody ApiModuleUpdateRequest request) {
@@ -52,7 +52,7 @@ public class ApiModuleController {
     /**
      * 删除分组
      */
-    @DeleteMapping("/{moduleId}")
+    @PostMapping("/{moduleId}/delete")
     public ApiResponse<Void> delete(@PathVariable Long projectId,
                                      @PathVariable Long moduleId) {
         apiModuleService.delete(moduleId);

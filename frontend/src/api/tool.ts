@@ -17,11 +17,11 @@ export function createTool(projectId: number, data: any) {
 }
 
 export function updateTool(projectId: number, toolId: number, data: any) {
-  return request.put(`/v1/projects/${projectId}/tools/${toolId}`, data)
+  return request.post(`/v1/projects/${projectId}/tools/${toolId}`, data)
 }
 
 export function deleteTool(projectId: number, toolId: number) {
-  return request.delete(`/v1/projects/${projectId}/tools/${toolId}`)
+  return request.post(`/v1/projects/${projectId}/tools/${toolId}/delete`)
 }
 
 export function testTool(projectId: number, toolId: number, data: any) {

@@ -43,14 +43,14 @@ public class ActionController {
         return ApiResponse.ok(actionService.getById(actionId));
     }
 
-    @PutMapping("/{actionId}")
+    @PostMapping("/{actionId}")
     public ApiResponse<ActionResponse> update(@PathVariable Long projectId,
                                                 @PathVariable Long actionId,
                                                 @Valid @RequestBody ActionUpdateRequest request) {
         return ApiResponse.ok(actionService.update(actionId, request));
     }
 
-    @DeleteMapping("/{actionId}")
+    @PostMapping("/{actionId}/delete")
     public ApiResponse<Void> delete(@PathVariable Long projectId,
                                      @PathVariable Long actionId) {
         actionService.delete(actionId);

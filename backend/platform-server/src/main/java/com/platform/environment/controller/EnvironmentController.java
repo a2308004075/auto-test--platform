@@ -40,7 +40,7 @@ public class EnvironmentController {
     /**
      * 更新环境
      */
-    @PutMapping("/{envId}")
+    @PostMapping("/{envId}")
     public ApiResponse<EnvironmentResponse> update(@PathVariable Long projectId,
                                                     @PathVariable Long envId,
                                                     @Valid @RequestBody EnvironmentUpdateRequest request) {
@@ -50,7 +50,7 @@ public class EnvironmentController {
     /**
      * 删除环境
      */
-    @DeleteMapping("/{envId}")
+    @PostMapping("/{envId}/delete")
     public ApiResponse<Void> delete(@PathVariable Long projectId,
                                      @PathVariable Long envId) {
         environmentService.delete(envId);
@@ -60,7 +60,7 @@ public class EnvironmentController {
     /**
      * 激活/取消激活环境
      */
-    @PatchMapping("/{envId}/activate")
+    @PostMapping("/{envId}/activate")
     public ApiResponse<EnvironmentResponse> activate(@PathVariable Long projectId,
                                                       @PathVariable Long envId) {
         return ApiResponse.ok(environmentService.activate(envId));

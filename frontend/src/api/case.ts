@@ -17,13 +17,13 @@ export function createCase(projectId: number, data: any) {
 }
 
 export function updateCase(projectId: number, caseId: number, data: any) {
-  return request.put(`/v1/projects/${projectId}/cases/${caseId}`, data)
+  return request.post(`/v1/projects/${projectId}/cases/${caseId}`, data)
 }
 
 export function deleteCase(projectId: number, caseId: number) {
-  return request.delete(`/v1/projects/${projectId}/cases/${caseId}`)
+  return request.post(`/v1/projects/${projectId}/cases/${caseId}/delete`)
 }
 
 export function toggleCaseStatus(projectId: number, caseId: number) {
-  return request.patch(`/v1/projects/${projectId}/cases/${caseId}/status`)
+  return request.post(`/v1/projects/${projectId}/cases/${caseId}/status`)
 }

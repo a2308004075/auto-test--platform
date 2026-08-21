@@ -17,11 +17,11 @@ export function createAction(projectId: number, data: any) {
 }
 
 export function updateAction(projectId: number, actionId: number, data: any) {
-  return request.put(`/v1/projects/${projectId}/actions/${actionId}`, data)
+  return request.post(`/v1/projects/${projectId}/actions/${actionId}`, data)
 }
 
 export function deleteAction(projectId: number, actionId: number) {
-  return request.delete(`/v1/projects/${projectId}/actions/${actionId}`)
+  return request.post(`/v1/projects/${projectId}/actions/${actionId}/delete`)
 }
 
 export function debugAction(projectId: number, actionId: number, data: any) {

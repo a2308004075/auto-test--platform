@@ -52,7 +52,7 @@ public class PlanController {
     /**
      * 更新计划
      */
-    @PutMapping("/api/v1/plans/{planId}")
+    @PostMapping("/api/v1/plans/{planId}")
     public ApiResponse<PlanResponse> update(@PathVariable Long planId,
                                             @Valid @RequestBody PlanUpdateRequest request) {
         return ApiResponse.ok(planService.updatePlan(planId, request));
@@ -61,7 +61,7 @@ public class PlanController {
     /**
      * 删除计划
      */
-    @DeleteMapping("/api/v1/plans/{planId}")
+    @PostMapping("/api/v1/plans/{planId}/delete")
     public ApiResponse<Void> delete(@PathVariable Long planId) {
         planService.deletePlan(planId);
         return ApiResponse.ok();

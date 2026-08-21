@@ -17,9 +17,9 @@ export function createPlan(projectId: number, data: any) {
 }
 
 export function updatePlan(planId: number, data: any) {
-  return request.put(`/v1/plans/${planId}`, data)
+  return request.post(`/v1/plans/${planId}`, data)
 }
 
 export function deletePlan(planId: number) {
-  return request.delete(`/v1/plans/${planId}`)
+  return request.post(`/v1/plans/${planId}/delete`)
 }

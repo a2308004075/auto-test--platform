@@ -13,15 +13,15 @@ export function createUser(data: any) {
 }
 
 export function updateUser(userId: number, data: any) {
-  return request.put(`/v1/users/${userId}`, data)
+  return request.post(`/v1/users/${userId}`, data)
 }
 
 export function deleteUser(userId: number) {
-  return request.delete(`/v1/users/${userId}`)
+  return request.post(`/v1/users/${userId}/delete`)
 }
 
 export function toggleUserStatus(userId: number, data: { isActive: number }) {
-  return request.patch(`/v1/users/${userId}/status`, data)
+  return request.post(`/v1/users/${userId}/status`, data)
 }
 
 export function resetPassword(userId: number, data: { newPassword: string }) {

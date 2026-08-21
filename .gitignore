@@ -2,6 +2,7 @@
 
 # Maven 构建产物
 backend/target/
+*target
 
 # IDE 构建产物
 out/

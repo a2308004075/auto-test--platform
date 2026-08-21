@@ -28,3 +28,18 @@ export function refreshToken(refreshToken: string) {
 export function logout() {
   return request.post('/v1/auth/logout')
 }
+
+// 更新个人资料
+export function updateProfile(data: { displayName?: string; username?: string }) {
+  return request.post('/v1/auth/profile', data)
+}
+
+// 修改密码
+export function changePassword(data: { currentPassword: string; newPassword: string }) {
+  return request.post('/v1/auth/change-password', data)
+}
+
+// 查询登录日志
+export function getLoginLogs(params: { page?: number; pageSize?: number }) {
+  return request.get('/v1/auth/login-logs', { params })
+}

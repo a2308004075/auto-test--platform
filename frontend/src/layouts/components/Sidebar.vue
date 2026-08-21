@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { House } from '@element-plus/icons-vue'
+import { House, Setting } from '@element-plus/icons-vue'
 import { useUserStore, useAppStore } from '@/stores'
 
 const route = useRoute()
@@ -15,7 +15,12 @@ const appStore = useAppStore()
 
 // 判断当前是否在项目内页面
 const inProject = computed(() => route.meta?.inProject === true)
+// 判断当前是否在系统管理页面
+const inSettings = computed(() => route.path.startsWith('/settings'))
 const projectId = computed(() => Number(route.params.id) || 0)
+
+// 是否管理员
+const isAdmin = computed(() => (userStore.role || '').toUpperCase() === 'ADMIN')
 
 // 侧边栏选中 key
 const activeMenu = computed(() => {
@@ -31,37 +36,50 @@ const activeMenu = computed(() => {
   if (name.startsWith('Execution')) return 'executions'
   if (name === 'ProjectDashboard') return 'dashboard'
   if (name === 'ProjectList') return 'project'
-  if (name === 'Settings') return 'settings'
+  if (name === 'Profile') return 'profile'
+  if (name === 'UserManagement') return 'users'
+  if (name === 'GlobalConfig') return 'global-config'
   return ''
 })
 
 const isCollapse = computed(() => !appStore.sidebarOpened)
 
-const menuItems = computed(() => {
-  if (inProject.value) {
-    const pid = projectId.value
-    return [
-      { key: 'dashboard', label: '仪表板', path: `/project/${pid}/dashboard` },
-      { key: 'apis', label: '接口管理', path: `/project/${pid}/apis` },
-      { key: 'environments', label: '环境配置', path: `/project/${pid}/environments` },
-      { key: 'keywords', label: '接口关键字', path: `/project/${pid}/keywords` },
-      { key: 'tools', label: '工具方法', path: `/project/${pid}/tools` },
-      { key: 'actions', label: 'Action', path: `/project/${pid}/actions` },
-      { key: 'suites', label: '测试套件', path: `/project/${pid}/suites` },
-      { key: 'cases', label: '测试用例', path: `/project/${pid}/cases` },
-      { key: 'plans', label: '测试计划', path: `/project/${pid}/plans` },
-      { key: 'executions', label: '执行记录', path: `/project/${pid}/executions` },
-    ]
-  }
+const projectMenuItems = computed(() => {
+  if (!inProject.value) return []
+  const pid = projectId.value
   return [
-    { key: 'project', label: '首页', path: '/home', icon: House },
-    ...(userStore.isLoggedIn ? [{ key: 'settings', label: '系统设置', path: '/settings' }] : []),
+    { key: 'dashboard', label: '仪表板', path: `/project/${pid}/dashboard` },
+    { key: 'apis', label: '接口管理', path: `/project/${pid}/apis` },
+    { key: 'environments', label: '环境配置', path: `/project/${pid}/environments` },
+    { key: 'keywords', label: '接口关键字', path: `/project/${pid}/keywords` },
+    { key: 'tools', label: '工具方法', path: `/project/${pid}/tools` },
+    { key: 'actions', label: 'Action', path: `/project/${pid}/actions` },
+    { key: 'suites', label: '测试套件', path: `/project/${pid}/suites` },
+    { key: 'cases', label: '测试用例', path: `/project/${pid}/cases` },
+    { key: 'plans', label: '测试计划', path: `/project/${pid}/plans` },
+    { key: 'executions', label: '执行记录', path: `/project/${pid}/executions` },
   ]
 })
 
+// 系统管理子菜单
+const settingsMenuItems = computed(() => {
+  const items = [
+    { key: 'profile', label: '个人资料', path: '/settings/profile' },
+  ]
+  if (isAdmin.value) {
+    items.push({ key: 'users', label: '用户列表', path: '/settings/users' })
+    items.push({ key: 'global-config', label: '全局设置', path: '/settings/global-config' })
+  }
+  return items
+})
+
 function handleMenuSelect(index: string) {
-  const item = menuItems.value.find(m => m.key === index)
-  if (item) router.push(item.path)
+  // 先查项目菜单
+  const pItem = projectMenuItems.value.find(m => m.key === index)
+  if (pItem) { router.push(pItem.path); return }
+  // 再查系统设置子菜单
+  const sItem = settingsMenuItems.value.find(m => m.key === index)
+  if (sItem) { router.push(sItem.path) }
 }
 </script>
 
@@ -83,12 +101,30 @@ function handleMenuSelect(index: string) {
         mode="vertical"
         @select="handleMenuSelect"
       >
-        <el-menu-item v-for="item in menuItems" :key="item.key" :index="item.key">
-          <el-icon v-if="item.icon">
-            <component :is="item.icon" />
-          </el-icon>
-          <span>{{ item.label }}</span>
-        </el-menu-item>
+        <!-- 项目内菜单 -->
+        <template v-if="inProject">
+          <el-menu-item v-for="item in projectMenuItems" :key="item.key" :index="item.key">
+            <span>{{ item.label }}</span>
+          </el-menu-item>
+        </template>
+        <!-- 非项目页菜单 -->
+        <template v-else>
+          <!-- 首页：仅显示首页，不显示系统管理 -->
+          <el-menu-item v-if="!inSettings" index="project">
+            <el-icon><House /></el-icon>
+            <span>首页</span>
+          </el-menu-item>
+          <!-- 系统管理：仅显示系统管理，不显示首页 -->
+          <el-sub-menu v-if="userStore.isLoggedIn && inSettings" index="settings">
+            <template #title>
+              <el-icon><Setting /></el-icon>
+              <span>系统管理</span>
+            </template>
+            <el-menu-item v-for="item in settingsMenuItems" :key="item.key" :index="item.key">
+              <span>{{ item.label }}</span>
+            </el-menu-item>
+          </el-sub-menu>
+        </template>
       </el-menu>
     </el-scrollbar>
   </div>

@@ -1,15 +1,20 @@
 package com.platform.auth.service;
 
 import com.platform.auth.dto.*;
+import com.platform.auth.entity.LoginLog;
 import com.platform.auth.entity.TokenBlacklist;
 import com.platform.auth.entity.User;
 import com.platform.auth.entity.UserRole;
+import com.platform.auth.mapper.LoginLogMapper;
 import com.platform.auth.mapper.TokenBlacklistMapper;
 import com.platform.auth.mapper.UserMapper;
 import com.platform.auth.mapper.UserRoleMapper;
 import com.platform.auth.security.JwtTokenProvider;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
+import com.platform.common.response.PageResponse;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 认证服务 - 登录、Token 刷新、登出
@@ -31,19 +38,25 @@ public class AuthService {
     private final UserMapper userMapper;
     private final UserRoleMapper userRoleMapper;
     private final TokenBlacklistMapper tokenBlacklistMapper;
+    private final LoginLogMapper loginLogMapper;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
     private final CaptchaService captchaService;
 
+    private static final String RESERVED_USERNAME = "admin";
+    private static final String RESERVED_DISPLAY_NAME = "管理员";
+
     public AuthService(UserMapper userMapper,
                        UserRoleMapper userRoleMapper,
                        TokenBlacklistMapper tokenBlacklistMapper,
+                       LoginLogMapper loginLogMapper,
                        JwtTokenProvider jwtTokenProvider,
                        PasswordEncoder passwordEncoder,
                        CaptchaService captchaService) {
         this.userMapper = userMapper;
         this.userRoleMapper = userRoleMapper;
         this.tokenBlacklistMapper = tokenBlacklistMapper;
+        this.loginLogMapper = loginLogMapper;
         this.jwtTokenProvider = jwtTokenProvider;
         this.passwordEncoder = passwordEncoder;
         this.captchaService = captchaService;
@@ -67,22 +80,34 @@ public class AuthService {
      * 用户登录
      *
      * <p>流程：验证验证码 → 查询用户 → 检查启用状态 → bcrypt 验证密码 → 生成双 Token → 更新 lastLoginAt
+     * <p>同时记录登录日志（成功/失败）
+     *
+     * @param request   登录请求
+     * @param ip        客户端 IP
+     * @param userAgent 客户端 User-Agent
      */
     @Transactional(rollbackFor = Exception.class)
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request, String ip, String userAgent) {
+        String browser = parseBrowser(userAgent);
+        String os = parseOS(userAgent);
+
         // 验证码校验
         if (!captchaService.verifyCaptcha(request.getCaptchaId(), request.getCaptchaCode())) {
+            recordLoginLog(null, request.getUsername(), "FAILED", ip, userAgent, browser, os, "验证码错误或已过期");
             throw new BusinessException(ErrorCode.CAPTCHA_INVALID, "验证码错误或已过期");
         }
 
         User user = userMapper.selectByUsername(request.getUsername());
         if (user == null) {
+            recordLoginLog(null, request.getUsername(), "FAILED", ip, userAgent, browser, os, "用户名或密码错误");
             throw new BusinessException(ErrorCode.LOGIN_FAILED, "用户名或密码错误");
         }
         if (Integer.valueOf(0).equals(user.getIsActive())) {
+            recordLoginLog(user.getId(), request.getUsername(), "FAILED", ip, userAgent, browser, os, "账号已被禁用");
             throw new BusinessException(ErrorCode.ACCOUNT_RESERVED, "账号已被禁用");
         }
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            recordLoginLog(user.getId(), request.getUsername(), "FAILED", ip, userAgent, browser, os, "用户名或密码错误");
             throw new BusinessException(ErrorCode.LOGIN_FAILED, "用户名或密码错误");
         }
 
@@ -93,6 +118,9 @@ public class AuthService {
         // 更新最后登录时间
         user.setLastLoginAt(LocalDateTime.now());
         userMapper.updateById(user);
+
+        // 记录登录成功日志
+        recordLoginLog(user.getId(), request.getUsername(), "SUCCESS", ip, userAgent, browser, os, null);
 
         LoginResponse response = new LoginResponse();
         response.setAccessToken(accessToken);
@@ -182,6 +210,195 @@ public class AuthService {
         if (user == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND, "用户不存在");
         }
+        UserResponse response = new UserResponse();
+        response.setId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setDisplayName(user.getDisplayName());
+        response.setRoleId(user.getRoleId());
+        String roleCode = getRoleCode(user.getRoleId());
+        response.setRole(roleCode);
+        UserRole role = userRoleMapper.selectById(user.getRoleId());
+        if (role != null) {
+            response.setRoleName(role.getRoleName());
+        }
+        response.setIsActive(user.getIsActive());
+        response.setLastLoginAt(user.getLastLoginAt());
+        response.setCreatedAt(user.getCreatedAt());
+        return response;
+    }
+
+    /**
+     * 更新个人资料（当前用户修改自己的资料）
+     *
+     * <p>admin 账号不允许修改用户名和显示名；非 admin 用户可修改两者。
+     * 修改用户名时校验唯一性和保留字。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public UserResponse updateProfile(Long userId, ProfileUpdateRequest request) {
+        User user = userMapper.selectActiveById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND, "用户不存在");
+        }
+
+        boolean isAdmin = RESERVED_USERNAME.equalsIgnoreCase(user.getUsername());
+
+        // admin 账号保护：不允许修改用户名和显示名
+        if (isAdmin) {
+            if (request.getDisplayName() != null && !request.getDisplayName().equals(user.getDisplayName())) {
+                throw new BusinessException(ErrorCode.ADMIN_PROTECTED, "系统管理员账号不允许修改显示名");
+            }
+            if (request.getUsername() != null && !request.getUsername().equals(user.getUsername())) {
+                throw new BusinessException(ErrorCode.ADMIN_PROTECTED, "系统管理员账号不允许修改账号");
+            }
+        }
+
+        // 更新显示名
+        if (request.getDisplayName() != null && !request.getDisplayName().isEmpty()) {
+            if (RESERVED_DISPLAY_NAME.equals(request.getDisplayName())) {
+                throw new BusinessException(ErrorCode.ACCOUNT_RESERVED, "用户名「管理员」为系统保留，不可使用");
+            }
+            user.setDisplayName(request.getDisplayName());
+        }
+
+        // 更新账号（用户名）
+        if (request.getUsername() != null && !request.getUsername().isEmpty()
+                && !request.getUsername().equals(user.getUsername())) {
+            if (RESERVED_USERNAME.equalsIgnoreCase(request.getUsername())) {
+                throw new BusinessException(ErrorCode.ACCOUNT_RESERVED, "账号 'admin' 为系统保留，不可使用");
+            }
+            User existing = userMapper.selectByUsername(request.getUsername());
+            if (existing != null) {
+                throw new BusinessException(ErrorCode.USERNAME_DUPLICATE, "账号已存在");
+            }
+            user.setUsername(request.getUsername());
+        }
+
+        userMapper.updateById(user);
+        log.info("更新个人资料成功: userId={}", userId);
+        return toUserResponse(user);
+    }
+
+    /**
+     * 修改密码（当前用户修改自己的密码）
+     *
+     * <p>验证当前密码 → 编码新密码 → 更新 passwordHash
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userMapper.selectActiveById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND, "用户不存在");
+        }
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.PASSWORD_INCORRECT, "当前密码错误");
+        }
+        if (request.getCurrentPassword().equals(request.getNewPassword())) {
+            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "新密码不能与当前密码相同");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userMapper.updateById(user);
+        log.info("修改密码成功: userId={}", userId);
+    }
+
+    /**
+     * 查询当前用户的登录日志（最近 30 天，分页）
+     */
+    public PageResponse<LoginLogResponse> getLoginLogs(Long userId, int page, int pageSize) {
+        LocalDateTime since = LocalDateTime.now().minusDays(30);
+
+        LambdaQueryWrapper<LoginLog> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(LoginLog::getUserId, userId)
+                .ge(LoginLog::getCreatedAt, since)
+                .orderByDesc(LoginLog::getCreatedAt);
+
+        Page<LoginLog> pageParam = new Page<>(page, pageSize);
+        Page<LoginLog> result = loginLogMapper.selectPage(pageParam, wrapper);
+        List<LoginLogResponse> records = result.getRecords().stream()
+                .map(this::toLoginLogResponse)
+                .collect(Collectors.toList());
+        return PageResponse.of(records, result.getTotal(), page, pageSize);
+    }
+
+    /**
+     * 记录登录日志
+     */
+    private void recordLoginLog(Long userId, String username, String status,
+                                String ip, String userAgent, String browser, String os, String message) {
+        try {
+            LoginLog logEntry = new LoginLog();
+            logEntry.setUserId(userId);
+            logEntry.setUsername(username);
+            logEntry.setStatus(status);
+            logEntry.setIp(ip);
+            logEntry.setUserAgent(userAgent);
+            logEntry.setBrowser(browser);
+            logEntry.setOs(os);
+            logEntry.setMessage(message);
+            loginLogMapper.insert(logEntry);
+        } catch (Exception e) {
+            // 登录日志记录失败不应影响登录流程
+            log.warn("记录登录日志失败: username={}, status={}", username, status, e);
+        }
+    }
+
+    /**
+     * 从 User-Agent 解析浏览器名称
+     */
+    private String parseBrowser(String userAgent) {
+        if (userAgent == null || userAgent.isEmpty()) {
+            return "Unknown";
+        }
+        if (userAgent.contains("Edg/")) {
+            return "Edge";
+        }
+        if (userAgent.contains("Chrome/")) {
+            return "Chrome";
+        }
+        if (userAgent.contains("Firefox/")) {
+            return "Firefox";
+        }
+        if (userAgent.contains("Safari/") && !userAgent.contains("Chrome/")) {
+            return "Safari";
+        }
+        return "Unknown";
+    }
+
+    /**
+     * 从 User-Agent 解析操作系统
+     */
+    private String parseOS(String userAgent) {
+        if (userAgent == null || userAgent.isEmpty()) {
+            return "Unknown";
+        }
+        if (userAgent.contains("Windows NT 10")) {
+            return "Windows 10/11";
+        }
+        if (userAgent.contains("Windows NT")) {
+            return "Windows";
+        }
+        if (userAgent.contains("Mac OS X")) {
+            return "macOS";
+        }
+        if (userAgent.contains("Linux")) {
+            return "Linux";
+        }
+        return "Unknown";
+    }
+
+    private LoginLogResponse toLoginLogResponse(LoginLog log) {
+        LoginLogResponse response = new LoginLogResponse();
+        response.setId(log.getId());
+        response.setStatus(log.getStatus());
+        response.setIp(log.getIp());
+        response.setBrowser(log.getBrowser());
+        response.setOs(log.getOs());
+        response.setMessage(log.getMessage());
+        response.setCreatedAt(log.getCreatedAt());
+        return response;
+    }
+
+    private UserResponse toUserResponse(User user) {
         UserResponse response = new UserResponse();
         response.setId(user.getId());
         response.setUsername(user.getUsername());

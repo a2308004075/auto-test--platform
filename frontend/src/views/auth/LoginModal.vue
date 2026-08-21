@@ -84,6 +84,7 @@ async function handleLogin() {
       userStore.setUserInfo({
         id: data.user.id,
         username: data.user.username,
+        displayName: data.user.displayName,
         role: data.user.role,
       })
     }

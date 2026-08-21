@@ -21,9 +21,25 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'settings',
-        name: 'Settings',
-        component: () => import('@/views/settings/SettingsView.vue'),
-        meta: { title: '系统设置' },
+        redirect: '/settings/profile',
+      },
+      {
+        path: 'settings/profile',
+        name: 'Profile',
+        component: () => import('@/views/settings/ProfileView.vue'),
+        meta: { title: '个人资料' },
+      },
+      {
+        path: 'settings/users',
+        name: 'UserManagement',
+        component: () => import('@/views/settings/UserManagementView.vue'),
+        meta: { title: '用户列表' },
+      },
+      {
+        path: 'settings/global-config',
+        name: 'GlobalConfig',
+        component: () => import('@/views/settings/GlobalConfigView.vue'),
+        meta: { title: '全局设置' },
       },
       // ===== 项目内路由 =====
       {

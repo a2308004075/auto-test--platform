@@ -1,2 +1,0 @@
--- Baseline migration
--- Project schema will be added in subsequent migration files.

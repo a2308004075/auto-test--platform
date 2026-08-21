@@ -69,6 +69,8 @@ public class ProjectService {
         if (status != null) {
             wrapper.eq(Project::getStatus, status);
         }
+        // 排序：启用优先于停用，同状态下创建时间降序
+        wrapper.orderByDesc(Project::getStatus);
         wrapper.orderByDesc(Project::getCreatedAt);
 
         Page<Project> pageParam = new Page<>(page, pageSize);

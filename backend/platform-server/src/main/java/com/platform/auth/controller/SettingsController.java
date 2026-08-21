@@ -2,6 +2,7 @@ package com.platform.auth.controller;
 
 import com.platform.auth.dto.GlobalConfigResponse;
 import com.platform.auth.dto.GlobalConfigUpdateRequest;
+import com.platform.auth.dto.TestSendRequest;
 import com.platform.auth.service.SettingsService;
 import com.platform.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -45,5 +46,23 @@ public class SettingsController {
     public ApiResponse<GlobalConfigResponse> update(@PathVariable String configKey,
                                                     @Valid @RequestBody GlobalConfigUpdateRequest request) {
         return ApiResponse.ok(settingsService.update(configKey, request));
+    }
+
+    /**
+     * 测试 SMTP 邮件发送
+     */
+    @PostMapping("/test-smtp")
+    public ApiResponse<String> testSmtpSend(@Valid @RequestBody TestSendRequest request) {
+        String result = settingsService.testSmtpSend(request);
+        return ApiResponse.success(result, "测试邮件发送成功");
+    }
+
+    /**
+     * 测试 Webhook 通知发送
+     */
+    @PostMapping("/test-webhook")
+    public ApiResponse<String> testWebhookSend(@Valid @RequestBody TestSendRequest request) {
+        String result = settingsService.testWebhookSend(request);
+        return ApiResponse.success(result, "Webhook 通知发送成功");
     }
 }

@@ -214,6 +214,7 @@ public class AuthService {
         response.setId(user.getId());
         response.setUsername(user.getUsername());
         response.setDisplayName(user.getDisplayName());
+        response.setBio(user.getBio());
         response.setRoleId(user.getRoleId());
         String roleCode = getRoleCode(user.getRoleId());
         response.setRole(roleCode);
@@ -271,6 +272,11 @@ public class AuthService {
                 throw new BusinessException(ErrorCode.USERNAME_DUPLICATE, "账号已存在");
             }
             user.setUsername(request.getUsername());
+        }
+
+        // 更新个人简介
+        if (request.getBio() != null) {
+            user.setBio(request.getBio());
         }
 
         userMapper.updateById(user);
@@ -403,6 +409,7 @@ public class AuthService {
         response.setId(user.getId());
         response.setUsername(user.getUsername());
         response.setDisplayName(user.getDisplayName());
+        response.setBio(user.getBio());
         response.setRoleId(user.getRoleId());
         String roleCode = getRoleCode(user.getRoleId());
         response.setRole(roleCode);

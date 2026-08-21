@@ -107,7 +107,7 @@ onMounted(fetchList)
           <el-tag :type="row.isCurrent === 1 ? 'success' : 'info'" size="small">{{ row.isCurrent === 1 ? '已激活' : '未激活' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220">
+      <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="handleActivate(row)">{{ row.isCurrent === 1 ? '取消激活' : '激活' }}</el-button>
           <el-button type="primary" link size="small" @click="handleTest(row)">{{ testLoading === row.id ? '测试中...' : '测试' }}</el-button>

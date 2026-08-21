@@ -68,7 +68,7 @@ onMounted(fetchList)
       <el-table-column label="创建时间" width="120">
         <template #default="{ row }">{{ row.createdAt?.substring(0, 10) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="200">
+      <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="router.push(`/project/${projectId}/actions/${row.id}/edit`)">编辑</el-button>
           <el-button type="primary" link size="small" @click="router.push(`/project/${projectId}/actions/${row.id}/debug`)">调试</el-button>

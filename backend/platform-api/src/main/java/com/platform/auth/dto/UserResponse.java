@@ -13,6 +13,10 @@ public class UserResponse {
     private Long id;
     private String username;
     private String displayName;
+    /**
+     * 个人简介（选填）
+     */
+    private String bio;
     private Long roleId;
     private String roleName;
     /**

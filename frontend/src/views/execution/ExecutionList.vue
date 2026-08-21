@@ -94,7 +94,7 @@ onMounted(fetchList)
       <el-table-column label="创建时间" width="160">
         <template #default="{ row }">{{ row.createdAt?.substring(0, 19).replace('T', ' ') }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="140">
+      <el-table-column label="操作" width="140" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="viewDetail(row)">详情</el-button>
           <el-button v-if="row.status === 'PENDING' || row.status === 'RUNNING'"

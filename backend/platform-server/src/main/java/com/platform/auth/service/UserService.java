@@ -43,17 +43,34 @@ public class UserService {
 
     /**
      * 分页查询用户列表
+     *
+     * @param keyword     通用关键词（同时模糊搜索账号和用户名，向后兼容）
+     * @param account     独立搜索账号（username）
+     * @param displayName 独立搜索用户名（display_name）
+     * @param roleId      角色 ID 筛选
      */
-    public PageResponse<UserResponse> listUsers(String keyword, Long roleId, int page, int pageSize) {
+    public PageResponse<UserResponse> listUsers(String keyword, String account, String displayName,
+                                                 Long roleId, int page, int pageSize) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        // 通用关键词：同时模糊搜索账号和用户名（向后兼容）
         if (keyword != null && !keyword.isEmpty()) {
             wrapper.and(w -> w.like(User::getUsername, keyword)
                     .or().like(User::getDisplayName, keyword));
         }
+        // 独立搜索账号
+        if (account != null && !account.isEmpty()) {
+            wrapper.like(User::getUsername, account);
+        }
+        // 独立搜索用户名
+        if (displayName != null && !displayName.isEmpty()) {
+            wrapper.like(User::getDisplayName, displayName);
+        }
         if (roleId != null) {
             wrapper.eq(User::getRoleId, roleId);
         }
+        // admin 账号始终排在最前
         wrapper.orderByDesc(User::getCreatedAt);
+        wrapper.orderByAsc(User::getId);
 
         Page<User> pageParam = new Page<>(page, pageSize);
         Page<User> result = userMapper.selectPage(pageParam, wrapper);

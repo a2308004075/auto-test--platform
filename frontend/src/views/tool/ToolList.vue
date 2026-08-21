@@ -106,7 +106,7 @@ onMounted(fetchList)
       </el-table-column>
       <el-table-column prop="returnType" label="返回类型" width="100" />
       <el-table-column prop="description" label="描述" show-overflow-tooltip />
-      <el-table-column label="操作" width="180">
+      <el-table-column label="操作" width="180" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="openTest(row)">测试</el-button>
           <el-button type="primary" link size="small" @click="openEdit(row)">编辑</el-button>

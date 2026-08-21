@@ -15,4 +15,7 @@ public class ProfileUpdateRequest {
 
     @Size(max = 50, message = "账号长度不能超过 50")
     private String username;
+
+    @Size(max = 500, message = "个人简介长度不能超过 500")
+    private String bio;
 }

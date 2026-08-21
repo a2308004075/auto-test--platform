@@ -32,6 +32,11 @@ public class User extends BaseEntity {
     private String displayName;
 
     /**
+     * 个人简介（选填）
+     */
+    private String bio;
+
+    /**
      * 角色 ID（关联 user_role.id）
      */
     private Long roleId;

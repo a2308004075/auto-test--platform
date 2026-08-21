@@ -30,7 +30,7 @@ export function logout() {
 }
 
 // 更新个人资料
-export function updateProfile(data: { displayName?: string; username?: string }) {
+export function updateProfile(data: { displayName?: string; username?: string; bio?: string }) {
   return request.post('/v1/auth/profile', data)
 }
 

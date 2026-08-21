@@ -23,3 +23,17 @@ export function getSetting(configKey: string) {
 export function updateSetting(configKey: string, data: { configValue: string; description?: string }) {
   return request.post(`/v1/settings/${configKey}`, data)
 }
+
+/**
+ * 测试 SMTP 邮件发送
+ */
+export function testSmtpSend(data: { recipient: string; content: string }) {
+  return request.post('/v1/settings/test-smtp', data)
+}
+
+/**
+ * 测试 Webhook 通知发送
+ */
+export function testWebhookSend(data: { recipient?: string; content: string }) {
+  return request.post('/v1/settings/test-webhook', data)
+}

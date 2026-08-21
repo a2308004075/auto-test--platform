@@ -25,14 +25,21 @@ public class UserController {
 
     /**
      * 用户列表（分页）
+     *
+     * @param keyword     通用关键词（同时模糊搜索账号和用户名，向后兼容）
+     * @param account     独立搜索账号（username）
+     * @param displayName 独立搜索用户名（display_name）
+     * @param roleId      角色 ID 筛选
      */
     @GetMapping
     public ApiResponse<PageResponse<UserResponse>> list(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String account,
+            @RequestParam(required = false) String displayName,
             @RequestParam(required = false) Long roleId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
-        PageResponse<UserResponse> response = userService.listUsers(keyword, roleId, page, pageSize);
+        PageResponse<UserResponse> response = userService.listUsers(keyword, account, displayName, roleId, page, pageSize);
         return ApiResponse.success(response);
     }
 

@@ -17,6 +17,7 @@ const userInfo = ref<any>({})
 const profileForm = reactive({
   displayName: '',
   username: '',
+  bio: '',
 })
 
 // admin 账号保护
@@ -29,6 +30,7 @@ async function fetchCurrentUser() {
     userInfo.value = res.data || {}
     profileForm.displayName = userInfo.value.displayName || ''
     profileForm.username = userInfo.value.username || ''
+    profileForm.bio = userInfo.value.bio || ''
   } catch {
     ElMessage.error('获取用户信息失败')
   } finally {
@@ -41,24 +43,22 @@ async function handleSaveProfile() {
     ElMessage.warning('用户名不能为空')
     return
   }
-  // admin 账号不允许修改
-  if (isAdminAccount.value) {
-    ElMessage.info('系统管理员账号，无需修改')
-    return
-  }
   // 非admin用户校验保留字
-  if (profileForm.displayName === '管理员') {
-    ElMessage.warning('用户名不能为"管理员"，该名称为系统保留')
-    return
-  }
-  if (profileForm.username && profileForm.username.toLowerCase() === 'admin') {
-    ElMessage.warning('账号不能使用"admin"，该账号为系统保留')
-    return
+  if (!isAdminAccount.value) {
+    if (profileForm.displayName === '管理员') {
+      ElMessage.warning('用户名不能为"管理员"，该名称为系统保留')
+      return
+    }
+    if (profileForm.username && profileForm.username.toLowerCase() === 'admin') {
+      ElMessage.warning('账号不能使用"admin"，该账号为系统保留')
+      return
+    }
   }
   try {
     const res: any = await updateProfile({
-      displayName: profileForm.displayName,
-      username: profileForm.username !== userInfo.value.username ? profileForm.username : undefined,
+      displayName: isAdminAccount.value ? undefined : profileForm.displayName,
+      username: !isAdminAccount.value && profileForm.username !== userInfo.value.username ? profileForm.username : undefined,
+      bio: profileForm.bio,
     })
     userInfo.value = res.data
     // 同步更新 store
@@ -172,9 +172,9 @@ const avatarInitial = computed(() => {
   return name ? name.charAt(0).toUpperCase() : 'U'
 })
 
-// 角色标签类型
-const roleTagType = computed(() => {
-  return (userInfo.value.role || '').toUpperCase() === 'ADMIN' ? 'danger' : 'info'
+// 角色标签样式类
+const roleTagClass = computed(() => {
+  return (userInfo.value.role || '').toUpperCase() === 'ADMIN' ? 'role-tag-admin' : 'role-tag-tester'
 })
 
 onMounted(() => {
@@ -192,7 +192,7 @@ onMounted(() => {
         <h2>{{ userInfo.displayName || userInfo.username }}</h2>
         <div class="meta-row">
           <span class="meta-item">账号：{{ userInfo.username }}</span>
-          <el-tag v-if="userInfo.role" :type="roleTagType" size="small">{{ userInfo.role }}</el-tag>
+          <el-tag v-if="userInfo.role" :class="roleTagClass" size="small" effect="plain">{{ userInfo.role }}</el-tag>
         </div>
       </div>
     </div>
@@ -231,6 +231,16 @@ onMounted(() => {
                 />
               </el-form-item>
             </div>
+            <el-form-item label="个人简介" class="form-group-full">
+              <el-input
+                v-model="profileForm.bio"
+                type="textarea"
+                :rows="3"
+                maxlength="500"
+                show-word-limit
+                placeholder="一句话介绍自己"
+              />
+            </el-form-item>
             <div class="profile-actions">
               <el-button type="primary" @click="handleSaveProfile">保存修改</el-button>
             </div>
@@ -308,10 +318,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.profile-view {
-  max-width: 800px;
-}
-
 /* 头像 & 概览 */
 .profile-avatar-section {
   display: flex;
@@ -327,7 +333,7 @@ onMounted(() => {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #409eff 0%, #096dd9 100%);
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -335,7 +341,7 @@ onMounted(() => {
   font-size: 32px;
   font-weight: 600;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
 }
 .profile-avatar-info h2 {
   font-size: 20px;
@@ -377,6 +383,24 @@ onMounted(() => {
   grid-template-columns: 1fr 1fr;
   gap: 0 32px;
   max-width: 640px;
+}
+.form-group-full {
+  grid-column: 1 / -1;
+  max-width: 640px;
+}
+.form-group-full :deep(.el-textarea__inner) {
+  resize: vertical;
+}
+/* 角色标签 */
+.role-tag-admin {
+  background: rgba(114, 46, 209, 0.1) !important;
+  color: #722ed1 !important;
+  border-color: rgba(114, 46, 209, 0.2) !important;
+}
+.role-tag-tester {
+  background: rgba(24, 144, 255, 0.1) !important;
+  color: #1890ff !important;
+  border-color: rgba(24, 144, 255, 0.2) !important;
 }
 .form-hint {
   font-size: 12px;

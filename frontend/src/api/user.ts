@@ -4,7 +4,7 @@ import request from './request'
  * 用户管理模块 API（ADMIN）
  */
 
-export function getUsers(params?: { keyword?: string; roleId?: number; page?: number; pageSize?: number }) {
+export function getUsers(params?: { keyword?: string; account?: string; displayName?: string; roleId?: number; page?: number; pageSize?: number }) {
   return request.get('/v1/users', { params })
 }
 

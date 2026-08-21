@@ -106,7 +106,7 @@ onMounted(() => { fetchSuites(); fetchList() })
       <el-table-column label="创建时间" width="120">
         <template #default="{ row }">{{ row.createdAt?.substring(0, 10) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="200">
+      <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
           <el-button type="primary" link size="small" @click="handleToggleStatus(row)">{{ row.isActive === 1 ? '禁用' : '启用' }}</el-button>

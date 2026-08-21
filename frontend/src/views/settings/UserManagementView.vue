@@ -1,175 +1,661 @@
 <script setup lang="ts">
 /**
  * 用户管理页面（仅 ADMIN）
+ * 对齐原型 docs/ui/settings/user-management.html
+ * 包含：独立搜索 + 表格 + 多弹窗（新建/编辑/分配角色/重置密码/确认禁用启用/确认删除）
  */
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import PageHeader from '@/components/PageHeader/index.vue'
 import { getUsers, createUser, updateUser, deleteUser, toggleUserStatus, resetPassword, getRoles } from '@/api/user'
 
+// ===== 列表数据 =====
 const loading = ref(false)
 const userList = ref<any[]>([])
-const userKeyword = ref('')
-const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
-const modalVisible = ref(false)
-const editingId = ref<number>(0)
-const form = reactive({ username: '', password: '', roleId: '', displayName: '' })
-const resetVisible = ref(false)
-const resetUserId = ref<number>(0)
-const newPassword = ref('')
-
-// 角色列表
 const roleList = ref<any[]>([])
+const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 
+// 搜索条件
+const searchAccount = ref('')
+const searchDisplayName = ref('')
+const filterRoleId = ref<number | undefined>(undefined)
+
+// ===== 新建用户弹窗 =====
+const createVisible = ref(false)
+const createForm = reactive({
+  username: '',
+  displayName: '',
+  password: '',
+  roleId: undefined as number | undefined,
+})
+const createErrors = reactive({
+  username: '',
+  displayName: '',
+  password: '',
+})
+
+// ===== 编辑用户弹窗 =====
+const editVisible = ref(false)
+const editingUser = ref<any>(null)
+const editForm = reactive({
+  displayName: '',
+  roleId: undefined as number | undefined,
+})
+const editError = ref('')
+
+// ===== 分配角色弹窗 =====
+const roleAssignVisible = ref(false)
+const roleAssignUser = ref<any>(null)
+const roleAssignForm = reactive({
+  roleId: undefined as number | undefined,
+})
+
+// ===== 重置密码弹窗 =====
+const resetVisible = ref(false)
+const resetUser = ref<any>(null)
+const resetForm = reactive({
+  newPassword: '',
+  confirmPassword: '',
+})
+const resetErrors = reactive({
+  newPassword: '',
+  confirmPassword: '',
+})
+
+// ===== 确认禁用/启用弹窗 =====
+const toggleVisible = ref(false)
+const toggleUser = ref<any>(null)
+const toggleAction = ref<'disable' | 'enable'>('disable')
+
+// ===== 确认删除弹窗 =====
+const deleteVisible = ref(false)
+const deleteUserRef = ref<any>(null)
+
+// 保留字
+const RESERVED_DISPLAY_NAMES = ['管理员']
+const RESERVED_ACCOUNTS_LOWER = ['admin']
+
+// ===== 获取用户列表 =====
 async function fetchUsers() {
   loading.value = true
   try {
-    const res: any = await getUsers({ keyword: userKeyword.value, page: pagination.current, pageSize: pagination.pageSize })
+    const res: any = await getUsers({
+      account: searchAccount.value || undefined,
+      displayName: searchDisplayName.value || undefined,
+      roleId: filterRoleId.value || undefined,
+      page: pagination.current,
+      pageSize: pagination.pageSize,
+    })
     userList.value = res.data?.items || []
     pagination.total = res.data?.total || 0
-  } catch { userList.value = [] } finally { loading.value = false }
+  } catch {
+    userList.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
+// ===== 获取角色列表 =====
 async function fetchRoles() {
   try {
     const res: any = await getRoles()
     roleList.value = res.data || []
-  } catch { roleList.value = [] }
+  } catch {
+    roleList.value = []
+  }
 }
 
+// ===== 搜索处理 =====
+function handleSearch() {
+  pagination.current = 1
+  fetchUsers()
+}
+
+function handlePageChange(p: number) {
+  pagination.current = p
+  fetchUsers()
+}
+
+// ===== 新建用户 =====
 function openCreateUser() {
-  editingId.value = 0
-  Object.assign(form, { username: '', password: '', roleId: roleList.value[0]?.id || '', displayName: '' })
-  modalVisible.value = true
+  createForm.username = ''
+  createForm.displayName = ''
+  createForm.password = ''
+  createForm.roleId = roleList.value.find((r: any) => r.roleCode === 'TESTER')?.id
+  createErrors.username = ''
+  createErrors.displayName = ''
+  createErrors.password = ''
+  createVisible.value = true
 }
 
-function openEditUser(record: any) {
-  editingId.value = record.id
-  Object.assign(form, { username: record.username, password: '', roleId: record.roleId || '', displayName: record.displayName || '' })
-  modalVisible.value = true
+function clearCreateError(field: keyof typeof createErrors) {
+  createErrors[field] = ''
 }
 
-async function handleSubmitUser() {
-  if (!form.username) { ElMessage.warning('请输入用户名'); return }
-  if (!editingId.value && !form.password) { ElMessage.warning('请输入密码'); return }
+async function handleCreateUser() {
+  let valid = true
+  createErrors.username = ''
+  createErrors.displayName = ''
+  createErrors.password = ''
+
+  if (!createForm.username.trim()) {
+    createErrors.username = '请输入账号'
+    valid = false
+  } else if (RESERVED_ACCOUNTS_LOWER.includes(createForm.username.toLowerCase())) {
+    createErrors.username = '账号不能使用"admin"，该账号为系统保留'
+    valid = false
+  }
+  if (!createForm.displayName.trim()) {
+    createErrors.displayName = '请输入用户名'
+    valid = false
+  } else if (RESERVED_DISPLAY_NAMES.includes(createForm.displayName)) {
+    createErrors.displayName = '用户名不能为"' + createForm.displayName + '"，该名称为系统保留'
+    valid = false
+  }
+  if (!createForm.password) {
+    createErrors.password = '请输入密码'
+    valid = false
+  }
+  if (!valid) return
+
   try {
-    if (editingId.value) {
-      await updateUser(editingId.value, { ...form, password: form.password || undefined })
-      ElMessage.success('更新成功')
-    } else {
-      await createUser(form)
-      ElMessage.success('创建成功')
-    }
-    modalVisible.value = false; fetchUsers()
-  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
-}
-
-async function handleToggleStatus(record: any) {
-  try {
-    await toggleUserStatus(record.id, { isActive: record.isActive === 1 ? 0 : 1 })
-    ElMessage.success(record.isActive === 1 ? '已禁用' : '已启用')
+    await createUser({
+      username: createForm.username,
+      displayName: createForm.displayName,
+      password: createForm.password,
+      roleId: createForm.roleId,
+    })
+    ElMessage.success('用户 ' + createForm.username + ' 创建成功')
+    createVisible.value = false
     fetchUsers()
-  } catch (e: any) { ElMessage.error('操作失败') }
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '创建失败')
+  }
 }
 
-function openResetPassword(record: any) {
-  resetUserId.value = record.id
-  newPassword.value = ''
+// ===== 编辑用户 =====
+function openEditUser(row: any) {
+  editingUser.value = row
+  editForm.displayName = row.displayName || ''
+  editForm.roleId = row.roleId
+  editError.value = ''
+  editVisible.value = true
+}
+
+function clearEditError() {
+  editError.value = ''
+}
+
+async function handleEditUser() {
+  if (!editingUser.value) return
+  const displayName = editForm.displayName.trim()
+  editError.value = ''
+
+  if (!displayName) {
+    editError.value = '请输入用户名'
+    return
+  }
+  if (RESERVED_DISPLAY_NAMES.includes(displayName)) {
+    editError.value = '用户名不能为"' + displayName + '"，该名称为系统保留'
+    return
+  }
+
+  try {
+    await updateUser(editingUser.value.id, {
+      displayName: displayName,
+      roleId: editForm.roleId,
+    })
+    ElMessage.success('用户 ' + (editingUser.value.username) + ' 信息已更新')
+    editVisible.value = false
+    fetchUsers()
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '更新失败')
+  }
+}
+
+// ===== 分配角色 =====
+function openRoleAssign(row: any) {
+  roleAssignUser.value = row
+  roleAssignForm.roleId = row.roleId
+  roleAssignVisible.value = true
+}
+
+async function handleRoleAssign() {
+  if (!roleAssignUser.value) return
+  try {
+    await updateUser(roleAssignUser.value.id, { roleId: roleAssignForm.roleId })
+    const role = roleList.value.find((r: any) => r.id === roleAssignForm.roleId)
+    ElMessage.success('用户 ' + roleAssignUser.value.displayName + ' 角色已分配为 ' + (role?.roleName || ''))
+    roleAssignVisible.value = false
+    fetchUsers()
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '分配失败')
+  }
+}
+
+// ===== 重置密码 =====
+function openResetPassword(row: any) {
+  resetUser.value = row
+  resetForm.newPassword = ''
+  resetForm.confirmPassword = ''
+  resetErrors.newPassword = ''
+  resetErrors.confirmPassword = ''
   resetVisible.value = true
 }
 
+function clearResetError(field: keyof typeof resetErrors) {
+  resetErrors[field] = ''
+}
+
 async function handleResetPassword() {
-  if (!newPassword.value || newPassword.value.length < 6) { ElMessage.warning('密码至少 6 位'); return }
+  if (!resetUser.value) return
+  let valid = true
+  resetErrors.newPassword = ''
+  resetErrors.confirmPassword = ''
+
+  if (!resetForm.newPassword) {
+    resetErrors.newPassword = '请输入新密码'
+    valid = false
+  } else if (resetForm.newPassword.length < 8) {
+    resetErrors.newPassword = '密码长度不能少于8位'
+    valid = false
+  }
+  if (!resetForm.confirmPassword) {
+    resetErrors.confirmPassword = '请再次输入新密码'
+    valid = false
+  } else if (resetForm.newPassword && resetForm.newPassword !== resetForm.confirmPassword) {
+    resetErrors.confirmPassword = '两次输入的密码不一致'
+    valid = false
+  }
+  if (!valid) return
+
   try {
-    await resetPassword(resetUserId.value, { newPassword: newPassword.value })
-    ElMessage.success('密码已重置')
+    await resetPassword(resetUser.value.id, { newPassword: resetForm.newPassword })
+    ElMessage.success('用户 ' + resetUser.value.displayName + ' 密码已重置')
     resetVisible.value = false
-  } catch (e: any) { ElMessage.error('重置失败') }
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '重置失败')
+  }
 }
 
-function handleDeleteUser(record: any) {
-  ElMessageBox.confirm(`确定删除用户「${record.username}」？`, '确认删除', { type: 'warning' })
-    .then(async () => { await deleteUser(record.id); ElMessage.success('删除成功'); fetchUsers() })
-    .catch(() => {})
+// ===== 禁用/启用 =====
+function openToggleStatus(row: any, action: 'disable' | 'enable') {
+  toggleUser.value = row
+  toggleAction.value = action
+  toggleVisible.value = true
 }
 
-function handleSearchUser() { pagination.current = 1; fetchUsers() }
+async function handleToggleStatus() {
+  if (!toggleUser.value) return
+  const row = toggleUser.value
+  const isActive = toggleAction.value === 'disable' ? 0 : 1
+  try {
+    await toggleUserStatus(row.id, { isActive })
+    ElMessage.success('用户 ' + row.displayName + (toggleAction.value === 'disable' ? ' 已禁用' : ' 已启用'))
+    toggleVisible.value = false
+    fetchUsers()
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '操作失败')
+  }
+}
+
+// ===== 删除用户 =====
+function openDeleteUser(row: any) {
+  if (RESERVED_ACCOUNTS_LOWER.includes(row.username?.toLowerCase())) {
+    ElMessage.error('系统内置管理员账号不允许删除')
+    return
+  }
+  deleteUserRef.value = row
+  deleteVisible.value = true
+}
+
+async function handleDeleteUser() {
+  if (!deleteUserRef.value) return
+  const row = deleteUserRef.value
+  try {
+    await deleteUser(row.id)
+    ElMessage.success('用户 ' + row.displayName + ' 已删除')
+    deleteVisible.value = false
+    fetchUsers()
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '删除失败')
+  }
+}
+
+// ===== 辅助函数 =====
+function isAdminRow(row: any): boolean {
+  return row.username?.toLowerCase() === 'admin'
+}
+
+function formatDateTime(dt?: string): string {
+  if (!dt) return '-'
+  return dt.replace('T', ' ').substring(0, 19)
+}
+
+function getRoleTagClass(role: string): string {
+  return role?.toUpperCase() === 'ADMIN' ? 'role-tag-admin' : 'role-tag-tester'
+}
 
 onMounted(() => { fetchUsers(); fetchRoles() })
 </script>
 
 <template>
-  <div>
-    <h2 style="margin-bottom:16px">用户管理</h2>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <el-input v-model="userKeyword" placeholder="搜索用户" style="width:240px" clearable @keyup.enter="handleSearchUser" @clear="handleSearchUser">
-        <template #append><el-button @click="handleSearchUser">搜索</el-button></template>
-      </el-input>
-      <el-button type="primary" @click="openCreateUser">新建用户</el-button>
-    </div>
-    <el-table v-loading="loading" :data="userList" row-key="id" border style="width:100%">
-      <el-table-column prop="username" label="用户名" width="140" />
-      <el-table-column label="角色" width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.role === 'ADMIN' ? 'danger' : ''" size="small">{{ row.roleName || row.role }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" width="80">
-        <template #default="{ row }">
-          <el-tag :type="row.isActive === 1 ? 'success' : 'info'" size="small">{{ row.isActive === 1 ? '启用' : '禁用' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="创建时间" width="120">
-        <template #default="{ row }">{{ row.createdAt?.substring(0, 10) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="220">
-        <template #default="{ row }">
-          <el-button type="primary" link size="small" @click="openEditUser(row)">编辑</el-button>
-          <el-button type="primary" link size="small" @click="handleToggleStatus(row)">{{ row.isActive === 1 ? '禁用' : '启用' }}</el-button>
-          <el-button type="warning" link size="small" @click="openResetPassword(row)">重置密码</el-button>
-          <el-button type="danger" link size="small" @click="handleDeleteUser(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <div style="display:flex;justify-content:flex-end;margin-top:16px">
-      <el-pagination background layout="total, prev, pager, next" :total="pagination.total"
-        :page-size="pagination.pageSize" :current-page="pagination.current"
-        @current-change="(p: number) => { pagination.current = p; fetchUsers() }" />
+  <div class="user-mgmt-view">
+    <PageHeader title="用户列表">
+      <el-button type="primary" @click="openCreateUser">+ 新建用户</el-button>
+    </PageHeader>
+
+    <!-- 搜索工具栏 -->
+    <div class="um-toolbar">
+      <el-input v-model="searchAccount" placeholder="搜索账号" style="width: 160px;" clearable @input="handleSearch" @clear="handleSearch" />
+      <el-input v-model="searchDisplayName" placeholder="搜索用户名" style="width: 160px;" clearable @input="handleSearch" @clear="handleSearch" />
+      <el-select v-model="filterRoleId" placeholder="全部角色" style="width: 120px;" clearable @change="handleSearch">
+        <el-option v-for="role in roleList" :key="role.id" :value="role.id" :label="role.roleName" />
+      </el-select>
     </div>
 
-    <!-- 新建/编辑用户弹窗 -->
-    <el-dialog v-model="modalVisible" :title="editingId ? '编辑用户' : '新建用户'" width="500px">
+    <!-- 用户表格 -->
+    <div class="um-card">
+      <div class="um-table-wrapper">
+        <el-table v-loading="loading" :data="userList" row-key="id" style="width: 100%;" :header-cell-style="{ background: '#fafafa' }">
+          <el-table-column prop="username" label="账号" width="120">
+            <template #default="{ row }">
+              <b>{{ row.username }}</b>
+            </template>
+          </el-table-column>
+          <el-table-column prop="displayName" label="用户名" min-width="120" />
+          <el-table-column label="角色" width="100">
+            <template #default="{ row }">
+              <span class="um-role-tag" :class="getRoleTagClass(row.role)">{{ row.roleName || row.role }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="80">
+            <template #default="{ row }">
+              <span class="um-status-tag" :class="row.isActive === 1 ? 'status-active' : 'status-disabled'">
+                {{ row.isActive === 1 ? '启用' : '禁用' }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="创建时间" min-width="170">
+            <template #default="{ row }">
+              <span class="um-datetime">{{ formatDateTime(row.createdAt) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="最近登录" min-width="170">
+            <template #default="{ row }">
+              <span class="um-datetime">{{ formatDateTime(row.lastLoginAt) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="300" fixed="right">
+            <template #default="{ row }">
+              <div class="um-actions">
+                <template v-if="isAdminRow(row)">
+                  <el-button type="primary" link size="small" @click="openResetPassword(row)">重置密码</el-button>
+                </template>
+                <template v-else>
+                  <el-button type="primary" link size="small" @click="openEditUser(row)">编辑</el-button>
+                  <el-button type="primary" link size="small" @click="openRoleAssign(row)">分配角色</el-button>
+                  <el-button v-if="row.isActive === 1" type="warning" link size="small" @click="openToggleStatus(row, 'disable')">禁用</el-button>
+                  <el-button v-else type="success" link size="small" @click="openToggleStatus(row, 'enable')">启用</el-button>
+                  <el-button type="primary" link size="small" @click="openResetPassword(row)">重置密码</el-button>
+                  <el-button type="danger" link size="small" @click="openDeleteUser(row)">删除</el-button>
+                </template>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <div class="um-card-footer">
+        <el-pagination
+          background
+          layout="total, prev, pager, next, jumper"
+          :total="pagination.total"
+          :page-size="pagination.pageSize"
+          :current-page="pagination.current"
+          @current-change="handlePageChange"
+        />
+      </div>
+    </div>
+
+    <!-- 新建用户弹窗 -->
+    <el-dialog v-model="createVisible" title="新建用户" width="440px">
       <el-form label-position="top">
+        <el-form-item label="账号" required>
+          <el-input v-model="createForm.username" placeholder="请输入账号（登录用）" @input="clearCreateError('username')" />
+          <div v-if="createErrors.username" class="um-error-msg">{{ createErrors.username }}</div>
+        </el-form-item>
         <el-form-item label="用户名" required>
-          <el-input v-model="form.username" />
+          <el-input v-model="createForm.displayName" placeholder="请输入用户名（显示名称）" @input="clearCreateError('displayName')" />
+          <div v-if="createErrors.displayName" class="um-error-msg">{{ createErrors.displayName }}</div>
         </el-form-item>
-        <el-form-item :label="editingId ? '新密码（留空不修改）' : '密码'" :required="!editingId">
-          <el-input v-model="form.password" type="password" show-password />
+        <el-form-item label="密码" required>
+          <el-input v-model="createForm.password" type="password" show-password placeholder="请输入密码" @input="clearCreateError('password')" />
+          <div v-if="createErrors.password" class="um-error-msg">{{ createErrors.password }}</div>
         </el-form-item>
-        <el-form-item label="显示名">
-          <el-input v-model="form.displayName" />
-        </el-form-item>
-        <el-form-item label="角色" required>
-          <el-select v-model="form.roleId" placeholder="请选择角色" style="width:100%">
-            <el-option v-for="role in roleList" :key="role.id" :value="role.id"
-              :label="`${role.roleName}（${role.roleCode}）`" />
+        <el-form-item label="角色">
+          <el-select v-model="createForm.roleId" placeholder="请选择角色" style="width: 100%;">
+            <el-option v-for="role in roleList" :key="role.id" :value="role.id" :label="`${role.roleName}（${role.roleCode}）`" />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="modalVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmitUser">确定</el-button>
+        <el-button @click="createVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleCreateUser">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 编辑用户弹窗 -->
+    <el-dialog v-model="editVisible" title="编辑用户" width="440px">
+      <el-form label-position="top">
+        <el-form-item label="账号">
+          <el-input :model-value="editingUser?.username" disabled />
+        </el-form-item>
+        <el-form-item label="用户名" required>
+          <el-input v-model="editForm.displayName" placeholder="请输入用户名（显示名称）" @input="clearEditError" />
+          <div v-if="editError" class="um-error-msg">{{ editError }}</div>
+        </el-form-item>
+        <el-form-item label="角色">
+          <el-select v-model="editForm.roleId" style="width: 100%;">
+            <el-option v-for="role in roleList" :key="role.id" :value="role.id" :label="`${role.roleName}（${role.roleCode}）`" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleEditUser">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 分配角色弹窗 -->
+    <el-dialog v-model="roleAssignVisible" title="分配角色" width="400px">
+      <el-form label-position="top">
+        <el-form-item label="当前用户">
+          <el-input :model-value="roleAssignUser?.displayName" readonly />
+        </el-form-item>
+        <el-form-item label="分配角色">
+          <el-select v-model="roleAssignForm.roleId" style="width: 100%;">
+            <el-option v-for="role in roleList" :key="role.id" :value="role.id" :label="`${role.roleName}（${role.roleCode}）`" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="roleAssignVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleRoleAssign">确定</el-button>
       </template>
     </el-dialog>
 
     <!-- 重置密码弹窗 -->
     <el-dialog v-model="resetVisible" title="重置密码" width="400px">
-      <el-form-item label="新密码">
-        <el-input v-model="newPassword" type="password" show-password placeholder="至少 6 位" />
-      </el-form-item>
+      <div class="um-reset-warn">
+        <span class="um-warn-icon">⚠</span> 即将重置用户 <b>{{ resetUser?.displayName }}</b> 的登录密码
+      </div>
+      <el-form label-position="top">
+        <el-form-item label="新密码" required>
+          <el-input v-model="resetForm.newPassword" type="password" show-password placeholder="请输入新密码（至少8位）" @input="clearResetError('newPassword')" />
+          <div v-if="resetErrors.newPassword" class="um-error-msg">{{ resetErrors.newPassword }}</div>
+        </el-form-item>
+        <el-form-item label="确认密码" required>
+          <el-input v-model="resetForm.confirmPassword" type="password" show-password placeholder="请再次输入新密码" @input="clearResetError('confirmPassword')" />
+          <div v-if="resetErrors.confirmPassword" class="um-error-msg">{{ resetErrors.confirmPassword }}</div>
+        </el-form-item>
+      </el-form>
       <template #footer>
         <el-button @click="resetVisible = false">取消</el-button>
         <el-button type="primary" @click="handleResetPassword">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 确认禁用/启用弹窗 -->
+    <el-dialog v-model="toggleVisible" :title="toggleAction === 'disable' ? '确认禁用' : '确认启用'" width="400px">
+      <div class="um-confirm-message">
+        确定{{ toggleAction === 'disable' ? '禁用' : '启用' }}用户 <b>{{ toggleUser?.displayName }}</b>（{{ toggleUser?.username }}）吗？
+        <br />
+        <span class="um-confirm-hint">{{ toggleAction === 'disable' ? '禁用后该用户将无法登录系统。' : '启用后该用户将可以正常登录系统。' }}</span>
+      </div>
+      <template #footer>
+        <el-button @click="toggleVisible = false">取消</el-button>
+        <el-button :type="toggleAction === 'disable' ? 'danger' : 'primary'" @click="handleToggleStatus">
+          确认{{ toggleAction === 'disable' ? '禁用' : '启用' }}
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 确认删除弹窗 -->
+    <el-dialog v-model="deleteVisible" title="确认删除" width="400px">
+      <div class="um-confirm-message">
+        确定删除用户 <b>{{ deleteUserRef?.displayName }}</b>（{{ deleteUserRef?.username }}）吗？
+        <br />
+        <span class="um-confirm-hint um-confirm-danger">删除后该用户数据将无法恢复，请谨慎操作。</span>
+      </div>
+      <template #footer>
+        <el-button @click="deleteVisible = false">取消</el-button>
+        <el-button type="danger" @click="handleDeleteUser">确认删除</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.user-mgmt-view {
+  width: 100%;
+}
+
+/* 工具栏 */
+.um-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* 卡片 */
+.um-card {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px rgba(0, 0, 0, 0.02);
+  border: 1px solid #f0f0f0;
+}
+.um-table-wrapper {
+  overflow-x: auto;
+}
+.um-card-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 角色标签 */
+.um-role-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.role-tag-admin {
+  background: #f9f0ff;
+  color: #722ed1;
+  border-color: #d3adf7;
+}
+.role-tag-tester {
+  background: #e6f7ff;
+  color: #1890ff;
+  border-color: #91d5ff;
+}
+
+/* 状态标签 */
+.um-status-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.status-active {
+  background: #f6ffed;
+  color: #52c41a;
+  border-color: #b7eb8f;
+}
+.status-disabled {
+  background: #fafafa;
+  color: rgba(0, 0, 0, 0.45);
+  border-color: #d9d9d9;
+}
+
+/* 时间 */
+.um-datetime {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* 操作按钮 */
+.um-actions {
+  white-space: nowrap;
+  display: flex;
+  justify-content: flex-start;
+  gap: 4px;
+}
+
+/* 错误提示 */
+.um-error-msg {
+  color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* 重置密码警告框 */
+.um-reset-warn {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #874d00;
+}
+.um-warn-icon {
+  margin-right: 4px;
+}
+
+/* 确认消息 */
+.um-confirm-message {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.88);
+  line-height: 1.6;
+}
+.um-confirm-hint {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+}
+.um-confirm-danger {
+  color: #ff4d4f;
+}
+</style>

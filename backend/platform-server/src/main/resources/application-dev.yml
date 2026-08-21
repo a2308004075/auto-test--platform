@@ -26,12 +26,7 @@ spring:
 jwt:
   secret: dev-secret-key-auto-test-platform-2024-change-in-production
 
-# 开发环境日志级别
-logging:
-  level:
-    root: INFO
-    com.platform: DEBUG
-    org.springframework.web: INFO
+# 日志级别与文件输出由 logback-spring.xml 统一管理
 
 # 显示 SQL 日志
 mybatis-plus:

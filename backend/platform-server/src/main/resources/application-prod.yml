@@ -29,11 +29,7 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
 
-# 生产环境日志
-logging:
-  level:
-    root: WARN
-    com.platform: INFO
+# 日志级别与文件输出由 logback-spring.xml 统一管理
 
 # 关闭 Whitelabel 错误页
 server:

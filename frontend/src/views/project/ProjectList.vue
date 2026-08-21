@@ -251,7 +251,7 @@ onMounted(fetchList)
 
 <style scoped>
 .project-home {
-  max-width: 1400px;
+  width: 100%;
 }
 
 .page-header {

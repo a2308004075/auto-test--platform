@@ -68,8 +68,8 @@ function handleMenuSelect(index: string) {
 <template>
   <div :class="{ 'has-logo': true }">
     <div class="sidebar-logo">
-      <h1 v-if="!isCollapse">Auto-Test</h1>
-      <h1 v-else>AT</h1>
+      <h1 v-if="!isCollapse">项目管理平台</h1>
+      <h1 v-else>项目</h1>
     </div>
     <el-scrollbar wrap-class="scrollbar-wrapper">
       <el-menu

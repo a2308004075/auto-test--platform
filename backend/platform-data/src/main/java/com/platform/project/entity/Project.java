@@ -37,6 +37,6 @@ public class Project extends BaseEntity {
     /**
      * 软删除标记（1=已删除，0=未删除）
      */
-    @TableLogic
+    @TableLogic(value = "0", delval = "1")
     private Integer deleted;
 }

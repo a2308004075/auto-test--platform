@@ -28,11 +28,11 @@ async function handleLogout() {
   userStore.logout()
   projectStore.clearCurrentProject()
   ElMessage.success('已退出登录')
-  router.push('/project')
+  router.push('/home')
 }
 
 function handleLoginSuccess() {
-  router.push('/project')
+  router.push('/home')
 }
 </script>
 

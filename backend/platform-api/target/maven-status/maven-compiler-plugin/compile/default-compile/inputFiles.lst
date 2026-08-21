@@ -22,6 +22,7 @@ D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\ap
 D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\common\entity\BaseEntity.java
 D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\execution\dto\CaseCreateRequest.java
 D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\project\dto\ProjectDashboardResponse.java
+D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\project\dto\DashboardTrendResponse.java
 D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\tool\dto\ToolMethodCreateRequest.java
 D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\auth\dto\GlobalConfigUpdateRequest.java
 D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\keyword\dto\ApiKeywordCreateRequest.java

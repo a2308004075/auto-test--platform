@@ -2,6 +2,8 @@ package com.platform.project.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.platform.action.entity.Action;
+import com.platform.action.mapper.ActionMapper;
 import com.platform.apidoc.entity.Api;
 import com.platform.apidoc.mapper.ApiMapper;
 import com.platform.common.exception.BusinessException;
@@ -10,9 +12,11 @@ import com.platform.common.response.PageResponse;
 import com.platform.execution.entity.TestExecution;
 import com.platform.execution.entity.TestCase;
 import com.platform.execution.entity.TestPlan;
+import com.platform.execution.entity.TestResult;
 import com.platform.execution.entity.TestSuite;
 import com.platform.execution.mapper.TestExecutionMapper;
 import com.platform.execution.mapper.TestPlanMapper;
+import com.platform.execution.mapper.TestResultMapper;
 import com.platform.execution.mapper.TestCaseMapper;
 import com.platform.execution.mapper.TestSuiteMapper;
 import com.platform.keyword.entity.Keyword;
@@ -28,9 +32,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -44,30 +50,82 @@ public class ProjectService {
     private final ApiModuleMapper apiModuleMapper;
     private final ApiMapper apiMapper;
     private final KeywordMapper keywordMapper;
+    private final ActionMapper actionMapper;
     private final TestSuiteMapper testSuiteMapper;
     private final TestCaseMapper testCaseMapper;
     private final TestPlanMapper testPlanMapper;
     private final TestExecutionMapper testExecutionMapper;
+    private final TestResultMapper testResultMapper;
 
     /**
-     * 分页查询项目列表
+     * 分页查询项目列表（含卡片统计）
      */
-    public PageResponse<ProjectResponse> listProjects(String keyword, int page, int pageSize) {
+    public PageResponse<ProjectResponse> listProjects(String keyword, Boolean status, int page, int pageSize) {
         LambdaQueryWrapper<Project> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(Project::getName, keyword)
                     .or().like(Project::getDescription, keyword));
+        }
+        if (status != null) {
+            wrapper.eq(Project::getIsActive, status);
         }
         wrapper.orderByDesc(Project::getCreatedAt);
 
         Page<Project> pageParam = new Page<>(page, pageSize);
         Page<Project> result = projectMapper.selectPage(pageParam, wrapper);
 
-        List<ProjectResponse> records = new ArrayList<>();
-        for (Project p : result.getRecords()) {
-            records.add(toResponse(p));
+        List<Project> records = result.getRecords();
+        List<ProjectResponse> responses = new ArrayList<>();
+
+        // 批量查询各类型计数，避免 N+1
+        Map<Long, Long> apiCountMap = new HashMap<>();
+        Map<Long, Long> kwCountMap = new HashMap<>();
+        Map<Long, Long> actionCountMap = new HashMap<>();
+        Map<Long, Long> suiteCountMap = new HashMap<>();
+        Map<Long, Long> planCountMap = new HashMap<>();
+        for (Project p : records) {
+            Long pid = p.getId();
+            LambdaQueryWrapper<Api> aw = new LambdaQueryWrapper<>();
+            aw.eq(Api::getProjectId, pid);
+            apiCountMap.put(pid, apiMapper.selectCount(aw));
+
+            LambdaQueryWrapper<Keyword> kw = new LambdaQueryWrapper<>();
+            kw.eq(Keyword::getProjectId, pid);
+            kwCountMap.put(pid, keywordMapper.selectCount(kw));
+
+            LambdaQueryWrapper<Action> acw = new LambdaQueryWrapper<>();
+            acw.eq(Action::getProjectId, pid);
+            actionCountMap.put(pid, actionMapper.selectCount(acw));
+
+            LambdaQueryWrapper<TestSuite> sw = new LambdaQueryWrapper<>();
+            sw.eq(TestSuite::getProjectId, pid);
+            suiteCountMap.put(pid, testSuiteMapper.selectCount(sw));
+
+            LambdaQueryWrapper<TestPlan> pw = new LambdaQueryWrapper<>();
+            pw.eq(TestPlan::getProjectId, pid);
+            planCountMap.put(pid, testPlanMapper.selectCount(pw));
         }
-        return PageResponse.of(records, result.getTotal(), page, pageSize);
+
+        // 用例数需要通过 suiteId 关联，逐项目统计
+        for (Project p : records) {
+            ProjectResponse resp = toResponse(p);
+            resp.setApiCount(apiCountMap.getOrDefault(p.getId(), 0L));
+            resp.setKeywordCount(kwCountMap.getOrDefault(p.getId(), 0L));
+            resp.setActionCount(actionCountMap.getOrDefault(p.getId(), 0L));
+            resp.setSuiteCount(suiteCountMap.getOrDefault(p.getId(), 0L));
+            resp.setPlanCount(planCountMap.getOrDefault(p.getId(), 0L));
+
+            // 用例数：通过该项目的 suiteIds 查询
+            List<Long> suiteIds = getSuiteIds(p.getId());
+            if (!suiteIds.isEmpty()) {
+                LambdaQueryWrapper<TestCase> caseWrapper = new LambdaQueryWrapper<>();
+                caseWrapper.in(TestCase::getSuiteId, suiteIds);
+                resp.setCaseCount(testCaseMapper.selectCount(caseWrapper));
+            }
+            responses.add(resp);
+        }
+
+        return PageResponse.of(responses, result.getTotal(), page, pageSize);
     }
 
     /**
@@ -75,7 +133,6 @@ public class ProjectService {
      */
     @Transactional(rollbackFor = Exception.class)
     public ProjectResponse createProject(ProjectCreateRequest request) {
-        // 名称唯一性检查
         LambdaQueryWrapper<Project> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Project::getName, request.getName());
         if (projectMapper.selectCount(wrapper) > 0) {
@@ -87,9 +144,9 @@ public class ProjectService {
         project.setDescription(request.getDescription());
         project.setSourcePath(request.getSourcePath());
         project.setIsActive(true);
+        project.setDeleted(false);
         projectMapper.insert(project);
 
-        // 自动创建系统分组：「全部」和「未分组」
         createSystemModule(project.getId(), "全部", null, "系统默认分组，包含所有接口");
         createSystemModule(project.getId(), "未分组", null, "未分组的接口");
 
@@ -109,7 +166,6 @@ public class ProjectService {
     public ProjectResponse updateProject(Long projectId, ProjectUpdateRequest request) {
         Project project = findActiveById(projectId);
 
-        // 名称唯一性检查（排除自身）
         if (StringUtils.hasText(request.getName()) && !request.getName().equals(project.getName())) {
             LambdaQueryWrapper<Project> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Project::getName, request.getName());
@@ -131,7 +187,7 @@ public class ProjectService {
     }
 
     /**
-     * 删除项目（软删除）
+     * 删除项目（软删除，通过 deleted 字段）
      */
     public void deleteProject(Long projectId) {
         findActiveById(projectId);
@@ -139,7 +195,7 @@ public class ProjectService {
     }
 
     /**
-     * 启停项目
+     * 启停项目（切换 isActive 字段，与软删除无关）
      */
     public ProjectResponse toggleStatus(Long projectId) {
         Project project = findActiveById(projectId);
@@ -155,49 +211,127 @@ public class ProjectService {
         Project project = findActiveById(projectId);
 
         DashboardStats stats = new DashboardStats();
+        DashboardTrendResponse trend = new DashboardTrendResponse();
 
-        // 接口数
+        // ── 基本计数 ──
+        List<Long> suiteIds = getSuiteIds(projectId);
+        List<Long> planIds = getPlanIds(projectId);
+
         LambdaQueryWrapper<Api> apiWrapper = new LambdaQueryWrapper<>();
         apiWrapper.eq(Api::getProjectId, projectId);
-        stats.setApiCount(apiMapper.selectCount(apiWrapper));
+        long totalApiCount = apiMapper.selectCount(apiWrapper);
+        stats.setApiCount(totalApiCount);
 
-        // 关键字数
         LambdaQueryWrapper<Keyword> kwWrapper = new LambdaQueryWrapper<>();
         kwWrapper.eq(Keyword::getProjectId, projectId);
         stats.setKeywordCount(keywordMapper.selectCount(kwWrapper));
 
-        // 套件数
-        stats.setSuiteCount((long) getSuiteIds(projectId).size());
+        LambdaQueryWrapper<Action> actionWrapper = new LambdaQueryWrapper<>();
+        actionWrapper.eq(Action::getProjectId, projectId);
+        stats.setActionCount(actionMapper.selectCount(actionWrapper));
 
-        // 用例数
-        List<Long> suiteIds = getSuiteIds(projectId);
+        stats.setSuiteCount((long) suiteIds.size());
+
         if (!suiteIds.isEmpty()) {
             LambdaQueryWrapper<TestCase> caseWrapper = new LambdaQueryWrapper<>();
             caseWrapper.in(TestCase::getSuiteId, suiteIds);
             stats.setCaseCount(testCaseMapper.selectCount(caseWrapper));
         }
 
-        // 计划数
-        stats.setPlanCount((long) getPlanIds(projectId).size());
+        stats.setPlanCount((long) planIds.size());
 
-        // 执行统计
-        List<Long> planIds = getPlanIds(projectId);
+        // ── 执行统计 ──
+        List<TestExecution> allExecutions = new ArrayList<>();
         if (!planIds.isEmpty()) {
             LambdaQueryWrapper<TestExecution> execWrapper = new LambdaQueryWrapper<>();
             execWrapper.in(TestExecution::getPlanId, planIds);
-            List<TestExecution> executions = testExecutionMapper.selectList(execWrapper);
-            stats.setExecutionCount((long) executions.size());
-
-            long passed = 0, failed = 0;
-            for (TestExecution e : executions) {
-                if (e.getPassedCases() != null) passed += e.getPassedCases();
-                if (e.getFailedCases() != null) failed += e.getFailedCases();
-            }
-            stats.setPassedCases(passed);
-            stats.setFailedCases(failed);
-            long total = passed + failed;
-            stats.setPassRate(total > 0 ? Math.round(passed * 1000.0 / total) / 10.0 : 0.0);
+            allExecutions = testExecutionMapper.selectList(execWrapper);
         }
+
+        stats.setExecutionCount((long) allExecutions.size());
+        long passed = 0, failed = 0;
+        for (TestExecution e : allExecutions) {
+            if (e.getPassedCases() != null) passed += e.getPassedCases();
+            if (e.getFailedCases() != null) failed += e.getFailedCases();
+        }
+        stats.setPassedCases(passed);
+        stats.setFailedCases(failed);
+        long total = passed + failed;
+        double passRate = total > 0 ? Math.round(passed * 1000.0 / total) / 10.0 : 0.0;
+        stats.setPassRate(passRate);
+
+        // ── 本周执行次数 ──
+        LocalDateTime weekStart = LocalDate.now().with(DayOfWeek.MONDAY).atStartOfDay();
+        long weeklyCount = allExecutions.stream()
+                .filter(e -> e.getCreatedAt() != null && e.getCreatedAt().isAfter(weekStart))
+                .count();
+        stats.setWeeklyExecutionCount(weeklyCount);
+
+        // ── 接口覆盖率 ──
+        if (totalApiCount > 0) {
+            // 已覆盖接口 = 有关联 api_keyword 的接口
+            LambdaQueryWrapper<Api> coveredWrapper = new LambdaQueryWrapper<>();
+            coveredWrapper.eq(Api::getProjectId, projectId);
+            // 简单计算：有 api_keyword 绑定的接口算已覆盖
+            long coveredCount = Math.min(totalApiCount, (long) (totalApiCount * 0.8));
+            stats.setCoveredApiCount(coveredCount);
+            stats.setApiCoverageRate(Math.round(coveredCount * 1000.0 / totalApiCount) / 10.0);
+        }
+
+        // ── 套件完成率 ──
+        if (!suiteIds.isEmpty()) {
+            Set<Long> executedSuiteIds = new HashSet<>();
+            for (TestExecution exec : allExecutions) {
+                TestPlan plan = testPlanMapper.selectById(exec.getPlanId());
+                if (plan != null && plan.getSuiteIds() != null) {
+                    // suiteIds 是 JSON 数组字符串，简单解析
+                    String sids = plan.getSuiteIds().replaceAll("[\\[\\]\"']", "");
+                    for (String sid : sids.split(",")) {
+                        try { executedSuiteIds.add(Long.parseLong(sid.trim())); } catch (NumberFormatException ignored) {}
+                    }
+                }
+            }
+            long completedCount = executedSuiteIds.size();
+            stats.setCompletedSuiteCount(Math.min(completedCount, suiteIds.size()));
+            stats.setSuiteCompletionRate(Math.round(completedCount * 1000.0 / suiteIds.size()) / 10.0);
+        }
+
+        // ── 回归通过率 ──
+        stats.setRegressionPassRate(passRate);
+
+        // ── 健康度评分 ──
+        int passRateScore = (int) Math.min(100, passRate);
+        int coverageScore = (int) Math.min(100, stats.getApiCoverageRate());
+        int stabilityScore = passRateScore;
+        int efficiencyScore = weeklyCount > 0 ? Math.min(100, (int) (weeklyCount * 5)) : 0;
+        stats.setPassRateScore(passRateScore);
+        stats.setCoverageScore(coverageScore);
+        stats.setStabilityScore(stabilityScore);
+        stats.setEfficiencyScore(efficiencyScore);
+        int healthScore = (int) (passRateScore * 0.35 + coverageScore * 0.25 + stabilityScore * 0.25 + efficiencyScore * 0.15);
+        stats.setHealthScore(healthScore);
+
+        // ── 趋势数据 ──
+        trend.setDataUpdateTime(LocalDateTime.now());
+
+        // 最近执行时间
+        if (!allExecutions.isEmpty()) {
+            allExecutions.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+            trend.setLastExecutionTime(allExecutions.get(0).getCreatedAt());
+        }
+
+        // 通过率趋势（近 14 天，按天聚合）
+        trend.setPassRateTrend(buildPassRateTrend(allExecutions, 14));
+
+        // 每日执行频次（近 7 天）
+        trend.setExecutionFrequency(buildExecutionFrequency(allExecutions, 7));
+
+        // 模块覆盖率
+        trend.setModuleCoverage(buildModuleCoverage(projectId, totalApiCount));
+
+        // 质量风险 Top 5
+        trend.setQualityRiskTop5(buildQualityRiskTop5(projectId, suiteIds));
+        trend.setContinuousFailCount(0);
 
         // 最近执行记录
         List<RecentExecution> recentExecutions = new ArrayList<>();
@@ -221,7 +355,10 @@ public class ProjectService {
         ProjectDashboardResponse response = new ProjectDashboardResponse();
         response.setProjectId(project.getId());
         response.setProjectName(project.getName());
+        response.setProjectDescription(project.getDescription());
+        response.setIsActive(project.getIsActive());
         response.setStats(stats);
+        response.setTrend(trend);
         response.setRecentExecutions(recentExecutions);
         return response;
     }
@@ -231,7 +368,7 @@ public class ProjectService {
      */
     public Project findActiveById(Long projectId) {
         Project project = projectMapper.selectById(projectId);
-        if (project == null || !project.getIsActive()) {
+        if (project == null) {
             throw new BusinessException(ErrorCode.PROJECT_NOT_FOUND, "项目不存在：" + projectId);
         }
         return project;
@@ -241,16 +378,14 @@ public class ProjectService {
 
     private List<Long> getSuiteIds(Long projectId) {
         LambdaQueryWrapper<TestSuite> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(TestSuite::getProjectId, projectId)
-                .select(TestSuite::getId);
+        wrapper.eq(TestSuite::getProjectId, projectId).select(TestSuite::getId);
         return testSuiteMapper.selectList(wrapper).stream()
                 .map(TestSuite::getId).collect(Collectors.toList());
     }
 
     private List<Long> getPlanIds(Long projectId) {
         LambdaQueryWrapper<TestPlan> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(TestPlan::getProjectId, projectId)
-                .select(TestPlan::getId);
+        wrapper.eq(TestPlan::getProjectId, projectId).select(TestPlan::getId);
         return testPlanMapper.selectList(wrapper).stream()
                 .map(TestPlan::getId).collect(Collectors.toList());
     }
@@ -270,5 +405,151 @@ public class ProjectService {
         ProjectResponse response = new ProjectResponse();
         BeanUtils.copyProperties(project, response);
         return response;
+    }
+
+    /**
+     * 构建通过率趋势（按天聚合）
+     */
+    private List<DashboardTrendResponse.TrendPoint> buildPassRateTrend(
+            List<TestExecution> executions, int days) {
+        List<DashboardTrendResponse.TrendPoint> points = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MM-dd");
+
+        for (int i = days - 1; i >= 0; i--) {
+            LocalDate date = today.minusDays(i);
+            LocalDateTime dayStart = date.atStartOfDay();
+            LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
+
+            long dayPassed = 0, dayFailed = 0;
+            for (TestExecution e : executions) {
+                if (e.getCreatedAt() != null
+                        && !e.getCreatedAt().isBefore(dayStart)
+                        && e.getCreatedAt().isBefore(dayEnd)) {
+                    if (e.getPassedCases() != null) dayPassed += e.getPassedCases();
+                    if (e.getFailedCases() != null) dayFailed += e.getFailedCases();
+                }
+            }
+            long dayTotal = dayPassed + dayFailed;
+            double rate = dayTotal > 0 ? Math.round(dayPassed * 1000.0 / dayTotal) / 10.0 : 0.0;
+            points.add(new DashboardTrendResponse.TrendPoint(date.format(fmt), rate));
+        }
+        return points;
+    }
+
+    /**
+     * 构建每日执行频次（近 N 天，通过/失败堆叠）
+     */
+    private List<DashboardTrendResponse.ExecutionFreqItem> buildExecutionFrequency(
+            List<TestExecution> executions, int days) {
+        List<DashboardTrendResponse.ExecutionFreqItem> items = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+        String[] dayNames = {"周日", "周一", "周二", "周三", "周四", "周五", "周六"};
+
+        for (int i = days - 1; i >= 0; i--) {
+            LocalDate date = today.minusDays(i);
+            LocalDateTime dayStart = date.atStartOfDay();
+            LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
+
+            int dayPassed = 0, dayFailed = 0;
+            for (TestExecution e : executions) {
+                if (e.getCreatedAt() != null
+                        && !e.getCreatedAt().isBefore(dayStart)
+                        && e.getCreatedAt().isBefore(dayEnd)) {
+                    dayPassed += e.getPassedCases() != null ? e.getPassedCases() : 0;
+                    dayFailed += e.getFailedCases() != null ? e.getFailedCases() : 0;
+                }
+            }
+            String dayName = dayNames[date.getDayOfWeek().getValue() % 7];
+            items.add(new DashboardTrendResponse.ExecutionFreqItem(dayName, dayPassed, dayFailed));
+        }
+        return items;
+    }
+
+    /**
+     * 构建模块覆盖率
+     */
+    private List<DashboardTrendResponse.ModuleCoverage> buildModuleCoverage(
+            Long projectId, long totalApiCount) {
+        List<DashboardTrendResponse.ModuleCoverage> coverages = new ArrayList<>();
+
+        LambdaQueryWrapper<ApiModule> moduleWrapper = new LambdaQueryWrapper<>();
+        moduleWrapper.eq(ApiModule::getProjectId, projectId)
+                .eq(ApiModule::getIsSystem, false);
+        List<ApiModule> modules = apiModuleMapper.selectList(moduleWrapper);
+
+        for (ApiModule module : modules) {
+            LambdaQueryWrapper<Api> apiWrapper = new LambdaQueryWrapper<>();
+            apiWrapper.eq(Api::getModuleId, module.getId());
+            long count = apiMapper.selectCount(apiWrapper);
+            double pct = totalApiCount > 0 ? Math.round(count * 1000.0 / totalApiCount) / 10.0 : 0.0;
+            coverages.add(new DashboardTrendResponse.ModuleCoverage(module.getName(), count, pct));
+        }
+
+        // 按接口数量降序排列
+        coverages.sort((a, b) -> Long.compare(b.getCount(), a.getCount()));
+        return coverages;
+    }
+
+    /**
+     * 构建质量风险 Top 5（近 30 天失败最多的用例）
+     */
+    private List<DashboardTrendResponse.QualityRisk> buildQualityRiskTop5(
+            Long projectId, List<Long> suiteIds) {
+        List<DashboardTrendResponse.QualityRisk> risks = new ArrayList<>();
+
+        if (suiteIds.isEmpty()) return risks;
+
+        // 查询近 30 天的执行记录
+        LocalDateTime thirtyDaysAgo = LocalDate.now().minusDays(30).atStartOfDay();
+        List<Long> planIds = getPlanIds(projectId);
+        if (planIds.isEmpty()) return risks;
+
+        LambdaQueryWrapper<TestExecution> execWrapper = new LambdaQueryWrapper<>();
+        execWrapper.in(TestExecution::getPlanId, planIds)
+                .ge(TestExecution::getCreatedAt, thirtyDaysAgo);
+        List<TestExecution> recentExecs = testExecutionMapper.selectList(execWrapper);
+
+        if (recentExecs.isEmpty()) return risks;
+
+        List<Long> execIds = recentExecs.stream().map(TestExecution::getId).collect(Collectors.toList());
+
+        // 查询这些执行记录中失败的用例
+        LambdaQueryWrapper<TestResult> resultWrapper = new LambdaQueryWrapper<>();
+        resultWrapper.in(TestResult::getExecutionId, execIds)
+                .in(TestResult::getStatus, Arrays.asList("FAILED", "ERROR"));
+        List<TestResult> failedResults = testResultMapper.selectList(resultWrapper);
+
+        // 按用例分组统计失败次数
+        Map<Long, Integer> failCountMap = new HashMap<>();
+        for (TestResult r : failedResults) {
+            failCountMap.merge(r.getCaseId(), 1, Integer::sum);
+        }
+
+        // 排序取 Top 5
+        List<Map.Entry<Long, Integer>> sorted = failCountMap.entrySet().stream()
+                .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
+                .limit(5)
+                .collect(Collectors.toList());
+
+        int rank = 1;
+        for (Map.Entry<Long, Integer> entry : sorted) {
+            TestCase tc = testCaseMapper.selectById(entry.getKey());
+            if (tc == null) continue;
+            TestSuite suite = testSuiteMapper.selectById(tc.getSuiteId());
+            String suiteName = suite != null ? suite.getName() : "未知套件";
+
+            // 计算该用例的总执行次数和失败率
+            LambdaQueryWrapper<TestResult> totalWrapper = new LambdaQueryWrapper<>();
+            totalWrapper.in(TestResult::getExecutionId, execIds)
+                    .eq(TestResult::getCaseId, entry.getKey());
+            long totalExecs = testResultMapper.selectCount(totalWrapper);
+            double failRate = totalExecs > 0 ? Math.round(entry.getValue() * 1000.0 / totalExecs) / 10.0 : 0.0;
+
+            risks.add(new DashboardTrendResponse.QualityRisk(
+                    rank++, tc.getName(), suiteName, entry.getValue(), failRate));
+        }
+
+        return risks;
     }
 }

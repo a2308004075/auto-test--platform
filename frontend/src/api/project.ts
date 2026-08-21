@@ -4,7 +4,7 @@ import request from './request'
  * 项目管理模块 API
  */
 
-export function getProjects(params?: { keyword?: string; page?: number; pageSize?: number }) {
+export function getProjects(params?: { keyword?: string; status?: boolean; page?: number; pageSize?: number }) {
   return request.get('/v1/projects', { params })
 }
 

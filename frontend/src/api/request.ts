@@ -38,7 +38,7 @@ service.interceptors.response.use(
       localStorage.removeItem('token')
       localStorage.removeItem('refreshToken')
       ElMessage.error('登录已过期，请重新登录')
-      window.location.href = '/project'
+      window.location.href = '/home'
     } else if (status === 403) {
       ElMessage.error('没有操作权限')
     } else if (status === 400) {

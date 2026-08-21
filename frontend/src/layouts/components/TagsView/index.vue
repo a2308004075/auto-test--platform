@@ -43,7 +43,7 @@ function handleClose(view: TagView) {
   // 如果关闭的是当前页，跳转到最后一个
   if (view.path === route.path) {
     const last = tagsViewStore.visitedViews[tagsViewStore.visitedViews.length - 1]
-    router.push(last ? last.path : '/project')
+    router.push(last ? last.path : '/home')
   }
 }
 </script>

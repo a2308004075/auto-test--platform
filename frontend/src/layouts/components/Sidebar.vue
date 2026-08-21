@@ -5,6 +5,7 @@
  */
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { House } from '@element-plus/icons-vue'
 import { useUserStore, useAppStore } from '@/stores'
 
 const route = useRoute()
@@ -53,7 +54,7 @@ const menuItems = computed(() => {
     ]
   }
   return [
-    { key: 'project', label: '项目管理', path: '/project' },
+    { key: 'project', label: '首页', path: '/home', icon: House },
     ...(userStore.isLoggedIn ? [{ key: 'settings', label: '系统设置', path: '/settings' }] : []),
   ]
 })
@@ -83,6 +84,9 @@ function handleMenuSelect(index: string) {
         @select="handleMenuSelect"
       >
         <el-menu-item v-for="item in menuItems" :key="item.key" :index="item.key">
+          <el-icon v-if="item.icon">
+            <component :is="item.icon" />
+          </el-icon>
           <span>{{ item.label }}</span>
         </el-menu-item>
       </el-menu>

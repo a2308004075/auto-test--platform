@@ -26,7 +26,7 @@ async function handleLogin() {
     userStore.setToken(data.accessToken)
     if (data.refreshToken) userStore.setRefreshToken(data.refreshToken)
     ElMessage.success('登录成功')
-    router.push('/project')
+    router.push('/home')
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '登录失败')
   } finally {

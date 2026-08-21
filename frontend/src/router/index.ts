@@ -11,13 +11,13 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     component: () => import('@/layouts/Layout.vue'),
-    redirect: '/project',
+    redirect: '/home',
     children: [
       {
-        path: 'project',
+        path: '/home',
         name: 'ProjectList',
         component: () => import('@/views/project/ProjectList.vue'),
-        meta: { title: '项目管理' },
+        meta: { title: '首页' },
       },
       {
         path: 'settings',
@@ -184,20 +184,20 @@ const router = createRouter({
 // 登录守卫
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token')
-  // /login 路由重定向到 /project（登录已改为弹窗形式）
+  // /login 路由重定向到 /home（登录已改为弹窗形式）
   if (to.path === '/login') {
-    next('/project')
+    next('/home')
     return
   }
   // 允许未登录访问的公开路由
-  const publicPaths = ['/', '/project']
+  const publicPaths = ['/', '/home']
   if (publicPaths.includes(to.path)) {
     next()
     return
   }
   // 其他路由需要登录
   if (!token) {
-    next('/project')
+    next('/home')
   } else {
     next()
   }

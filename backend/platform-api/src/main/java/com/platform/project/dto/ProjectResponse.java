@@ -17,4 +17,13 @@ public class ProjectResponse {
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // ── 项目卡片统计字段（列表查询时填充） ──
+
+    private Long apiCount = 0L;
+    private Long keywordCount = 0L;
+    private Long actionCount = 0L;
+    private Long caseCount = 0L;
+    private Long suiteCount = 0L;
+    private Long planCount = 0L;
 }

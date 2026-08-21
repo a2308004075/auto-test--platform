@@ -30,8 +30,13 @@ public class Project extends BaseEntity {
     private String sourcePath;
 
     /**
-     * 是否启用（软删除）
+     * 是否启用（启用/停用切换，非软删除）
+     */
+    private Boolean isActive;
+
+    /**
+     * 软删除标记（true=已删除）
      */
     @TableLogic
-    private Boolean isActive;
+    private Boolean deleted;
 }

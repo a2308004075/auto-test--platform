@@ -35,7 +35,7 @@ ALTER TABLE `environment`
 ALTER TABLE `api_module`
   MODIFY COLUMN `is_system` TINYINT NOT NULL DEFAULT 0 COMMENT '是否为系统默认分组（0-否，1-是）';
 
-ALTER TABLE `api_endpoint`
+ALTER TABLE `api`
   MODIFY COLUMN `is_active` TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用（0-停用，1-启用）';
 
 -- ============================================================

@@ -38,15 +38,15 @@ const moduleMap = computed<Record<number, any>>(() => {
   modules.value.forEach((mod) => { m[mod.id] = mod })
   return m
 })
-const userModules = computed(() => modules.value.filter((m: any) => !m.isSystem))
+const userModules = computed(() => modules.value.filter((m: any) => m.isSystem !== 1))
 const moduleTree = computed(() => {
-  const userGroups = modules.value.filter((m: any) => !m.isSystem)
+  const userGroups = modules.value.filter((m: any) => m.isSystem !== 1)
   const buildTree = (parentId: number | null): any[] =>
     userGroups
       .filter((m: any) => (m.parentId ?? null) === parentId)
       .map((m: any) => ({ ...m, children: buildTree(m.id) }))
   return [
-    { id: 0, name: '全部', isSystem: true, apiCount: pagination.total, children: [] },
+    { id: 0, name: '全部', isSystem: 1, apiCount: pagination.total, children: [] },
     ...buildTree(null),
   ]
 })

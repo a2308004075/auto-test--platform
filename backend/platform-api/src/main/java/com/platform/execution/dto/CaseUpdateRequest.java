@@ -31,5 +31,5 @@ public class CaseUpdateRequest implements Serializable {
 
     private Integer timeout;
 
-    private Boolean isActive;
+    private Integer isActive;
 }

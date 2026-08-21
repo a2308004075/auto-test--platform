@@ -64,7 +64,7 @@ public class ApiModuleService {
         module.setServicePrefix(request.getServicePrefix());
         module.setDescription(request.getDescription());
         module.setSourceType("MANUAL");
-        module.setIsSystem(false);
+        module.setIsSystem(0);
 
         apiModuleMapper.insert(module);
         return toResponse(module);
@@ -76,7 +76,7 @@ public class ApiModuleService {
     public ApiModuleResponse update(Long moduleId, ApiModuleUpdateRequest request) {
         ApiModule module = findById(moduleId);
 
-        if (Boolean.TRUE.equals(module.getIsSystem())) {
+        if (Integer.valueOf(1).equals(module.getIsSystem())) {
             throw new BusinessException(ErrorCode.API_MODULE_SYSTEM, "系统分组不允许修改");
         }
 
@@ -103,7 +103,7 @@ public class ApiModuleService {
     public void delete(Long moduleId) {
         ApiModule module = findById(moduleId);
 
-        if (Boolean.TRUE.equals(module.getIsSystem())) {
+        if (Integer.valueOf(1).equals(module.getIsSystem())) {
             throw new BusinessException(ErrorCode.API_MODULE_SYSTEM, "系统分组不允许删除");
         }
 

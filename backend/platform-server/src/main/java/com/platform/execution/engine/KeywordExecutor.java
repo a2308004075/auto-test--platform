@@ -243,7 +243,7 @@ public class KeywordExecutor {
         long toolElapsed = System.currentTimeMillis() - toolStart;
 
         StepResult result = new StepResult();
-        if (toolResult != null && Boolean.TRUE.equals(toolResult.getSuccess())) {
+        if (toolResult != null && Integer.valueOf(1).equals(toolResult.getSuccess())) {
             result.setStatus("PASSED");
             result.setMessage("工具方法执行成功");
             Map<String, Object> respDetail = new LinkedHashMap<>();

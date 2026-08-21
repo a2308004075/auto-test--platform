@@ -77,7 +77,7 @@ public class ToolMethodService {
         tm.setParamDefinitions(request.getParamDefinitions());
         tm.setReturnType(request.getReturnType());
         tm.setCode(request.getCode());
-        tm.setIsActive(true);
+        tm.setIsActive(1);
         toolMethodMapper.insert(tm);
 
         return toResponse(tm);
@@ -142,7 +142,7 @@ public class ToolMethodService {
 
         // 保存测试输入和结果
         tm.setTestInput(request.getTestInput());
-        tm.setTestResult(result.getSuccess() ? result.getOutput() : result.getError());
+        tm.setTestResult(Integer.valueOf(1).equals(result.getSuccess()) ? result.getOutput() : result.getError());
         toolMethodMapper.updateById(tm);
 
         return result;

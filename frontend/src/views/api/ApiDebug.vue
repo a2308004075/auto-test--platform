@@ -47,7 +47,7 @@ async function handleDebug() {
     })
     debugResult.value = res.data
   } catch (e: any) {
-    debugResult.value = { success: false, errorMessage: e?.message || '请求失败' }
+    debugResult.value = { success: 0, errorMessage: e?.message || '请求失败' }
   } finally { loading.value = false }
 }
 
@@ -92,7 +92,7 @@ onMounted(() => { fetchApi(); fetchEnvironments() })
           <div v-else>
             <el-descriptions :column="2" size="small" border style="margin-bottom:12px">
               <el-descriptions-item label="状态码">
-                <el-tag :type="debugResult.success ? 'success' : 'danger'" size="small">{{ debugResult.statusCode || 'ERROR' }}</el-tag>
+                <el-tag :type="debugResult.success === 1 ? 'success' : 'danger'" size="small">{{ debugResult.statusCode || 'ERROR' }}</el-tag>
               </el-descriptions-item>
               <el-descriptions-item label="耗时">{{ debugResult.responseTimeMs }}ms</el-descriptions-item>
             </el-descriptions>

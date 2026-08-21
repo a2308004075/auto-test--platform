@@ -144,7 +144,7 @@ public class ProjectService {
         project.setDescription(request.getDescription());
         project.setSourcePath(request.getSourcePath());
         project.setStatus(1);
-        project.setDeleted(false);
+        project.setDeleted(0);
         projectMapper.insert(project);
 
         createSystemModule(project.getId(), "全部", null, "系统默认分组，包含所有接口");
@@ -397,7 +397,7 @@ public class ProjectService {
         module.setServicePrefix(prefix);
         module.setDescription(description);
         module.setSourceType("MANUAL");
-        module.setIsSystem(true);
+        module.setIsSystem(1);
         apiModuleMapper.insert(module);
     }
 
@@ -475,7 +475,7 @@ public class ProjectService {
 
         LambdaQueryWrapper<ApiModule> moduleWrapper = new LambdaQueryWrapper<>();
         moduleWrapper.eq(ApiModule::getProjectId, projectId)
-                .eq(ApiModule::getIsSystem, false);
+                .eq(ApiModule::getIsSystem, 0);
         List<ApiModule> modules = apiModuleMapper.selectList(moduleWrapper);
 
         for (ApiModule module : modules) {

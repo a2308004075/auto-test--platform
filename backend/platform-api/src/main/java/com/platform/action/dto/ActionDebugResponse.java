@@ -8,7 +8,7 @@ import java.util.Map;
 @Data
 public class ActionDebugResponse {
 
-    private Boolean success;
+    private Integer success;
     private Map<String, Object> output;
     private List<Map<String, Object>> nodeResults;
     private Long executionTimeMs;
@@ -18,7 +18,7 @@ public class ActionDebugResponse {
                                           List<Map<String, Object>> nodeResults,
                                           long executionTimeMs) {
         ActionDebugResponse r = new ActionDebugResponse();
-        r.setSuccess(true);
+        r.setSuccess(1);
         r.setOutput(output);
         r.setNodeResults(nodeResults);
         r.setExecutionTimeMs(executionTimeMs);
@@ -27,7 +27,7 @@ public class ActionDebugResponse {
 
     public static ActionDebugResponse fail(String errorMessage) {
         ActionDebugResponse r = new ActionDebugResponse();
-        r.setSuccess(false);
+        r.setSuccess(0);
         r.setErrorMessage(errorMessage);
         return r;
     }

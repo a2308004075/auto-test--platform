@@ -30,8 +30,8 @@ public class UserRole extends BaseEntity {
     private String description;
 
     /**
-     * 是否启用（软删除）
+     * 是否启用（0-停用，1-启用）
      */
     @TableLogic
-    private Boolean isActive;
+    private Integer isActive;
 }

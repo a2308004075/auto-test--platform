@@ -61,9 +61,9 @@ public class TestCase extends BaseEntity {
     private Integer timeout;
 
     /**
-     * 是否启用
+     * 是否启用（0-停用，1-启用）
      */
-    private Boolean isActive;
+    private Integer isActive;
 
     /**
      * 创建人 ID

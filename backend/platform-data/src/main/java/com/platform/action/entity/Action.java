@@ -36,7 +36,7 @@ public class Action extends BaseEntity {
     private String outputParams;
 
     @TableLogic
-    private Boolean isActive;
+    private Integer isActive;
 
     private Long createdBy;
 

@@ -94,7 +94,7 @@ async function sendDebug() {
     })
     debugResult.value = res.data
   } catch (e: any) {
-    debugResult.value = { success: false, error: e?.response?.data?.message || e?.message || '调试失败' }
+    debugResult.value = { success: 0, error: e?.response?.data?.message || e?.message || '调试失败' }
   } finally { debugLoading.value = false }
 }
 
@@ -168,8 +168,8 @@ const respTabs = ref('body')
           </div>
           <div v-else class="response-result">
             <div class="resp-status-bar">
-              <span :class="['resp-code', debugResult.success ? 'ok' : 'err']">
-                {{ debugResult.success ? '成功' : '失败' }}
+              <span :class="['resp-code', debugResult.success === 1 ? 'ok' : 'err']">
+                {{ debugResult.success === 1 ? '成功' : '失败' }}
               </span>
               <span v-if="debugResult.responseTimeMs" class="resp-meta">耗时: {{ debugResult.responseTimeMs }}ms</span>
               <span v-if="debugResult.responseSize" class="resp-meta">大小: {{ debugResult.responseSize }}</span>
@@ -183,7 +183,7 @@ const respTabs = ref('body')
               </el-tab-pane>
               <el-tab-pane label="状态信息" name="status">
                 <el-descriptions :column="1" border size="small">
-                  <el-descriptions-item label="状态码">{{ debugResult.statusCode ?? (debugResult.success ? '200' : '-') }}</el-descriptions-item>
+                  <el-descriptions-item label="状态码">{{ debugResult.statusCode ?? (debugResult.success === 1 ? '200' : '-') }}</el-descriptions-item>
                   <el-descriptions-item label="响应时间">{{ debugResult.responseTimeMs ?? '-' }} ms</el-descriptions-item>
                   <el-descriptions-item label="错误信息">{{ debugResult.error || '-' }}</el-descriptions-item>
                 </el-descriptions>

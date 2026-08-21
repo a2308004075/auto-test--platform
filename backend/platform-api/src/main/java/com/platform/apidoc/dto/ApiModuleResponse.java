@@ -17,7 +17,7 @@ public class ApiModuleResponse {
     private String servicePrefix;
     private String description;
     private String sourceType;
-    private Boolean isSystem;
+    private Integer isSystem;
     private Integer apiCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -92,7 +92,7 @@ public class CaseService {
         if (c.getSteps() == null) {
             c.setSteps("[]");
         }
-        c.setIsActive(true);
+        c.setIsActive(1);
         c.setCreatedBy(getCurrentUserId());
         testCaseMapper.insert(c);
         return toResponse(c);
@@ -162,7 +162,7 @@ public class CaseService {
         if (c == null) {
             throw new BusinessException(ErrorCode.CASE_NOT_FOUND, "测试用例不存在：" + caseId);
         }
-        c.setIsActive(!Boolean.TRUE.equals(c.getIsActive()));
+        c.setIsActive(Integer.valueOf(1).equals(c.getIsActive()) ? 0 : 1);
         testCaseMapper.updateById(c);
         return toResponse(c);
     }

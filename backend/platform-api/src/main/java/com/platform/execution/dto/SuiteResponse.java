@@ -19,10 +19,10 @@ public class SuiteResponse implements Serializable {
     private String description;
     private String tags;
     private String priority;
-    private Boolean enableOnceSetupTeardown;
+    private Integer enableOnceSetupTeardown;
     private String onceSetupSteps;
     private String onceTeardownSteps;
-    private Boolean enablePerCaseSetupTeardown;
+    private Integer enablePerCaseSetupTeardown;
     private String perCaseSetupSteps;
     private String perCaseTeardownSteps;
     private Long createdBy;

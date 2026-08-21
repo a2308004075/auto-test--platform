@@ -41,16 +41,16 @@ const moduleMap = computed<Record<number, any>>(() => {
   return m
 })
 // 用户分组（非系统），用于父分组下拉
-const userModules = computed(() => modules.value.filter((m) => !m.isSystem))
+const userModules = computed(() => modules.value.filter((m) => m.isSystem !== 1))
 // 分组树：全部(虚拟) + 用户分组按 parentId 建树
 const moduleTree = computed(() => {
-  const userGroups = modules.value.filter((m) => !m.isSystem)
+  const userGroups = modules.value.filter((m) => m.isSystem !== 1)
   const buildTree = (parentId: number | null): any[] =>
     userGroups
       .filter((m) => (m.parentId ?? null) === parentId)
       .map((m) => ({ ...m, children: buildTree(m.id) }))
   return [
-    { id: 0, name: '全部', isSystem: true, apiCount: pagination.total, children: [] },
+    { id: 0, name: '全部', isSystem: 1, apiCount: pagination.total, children: [] },
     ...buildTree(null),
   ]
 })
@@ -148,7 +148,7 @@ function openCreateGroup(parentId?: number | null) {
   groupModalVisible.value = true
 }
 function openEditGroup(m: any) {
-  if (m.isSystem) { ElMessage.info('系统分组不可编辑'); return }
+  if (m.isSystem === 1) { ElMessage.info('系统分组不可编辑'); return }
   editingGroupId.value = m.id
   Object.assign(groupForm, { name: m.name, servicePrefix: m.servicePrefix || '', description: m.description || '', parentId: m.parentId ?? null })
   groupModalVisible.value = true
@@ -168,7 +168,7 @@ async function handleGroupSubmit() {
   } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
 }
 function handleDeleteGroup(m: any) {
-  if (m.isSystem) { ElMessage.info('系统分组不可删除'); return }
+  if (m.isSystem === 1) { ElMessage.info('系统分组不可删除'); return }
   ElMessageBox.confirm(`确定删除分组「${m.name}」？`, '确认删除', { type: 'warning' })
     .then(async () => { await deleteModule(projectId.value, m.id); ElMessage.success('删除成功'); fetchModules() })
     .catch(() => {})
@@ -254,7 +254,7 @@ onMounted(() => { fetchModules(); fetchList() })
                   <span v-if="data.servicePrefix" class="module-prefix">{{ data.servicePrefix }}</span>
                 </span>
                 <span class="module-count">{{ data.apiCount ?? 0 }}</span>
-                <span v-if="!data.isSystem" class="module-ops" @click.stop>
+                <span v-if="data.isSystem !== 1" class="module-ops" @click.stop>
                   <el-button link size="small" @click="openCreateGroup(data.id)">+ 子级</el-button>
                   <el-button link size="small" @click="openEditGroup(data)">编辑</el-button>
                   <el-button link size="small" type="danger" @click="handleDeleteGroup(data)">删除</el-button>

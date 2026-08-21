@@ -30,7 +30,7 @@ public class PlanResponse {
 
     private String scheduleCron;
 
-    private Boolean isActive;
+    private Integer isActive;
 
     private Long createdBy;
 

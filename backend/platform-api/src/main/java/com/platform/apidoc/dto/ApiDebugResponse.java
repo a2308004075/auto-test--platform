@@ -16,12 +16,12 @@ public class ApiDebugResponse {
     private String responseBody;
     private Long responseTimeMs;
     private Long responseSizeBytes;
-    private Boolean success;
+    private Integer success;
     private String errorMessage;
 
     public static ApiDebugResponse error(String errorMessage) {
         ApiDebugResponse r = new ApiDebugResponse();
-        r.setSuccess(false);
+        r.setSuccess(0);
         r.setErrorMessage(errorMessage);
         return r;
     }

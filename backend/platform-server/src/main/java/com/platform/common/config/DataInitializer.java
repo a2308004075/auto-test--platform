@@ -48,7 +48,7 @@ public class DataInitializer implements ApplicationRunner {
         admin.setPasswordHash(passwordEncoder.encode("admin123"));
         admin.setDisplayName("管理员");
         admin.setRoleId(adminRole.getId());
-        admin.setIsActive(true);
+        admin.setIsActive(1);
         userMapper.insert(admin);
         log.info("已创建默认 admin 用户（密码：admin123）");
     }

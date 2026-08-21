@@ -19,7 +19,7 @@ public class UserResponse {
      * 角色编码（如 ADMIN、USER），供前端兼容展示
      */
     private String role;
-    private Boolean isActive;
+    private Integer isActive;
     private LocalDateTime lastLoginAt;
     private LocalDateTime createdAt;
 }

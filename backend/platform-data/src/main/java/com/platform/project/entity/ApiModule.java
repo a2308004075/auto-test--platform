@@ -49,7 +49,7 @@ public class ApiModule extends BaseEntity {
     private String swaggerFile;
 
     /**
-     * 是否系统默认分组（全部/未分组）
+     * 是否系统默认分组（0-否，1-是）
      */
-    private Boolean isSystem;
+    private Integer isSystem;
 }

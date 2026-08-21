@@ -88,7 +88,7 @@ public class PlanService {
         TestPlan plan = new TestPlan();
         BeanUtils.copyProperties(request, plan);
         plan.setSuiteIds(serializeSuiteIds(request.getSuiteIds()));
-        plan.setIsActive(true);
+        plan.setIsActive(1);
         plan.setCreatedBy(getCurrentUserId());
         testPlanMapper.insert(plan);
         return toResponse(plan);

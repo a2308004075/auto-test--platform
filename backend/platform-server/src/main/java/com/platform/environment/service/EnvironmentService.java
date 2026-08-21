@@ -62,7 +62,7 @@ public class EnvironmentService {
         env.setUsername(request.getUsername());
         env.setPassword(request.getPassword());
         env.setConfigJson(request.getConfigJson());
-        env.setIsCurrent(false);
+        env.setIsCurrent(0);
 
         environmentMapper.insert(env);
         return toResponse(env);
@@ -115,20 +115,20 @@ public class EnvironmentService {
     public EnvironmentResponse activate(Long envId) {
         Environment env = findById(envId);
 
-        if (Boolean.TRUE.equals(env.getIsCurrent())) {
+        if (Integer.valueOf(1).equals(env.getIsCurrent())) {
             // 取消激活
-            env.setIsCurrent(false);
+            env.setIsCurrent(0);
             environmentMapper.updateById(env);
         } else {
             // 先将同项目下其他环境取消激活
             LambdaUpdateWrapper<Environment> updateWrapper = new LambdaUpdateWrapper<>();
             updateWrapper.eq(Environment::getProjectId, env.getProjectId())
-                    .eq(Environment::getIsCurrent, true)
-                    .set(Environment::getIsCurrent, false);
+                    .eq(Environment::getIsCurrent, 1)
+                    .set(Environment::getIsCurrent, 0);
             environmentMapper.update(null, updateWrapper);
 
             // 激活目标环境
-            env.setIsCurrent(true);
+            env.setIsCurrent(1);
             environmentMapper.updateById(env);
         }
 
@@ -165,7 +165,7 @@ public class EnvironmentService {
     public EnvironmentResponse getActiveEnvironment(Long projectId) {
         LambdaQueryWrapper<Environment> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Environment::getProjectId, projectId)
-                .eq(Environment::getIsCurrent, true)
+                .eq(Environment::getIsCurrent, 1)
                 .last("LIMIT 1");
         Environment env = environmentMapper.selectOne(wrapper);
         if (env == null) {

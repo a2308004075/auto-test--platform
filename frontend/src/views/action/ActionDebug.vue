@@ -63,7 +63,7 @@ async function handleDebug() {
       inputParams: params,
     })
     debugResult.value = res.data
-    if (debugResult.value?.success) {
+    if (debugResult.value?.success === 1) {
       ElMessage.success('调试执行成功')
     } else {
       ElMessage.error('调试执行失败')
@@ -95,7 +95,7 @@ onMounted(loadData)
               <el-form-item label="执行环境" required>
                 <el-select v-model="selectedEnvId" placeholder="选择环境" style="width:100%">
                   <el-option v-for="env in environments" :key="env.id" :value="env.id"
-                    :label="`${env.name} (${env.host}:${env.port})${env.isCurrent ? ' [当前]' : ''}`" />
+                    :label="`${env.name} (${env.host}:${env.port})${env.isCurrent === 1 ? ' [当前]' : ''}`" />
                 </el-select>
               </el-form-item>
               <el-form-item>
@@ -128,8 +128,8 @@ onMounted(loadData)
             <div v-else>
               <!-- 概览 -->
               <el-alert
-                :type="debugResult.success ? 'success' : 'error'"
-                :title="debugResult.success ? '执行成功' : '执行失败'"
+                :type="debugResult.success === 1 ? 'success' : 'error'"
+                :title="debugResult.success === 1 ? '执行成功' : '执行失败'"
                 :description="debugResult.errorMessage || debugResult.message || ''"
                 show-icon
                 :closable="false"

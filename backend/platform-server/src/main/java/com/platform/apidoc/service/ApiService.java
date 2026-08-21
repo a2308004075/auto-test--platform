@@ -310,7 +310,7 @@ public class ApiService {
             response.setResponseBody(responseBody);
             response.setResponseTimeMs(elapsed);
             response.setResponseSizeBytes((long) responseBody.getBytes(StandardCharsets.UTF_8).length);
-            response.setSuccess(statusCode >= 200 && statusCode < 400);
+            response.setSuccess(statusCode >= 200 && statusCode < 400 ? 1 : 0);
 
             // 收集响应头
             Map<String, String> respHeaders = new LinkedHashMap<>();

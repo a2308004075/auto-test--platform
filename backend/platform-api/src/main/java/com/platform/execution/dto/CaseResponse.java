@@ -23,7 +23,7 @@ public class CaseResponse implements Serializable {
     private String steps;
     private String priority;
     private Integer timeout;
-    private Boolean isActive;
+    private Integer isActive;
     private Long createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

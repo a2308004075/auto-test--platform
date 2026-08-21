@@ -23,13 +23,13 @@ public class SuiteUpdateRequest implements Serializable {
 
     private String tags;
 
-    private Boolean enableOnceSetupTeardown;
+    private Integer enableOnceSetupTeardown;
 
     private String onceSetupSteps;
 
     private String onceTeardownSteps;
 
-    private Boolean enablePerCaseSetupTeardown;
+    private Integer enablePerCaseSetupTeardown;
 
     private String perCaseSetupSteps;
 

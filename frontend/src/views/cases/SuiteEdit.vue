@@ -21,10 +21,10 @@ const form = reactive({
   description: '',
   priority: 'P2',
   tags: '[]',
-  enableOnceSetupTeardown: false,
+  enableOnceSetupTeardown: 0,
   onceSetupSteps: '[]',
   onceTeardownSteps: '[]',
-  enablePerCaseSetupTeardown: false,
+  enablePerCaseSetupTeardown: 0,
   perCaseSetupSteps: '[]',
   perCaseTeardownSteps: '[]',
 })
@@ -39,10 +39,10 @@ async function loadSuite() {
       description: s.description || '',
       priority: s.priority || 'P2',
       tags: s.tags || '[]',
-      enableOnceSetupTeardown: s.enableOnceSetupTeardown ?? false,
+      enableOnceSetupTeardown: s.enableOnceSetupTeardown ?? 0,
       onceSetupSteps: s.onceSetupSteps || '[]',
       onceTeardownSteps: s.onceTeardownSteps || '[]',
-      enablePerCaseSetupTeardown: s.enablePerCaseSetupTeardown ?? false,
+      enablePerCaseSetupTeardown: s.enablePerCaseSetupTeardown ?? 0,
       perCaseSetupSteps: s.perCaseSetupSteps || '[]',
       perCaseTeardownSteps: s.perCaseTeardownSteps || '[]',
     })
@@ -128,10 +128,10 @@ onMounted(loadSuite)
         <template #header>
           <div style="display:flex;align-items:center;justify-content:space-between">
             <span>套件级·整体 Setup / Teardown</span>
-            <el-switch v-model="form.enableOnceSetupTeardown" active-text="启用" inactive-text="禁用" />
+            <el-switch v-model="form.enableOnceSetupTeardown" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="禁用" />
           </div>
         </template>
-        <div v-if="form.enableOnceSetupTeardown">
+        <div v-if="form.enableOnceSetupTeardown === 1">
           <el-row :gutter="16">
             <el-col :span="12">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -160,10 +160,10 @@ onMounted(loadSuite)
         <template #header>
           <div style="display:flex;align-items:center;justify-content:space-between">
             <span>套件级·每条用例 Setup / Teardown</span>
-            <el-switch v-model="form.enablePerCaseSetupTeardown" active-text="启用" inactive-text="禁用" />
+            <el-switch v-model="form.enablePerCaseSetupTeardown" :active-value="1" :inactive-value="0" active-text="启用" inactive-text="禁用" />
           </div>
         </template>
-        <div v-if="form.enablePerCaseSetupTeardown">
+        <div v-if="form.enablePerCaseSetupTeardown === 1">
           <el-row :gutter="16">
             <el-col :span="12">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">

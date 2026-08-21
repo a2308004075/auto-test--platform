@@ -64,7 +64,7 @@ const pathParams = computed(() => {
 async function fetchModules() {
   try {
     const res: any = await getModules(projectId.value)
-    modules.value = (res.data || []).filter((m: any) => !m.isSystem)
+    modules.value = (res.data || []).filter((m: any) => m.isSystem !== 1)
     if (!form.moduleId && modules.value.length) form.moduleId = modules.value[0].id
   } catch { modules.value = [] }
 }
@@ -121,7 +121,7 @@ async function sendDebug() {
     })
     debugResult.value = res.data
   } catch (e: any) {
-    debugResult.value = { success: false, error: e?.response?.data?.message || e?.message || '调试失败' }
+    debugResult.value = { success: 0, error: e?.response?.data?.message || e?.message || '调试失败' }
   } finally { debugLoading.value = false }
 }
 
@@ -360,8 +360,8 @@ onMounted(() => {
           </div>
           <div v-if="debugResult" class="debug-response">
             <div class="resp-status">
-              <span :class="['resp-code', debugResult.success ? 'ok' : 'err']">
-                {{ debugResult.success ? '成功' : '失败' }}
+              <span :class="['resp-code', debugResult.success === 1 ? 'ok' : 'err']">
+                {{ debugResult.success === 1 ? '成功' : '失败' }}
               </span>
               <span v-if="debugResult.responseTimeMs" class="resp-meta">耗时: {{ debugResult.responseTimeMs }}ms</span>
             </div>

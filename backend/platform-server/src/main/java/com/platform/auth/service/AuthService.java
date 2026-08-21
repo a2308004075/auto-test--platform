@@ -79,7 +79,7 @@ public class AuthService {
         if (user == null) {
             throw new BusinessException(ErrorCode.LOGIN_FAILED, "用户名或密码错误");
         }
-        if (Boolean.FALSE.equals(user.getIsActive())) {
+        if (Integer.valueOf(0).equals(user.getIsActive())) {
             throw new BusinessException(ErrorCode.ACCOUNT_RESERVED, "账号已被禁用");
         }
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {

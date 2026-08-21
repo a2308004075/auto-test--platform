@@ -34,8 +34,8 @@ public class Environment extends BaseEntity {
     private String configJson;
 
     /**
-     * 是否为当前激活环境（对应 DB 的 is_current 字段）
+     * 是否为当前激活环境（0-否，1-是）
      */
     @TableField("is_current")
-    private Boolean isCurrent;
+    private Integer isCurrent;
 }

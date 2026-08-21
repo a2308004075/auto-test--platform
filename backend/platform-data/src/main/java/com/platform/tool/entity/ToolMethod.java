@@ -38,7 +38,7 @@ public class ToolMethod extends BaseEntity {
     private String code;
 
     @TableLogic
-    private Boolean isActive;
+    private Integer isActive;
 
     private String testInput;
 

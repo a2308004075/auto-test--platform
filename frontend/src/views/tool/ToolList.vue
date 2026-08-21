@@ -72,7 +72,7 @@ async function handleTest() {
   try {
     const res: any = await testTool(projectId.value, currentTestId.value, { testInput: testInput.value })
     testResult.value = res.data
-  } catch (e: any) { testResult.value = { success: false, error: e?.message } } finally { testLoading.value = false }
+  } catch (e: any) { testResult.value = { success: 0, error: e?.message } } finally { testLoading.value = false }
 }
 
 function handleDelete(record: any) {
@@ -148,7 +148,7 @@ onMounted(fetchList)
         <el-input v-model="testInput" type="textarea" :rows="4" style="font-family:monospace" />
       </el-form-item>
       <div v-if="testResult" style="margin-top:12px">
-        <el-alert :type="testResult.success ? 'success' : 'error'" :title="testResult.success ? '执行成功' : '执行失败'"
+        <el-alert :type="testResult.success === 1 ? 'success' : 'error'" :title="testResult.success === 1 ? '执行成功' : '执行失败'"
           :description="testResult.output || testResult.error" show-icon :closable="false" />
         <div v-if="testResult.executionTimeMs" style="color:#909399;margin-top:4px">耗时: {{ testResult.executionTimeMs }}ms</div>
       </div>

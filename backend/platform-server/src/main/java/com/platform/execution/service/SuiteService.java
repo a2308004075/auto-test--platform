@@ -82,10 +82,10 @@ public class SuiteService {
             suite.setPriority("P2");
         }
         if (suite.getEnableOnceSetupTeardown() == null) {
-            suite.setEnableOnceSetupTeardown(false);
+            suite.setEnableOnceSetupTeardown(0);
         }
         if (suite.getEnablePerCaseSetupTeardown() == null) {
-            suite.setEnablePerCaseSetupTeardown(false);
+            suite.setEnablePerCaseSetupTeardown(0);
         }
         suite.setCreatedBy(getCurrentUserId());
         testSuiteMapper.insert(suite);

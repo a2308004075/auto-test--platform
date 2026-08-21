@@ -38,7 +38,7 @@ public class TestPlan extends BaseEntity {
     private String scheduleCron;
 
     @TableLogic
-    private Boolean isActive;
+    private Integer isActive;
 
     private Long createdBy;
 }

@@ -82,7 +82,7 @@ public class UserService {
         user.setDisplayName(request.getDisplayName());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRoleId(request.getRoleId());
-        user.setIsActive(Boolean.TRUE);
+        user.setIsActive(1);
         userMapper.insert(user);
 
         log.info("创建用户成功: username={}, roleId={}", user.getUsername(), user.getRoleId());
@@ -134,7 +134,7 @@ public class UserService {
         if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
             throw new BusinessException(ErrorCode.ADMIN_PROTECTED, "系统内置管理员账号不可删除");
         }
-        user.setIsActive(Boolean.FALSE);
+        user.setIsActive(0);
         userMapper.updateById(user);
         log.info("删除用户成功: userId={}, username={}", userId, user.getUsername());
     }
@@ -148,7 +148,7 @@ public class UserService {
         if (user == null) {
             throw new NotFoundException("用户", userId);
         }
-        if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername()) && Boolean.FALSE.equals(request.getIsActive())) {
+        if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername()) && Integer.valueOf(0).equals(request.getIsActive())) {
             throw new BusinessException(ErrorCode.ADMIN_PROTECTED, "系统管理员账号不允许禁用");
         }
         user.setIsActive(request.getIsActive());

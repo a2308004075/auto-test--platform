@@ -93,7 +93,7 @@ public class ActionService {
         action.setDescription(request.getDescription());
         action.setInputParams(request.getInputParams());
         action.setOutputParams(request.getOutputParams());
-        action.setIsActive(true);
+        action.setIsActive(1);
 
         // 序列化节点到 JSON
         if (request.getNodes() != null) {

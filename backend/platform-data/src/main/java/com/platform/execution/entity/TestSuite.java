@@ -52,9 +52,9 @@ public class TestSuite extends BaseEntity {
     private String onceTeardownSteps;
 
     /**
-     * 是否启用套件级·整体生命周期
+     * 是否启用套件级·整体生命周期（0-否，1-是）
      */
-    private Boolean enableOnceSetupTeardown;
+    private Integer enableOnceSetupTeardown;
 
     /**
      * 套件级·每条用例 Setup 步骤树（JSON）
@@ -67,9 +67,9 @@ public class TestSuite extends BaseEntity {
     private String perCaseTeardownSteps;
 
     /**
-     * 是否启用套件级·每条用例生命周期
+     * 是否启用套件级·每条用例生命周期（0-否，1-是）
      */
-    private Boolean enablePerCaseSetupTeardown;
+    private Integer enablePerCaseSetupTeardown;
 
     /**
      * 创建人 ID

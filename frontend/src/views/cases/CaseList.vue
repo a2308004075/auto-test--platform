@@ -60,7 +60,7 @@ function handleEdit(record: any) {
 async function handleToggleStatus(record: any) {
   try {
     await toggleCaseStatus(projectId.value, record.id)
-    ElMessage.success(record.isActive ? '已禁用' : '已启用')
+    ElMessage.success(record.isActive === 1 ? '已禁用' : '已启用')
     fetchList()
   } catch { ElMessage.error('操作失败') }
 }
@@ -100,7 +100,7 @@ onMounted(() => { fetchSuites(); fetchList() })
       <el-table-column prop="timeout" label="超时(秒)" width="100" />
       <el-table-column label="状态" width="90">
         <template #default="{ row }">
-          <el-tag :type="row.isActive ? 'success' : 'info'" size="small">{{ row.isActive ? '启用' : '禁用' }}</el-tag>
+          <el-tag :type="row.isActive === 1 ? 'success' : 'info'" size="small">{{ row.isActive === 1 ? '启用' : '禁用' }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="创建时间" width="120">
@@ -109,7 +109,7 @@ onMounted(() => { fetchSuites(); fetchList() })
       <el-table-column label="操作" width="200">
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button type="primary" link size="small" @click="handleToggleStatus(row)">{{ row.isActive ? '禁用' : '启用' }}</el-button>
+          <el-button type="primary" link size="small" @click="handleToggleStatus(row)">{{ row.isActive === 1 ? '禁用' : '启用' }}</el-button>
           <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>

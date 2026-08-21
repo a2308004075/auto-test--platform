@@ -14,7 +14,7 @@ public class ActionResponse {
     private String nodes;
     private String inputParams;
     private String outputParams;
-    private Boolean isActive;
+    private Integer isActive;
     private Long createdBy;
     private Long updatedBy;
     private LocalDateTime createdAt;

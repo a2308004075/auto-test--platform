@@ -61,7 +61,7 @@ async function handleSubmit() {
 async function handleActivate(record: any) {
   try {
     await activateEnvironment(projectId.value, record.id)
-    ElMessage.success(record.isCurrent ? '已取消激活' : '已激活')
+    ElMessage.success(record.isCurrent === 1 ? '已取消激活' : '已激活')
     fetchList()
   } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
 }
@@ -104,12 +104,12 @@ onMounted(fetchList)
       <el-table-column prop="databaseName" label="数据库" width="120" />
       <el-table-column label="状态" width="80">
         <template #default="{ row }">
-          <el-tag :type="row.isCurrent ? 'success' : 'info'" size="small">{{ row.isCurrent ? '已激活' : '未激活' }}</el-tag>
+          <el-tag :type="row.isCurrent === 1 ? 'success' : 'info'" size="small">{{ row.isCurrent === 1 ? '已激活' : '未激活' }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="220">
         <template #default="{ row }">
-          <el-button type="primary" link size="small" @click="handleActivate(row)">{{ row.isCurrent ? '取消激活' : '激活' }}</el-button>
+          <el-button type="primary" link size="small" @click="handleActivate(row)">{{ row.isCurrent === 1 ? '取消激活' : '激活' }}</el-button>
           <el-button type="primary" link size="small" @click="handleTest(row)">{{ testLoading === row.id ? '测试中...' : '测试' }}</el-button>
           <el-button type="primary" link size="small" @click="openEdit(row)">编辑</el-button>
           <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>

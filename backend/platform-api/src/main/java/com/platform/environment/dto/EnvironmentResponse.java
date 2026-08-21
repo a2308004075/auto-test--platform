@@ -23,7 +23,7 @@ public class EnvironmentResponse {
     private String redisHost;
     private String redisPort;
     private String configJson;
-    private Boolean isCurrent;
+    private Integer isCurrent;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

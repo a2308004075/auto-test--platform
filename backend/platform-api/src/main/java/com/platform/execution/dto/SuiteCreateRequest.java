@@ -31,7 +31,7 @@ public class SuiteCreateRequest implements Serializable {
      */
     private String tags;
 
-    private Boolean enableOnceSetupTeardown;
+    private Integer enableOnceSetupTeardown;
 
     /**
      * 套件级·整体 Setup 步骤树（JSON）
@@ -40,7 +40,7 @@ public class SuiteCreateRequest implements Serializable {
 
     private String onceTeardownSteps;
 
-    private Boolean enablePerCaseSetupTeardown;
+    private Integer enablePerCaseSetupTeardown;
 
     private String perCaseSetupSteps;
 

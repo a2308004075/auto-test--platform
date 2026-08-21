@@ -11,5 +11,5 @@ import javax.validation.constraints.NotNull;
 public class StatusToggleRequest {
 
     @NotNull(message = "isActive 不能为空")
-    private Boolean isActive;
+    private Integer isActive;
 }

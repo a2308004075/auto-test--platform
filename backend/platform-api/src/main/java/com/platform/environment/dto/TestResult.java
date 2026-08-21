@@ -8,13 +8,13 @@ import lombok.Data;
 @Data
 public class TestResult {
 
-    private Boolean success;
+    private Integer success;
     private String message;
     private Long responseTimeMs;
 
     public static TestResult ok(long responseTimeMs) {
         TestResult r = new TestResult();
-        r.setSuccess(true);
+        r.setSuccess(1);
         r.setMessage("连接成功");
         r.setResponseTimeMs(responseTimeMs);
         return r;
@@ -22,7 +22,7 @@ public class TestResult {
 
     public static TestResult fail(String message) {
         TestResult r = new TestResult();
-        r.setSuccess(false);
+        r.setSuccess(0);
         r.setMessage(message);
         return r;
     }

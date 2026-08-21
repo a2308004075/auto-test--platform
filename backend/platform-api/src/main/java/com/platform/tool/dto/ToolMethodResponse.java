@@ -15,7 +15,7 @@ public class ToolMethodResponse {
     private String paramDefinitions;
     private String returnType;
     private String code;
-    private Boolean isActive;
+    private Integer isActive;
     private String testInput;
     private String testResult;
     private Long createdBy;

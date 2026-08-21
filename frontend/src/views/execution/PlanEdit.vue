@@ -116,7 +116,7 @@ onMounted(() => {
         <el-form-item label="执行环境">
           <el-select v-model="form.environmentId" placeholder="选择执行环境" clearable style="width:100%">
             <el-option v-for="env in environments" :key="env.id" :value="env.id"
-              :label="`${env.name}${env.isCurrent ? '（当前）' : ''}`" />
+              :label="`${env.name}${env.isCurrent === 1 ? '（当前）' : ''}`" />
           </el-select>
         </el-form-item>
         <el-form-item label="关联测试套件">

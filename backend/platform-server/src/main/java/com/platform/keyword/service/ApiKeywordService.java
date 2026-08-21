@@ -18,6 +18,8 @@ import com.platform.keyword.entity.ApiKeyword;
 import com.platform.keyword.entity.Keyword;
 import com.platform.keyword.mapper.ApiKeywordMapper;
 import com.platform.keyword.mapper.KeywordMapper;
+import com.platform.project.entity.ApiModule;
+import com.platform.project.mapper.ApiModuleMapper;
 import com.platform.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 接口关键字管理服务
@@ -37,6 +40,7 @@ public class ApiKeywordService {
     private final KeywordMapper keywordMapper;
     private final ApiKeywordMapper apiKeywordMapper;
     private final ApiMapper apiMapper;
+    private final ApiModuleMapper apiModuleMapper;
     private final ActionNodeMapper actionNodeMapper;
     private final TestCaseMapper testCaseMapper;
     private final ProjectService projectService;
@@ -44,13 +48,24 @@ public class ApiKeywordService {
     /**
      * 分页查询接口关键字列表
      */
-    public PageResponse<ApiKeywordResponse> list(Long projectId, String keyword,
-                                                   int page, int pageSize) {
+    public PageResponse<ApiKeywordResponse> list(Long projectId, String keyword, String category,
+                                                   Long moduleId, int page, int pageSize) {
         LambdaQueryWrapper<Keyword> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Keyword::getProjectId, projectId)
                 .eq(Keyword::getType, "API");
         if (StringUtils.hasText(keyword)) {
             wrapper.like(Keyword::getName, keyword);
+        }
+        if (StringUtils.hasText(category)) {
+            wrapper.eq(Keyword::getCategory, category);
+        }
+        // 按关联接口分组筛选：查出该分组下所有接口关联的关键字 ID，再 in 筛选
+        if (moduleId != null) {
+            List<Long> keywordIds = findKeywordIdsByModuleId(moduleId);
+            if (keywordIds.isEmpty()) {
+                return PageResponse.of(new ArrayList<>(), 0, page, pageSize);
+            }
+            wrapper.in(Keyword::getId, keywordIds);
         }
         wrapper.orderByDesc(Keyword::getCreatedAt);
 
@@ -86,6 +101,8 @@ public class ApiKeywordService {
         kw.setType("API");
         kw.setProjectId(request.getProjectId());
         kw.setDescription(request.getDescription());
+        kw.setCategory(request.getCategory());
+        kw.setTags(request.getTags());
         keywordMapper.insert(kw);
 
         // 创建 api_keyword 绑定记录
@@ -121,6 +138,12 @@ public class ApiKeywordService {
         }
         if (request.getDescription() != null) {
             kw.setDescription(request.getDescription());
+        }
+        if (request.getCategory() != null) {
+            kw.setCategory(request.getCategory());
+        }
+        if (request.getTags() != null) {
+            kw.setTags(request.getTags());
         }
         keywordMapper.updateById(kw);
 
@@ -245,6 +268,25 @@ public class ApiKeywordService {
     }
 
     /**
+     * 查询关联指定接口分组的所有关键字 ID
+     */
+    private List<Long> findKeywordIdsByModuleId(Long moduleId) {
+        // 查询该分组下的所有接口 ID
+        LambdaQueryWrapper<Api> apiWrapper = new LambdaQueryWrapper<>();
+        apiWrapper.eq(Api::getModuleId, moduleId);
+        List<Api> apis = apiMapper.selectList(apiWrapper);
+        if (apis.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<Long> apiIds = apis.stream().map(Api::getId).collect(Collectors.toList());
+        // 查询关联这些接口的关键字 ID
+        LambdaQueryWrapper<ApiKeyword> akWrapper = new LambdaQueryWrapper<>();
+        akWrapper.in(ApiKeyword::getApiId, apiIds);
+        List<ApiKeyword> aks = apiKeywordMapper.selectList(akWrapper);
+        return aks.stream().map(ApiKeyword::getKeywordId).distinct().collect(Collectors.toList());
+    }
+
+    /**
      * 统计引用指定关键字的测试用例数量（搜索 steps / setup_steps / teardown_steps JSON）
      */
     private long countTestCaseReferences(Long keywordId) {
@@ -263,6 +305,8 @@ public class ApiKeywordService {
         resp.setName(kw.getName());
         resp.setType(kw.getType());
         resp.setDescription(kw.getDescription());
+        resp.setCategory(kw.getCategory());
+        resp.setTags(kw.getTags());
         resp.setCreatedBy(kw.getCreatedBy());
         resp.setUpdatedBy(kw.getUpdatedBy());
         resp.setCreatedAt(kw.getCreatedAt());
@@ -280,10 +324,20 @@ public class ApiKeywordService {
             resp.setApiId(apiKw.getApiId());
             resp.setTestData(apiKw.getTestData());
             resp.setResponseAssertion(apiKw.getResponseAssertion());
-            // 查询关联接口名称
+            // 查询关联接口详情
             Api api = apiMapper.selectById(apiKw.getApiId());
             if (api != null) {
                 resp.setApiName(api.getName());
+                resp.setApiPath(api.getPath());
+                resp.setHttpMethod(api.getHttpMethod());
+                resp.setModuleId(api.getModuleId());
+                // 查询接口分组名称
+                if (api.getModuleId() != null) {
+                    ApiModule module = apiModuleMapper.selectById(api.getModuleId());
+                    if (module != null) {
+                        resp.setModuleName(module.getName());
+                    }
+                }
             }
         }
 

@@ -1,5 +1,6 @@
 package com.platform.keyword.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.platform.common.entity.BaseEntity;
 import lombok.Data;
@@ -18,6 +19,7 @@ public class Keyword extends BaseEntity {
     /**
      * 关键字类型：API / TOOL / ACTION / TEST_CASE
      */
+    @TableField("keyword_type")
     private String type;
 
     private Long projectId;
@@ -28,6 +30,16 @@ public class Keyword extends BaseEntity {
     private Long refId;
 
     private String description;
+
+    /**
+     * 分类
+     */
+    private String category;
+
+    /**
+     * 标签列表（JSON 数组）
+     */
+    private String tags;
 
     private Long createdBy;
 

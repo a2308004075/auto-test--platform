@@ -59,6 +59,7 @@ public class ApiModuleService {
 
         ApiModule module = new ApiModule();
         module.setProjectId(request.getProjectId());
+        module.setParentId(request.getParentId());
         module.setName(request.getName());
         module.setServicePrefix(request.getServicePrefix());
         module.setDescription(request.getDescription());
@@ -87,6 +88,9 @@ public class ApiModuleService {
         }
         if (request.getDescription() != null) {
             module.setDescription(request.getDescription());
+        }
+        if (request.getParentId() != null) {
+            module.setParentId(request.getParentId());
         }
 
         apiModuleMapper.updateById(module);

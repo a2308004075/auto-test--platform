@@ -50,6 +50,7 @@ com\platform\execution\dto\ExecutionResponse.class
 com\platform\action\dto\ActionUpdateRequest.class
 com\platform\auth\dto\StatusToggleRequest.class
 com\platform\execution\dto\CaseResponse.class
+com\platform\apidoc\dto\ApiReferenceResponse.class
 com\platform\auth\dto\UserUpdateRequest.class
 com\platform\common\exception\ErrorCode.class
 com\platform\common\util\SpringContextHolder.class

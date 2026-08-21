@@ -57,3 +57,8 @@ export function updateModule(projectId: number, moduleId: number, data: any) {
 export function deleteModule(projectId: number, moduleId: number) {
   return request.delete(`/v1/projects/${projectId}/modules/${moduleId}`)
 }
+
+// 接口被关键字引用的关系（后端端点待实现，调用需 try/catch 容错）
+export function getApiReferences(projectId: number, apiId: number) {
+  return request.get(`/v1/projects/${projectId}/apis/${apiId}/references`)
+}

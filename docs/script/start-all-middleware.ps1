@@ -6,9 +6,13 @@
 # WmiPrvSE.exe, ensuring the entire process tree survives parent exit.
 
 Write-Output '[1/3] Starting MySQL ...'
-Start-Process -FilePath 'D:\software\mysql-8.0\bin\mysqld.exe' `
-    -ArgumentList '--console' `
-    -WindowStyle Hidden
+if (Get-Process -Name mysqld -ErrorAction SilentlyContinue) {
+    Write-Output '      MySQL is already running, skipping startup.'
+} else {
+    Start-Process -FilePath 'D:\software\mysql-8.0\bin\mysqld.exe' `
+        -ArgumentList '--console' `
+        -WindowStyle Hidden
+}
 
 Start-Sleep -Seconds 5
 

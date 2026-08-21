@@ -68,4 +68,5 @@ com\platform\tool\service\GroovySandboxExecutor.class
 com\platform\execution\engine\SuiteExecutor$SuiteExecutionResult.class
 com\platform\auth\config\WebMvcConfig.class
 com\platform\execution\controller\PlanController.class
+com\platform\common\config\AutoPortIncrementConfig.class
 com\platform\execution\engine\ActionExecutor.class

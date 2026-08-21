@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 chcp 65001 >nul
 echo ============================================
 echo   一键启动所有中间件
@@ -6,7 +6,12 @@ echo ============================================
 echo.
 
 echo [1/3] 启动 MySQL ...
-start "MySQL" cmd /k "D:\software\mysql-8.0\bin\mysqld --console"
+tasklist /FI "IMAGENAME eq mysqld.exe" 2>nul | find /I "mysqld.exe" >nul
+if "%errorlevel%"=="0" (
+    echo       MySQL 已经在运行，跳过启动。
+) else (
+    start "MySQL" cmd /k "D:\software\mysql-8.0\bin\mysqld --console"
+)
 
 echo 等待 MySQL 就绪 ...
 ping -n 6 127.0.0.1 >nul

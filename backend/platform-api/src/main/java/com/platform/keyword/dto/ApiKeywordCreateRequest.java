@@ -34,4 +34,14 @@ public class ApiKeywordCreateRequest {
      * 响应断言配置（JSON 格式）
      */
     private String responseAssertion;
+
+    /**
+     * 分类
+     */
+    private String category;
+
+    /**
+     * 标签列表（JSON 数组）
+     */
+    private String tags;
 }

@@ -12,7 +12,9 @@ import com.platform.common.response.PageResponse;
 import com.platform.environment.dto.EnvironmentResponse;
 import com.platform.environment.service.EnvironmentService;
 import com.platform.keyword.entity.ApiKeyword;
+import com.platform.keyword.entity.Keyword;
 import com.platform.keyword.mapper.ApiKeywordMapper;
+import com.platform.keyword.mapper.KeywordMapper;
 import com.platform.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,7 @@ public class ApiService {
 
     private final ApiMapper apiMapper;
     private final ApiKeywordMapper apiKeywordMapper;
+    private final KeywordMapper keywordMapper;
     private final ProjectService projectService;
     private final EnvironmentService environmentService;
 
@@ -326,6 +329,31 @@ public class ApiService {
             response.setResponseTimeMs(elapsed);
             return response;
         }
+    }
+
+    /**
+     * 查询接口被关键字引用的关系
+     */
+    public List<ApiReferenceResponse> getReferences(Long apiId) {
+        // 查询绑定了此接口的 api_keyword 记录
+        LambdaQueryWrapper<ApiKeyword> kwWrapper = new LambdaQueryWrapper<>();
+        kwWrapper.eq(ApiKeyword::getApiId, apiId);
+        List<ApiKeyword> apiKeywords = apiKeywordMapper.selectList(kwWrapper);
+
+        List<ApiReferenceResponse> result = new ArrayList<>();
+        for (ApiKeyword ak : apiKeywords) {
+            Keyword kw = keywordMapper.selectById(ak.getKeywordId());
+            if (kw != null) {
+                ApiReferenceResponse resp = new ApiReferenceResponse();
+                resp.setKeywordId(kw.getId());
+                resp.setKeywordName(kw.getName());
+                resp.setKeywordType(kw.getType());
+                resp.setCategory(kw.getCategory());
+                resp.setReferenceCount(0);
+                result.add(resp);
+            }
+        }
+        return result;
     }
 
     // ───────────────────── 私有方法 ─────────────────────

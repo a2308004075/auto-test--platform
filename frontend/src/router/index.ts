@@ -75,6 +75,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '接口关键字', inProject: true },
       },
       {
+        path: 'project/:id/keywords/new',
+        name: 'KeywordNew',
+        component: () => import('@/views/keywords/KeywordEdit.vue'),
+        meta: { title: '新建关键字', inProject: true },
+      },
+      {
+        path: 'project/:id/keywords/:keywordId/edit',
+        name: 'KeywordEdit',
+        component: () => import('@/views/keywords/KeywordEdit.vue'),
+        meta: { title: '编辑关键字', inProject: true },
+      },
+      {
         path: 'project/:id/tools',
         name: 'ToolList',
         component: () => import('@/views/tool/ToolList.vue'),

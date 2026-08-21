@@ -19,6 +19,11 @@ public class ApiModule extends BaseEntity {
     private Long projectId;
 
     /**
+     * 父分组 ID（null=根分组）
+     */
+    private Long parentId;
+
+    /**
      * 分组名称
      */
     private String name;

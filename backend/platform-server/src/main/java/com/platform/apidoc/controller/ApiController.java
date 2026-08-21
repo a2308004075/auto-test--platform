@@ -113,4 +113,13 @@ public class ApiController {
                                                 @Valid @RequestBody ApiDebugRequest request) {
         return ApiResponse.ok(apiService.debug(apiId, request));
     }
+
+    /**
+     * 查询接口被关键字引用的关系
+     */
+    @GetMapping("/{apiId}/references")
+    public ApiResponse<List<ApiReferenceResponse>> getReferences(@PathVariable Long projectId,
+                                                                  @PathVariable Long apiId) {
+        return ApiResponse.ok(apiService.getReferences(apiId));
+    }
 }

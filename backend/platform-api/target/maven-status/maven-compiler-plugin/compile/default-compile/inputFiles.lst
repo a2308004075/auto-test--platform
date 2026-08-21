@@ -16,6 +16,7 @@ D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\pr
 D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\common\util\JsonUtils.java
 D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\execution\dto\ExecutionStartRequest.java
 D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\tool\dto\ToolTestRequest.java
+D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\apidoc\dto\ApiReferenceResponse.java
 D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\common\package-info.java
 D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\apidoc\dto\ApiInfoResponse.java
 D:\develop\auto-test-platform\backend\platform-api\src\main\java\com\platform\common\entity\BaseEntity.java

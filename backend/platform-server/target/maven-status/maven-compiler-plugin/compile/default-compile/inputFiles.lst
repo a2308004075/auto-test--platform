@@ -55,6 +55,7 @@ D:\develop\auto-test-platform\backend\platform-server\src\main\java\com\platform
 D:\develop\auto-test-platform\backend\platform-server\src\main\java\com\platform\auth\controller\UserController.java
 D:\develop\auto-test-platform\backend\platform-server\src\main\java\com\platform\auth\service\SettingsService.java
 D:\develop\auto-test-platform\backend\platform-server\src\main\java\com\platform\execution\engine\AssertionEngine.java
+D:\develop\auto-test-platform\backend\platform-server\src\main\java\com\platform\common\config\AutoPortIncrementConfig.java
 D:\develop\auto-test-platform\backend\platform-server\src\main\java\com\platform\auth\controller\RoleController.java
 D:\develop\auto-test-platform\backend\platform-server\src\main\java\com\platform\common\config\RabbitMQConfig.java
 D:\develop\auto-test-platform\backend\platform-server\src\main\java\com\platform\auth\security\JwtAuthenticationFilter.java

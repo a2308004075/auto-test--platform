@@ -28,9 +28,11 @@ public class ApiKeywordController {
     public ApiResponse<PageResponse<ApiKeywordResponse>> list(
             @PathVariable Long projectId,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Long moduleId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.ok(apiKeywordService.list(projectId, keyword, page, pageSize));
+        return ApiResponse.ok(apiKeywordService.list(projectId, keyword, category, moduleId, page, pageSize));
     }
 
     /**

@@ -12,6 +12,7 @@ public class ApiModuleResponse {
 
     private Long id;
     private Long projectId;
+    private Long parentId;
     private String name;
     private String servicePrefix;
     private String description;

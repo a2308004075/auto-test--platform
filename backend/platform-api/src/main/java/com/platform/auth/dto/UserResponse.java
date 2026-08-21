@@ -16,7 +16,7 @@ public class UserResponse {
     private Long roleId;
     private String roleName;
     /**
-     * 角色编码（如 ADMIN、USER），供前端兼容展示
+     * 角色编码（如 ADMIN、TESTER），供前端兼容展示
      */
     private String role;
     private Integer isActive;

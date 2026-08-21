@@ -66,7 +66,7 @@ public class AuthService {
      * 根据 roleId 查询角色编码
      *
      * @param roleId 角色 ID
-     * @return 角色编码（如 ADMIN、USER），找不到时返回 null
+     * @return 角色编码（如 ADMIN、TESTER），找不到时返回 null
      */
     private String getRoleCode(Long roleId) {
         if (roleId == null) {

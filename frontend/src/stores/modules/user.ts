@@ -31,7 +31,7 @@ export const useUserStore = defineStore('user', () => {
     userId.value = info.id
     username.value = info.username
     displayName.value = info.displayName || info.username
-    role.value = info.role || 'USER'
+    role.value = info.role || 'TESTER'
     localStorage.setItem('username', info.username)
     localStorage.setItem('displayName', info.displayName || info.username)
     localStorage.setItem('role', role.value)

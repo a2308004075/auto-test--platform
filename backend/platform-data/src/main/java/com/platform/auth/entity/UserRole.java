@@ -20,7 +20,7 @@ public class UserRole extends BaseEntity {
     private String roleName;
 
     /**
-     * 角色编码（如 ADMIN、USER）
+     * 角色编码（如 ADMIN、TESTER）
      */
     private String roleCode;
 

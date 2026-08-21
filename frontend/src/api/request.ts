@@ -33,16 +33,24 @@ service.interceptors.response.use(
   (error) => {
     const status = error.response?.status
     const data = error.response?.data
+    const url = error.config?.url || ''
+
+    // 登录接口由调用方自行处理错误提示，避免重复弹窗
+    const skipGlobalMessage = url.includes('/v1/auth/login')
 
     if (status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('refreshToken')
-      ElMessage.error('登录已过期，请重新登录')
+      if (!skipGlobalMessage) {
+        ElMessage.error('登录已过期，请重新登录')
+      }
       window.location.href = '/home'
     } else if (status === 403) {
       ElMessage.error('没有操作权限')
     } else if (status === 400) {
-      ElMessage.error(data?.message || '请求参数错误')
+      if (!skipGlobalMessage) {
+        ElMessage.error(data?.message || '请求参数错误')
+      }
     } else if (status >= 500) {
       ElMessage.error(data?.message || '服务器错误')
     } else if (!status) {

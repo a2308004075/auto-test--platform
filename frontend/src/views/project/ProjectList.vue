@@ -2,7 +2,7 @@
 /**
  * 项目列表页（首页） - 对齐 UI 原型 project-list.html
  */
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getProjects, createProject, updateProject, deleteProject, toggleProjectStatus } from '@/api/project'
@@ -11,6 +11,9 @@ import { useProjectStore, useUserStore } from '@/stores'
 const router = useRouter()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
+
+// 是否管理员（非管理员首页权限与未登录一致）
+const isAdmin = computed(() => (userStore.role || '').toUpperCase() === 'ADMIN')
 
 const loading = ref(false)
 const list = ref<any[]>([])
@@ -67,7 +70,7 @@ function enterProject(project: any) {
 }
 
 function openCreate() {
-  if (!userStore.isLoggedIn) {
+  if (!isAdmin.value) {
     ElMessage.info('请先登录后再创建项目')
     return
   }
@@ -147,7 +150,7 @@ onMounted(fetchList)
         <h1 class="page-title">首页</h1>
         <p class="page-desc">选择项目快速进入工作台</p>
       </div>
-      <el-button v-if="userStore.isLoggedIn" type="primary" @click="openCreate">+ 新建项目</el-button>
+      <el-button v-if="isAdmin" type="primary" @click="openCreate">+ 新建项目</el-button>
     </div>
 
     <!-- 搜索筛选区 -->
@@ -189,11 +192,11 @@ onMounted(fetchList)
               <span
                 class="status-tag"
                 :class="project.status === 1 ? 'tag-active' : 'tag-disabled'"
-                @click="userStore.isLoggedIn && handleToggleStatus(project)"
+                @click="isAdmin && handleToggleStatus(project)"
               >
                 {{ project.status === 1 ? '启用' : '停用' }}
               </span>
-              <template v-if="userStore.isLoggedIn">
+              <template v-if="isAdmin">
                 <button class="btn-edit" @click="openEdit(project)">编辑</button>
                 <button class="btn-delete" @click="handleDelete(project)">删除</button>
               </template>
@@ -217,7 +220,7 @@ onMounted(fetchList)
       </div>
     </div>
 
-    <el-empty v-if="!list.length && !loading" :description="`暂无项目${userStore.isLoggedIn ? '，点击「新建项目」开始' : ''}`" />
+    <el-empty v-if="!list.length && !loading" :description="`暂无项目${isAdmin ? '，点击「新建项目」开始' : ''}`" />
 
     <!-- 分页 -->
     <div v-if="pagination.total > pagination.pageSize" class="pagination-wrap">

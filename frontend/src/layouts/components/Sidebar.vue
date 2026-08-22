@@ -26,8 +26,8 @@ const inProject = computed(() => route.meta?.inProject === true)
 const inSettings = computed(() => route.path.startsWith('/settings'))
 const projectId = computed(() => Number(route.params.id) || 0)
 
-// 是否管理员
-const isAdmin = computed(() => (userStore.role || '').toUpperCase() === 'ADMIN')
+// 是否管理员（未登录时即使 localStorage 残留 role 也不视为管理员）
+const isAdmin = computed(() => userStore.isLoggedIn && (userStore.role || '').toUpperCase() === 'ADMIN')
 
 // ===== 动态菜单 =====
 interface MenuItem {

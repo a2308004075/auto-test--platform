@@ -17,8 +17,8 @@ const router = useRouter()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
 
-// 是否管理员（非管理员首页权限与未登录一致）
-const isAdmin = computed(() => (userStore.role || '').toUpperCase() === 'ADMIN')
+// 是否管理员（未登录或非管理员均视为无管理权限）
+const isAdmin = computed(() => userStore.isLoggedIn && (userStore.role || '').toUpperCase() === 'ADMIN')
 
 const loading = ref(false)
 const list = ref<any[]>([])
@@ -196,7 +196,7 @@ onMounted(fetchList)
             <div class="card-actions" @click.stop>
               <span
                 class="status-tag"
-                :class="project.status === 1 ? 'tag-active' : 'tag-disabled'"
+                :class="[project.status === 1 ? 'tag-active' : 'tag-disabled', { 'is-readonly': !isAdmin }]"
                 @click="isAdmin && handleToggleStatus(project)"
               >
                 {{ project.status === 1 ? '启用' : '停用' }}
@@ -364,6 +364,11 @@ onMounted(fetchList)
   font-weight: 500;
 }
 .status-tag:hover { opacity: 0.7; }
+.status-tag.is-readonly {
+  cursor: default;
+  pointer-events: none;
+}
+.status-tag.is-readonly:hover { opacity: 1; }
 .tag-active {
   background: #f6ffed;
   color: #52c41a;

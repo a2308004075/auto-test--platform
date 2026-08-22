@@ -41,8 +41,8 @@ const roleInitial = computed(() => {
 // 显示名
 const displayName = computed(() => userStore.displayName || userStore.username || '')
 
-// 是否管理员
-const isAdmin = computed(() => (userStore.role || '').toUpperCase() === 'ADMIN')
+// 是否管理员（未登录时即使 localStorage 残留 role 也不视为管理员）
+const isAdmin = computed(() => userStore.isLoggedIn && (userStore.role || '').toUpperCase() === 'ADMIN')
 
 onMounted(() => {
   // 页面刷新后恢复用户信息

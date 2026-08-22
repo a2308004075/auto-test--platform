@@ -7,13 +7,19 @@
 /**
  * 字典管理页面（仅 ADMIN）
  * 搜索 + 分页表格 + 新增/编辑弹窗 + 批量删除
+ * 对标 svc-manager-web Dictionary.vue
  */
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import PageHeader from '@/components/PageHeader/index.vue'
+import FlexQueryForm from '@/components/FlexQueryForm/index.vue'
+import TableFit from '@/components/TableFit/index.vue'
 import {
-  getDictPage, addDict, updateDict, batchDeleteDict,
-  type DictListItem, type DictCreateRequest,
+  getDictPage,
+  addDict,
+  updateDict,
+  batchDeleteDict,
+  type DictListItem,
+  type DictCreateRequest,
 } from '@/api/dict'
 
 // ===== 列表数据 =====
@@ -108,7 +114,12 @@ function openEdit(row: DictListItem) {
 
 // ===== 保存 =====
 async function handleSave() {
-  if (!form.dictType.trim() || !form.dictTypeName.trim() || !form.dictValue.trim() || !form.dictValueName.trim()) {
+  if (
+    !form.dictType.trim() ||
+    !form.dictTypeName.trim() ||
+    !form.dictValue.trim() ||
+    !form.dictValueName.trim()
+  ) {
     ElMessage.warning('请填写完整字典信息')
     return
   }
@@ -143,7 +154,7 @@ async function handleBatchDelete() {
     return
   }
   try {
-    await batchDeleteDict(selectionList.value.map(r => r.id))
+    await batchDeleteDict(selectionList.value.map((r) => r.id))
     ElMessage.success('删除成功')
     pagination.current = 1
     fetchList()
@@ -160,52 +171,77 @@ function handleReset() {
   fetchList()
 }
 
-onMounted(() => { fetchList() })
+onMounted(() => {
+  fetchList()
+})
 </script>
 
 <template>
-  <div class="dict-management-view">
-    <PageHeader title="字典管理" />
-
-    <!-- 搜索栏 -->
-    <div class="search-card">
+  <div class="dictionary">
+    <!-- 查询区 -->
+    <div class="form">
       <el-form inline>
-        <el-form-item label="字典类型">
-          <el-input v-model="searchType" clearable placeholder="请输入字典类型编码" @keyup.enter="handleSearch" style="width: 180px;" />
-        </el-form-item>
-        <el-form-item label="类型名称">
-          <el-input v-model="searchTypeName" clearable placeholder="请输入类型名称" @keyup.enter="handleSearch" style="width: 180px;" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">搜索</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
+        <FlexQueryForm>
+          <el-form-item label="字典名称">
+            <el-input
+              v-model="searchType"
+              clearable
+              placeholder="请输入字典名称"
+              style="width: 180px;"
+              @keyup.enter="handleSearch"
+            />
+          </el-form-item>
+          <el-form-item label="字典描述">
+            <el-input
+              v-model="searchTypeName"
+              clearable
+              placeholder="请输入字典描述"
+              style="width: 180px;"
+              @keyup.enter="handleSearch"
+            />
+          </el-form-item>
+          <template #button>
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+            <el-button @click="handleReset">重置</el-button>
+          </template>
+        </FlexQueryForm>
       </el-form>
     </div>
 
-    <!-- 表格 -->
+    <!-- 表格区 -->
     <div class="table-card">
-      <div class="table-toolbar">
+      <div class="button-list">
         <el-button type="primary" @click="openAdd">新增字典</el-button>
-        <el-button type="danger" :disabled="!selectionList.length" @click="handleBatchDelete">批量删除</el-button>
+        <el-button type="danger" :disabled="!selectionList.length" @click="handleBatchDelete">
+          批量删除
+        </el-button>
       </div>
 
-      <el-table v-loading="loading" :data="dictList" stripe @selection-change="handleSelectionChange" style="width: 100%;">
-        <el-table-column type="selection" width="45" />
-        <el-table-column prop="dictType" label="字典类型" min-width="120" />
-        <el-table-column prop="dictTypeName" label="类型名称" min-width="120" />
-        <el-table-column prop="dictValue" label="字典值" min-width="100" />
-        <el-table-column prop="dictValueName" label="值名称" min-width="120" />
-        <el-table-column prop="sortNo" label="排序" width="70" align="center" />
-        <el-table-column prop="remark" label="备注" min-width="120" show-overflow-tooltip />
-        <el-table-column label="操作" width="80" align="right" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <TableFit>
+        <template #default="{ maxHeight }">
+          <el-table
+            v-loading="loading"
+            :data="dictList"
+            stripe
+            :max-height="maxHeight"
+            style="width: 100%;"
+            @selection-change="handleSelectionChange"
+          >
+            <el-table-column type="selection" width="45" />
+            <el-table-column prop="dictType" label="字典名称" min-width="120" />
+            <el-table-column prop="dictTypeName" label="字典描述" min-width="120" />
+            <el-table-column prop="dictValue" label="字典键值" min-width="100" />
+            <el-table-column prop="dictValueName" label="字典键值描述" min-width="120" />
+            <el-table-column label="操作" width="80" align="right" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </template>
+      </TableFit>
 
-      <div class="pagination-wrap">
+      <div class="pagination">
         <el-pagination
           v-model:current-page="pagination.current"
           v-model:page-size="pagination.pageSize"
@@ -220,25 +256,30 @@ onMounted(() => { fetchList() })
     </div>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑字典' : '新增字典'" width="520px" :close-on-click-modal="false">
-      <el-form :model="form" label-width="90px">
-        <el-form-item label="字典类型" required>
-          <el-input v-model="form.dictType" placeholder="如：project_status" />
+    <el-dialog
+      v-model="dialogVisible"
+      v-drag-dialog
+      :title="isEdit ? '编辑字典' : '新增字典'"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="form" label-width="auto">
+        <el-form-item label="字典名称" required>
+          <el-input v-model="form.dictType" placeholder="如：project_status" class="input" />
         </el-form-item>
-        <el-form-item label="类型名称" required>
-          <el-input v-model="form.dictTypeName" placeholder="如：项目状态" />
+        <el-form-item label="字典描述" required>
+          <el-input v-model="form.dictTypeName" placeholder="如：项目状态" class="input" />
         </el-form-item>
-        <el-form-item label="字典值" required>
-          <el-input v-model="form.dictValue" placeholder="如：active" />
+        <el-form-item label="字典键值" required>
+          <el-input v-model="form.dictValue" placeholder="如：active" class="input" />
         </el-form-item>
-        <el-form-item label="值名称" required>
-          <el-input v-model="form.dictValueName" placeholder="如：启用" />
+        <el-form-item label="字典键值描述" required>
+          <el-input v-model="form.dictValueName" placeholder="如：启用" class="input" />
         </el-form-item>
         <el-form-item label="排序号">
           <el-input-number v-model="form.sortNo" :min="0" :controls="false" style="width: 120px;" />
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注（可选）" />
+          <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注（可选）" class="input" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -250,41 +291,42 @@ onMounted(() => { fetchList() })
 </template>
 
 <style scoped>
-.dict-management-view {
-  width: 100%;
+.dictionary {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 120px);
 }
 
-.search-card {
-  background: #fff;
-  border-radius: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px rgba(0, 0, 0, 0.02);
-  border: 1px solid #f0f0f0;
-  padding: 16px 20px;
-  margin-bottom: 16px;
-}
-
-.search-card :deep(.el-form-item) {
+.form {
+  background-color: var(--color-white, #fff);
+  padding: 18px;
+  margin: 8px 24px;
   margin-bottom: 0;
 }
 
 .table-card {
-  background: #fff;
-  border-radius: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px rgba(0, 0, 0, 0.02);
-  border: 1px solid #f0f0f0;
-  padding: 16px 20px;
+  background-color: var(--color-white, #fff);
+  padding: 18px;
+  margin: 10px 24px 0 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
-.table-toolbar {
+.button-list {
+  text-align: right;
+  margin-bottom: 16px;
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 12px;
   gap: 8px;
 }
 
-.pagination-wrap {
-  display: flex;
-  justify-content: flex-end;
+.input {
+  max-width: 480px;
+}
+
+.pagination {
   margin-top: 16px;
+  text-align: right;
 }
 </style>

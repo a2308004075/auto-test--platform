@@ -119,8 +119,8 @@ const settingsMenuItems = computed(() => {
   ]
   if (isAdmin.value) {
     if (dynamicSettingsMenus.value.length) {
-      // 使用数据库动态加载的菜单
-      items.push(...dynamicSettingsMenus.value)
+      // 使用数据库动态加载的菜单（排除已硬编码的个人资料，避免重复）
+      items.push(...dynamicSettingsMenus.value.filter(m => m.key !== '/settings/profile'))
     } else {
       // API 未加载完成时的静态回退
       items.push({ key: '/settings/users', label: '用户列表', path: '/settings/users' })

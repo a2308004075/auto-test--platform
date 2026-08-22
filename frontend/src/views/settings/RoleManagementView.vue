@@ -6,13 +6,13 @@
 <script setup lang="ts">
 /**
  * 角色管理页面（仅 ADMIN）
- * 对齐 UserManagementView.vue 的 UI 模式
- * 包含：搜索 + 表格 + 弹窗（新建/编辑/权限分配/删除）+ Excel 导入导出
+ * 左右分栏布局，对标 svc-manager-web Role.vue
+ * 左侧角色列表 + 右侧编辑/权限树
  */
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, reactive, onMounted, nextTick, computed } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ElTree } from 'element-plus'
-import PageHeader from '@/components/PageHeader/index.vue'
+import { Delete } from '@element-plus/icons-vue'
 import { usePermission } from '@/composables/usePermission'
 import {
   getRolePage,
@@ -23,7 +23,6 @@ import {
   toggleRoleStatus,
   getPermissionTree,
   getRolePermissionIds,
-  assignRolePermissions,
   exportRoles,
   importRoles,
 } from '@/api/role'
@@ -33,53 +32,51 @@ const { hasPermission } = usePermission()
 // ===== 列表数据 =====
 const loading = ref(false)
 const roleList = ref<any[]>([])
-const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 const searchKeyword = ref('')
+const currentRole = ref<any>(null)
+const isEdit = ref(false)
+const permIsBuiltin = ref(false)
 
-// ===== 新建/编辑角色弹窗 =====
-const formVisible = ref(false)
-const formMode = ref<'create' | 'edit'>('create')
-const editingId = ref<number>(0)
-const roleForm = reactive({
+// ===== 表单 =====
+const form = reactive({
   roleName: '',
   roleCode: '',
   description: '',
   sortOrder: 0,
 })
-const formErrors = reactive({
-  roleName: '',
-  roleCode: '',
-})
+const formErrors = reactive({ roleName: '', roleCode: '' })
 
-// ===== 权限分配弹窗 =====
-const permVisible = ref(false)
-const permRoleId = ref<number>(0)
-const permRoleName = ref('')
+// ===== 权限树 =====
 const permissionTree = ref<any[]>([])
 const checkedPermissionIds = ref<number[]>([])
 const treeRef = ref<InstanceType<typeof ElTree>>()
-const permLoading = ref(false)
-const permSaving = ref(false)
-const permIsBuiltin = ref(false)
-
-// 树配置
-const treeProps = {
-  label: 'permissionName',
-  children: 'children',
-}
-
-// ===== 确认删除弹窗 =====
-const deleteVisible = ref(false)
-const deleteRoleRef = ref<any>(null)
-
-// ===== 确认禁用/启用弹窗 =====
-const toggleVisible = ref(false)
-const toggleRoleRef = ref<any>(null)
-const toggleAction = ref<'disable' | 'enable'>('disable')
+const treeProps = { label: 'permissionName', children: 'children' }
 
 // ===== Excel 导入 =====
 const importInputRef = ref<HTMLInputElement | null>(null)
 const importing = ref(false)
+
+// ===== 计算属性 =====
+const roleCodeDisabled = computed(() => {
+  if (!isEdit.value) return true
+  return !!(currentRole.value && currentRole.value.id !== -1)
+})
+
+// ===== 辅助函数 =====
+function isBuiltinRole(row: any): boolean {
+  return row?.roleCode?.toUpperCase() === 'ADMIN'
+}
+
+function clearFormError(field: keyof typeof formErrors) {
+  formErrors[field] = ''
+}
+
+function setTreeDisabled(tree: any[], disabled: boolean) {
+  tree.forEach((node) => {
+    node.disabled = disabled
+    if (node.children) setTreeDisabled(node.children, disabled)
+  })
+}
 
 // ===== 获取角色列表 =====
 async function fetchRoles() {
@@ -87,11 +84,12 @@ async function fetchRoles() {
   try {
     const res: any = await getRolePage({
       keyword: searchKeyword.value || undefined,
-      page: pagination.current,
-      pageSize: pagination.pageSize,
+      pageSize: 9999,
     })
     roleList.value = res.data?.items || []
-    pagination.total = res.data?.total || 0
+    if (roleList.value.length && !currentRole.value) {
+      await selectRole(roleList.value[0])
+    }
   } catch {
     roleList.value = []
   } finally {
@@ -99,188 +97,203 @@ async function fetchRoles() {
   }
 }
 
-function handleSearch() {
-  pagination.current = 1
-  fetchRoles()
-}
-
-function handleReset() {
-  searchKeyword.value = ''
-  pagination.current = 1
-  fetchRoles()
-}
-
-function handlePageChange(p: number) {
-  pagination.current = p
-  fetchRoles()
-}
-
-// ===== 新建/编辑角色 =====
-function openCreateRole() {
-  formMode.value = 'create'
-  roleForm.roleName = ''
-  roleForm.roleCode = ''
-  roleForm.description = ''
-  roleForm.sortOrder = 0
-  formErrors.roleName = ''
-  formErrors.roleCode = ''
-  formVisible.value = true
-}
-
-async function openEditRole(row: any) {
-  formMode.value = 'edit'
-  editingId.value = row.id
-  formErrors.roleName = ''
-  formErrors.roleCode = ''
+// ===== 获取权限树 =====
+async function fetchPermissionTree() {
   try {
-    const res: any = await getRoleDetail(row.id)
-    const data = res.data
-    roleForm.roleName = data.roleName || ''
-    roleForm.roleCode = data.roleCode || ''
-    roleForm.description = data.description || ''
-    roleForm.sortOrder = data.sortOrder ?? 0
-    formVisible.value = true
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || '获取角色详情失败')
+    const res: any = await getPermissionTree()
+    permissionTree.value = res.data || []
+  } catch {
+    permissionTree.value = []
   }
 }
 
-function clearFormError(field: keyof typeof formErrors) {
-  formErrors[field] = ''
+// ===== 选中角色 =====
+async function selectRole(role: any) {
+  if (isEdit.value) return
+  if (role.id === -1) return
+
+  loading.value = true
+  try {
+    currentRole.value = role
+    permIsBuiltin.value = isBuiltinRole(role)
+
+    const [detailRes, idsRes]: any[] = await Promise.all([
+      getRoleDetail(role.id),
+      getRolePermissionIds(role.id),
+    ])
+
+    const data = detailRes.data
+    form.roleName = data.roleName || ''
+    form.roleCode = data.roleCode || ''
+    form.description = data.description || ''
+    form.sortOrder = data.sortOrder ?? 0
+
+    checkedPermissionIds.value = (idsRes.data || []).map(Number)
+
+    setTreeDisabled(permissionTree.value, true)
+    await nextTick()
+    treeRef.value?.setCheckedKeys(checkedPermissionIds.value)
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '获取角色详情失败')
+  } finally {
+    loading.value = false
+  }
 }
 
-async function handleSaveRole() {
+// ===== 搜索 =====
+function handleSearch() {
+  currentRole.value = null
+  fetchRoles()
+}
+
+// ===== 新增角色 =====
+function addRole() {
+  const tempRole = { id: -1, roleName: '新角色', roleCode: '', isActive: 1 }
+  roleList.value.push(tempRole)
+  currentRole.value = tempRole
+  isEdit.value = true
+  permIsBuiltin.value = false
+  form.roleName = ''
+  form.roleCode = ''
+  form.description = ''
+  form.sortOrder = 0
+  formErrors.roleName = ''
+  formErrors.roleCode = ''
+  setTreeDisabled(permissionTree.value, false)
+  nextTick(() => {
+    treeRef.value?.setCheckedKeys([])
+  })
+}
+
+// ===== 编辑 =====
+function enterEdit() {
+  if (!currentRole.value) return
+  if (permIsBuiltin.value) {
+    ElMessage.warning('系统内置 ADMIN 角色不可编辑')
+    return
+  }
+  isEdit.value = true
+  formErrors.roleName = ''
+  formErrors.roleCode = ''
+  setTreeDisabled(permissionTree.value, false)
+}
+
+// ===== 取消 =====
+async function cancel() {
+  isEdit.value = false
+  formErrors.roleName = ''
+  formErrors.roleCode = ''
+  setTreeDisabled(permissionTree.value, true)
+
+  if (currentRole.value?.id === -1) {
+    roleList.value = roleList.value.filter((r) => r.id !== -1)
+    currentRole.value = null
+    if (roleList.value.length) {
+      await selectRole(roleList.value[0])
+    } else {
+      form.roleName = ''
+      form.roleCode = ''
+      form.description = ''
+      form.sortOrder = 0
+      treeRef.value?.setCheckedKeys([])
+    }
+  } else if (currentRole.value) {
+    await selectRole(currentRole.value)
+  }
+}
+
+// ===== 保存 =====
+async function save() {
   let valid = true
   formErrors.roleName = ''
   formErrors.roleCode = ''
 
-  if (!roleForm.roleName.trim()) {
+  if (!form.roleName.trim()) {
     formErrors.roleName = '请输入角色名称'
     valid = false
   }
-  if (!roleForm.roleCode.trim()) {
+  if (!form.roleCode.trim()) {
     formErrors.roleCode = '请输入角色编码'
     valid = false
   }
   if (!valid) return
 
+  const checkedKeys = treeRef.value?.getCheckedKeys(false) || []
+  const halfCheckedKeys = treeRef.value?.getHalfCheckedKeys() || []
+  const allIds = [...checkedKeys, ...halfCheckedKeys].map(Number)
+
   const payload = {
-    roleName: roleForm.roleName.trim(),
-    roleCode: roleForm.roleCode.trim(),
-    description: roleForm.description || undefined,
-    sortOrder: roleForm.sortOrder ?? 0,
+    roleName: form.roleName.trim(),
+    roleCode: form.roleCode.trim(),
+    description: form.description || undefined,
+    sortOrder: form.sortOrder ?? 0,
+    permissionIds: allIds,
   }
 
+  loading.value = true
   try {
-    if (formMode.value === 'create') {
+    if (currentRole.value.id === -1) {
       await createRole(payload)
       ElMessage.success('角色 ' + payload.roleName + ' 创建成功')
     } else {
-      await updateRole(editingId.value, payload)
+      await updateRole(currentRole.value.id, payload)
       ElMessage.success('角色 ' + payload.roleName + ' 更新成功')
     }
-    formVisible.value = false
-    fetchRoles()
+    isEdit.value = false
+    currentRole.value = null
+    await fetchRoles()
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '操作失败')
-  }
-}
-
-// ===== 权限分配 =====
-async function openPermissionAssign(row: any) {
-  permRoleId.value = row.id
-  permRoleName.value = row.roleName
-  permIsBuiltin.value = isBuiltinRole(row)
-  permVisible.value = true
-  permLoading.value = true
-  try {
-    const [treeRes, idsRes]: any[] = await Promise.all([
-      getPermissionTree(),
-      getRolePermissionIds(row.id),
-    ])
-    permissionTree.value = treeRes.data || []
-    checkedPermissionIds.value = (idsRes.data || []).map(Number)
-    // ADMIN 内置角色不允许修改权限
-    if (row.roleCode?.toUpperCase() === 'ADMIN') {
-      ElMessage.warning('系统内置 ADMIN 角色拥有全部权限，不可修改')
-    }
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || '加载权限数据失败')
   } finally {
-    permLoading.value = false
-  }
-}
-
-function isBuiltinRole(row: any): boolean {
-  return row.roleCode?.toUpperCase() === 'ADMIN'
-}
-
-async function handleSavePermissions() {
-  if (permIsBuiltin.value) {
-    permVisible.value = false
-    return
-  }
-  permSaving.value = true
-  try {
-    // el-tree check-strictly 模式下 getCheckedKeys 返回选中的节点 key
-    const checkedKeys = treeRef.value?.getCheckedKeys(false) || []
-    const halfCheckedKeys = treeRef.value?.getHalfCheckedKeys() || []
-    // 合并完全选中和半选中的权限 ID
-    const allIds = [...checkedKeys, ...halfCheckedKeys].map(Number)
-    await assignRolePermissions(permRoleId.value, allIds)
-    ElMessage.success('角色 ' + permRoleName.value + ' 权限分配成功')
-    permVisible.value = false
-    fetchRoles()
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || '权限分配失败')
-  } finally {
-    permSaving.value = false
+    loading.value = false
   }
 }
 
 // ===== 删除角色 =====
-function openDeleteRole(row: any) {
-  if (isBuiltinRole(row)) {
+async function deleteRoleItem(item: any) {
+  if (isBuiltinRole(item)) {
     ElMessage.error('系统内置角色不允许删除')
     return
   }
-  deleteRoleRef.value = row
-  deleteVisible.value = true
-}
-
-async function handleDeleteRole() {
-  if (!deleteRoleRef.value) return
-  const row = deleteRoleRef.value
   try {
-    await deleteRole(row.id)
-    ElMessage.success('角色 ' + row.roleName + ' 已删除')
-    deleteVisible.value = false
-    fetchRoles()
+    await ElMessageBox.confirm(
+      `确定删除角色「${item.roleName}」？删除后该角色数据将无法恢复。`,
+      '删除确认',
+      { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  try {
+    await deleteRole(item.id)
+    ElMessage.success('角色 ' + item.roleName + ' 已删除')
+    if (currentRole.value === item) {
+      currentRole.value = null
+    }
+    await fetchRoles()
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '删除失败')
   }
 }
 
 // ===== 禁用/启用 =====
-function openToggleStatus(row: any, action: 'disable' | 'enable') {
-  if (isBuiltinRole(row)) {
-    ElMessage.error('系统内置角色不可修改状态')
+async function toggleStatus() {
+  if (!currentRole.value || permIsBuiltin.value) return
+  const action = currentRole.value.isActive === 1 ? '禁用' : '启用'
+  try {
+    await ElMessageBox.confirm(
+      `确定${action}角色「${currentRole.value.roleName}」？`,
+      '操作确认',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' },
+    )
+  } catch {
     return
   }
-  toggleRoleRef.value = row
-  toggleAction.value = action
-  toggleVisible.value = true
-}
-
-async function handleToggleStatus() {
-  if (!toggleRoleRef.value) return
-  const row = toggleRoleRef.value
-  const isActive = toggleAction.value === 'disable' ? 0 : 1
   try {
-    await toggleRoleStatus(row.id, { isActive })
-    ElMessage.success('角色 ' + row.roleName + (toggleAction.value === 'disable' ? ' 已禁用' : ' 已启用'))
-    toggleVisible.value = false
-    fetchRoles()
+    const isActive = currentRole.value.isActive === 1 ? 0 : 1
+    await toggleRoleStatus(currentRole.value.id, { isActive })
+    ElMessage.success('角色 ' + currentRole.value.roleName + ' 已' + action)
+    await fetchRoles()
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '操作失败')
   }
@@ -290,7 +303,9 @@ async function handleToggleStatus() {
 async function handleExport() {
   try {
     const res: any = await exportRoles()
-    const blob = new Blob([res], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const blob = new Blob([res], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -318,337 +333,310 @@ async function handleImportFile(e: Event) {
     const msg = `导入完成：成功 ${data.successCount} 条，失败 ${data.failCount} 条`
     if (data.failCount > 0) {
       ElMessage.warning(msg)
-      console.log('导入失败详情：', data.errors)
     } else {
       ElMessage.success(msg)
     }
-    fetchRoles()
+    await fetchRoles()
   } catch (err: any) {
     ElMessage.error(err?.response?.data?.message || '导入失败')
   } finally {
     importing.value = false
-    // 重置 input 以便重复选择同一文件
     input.value = ''
   }
 }
 
-// ===== 辅助函数 =====
-function formatDateTime(dt?: string): string {
-  if (!dt) return '-'
-  return dt.replace('T', ' ').substring(0, 19)
-}
-
-function getRoleTagClass(roleCode: string): string {
-  return roleCode?.toUpperCase() === 'ADMIN' ? 'role-tag-admin' : 'role-tag-tester'
-}
-
-onMounted(() => {
-  fetchRoles()
+// ===== 初始化 =====
+onMounted(async () => {
+  loading.value = true
+  try {
+    await Promise.allSettled([fetchRoles(), fetchPermissionTree()])
+    if (roleList.value.length && !currentRole.value) {
+      await selectRole(roleList.value[0])
+    }
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 
 <template>
-  <div class="role-mgmt-view">
-    <PageHeader title="角色管理">
-      <el-button v-if="hasPermission('system:role:add')" type="primary" @click="openCreateRole">+ 新建角色</el-button>
-      <el-button v-if="hasPermission('system:role:import')" :loading="importing" @click="triggerImport">导入</el-button>
-      <el-button v-if="hasPermission('system:role:export')" @click="handleExport">导出</el-button>
-      <input ref="importInputRef" type="file" accept=".xlsx,.xls" style="display: none;" @change="handleImportFile" />
-    </PageHeader>
-
-    <!-- 搜索工具栏 -->
-    <div class="rm-toolbar">
-      <el-input
-        v-model="searchKeyword"
-        placeholder="搜索角色名称/编码"
-        style="width: 220px;"
-        clearable
-        @keyup.enter="handleSearch"
-        @clear="handleSearch"
-      />
-      <el-button type="primary" @click="handleSearch">查询</el-button>
-      <el-button @click="handleReset">重置</el-button>
-    </div>
-
-    <!-- 角色表格 -->
-    <div class="rm-card">
-      <div class="rm-table-wrapper">
-        <el-table v-loading="loading" :data="roleList" row-key="id" style="width: 100%;" :header-cell-style="{ background: '#fafafa' }">
-          <el-table-column prop="roleName" label="角色名称" min-width="120">
-            <template #default="{ row }">
-              <b>{{ row.roleName }}</b>
-            </template>
-          </el-table-column>
-          <el-table-column prop="roleCode" label="角色编码" width="140">
-            <template #default="{ row }">
-              <span class="rm-role-tag" :class="getRoleTagClass(row.roleCode)">{{ row.roleCode }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
-          <el-table-column prop="sortOrder" label="排序号" width="90" />
-          <el-table-column label="状态" width="80">
-            <template #default="{ row }">
-              <span class="rm-status-tag" :class="row.isActive === 1 ? 'status-active' : 'status-disabled'">
-                {{ row.isActive === 1 ? '启用' : '禁用' }}
-              </span>
-            </template>
-          </el-table-column>
-          <el-table-column label="创建时间" min-width="170">
-            <template #default="{ row }">
-              <span class="rm-datetime">{{ formatDateTime(row.createdAt) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="280" fixed="right">
-            <template #default="{ row }">
-              <div class="rm-actions">
-                <template v-if="isBuiltinRole(row)">
-                  <el-button type="primary" link size="small" @click="openPermissionAssign(row)">查看权限</el-button>
-                </template>
-                <template v-else>
-                  <el-button v-if="hasPermission('system:role:edit')" type="primary" link size="small" @click="openEditRole(row)">编辑</el-button>
-                  <el-button v-if="hasPermission('system:role:permission')" type="primary" link size="small" @click="openPermissionAssign(row)">分配权限</el-button>
-                  <el-button v-if="row.isActive === 1 && hasPermission('system:role:edit')" type="warning" link size="small" @click="openToggleStatus(row, 'disable')">禁用</el-button>
-                  <el-button v-else-if="row.isActive !== 1 && hasPermission('system:role:edit')" type="success" link size="small" @click="openToggleStatus(row, 'enable')">启用</el-button>
-                  <el-button v-if="hasPermission('system:role:delete')" type="danger" link size="small" @click="openDeleteRole(row)">删除</el-button>
-                </template>
-              </div>
-            </template>
-          </el-table-column>
-        </el-table>
+  <div v-loading="loading" class="role">
+    <!-- 左面板：角色列表 -->
+    <div class="left">
+      <div class="header">
+        <div class="title">角色列表</div>
+        <div class="header-actions">
+          <el-button
+            v-if="hasPermission('system:role:add')"
+            type="primary"
+            size="small"
+            :disabled="isEdit"
+            @click="addRole"
+          >新增</el-button>
+          <el-button
+            v-if="hasPermission('system:role:import')"
+            size="small"
+            :loading="importing"
+            :disabled="isEdit"
+            @click="triggerImport"
+          >导入</el-button>
+          <el-button
+            v-if="hasPermission('system:role:export')"
+            size="small"
+            :disabled="isEdit"
+            @click="handleExport"
+          >导出</el-button>
+        </div>
       </div>
-      <div class="rm-card-footer">
-        <el-pagination
-          background
-          layout="total, prev, pager, next, jumper"
-          :total="pagination.total"
-          :page-size="pagination.pageSize"
-          :current-page="pagination.current"
-          @current-change="handlePageChange"
+      <div class="search-bar">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索角色名称/编码"
+          clearable
+          size="small"
+          style="flex: 1;"
+          @keyup.enter="handleSearch"
+          @clear="handleSearch"
         />
+        <el-button type="primary" size="small" @click="handleSearch">查询</el-button>
+      </div>
+      <div class="list">
+        <div
+          v-for="item of roleList"
+          :key="item.id"
+          class="item"
+          :class="{ disabled: isEdit, 'is-active': currentRole === item }"
+          @click="selectRole(item)"
+        >
+          <span class="role-name">{{ item.roleName }}</span>
+          <el-tag v-if="item.isActive === 0" size="small" type="danger">停用</el-tag>
+          <el-button
+            v-if="hasPermission('system:role:delete')"
+            text
+            :icon="Delete"
+            :disabled="isEdit || isBuiltinRole(item)"
+            @click.stop="deleteRoleItem(item)"
+          />
+        </div>
+        <div v-if="!roleList.length" class="empty-hint">暂无角色数据</div>
       </div>
     </div>
 
-    <!-- 新建/编辑角色弹窗 -->
-    <el-dialog v-model="formVisible" :title="formMode === 'create' ? '新建角色' : '编辑角色'" width="480px">
-      <el-form label-position="top">
-        <el-form-item label="角色名称" required>
-          <el-input v-model="roleForm.roleName" placeholder="请输入角色名称" @input="clearFormError('roleName')" />
-          <div v-if="formErrors.roleName" class="rm-error-msg">{{ formErrors.roleName }}</div>
-        </el-form-item>
-        <el-form-item label="角色编码" required>
+    <!-- 右面板：角色详情 -->
+    <div class="right">
+      <div class="header">
+        <div class="title">角色详情</div>
+      </div>
+      <el-form :model="form" class="form" label-width="auto">
+        <el-form-item label="角色名称：">
           <el-input
-            v-model="roleForm.roleCode"
-            :disabled="formMode === 'edit'"
+            v-model="form.roleName"
+            :disabled="!isEdit"
+            placeholder="请输入角色名称"
+            class="mxw-300"
+            @input="clearFormError('roleName')"
+          />
+          <div v-if="formErrors.roleName" class="error-msg">{{ formErrors.roleName }}</div>
+        </el-form-item>
+        <el-form-item label="角色编码：">
+          <el-input
+            v-model="form.roleCode"
+            :disabled="roleCodeDisabled"
             placeholder="请输入角色编码（如 DEVELOPER）"
+            class="mxw-300"
             @input="clearFormError('roleCode')"
           />
-          <div v-if="formErrors.roleCode" class="rm-error-msg">{{ formErrors.roleCode }}</div>
-          <div v-if="formMode === 'edit'" class="rm-form-hint">角色编码不可修改</div>
+          <div v-if="formErrors.roleCode" class="error-msg">{{ formErrors.roleCode }}</div>
+          <div v-if="isEdit && currentRole && currentRole.id !== -1" class="form-hint">角色编码不可修改</div>
         </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="roleForm.description" type="textarea" :rows="2" placeholder="请输入角色描述" />
+        <el-form-item label="描述：">
+          <el-input
+            v-model="form.description"
+            :disabled="!isEdit"
+            type="textarea"
+            :rows="2"
+            placeholder="请输入角色描述"
+            class="mxw-300"
+          />
         </el-form-item>
-        <el-form-item label="排序号">
-          <el-input-number v-model="roleForm.sortOrder" :min="0" :max="9999" />
-        </el-form-item>
+        <el-form-item label="权限分配："></el-form-item>
       </el-form>
-      <template #footer>
-        <el-button @click="formVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSaveRole">确定</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 权限分配弹窗 -->
-    <el-dialog v-model="permVisible" :title="`分配权限 - ${permRoleName}`" width="520px">
-      <div v-loading="permLoading" class="rm-perm-tree-wrapper">
-        <el-tree
-          ref="treeRef"
-          :data="permissionTree"
-          :props="treeProps"
-          show-checkbox
-          check-strictly
-          node-key="id"
-          default-expand-all
-          :default-checked-keys="checkedPermissionIds"
-        >
-          <template #default="{ data }">
-            <span class="rm-tree-node">
-              <span>{{ data.permissionName }}</span>
-              <el-tag v-if="data.type === 'BUTTON'" size="small" type="info" class="rm-tree-tag">按钮</el-tag>
-              <el-tag v-else size="small" class="rm-tree-tag">菜单</el-tag>
-              <span class="rm-tree-code">{{ data.permissionCode }}</span>
-            </span>
-          </template>
-        </el-tree>
+      <el-tree
+        ref="treeRef"
+        :data="permissionTree"
+        :props="treeProps"
+        node-key="id"
+        show-checkbox
+        check-strictly
+        default-expand-all
+        class="tree"
+      />
+      <div class="button-list">
+        <template v-if="isEdit">
+          <el-button type="primary" @click="save">保存</el-button>
+          <el-button @click="cancel">取消</el-button>
+        </template>
+        <template v-else>
+          <el-button
+            v-if="hasPermission('system:role:edit')"
+            type="primary"
+            :disabled="!currentRole || permIsBuiltin"
+            @click="enterEdit"
+          >编辑</el-button>
+          <el-button
+            v-if="currentRole && !permIsBuiltin && hasPermission('system:role:edit')"
+            :type="currentRole.isActive === 1 ? 'warning' : 'success'"
+            @click="toggleStatus"
+          >
+            {{ currentRole.isActive === 1 ? '禁用' : '启用' }}
+          </el-button>
+        </template>
       </div>
-      <template #footer>
-        <el-button @click="permVisible = false">取消</el-button>
-        <el-button type="primary" :loading="permSaving" :disabled="permIsBuiltin" @click="handleSavePermissions">保存</el-button>
-      </template>
-    </el-dialog>
+    </div>
 
-    <!-- 确认禁用/启用弹窗 -->
-    <el-dialog v-model="toggleVisible" :title="toggleAction === 'disable' ? '确认禁用' : '确认启用'" width="400px">
-      <div class="rm-confirm-message">
-        确定{{ toggleAction === 'disable' ? '禁用' : '启用' }}角色 <b>{{ toggleRoleRef?.roleName }}</b>（{{ toggleRoleRef?.roleCode }}）吗？
-        <br />
-        <span class="rm-confirm-hint">{{ toggleAction === 'disable' ? '禁用后该角色下的用户将无法登录系统。' : '启用后该角色下的用户将可以正常登录系统。' }}</span>
-      </div>
-      <template #footer>
-        <el-button @click="toggleVisible = false">取消</el-button>
-        <el-button :type="toggleAction === 'disable' ? 'danger' : 'primary'" @click="handleToggleStatus">
-          确认{{ toggleAction === 'disable' ? '禁用' : '启用' }}
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 确认删除弹窗 -->
-    <el-dialog v-model="deleteVisible" title="确认删除" width="400px">
-      <div class="rm-confirm-message">
-        确定删除角色 <b>{{ deleteRoleRef?.roleName }}</b>（{{ deleteRoleRef?.roleCode }}）吗？
-        <br />
-        <span class="rm-confirm-hint rm-confirm-danger">删除后该角色数据将无法恢复，请谨慎操作。</span>
-      </div>
-      <template #footer>
-        <el-button @click="deleteVisible = false">取消</el-button>
-        <el-button type="danger" @click="handleDeleteRole">确认删除</el-button>
-      </template>
-    </el-dialog>
+    <input
+      ref="importInputRef"
+      type="file"
+      accept=".xlsx,.xls"
+      style="display: none;"
+      @change="handleImportFile"
+    />
   </div>
 </template>
 
 <style scoped>
-.role-mgmt-view {
-  width: 100%;
+.mxw-300 {
+  max-width: 300px;
 }
 
-/* 工具栏 */
-.rm-toolbar {
+.role {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
+  margin: 24px;
+  margin-bottom: 0;
+  background-color: var(--color-white, #fff);
+  height: calc(100vh - 120px);
+  overflow: hidden;
 }
 
-/* 卡片 */
-.rm-card {
-  background: #fff;
-  border-radius: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px rgba(0, 0, 0, 0.02);
-  border: 1px solid #f0f0f0;
-}
-.rm-table-wrapper {
-  overflow-x: auto;
-}
-.rm-card-footer {
-  padding: 12px 20px;
-  border-top: 1px solid #f0f0f0;
+.header {
+  height: 56px;
   display: flex;
-  justify-content: flex-end;
-}
-
-/* 角色标签 */
-.rm-role-tag {
-  display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
-.role-tag-admin {
-  background: #f9f0ff;
-  color: #722ed1;
-  border-color: #d3adf7;
-}
-.role-tag-tester {
-  background: #e6f7ff;
-  color: #1890ff;
-  border-color: #91d5ff;
+  justify-content: space-between;
+  padding-inline: 8px;
+  background-color: var(--background-color-base, #f5f7fa);
+  border-bottom: 1px solid var(--border-color-base, #dcdfe6);
 }
 
-/* 状态标签 */
-.rm-status-tag {
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
-.status-active {
-  background: #f6ffed;
-  color: #52c41a;
-  border-color: #b7eb8f;
-}
-.status-disabled {
-  background: #fafafa;
-  color: rgba(0, 0, 0, 0.45);
-  border-color: #d9d9d9;
+.title {
+  font-weight: bold;
 }
 
-/* 时间 */
-.rm-datetime {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
-}
-
-/* 操作按钮 */
-.rm-actions {
-  white-space: nowrap;
+.header-actions {
   display: flex;
-  justify-content: flex-start;
+  gap: 8px;
+  align-items: center;
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 320px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-color-base, #dcdfe6);
+}
+
+.search-bar {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border-color-base, #dcdfe6);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
+  padding: 8px;
+  overflow: auto;
+  flex: 1;
 }
 
-/* 错误提示 */
-.rm-error-msg {
-  color: #ff4d4f;
-  font-size: 12px;
-  margin-top: 4px;
-}
-.rm-form-hint {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
-  margin-top: 4px;
-}
-
-/* 权限树 */
-.rm-perm-tree-wrapper {
-  max-height: 420px;
-  overflow-y: auto;
-  padding: 8px 0;
-}
-.rm-tree-node {
+.list .item {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 6px;
-}
-.rm-tree-tag {
-  margin-left: 4px;
-}
-.rm-tree-code {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
-  margin-left: 8px;
+  padding: 0 12px;
+  line-height: 36px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-/* 确认消息 */
-.rm-confirm-message {
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.88);
-  line-height: 1.6;
+.list .item.disabled {
+  cursor: not-allowed;
 }
-.rm-confirm-hint {
-  color: rgba(0, 0, 0, 0.45);
+
+.list .item.is-active,
+.list .item:hover {
+  color: var(--color-primary, #409eff);
+  font-weight: bold;
+  background-color: var(--background-color-base, #f5f7fa);
+}
+
+.role-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-hint {
+  text-align: center;
+  padding: 24px;
+  color: var(--color-text-secondary, #909399);
   font-size: 13px;
 }
-.rm-confirm-danger {
+
+.right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border-color-base, #dcdfe6);
+  margin-left: -1px;
+}
+
+.right .form {
+  margin-top: 16px;
+  padding-inline: 8px;
+}
+
+.right .tree {
+  flex: 1;
+  padding: 8px;
+  margin-inline: 4px;
+  border: 1px solid var(--border-color-base, #dcdfe6);
+  overflow: auto;
+}
+
+.right .button-list {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.error-msg {
   color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: var(--color-text-secondary, #909399);
+  margin-top: 4px;
 }
 </style>

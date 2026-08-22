@@ -28,7 +28,8 @@ jwt:
 
 # 日志级别与文件输出由 logback-spring.xml 统一管理
 
-# 显示 SQL 日志
+# 关闭 SQL 详情输出，由 logback-spring.xml 统一管理
+# MyBatis-Plus 日志实现继承 application.yml 的 Slf4jImpl
 mybatis-plus:
   configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl

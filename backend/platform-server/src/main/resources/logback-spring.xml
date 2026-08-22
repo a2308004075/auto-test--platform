@@ -15,13 +15,13 @@
         </encoder>
     </appender>
 
-    <!-- ======================== 全量日志文件（按日期+大小滚动） ======================== -->
+    <!-- ======================== 全量运行日志 all.log（按日期+大小滚动） ======================== -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_PATH}/application.log</file>
+        <file>${LOG_PATH}/all.log</file>
         <append>false</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- 每天生成新文件，单文件最大 100MB -->
-            <fileNamePattern>${LOG_PATH}/application.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>${LOG_PATH}/all.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <maxFileSize>100MB</maxFileSize>
             <!-- 启动时清理旧归档文件，不保留历史日志 -->
             <cleanHistoryOnStart>true</cleanHistoryOnStart>
@@ -32,14 +32,14 @@
         </encoder>
     </appender>
 
-    <!-- ======================== 错误日志文件（仅 ERROR 级别） ======================== -->
+    <!-- ======================== 错误日志 err.log（仅 ERROR 级别） ======================== -->
     <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_PATH}/error.log</file>
+        <file>${LOG_PATH}/err.log</file>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>ERROR</level>
         </filter>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH}/error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>${LOG_PATH}/err.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <maxFileSize>100MB</maxFileSize>
             <maxHistory>30</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
@@ -49,6 +49,29 @@
             <charset>UTF-8</charset>
         </encoder>
     </appender>
+
+    <!-- ======================== 接口访问日志 access.log ========================
+         由独立 logger「com.platform.access」输出（additivity=false，不进 all.log）。
+         记录内容：请求方法、地址、查询参数、来源IP、状态码、耗时、请求体/响应体（敏感字段脱敏）。
+    -->
+    <appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/access.log</file>
+        <append>false</append>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/access.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 接口访问日志独立 logger：仅写入 access.log，不向上传播至 root（不进 all.log） -->
+    <logger name="com.platform.access" level="INFO" additivity="false">
+        <appender-ref ref="ACCESS"/>
+    </logger>
 
     <!-- ======================== 开发环境：控制台 + 文件 ======================== -->
     <springProfile name="dev">

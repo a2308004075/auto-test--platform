@@ -70,3 +70,13 @@ API 协议指 postman-platform 项目自身的前、后端 REST API 交互协议
 - 分层架构：`controller` / `service` / `mapper` / `entity` / `dto`，各层职责清晰，禁止跨层调用
 - 接口与实现分离：Service 层定义接口 + `Impl` 实现类
 - 通用工具类放置于 `common.util`，不允许业务层出现重复工具方法
+
+## 7. Flyway 迁移管理
+
+详细规范见 `flyway-migration.md`，核心要点：
+
+- **已推送的迁移文件不可变**：所有 schema 变更通过新增迁移文件实现，禁止修改已有文件
+- **命名规范**：`V{版本号}__{描述}.sql`，版本号严格递增
+- **修复 bug**：创建新迁移 `V{n}__fix_xxx.sql`，不修改原文件
+- **本地冲突处理**：运行 `scripts/reset-and-build.bat` 一键重置数据库 + 重建项目
+- **团队成员**：clone 后运行 `scripts/install-git-hooks.bat` 安装 pre-commit hook

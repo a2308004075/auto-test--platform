@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="true" scanPeriod="30 seconds">
 
-    <!-- 日志文件存储路径（相对于 backend/ 目录） -->
-    <property name="LOG_PATH" value="./log"/>
+    <!-- 日志文件存储路径：由 Maven 资源过滤注入 platform-server 模块的绝对路径，
+         运行时自动解析为 D:\...\backend\platform-server\..\log → backend\log\ -->
+    <property name="LOG_PATH" value="@project.basedir@/../log"/>
     <!-- 日志文件格式（不含颜色，适用于文件输出） -->
     <property name="FILE_PATTERN"
               value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>

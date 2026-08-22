@@ -23,6 +23,8 @@ import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
 import com.platform.common.exception.NotFoundException;
 import com.platform.common.response.PageResponse;
+import com.platform.sys.entity.Dict;
+import com.platform.sys.mapper.DictMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,19 +49,26 @@ public class RoleService {
 
     private static final String BUILTIN_ROLE_CODE = "ADMIN";
 
+    /** 角色字典类型编码，与 sys_dict 表中 user_role 字典对应 */
+    private static final String ROLE_DICT_TYPE = "user_role";
+    private static final String ROLE_DICT_TYPE_NAME = "用户角色";
+
     private final UserRoleMapper userRoleMapper;
     private final PermissionMapper permissionMapper;
     private final RolePermissionMapper rolePermissionMapper;
     private final UserMapper userMapper;
+    private final DictMapper dictMapper;
 
     public RoleService(UserRoleMapper userRoleMapper,
                        PermissionMapper permissionMapper,
                        RolePermissionMapper rolePermissionMapper,
-                       UserMapper userMapper) {
+                       UserMapper userMapper,
+                       DictMapper dictMapper) {
         this.userRoleMapper = userRoleMapper;
         this.permissionMapper = permissionMapper;
         this.rolePermissionMapper = rolePermissionMapper;
         this.userMapper = userMapper;
+        this.dictMapper = dictMapper;
     }
 
     // ===== 公共接口 =====
@@ -130,6 +139,9 @@ public class RoleService {
             bindPermissions(role.getId(), request.getPermissionIds());
         }
 
+        // 同步字典
+        syncDictOnCreate(role);
+
         log.info("创建角色成功: roleCode={}", role.getRoleCode());
         return getRoleDetail(role.getId());
     }
@@ -148,6 +160,9 @@ public class RoleService {
         // 校验角色编码唯一性
         checkRoleCodeDuplicate(request.getRoleCode(), id);
 
+        // 记录更新前的角色编码，用于同步字典
+        String oldRoleCode = role.getRoleCode();
+
         role.setRoleName(request.getRoleName());
         role.setRoleCode(request.getRoleCode().toUpperCase());
         role.setDescription(request.getDescription());
@@ -155,6 +170,9 @@ public class RoleService {
             role.setSortOrder(request.getSortOrder());
         }
         userRoleMapper.updateById(role);
+
+        // 同步字典
+        syncDictOnUpdate(oldRoleCode, role);
 
         // 重建权限关联
         rolePermissionMapper.delete(new LambdaQueryWrapper<RolePermission>()
@@ -190,6 +208,9 @@ public class RoleService {
         rolePermissionMapper.delete(new LambdaQueryWrapper<RolePermission>()
                 .eq(RolePermission::getRoleId, id));
 
+        // 同步字典
+        syncDictOnDelete(role);
+
         // 软删除角色
         userRoleMapper.deleteById(id);
         log.info("删除角色成功: id={}, roleCode={}", id, role.getRoleCode());
@@ -207,6 +228,10 @@ public class RoleService {
         checkBuiltinRole(role);
         role.setIsActive(isActive);
         userRoleMapper.updateById(role);
+
+        // 同步字典
+        syncDictOnToggleStatus(role, isActive);
+
         log.info("角色状态变更: id={}, isActive={}", id, isActive);
     }
 
@@ -265,6 +290,15 @@ public class RoleService {
             return Collections.singletonList("*");
         }
         return rolePermissionMapper.selectPermissionCodesByRoleId(roleId);
+    }
+
+    /**
+     * 获取角色的权限详情列表（含控制模式，供前端 v-permission 指令使用）
+     * ADMIN 角色返回通配符 "*" 详情
+     */
+    public List<PermissionBriefDTO> getPermissionDetailsByRoleId(Long roleId) {
+        List<String> codes = getPermissionCodesByRoleId(roleId);
+        return buildPermissionDetails(codes);
     }
 
     // ===== Excel 导入导出 =====
@@ -372,6 +406,8 @@ public class RoleService {
                         existing.setDescription(description);
                         existing.setSortOrder(sortOrder);
                         userRoleMapper.updateById(existing);
+                        // 同步字典
+                        syncDictOnUpdate(roleCode.toUpperCase(), existing);
                     } else {
                         // 新建
                         UserRole role = new UserRole();
@@ -381,6 +417,8 @@ public class RoleService {
                         role.setSortOrder(sortOrder);
                         role.setIsActive(1);
                         userRoleMapper.insert(role);
+                        // 同步字典
+                        syncDictOnCreate(role);
                     }
                     result.setSuccessCount(result.getSuccessCount() + 1);
                 } catch (Exception e) {
@@ -429,6 +467,86 @@ public class RoleService {
         }
     }
 
+    // ===== 角色-字典同步 =====
+
+    /**
+     * 新增角色时同步创建 sys_dict 字典条目
+     *
+     * <p>映射关系：dict_value = roleCode，dict_value_name = roleName，
+     * sort_no = sortOrder，remark = description。
+     */
+    private void syncDictOnCreate(UserRole role) {
+        Dict dict = new Dict();
+        dict.setDictType(ROLE_DICT_TYPE);
+        dict.setDictTypeName(ROLE_DICT_TYPE_NAME);
+        dict.setDictValue(role.getRoleCode());
+        dict.setDictValueName(role.getRoleName());
+        dict.setSortNo(role.getSortOrder() != null ? role.getSortOrder() : 0);
+        dict.setRemark(role.getDescription());
+        dict.setIsActive(1);
+        dictMapper.insert(dict);
+        log.info("同步字典: 角色编码={}, 字典ID={}", role.getRoleCode(), dict.getId());
+    }
+
+    /**
+     * 更新角色时同步更新 sys_dict 字典条目
+     *
+     * @param oldRoleCode 更新前的角色编码（用于定位字典条目）
+     */
+    private void syncDictOnUpdate(String oldRoleCode, UserRole role) {
+        LambdaQueryWrapper<Dict> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Dict::getDictType, ROLE_DICT_TYPE)
+                .eq(Dict::getDictValue, oldRoleCode);
+        Dict dict = dictMapper.selectOne(wrapper);
+        if (dict != null) {
+            dict.setDictValue(role.getRoleCode());
+            dict.setDictValueName(role.getRoleName());
+            dict.setSortNo(role.getSortOrder());
+            dict.setRemark(role.getDescription());
+            dictMapper.updateById(dict);
+            log.info("同步字典: 角色编码 {} -> {}, 字典ID={}", oldRoleCode, role.getRoleCode(), dict.getId());
+        } else {
+            // 字典条目不存在（可能已被删除），重新创建
+            syncDictOnCreate(role);
+        }
+    }
+
+    /**
+     * 删除角色时同步软删除 sys_dict 字典条目
+     */
+    private void syncDictOnDelete(UserRole role) {
+        LambdaQueryWrapper<Dict> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Dict::getDictType, ROLE_DICT_TYPE)
+                .eq(Dict::getDictValue, role.getRoleCode());
+        dictMapper.delete(wrapper);
+        log.info("同步字典: 删除角色编码={} 的字典条目", role.getRoleCode());
+    }
+
+    /**
+     * 切换角色状态时同步切换 sys_dict 字典条目状态
+     *
+     * <p>停用时软删除字典条目，启用时恢复或重建字典条目。
+     * 由于 {@code @TableLogic} 会在查询时自动过滤 is_active=0 的记录，
+     * 启用时若找不到（已软删除）则重新创建。
+     */
+    private void syncDictOnToggleStatus(UserRole role, Integer isActive) {
+        LambdaQueryWrapper<Dict> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Dict::getDictType, ROLE_DICT_TYPE)
+                .eq(Dict::getDictValue, role.getRoleCode());
+        if (Integer.valueOf(0).equals(isActive)) {
+            // 停用：软删除字典条目
+            dictMapper.delete(wrapper);
+            log.info("同步字典: 停用角色编码={} 的字典条目", role.getRoleCode());
+        } else {
+            // 启用：查找是否已有活跃字典条目
+            Dict dict = dictMapper.selectOne(wrapper);
+            if (dict == null) {
+                // 不存在（可能已被软删除），重新创建
+                syncDictOnCreate(role);
+            }
+        }
+    }
+
     private List<PermissionTreeNode> buildTree(List<Permission> permissions) {
         Map<Long, PermissionTreeNode> nodeMap = new LinkedHashMap<>();
         for (Permission p : permissions) {
@@ -441,6 +559,7 @@ public class RoleService {
             node.setPath(p.getPath());
             node.setSortOrder(p.getSortOrder());
             node.setDescription(p.getDescription());
+            node.setControlMode(p.getControlMode());
             nodeMap.put(p.getId(), node);
         }
         List<PermissionTreeNode> roots = new ArrayList<>();
@@ -470,6 +589,33 @@ public class RoleService {
         response.setCreatedAt(role.getCreatedAt());
         response.setUpdatedAt(role.getUpdatedAt());
         return response;
+    }
+
+    /**
+     * 根据权限编码列表构建权限详情（查询 permission 表获取 type 和 controlMode）
+     */
+    private List<PermissionBriefDTO> buildPermissionDetails(List<String> codes) {
+        if (CollUtil.isEmpty(codes)) {
+            return Collections.emptyList();
+        }
+        // ADMIN 通配符
+        if (codes.size() == 1 && "*".equals(codes.get(0))) {
+            PermissionBriefDTO dto = new PermissionBriefDTO();
+            dto.setCode("*");
+            return Collections.singletonList(dto);
+        }
+        LambdaQueryWrapper<Permission> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(Permission::getPermissionCode, codes);
+        List<Permission> permissions = permissionMapper.selectList(wrapper);
+        List<PermissionBriefDTO> result = new ArrayList<>();
+        for (Permission p : permissions) {
+            PermissionBriefDTO dto = new PermissionBriefDTO();
+            dto.setCode(p.getPermissionCode());
+            dto.setType(p.getType());
+            dto.setControlMode(p.getControlMode());
+            result.add(dto);
+        }
+        return result;
     }
 
     private int parseIntSafe(Object value) {

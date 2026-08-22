@@ -5,21 +5,28 @@
  */
 package com.platform.sys.controller;
 
+import com.platform.auth.entity.User;
+import com.platform.auth.service.RoleService;
 import com.platform.common.response.ApiResponse;
 import com.platform.sys.dto.MenuCreateRequest;
+import com.platform.sys.dto.MenuImportResult;
 import com.platform.sys.dto.MenuListItem;
 import com.platform.sys.dto.MenuTreeNode;
 import com.platform.sys.service.MenuService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * 菜单管理接口
- * tree() 接口对所有已认证用户开放（用于动态路由生成）
+ * tree() 接口根据用户权限过滤菜单树（侧边栏动态加载和路由生成）
  * 其他 CRUD 接口仅 ADMIN 可访问
  */
 @RestController
@@ -28,14 +35,20 @@ import java.util.List;
 public class MenuController {
 
     private final MenuService menuService;
+    private final RoleService roleService;
 
     /**
-     * 获取菜单树（仅启用状态，供侧边栏动态加载和路由生成）
-     * 所有已认证用户均可访问
+     * 获取菜单树（权限过滤后，供侧边栏动态加载和路由生成）
+     * 所有已认证用户均可访问，返回结果按用户权限过滤
      */
     @GetMapping("/tree")
-    public ApiResponse<List<MenuTreeNode>> tree() {
-        return ApiResponse.ok(menuService.tree());
+    public ApiResponse<List<MenuTreeNode>> tree(@AuthenticationPrincipal User user) {
+        if (user == null) {
+            // 未登录时返回空菜单树
+            return ApiResponse.ok(Collections.emptyList());
+        }
+        List<String> permissionCodes = roleService.getPermissionCodesByRoleId(user.getRoleId());
+        return ApiResponse.ok(menuService.tree(permissionCodes));
     }
 
     /**
@@ -93,5 +106,23 @@ public class MenuController {
     public ApiResponse<Void> toggleStatus(@PathVariable Long id) {
         menuService.toggleStatus(id);
         return ApiResponse.ok(null);
+    }
+
+    /**
+     * 导出菜单列表到 Excel（仅 ADMIN）
+     */
+    @GetMapping("/export")
+    @PreAuthorize("hasRole('ADMIN')")
+    public void export(HttpServletResponse response) {
+        menuService.exportMenus(response);
+    }
+
+    /**
+     * 从 Excel 导入菜单（仅 ADMIN）
+     */
+    @PostMapping("/import")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<MenuImportResult> importMenus(@RequestParam("file") MultipartFile file) {
+        return ApiResponse.ok(menuService.importMenus(file));
     }
 }

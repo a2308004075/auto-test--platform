@@ -19,6 +19,7 @@ export interface MenuTreeNode {
   component: string
   sortNo: number
   isActive: number
+  permissionCode: string | null
   children?: MenuTreeNode[]
 }
 
@@ -32,6 +33,7 @@ export interface MenuListItem {
   component: string
   sortNo: number
   isActive: number
+  permissionCode: string | null
   createdAt: string
   updatedAt: string
 }
@@ -44,6 +46,7 @@ export interface MenuCreateRequest {
   routePath?: string
   component?: string
   sortNo?: number
+  permissionCode?: string
 }
 
 /** 获取菜单树（仅启用状态） */
@@ -79,4 +82,25 @@ export function deleteMenu(id: number) {
 /** 切换菜单启用/停用 */
 export function toggleMenuStatus(id: number) {
   return request.post(`/v1/sys/menus/${id}/toggle`)
+}
+
+/** 菜单 Excel 导入结果 */
+export interface MenuImportResult {
+  successCount: number
+  failCount: number
+  errors: string[]
+}
+
+/** 导出菜单 Excel */
+export function exportMenus() {
+  return request.get('/v1/sys/menus/export', { responseType: 'blob' })
+}
+
+/** 导入菜单 Excel */
+export function importMenus(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post('/v1/sys/menus/import', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
 }

@@ -234,6 +234,7 @@ public class AuthService {
         response.setLastLoginAt(user.getLastLoginAt());
         response.setCreatedAt(user.getCreatedAt());
         response.setPermissions(roleService.getPermissionCodesByRoleId(user.getRoleId()));
+        response.setPermissionDetails(roleService.getPermissionDetailsByRoleId(user.getRoleId()));
         return response;
     }
 
@@ -430,6 +431,7 @@ public class AuthService {
         response.setLastLoginAt(user.getLastLoginAt());
         response.setCreatedAt(user.getCreatedAt());
         response.setPermissions(roleService.getPermissionCodesByRoleId(user.getRoleId()));
+        response.setPermissionDetails(roleService.getPermissionDetailsByRoleId(user.getRoleId()));
         return response;
     }
 
@@ -440,6 +442,7 @@ public class AuthService {
         brief.setDisplayName(user.getDisplayName());
         brief.setRole(getRoleCode(user.getRoleId()));
         brief.setPermissions(roleService.getPermissionCodesByRoleId(user.getRoleId()));
+        brief.setPermissionDetails(roleService.getPermissionDetailsByRoleId(user.getRoleId()));
         return brief;
     }
 }

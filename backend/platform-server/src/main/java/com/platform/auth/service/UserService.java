@@ -18,6 +18,8 @@ import com.platform.common.exception.ErrorCode;
 import com.platform.common.exception.NotFoundException;
 import com.platform.common.response.PageResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -120,13 +122,11 @@ public class UserService {
             throw new NotFoundException("用户", userId);
         }
 
-        // admin 账号保护
+        // admin 账号保护：仅允许 admin 自己编辑自己，其他用户不可编辑 admin 账号
         if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
-            if (request.getDisplayName() != null && !request.getDisplayName().equals(user.getDisplayName())) {
-                throw new BusinessException(ErrorCode.ADMIN_PROTECTED, "系统管理员账号不允许修改显示名");
-            }
-            if (request.getRoleId() != null && !request.getRoleId().equals(user.getRoleId())) {
-                throw new BusinessException(ErrorCode.ADMIN_PROTECTED, "系统管理员账号不允许修改角色");
+            Long currentUserId = getCurrentUserId();
+            if (currentUserId == null || !currentUserId.equals(user.getId())) {
+                throw new BusinessException(ErrorCode.ADMIN_PROTECTED, "系统管理员账号不允许其他用户编辑");
             }
         }
 
@@ -221,6 +221,17 @@ public class UserService {
         if (RESERVED_DISPLAY_NAME.equals(displayName)) {
             throw new BusinessException(ErrorCode.ACCOUNT_RESERVED, "用户名「管理员」为系统保留，不可使用");
         }
+    }
+
+    /**
+     * 从 SecurityContext 获取当前登录用户 ID
+     */
+    private Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof User) {
+            return ((User) auth.getPrincipal()).getId();
+        }
+        return null;
     }
 
     private UserResponse toResponse(User user) {

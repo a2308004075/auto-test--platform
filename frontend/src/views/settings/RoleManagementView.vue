@@ -12,7 +12,7 @@
 import { ref, reactive, onMounted, nextTick, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ElTree } from 'element-plus'
-import { Delete } from '@element-plus/icons-vue'
+import { Delete, Document } from '@element-plus/icons-vue'
 import { usePermission } from '@/composables/usePermission'
 import {
   getRolePage,
@@ -51,6 +51,22 @@ const permissionTree = ref<any[]>([])
 const checkedPermissionIds = ref<number[]>([])
 const treeRef = ref<InstanceType<typeof ElTree>>()
 const treeProps = { label: 'permissionName', children: 'children' }
+
+// ===== 权限树节点类型定义 =====
+interface TreeNodeData {
+  id: number
+  permissionName: string
+  permissionCode: string
+  type: string
+  controlMode: string | null
+  children?: TreeNodeData[]
+  disabled?: boolean
+}
+
+function getControlModeLabel(controlMode: string | null): string {
+  if (controlMode === 'click') return '点击'
+  return '显示'
+}
 
 // ===== Excel 导入 =====
 const importInputRef = ref<HTMLInputElement | null>(null)
@@ -467,10 +483,26 @@ onMounted(async () => {
         :props="treeProps"
         node-key="id"
         show-checkbox
-        check-strictly
         default-expand-all
         class="tree"
-      />
+      >
+        <template #default="{ data }">
+          <span class="perm-node">
+            <el-icon v-if="data.type === 'MENU'" class="perm-icon perm-icon--menu" :size="14">
+              <Document />
+            </el-icon>
+            <span class="perm-node__name">{{ data.permissionName }}</span>
+            <el-tag
+              v-if="data.type === 'BUTTON'"
+              :type="data.controlMode === 'click' ? 'warning' : ''"
+              size="small"
+              class="perm-node__tag"
+            >
+              {{ getControlModeLabel(data.controlMode) }}
+            </el-tag>
+          </span>
+        </template>
+      </el-tree>
       <div class="button-list">
         <template v-if="isEdit">
           <el-button type="primary" @click="save">保存</el-button>
@@ -638,5 +670,33 @@ onMounted(async () => {
   font-size: 12px;
   color: var(--color-text-secondary, #909399);
   margin-top: 4px;
+}
+
+/* ===== 权限树节点样式 ===== */
+
+.perm-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.perm-icon--menu {
+  color: var(--el-color-primary, #409eff);
+  flex-shrink: 0;
+}
+
+.perm-node__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.perm-node__tag {
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 16px;
+  padding: 0 4px;
+  height: 18px;
 }
 </style>

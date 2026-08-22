@@ -8,6 +8,15 @@ import { ref, computed } from 'vue'
 import { getCurrentUser } from '@/api/auth'
 
 /**
+ * 权限详情（含控制模式）
+ */
+export interface PermissionDetail {
+  code: string
+  type?: string
+  controlMode?: string
+}
+
+/**
  * 用户状态管理
  */
 export const useUserStore = defineStore('user', () => {
@@ -18,6 +27,9 @@ export const useUserStore = defineStore('user', () => {
   const role = ref<string>(localStorage.getItem('role') || '')
   const userId = ref<number>(Number(localStorage.getItem('userId')) || 0)
   const permissions = ref<string[]>(JSON.parse(localStorage.getItem('permissions') || '[]'))
+  const permissionDetails = ref<PermissionDetail[]>(
+    JSON.parse(localStorage.getItem('permissionDetails') || '[]'),
+  )
   const isLoggedIn = computed(() => !!token.value)
   const isAdmin = computed(() => (role.value || '').toUpperCase() === 'ADMIN')
 
@@ -34,17 +46,19 @@ export const useUserStore = defineStore('user', () => {
     localStorage.setItem('refreshToken', rt)
   }
 
-  function setUserInfo(info: { id: number; username: string; displayName?: string; role?: string; permissions?: string[] }) {
+  function setUserInfo(info: { id: number; username: string; displayName?: string; role?: string; permissions?: string[]; permissionDetails?: PermissionDetail[] }) {
     userId.value = info.id
     username.value = info.username
     displayName.value = info.displayName || info.username
     role.value = info.role || 'TESTER'
     permissions.value = info.permissions || []
+    permissionDetails.value = info.permissionDetails || []
     localStorage.setItem('username', info.username)
     localStorage.setItem('displayName', info.displayName || info.username)
     localStorage.setItem('role', role.value)
     localStorage.setItem('userId', String(info.id))
     localStorage.setItem('permissions', JSON.stringify(permissions.value))
+    localStorage.setItem('permissionDetails', JSON.stringify(permissionDetails.value))
   }
 
   /**
@@ -62,6 +76,7 @@ export const useUserStore = defineStore('user', () => {
           displayName: res.data.displayName,
           role: res.data.role,
           permissions: res.data.permissions,
+          permissionDetails: res.data.permissionDetails,
         })
       }
     } catch {
@@ -78,6 +93,7 @@ export const useUserStore = defineStore('user', () => {
     role.value = ''
     userId.value = 0
     permissions.value = []
+    permissionDetails.value = []
     localStorage.removeItem('token')
     localStorage.removeItem('refreshToken')
     localStorage.removeItem('username')
@@ -85,6 +101,7 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('role')
     localStorage.removeItem('userId')
     localStorage.removeItem('permissions')
+    localStorage.removeItem('permissionDetails')
   }
 
   /**
@@ -115,7 +132,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   return {
-    token, refreshTokenValue, username, displayName, role, userId, isLoggedIn, isAdmin, permissions,
+    token, refreshTokenValue, username, displayName, role, userId, isLoggedIn, isAdmin, permissions, permissionDetails,
     setToken, setRefreshToken, setUserInfo, fetchCurrentUser, logout,
     loadRememberedCredentials, saveRememberedCredentials, clearRememberedCredentials,
   }

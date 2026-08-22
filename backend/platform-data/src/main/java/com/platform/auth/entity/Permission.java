@@ -59,4 +59,10 @@ public class Permission extends BaseEntity {
      * 权限描述
      */
     private String description;
+
+    /**
+     * 按钮控制模式：display-无权限时隐藏按钮，click-无权限时禁用按钮
+     * 仅 BUTTON 类型使用，MENU 类型此字段为 null
+     */
+    private String controlMode;
 }

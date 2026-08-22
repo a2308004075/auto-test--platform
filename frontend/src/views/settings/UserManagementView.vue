@@ -14,6 +14,9 @@ import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader/index.vue'
 import { getUsers, createUser, updateUser, deleteUser, toggleUserStatus, resetPassword, getRoles } from '@/api/user'
 import { validatePassword, PASSWORD_RULE_HINT } from '@/utils/password'
+import { useUserStore } from '@/stores/modules/user'
+
+const userStore = useUserStore()
 
 // ===== 列表数据 =====
 const loading = ref(false)
@@ -403,6 +406,10 @@ onMounted(() => { fetchUsers(); fetchRoles() })
             <template #default="{ row }">
               <div class="um-actions">
                 <template v-if="isAdminRow(row)">
+                  <template v-if="userStore.username?.toLowerCase() === 'admin'">
+                    <el-button type="primary" link size="small" @click="openEditUser(row)">编辑</el-button>
+                    <el-button type="primary" link size="small" @click="openRoleAssign(row)">分配角色</el-button>
+                  </template>
                   <el-button type="primary" link size="small" @click="openResetPassword(row)">重置密码</el-button>
                 </template>
                 <template v-else>

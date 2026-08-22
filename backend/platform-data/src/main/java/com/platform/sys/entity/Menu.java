@@ -52,6 +52,11 @@ public class Menu extends BaseEntity {
     private String component;
 
     /**
+     * 关联权限编码（对应 permission.permission_code，NULL 表示不控权）
+     */
+    private String permissionCode;
+
+    /**
      * 排序号（升序）
      */
     private Integer sortNo;

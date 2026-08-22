@@ -14,6 +14,7 @@ import './styles/global.less'
 import { setUnauthorizedHandler } from './api/request'
 import { useUserStore, useProjectStore, useTagsViewStore } from './stores'
 import dragDialog from '@/directives/drag'
+import vPermission from '@/directives/permission'
 
 const app = createApp(App)
 
@@ -23,6 +24,9 @@ app.use(ElementPlus, { locale: zhCn, size: 'default' })
 
 // 注册全局弹窗拖拽指令（对标 svc-manager-web 的 v-el-drag-dialog）
 app.directive('drag-dialog', dragDialog)
+
+// 注册全局权限控制指令（display 模式隐藏 / click 模式禁用）
+app.directive('permission', vPermission)
 
 // 注册 401 / 服务不可用时的全局清理回调，同步清空用户相关 store 状态
 setUnauthorizedHandler(() => {

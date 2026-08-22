@@ -52,4 +52,9 @@ public class MenuCreateRequest {
      * 排序号
      */
     private Integer sortNo;
+
+    /**
+     * 关联权限编码（对应 permission.permission_code）
+     */
+    private String permissionCode;
 }

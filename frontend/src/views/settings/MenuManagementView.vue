@@ -9,7 +9,7 @@
  * 树形结构 + Popover 右键菜单（新增/编辑/删除/启停）
  * 对标 svc-manager-web Menu.vue
  */
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getMenuTree,
@@ -17,6 +17,8 @@ import {
   updateMenu,
   deleteMenu,
   toggleMenuStatus,
+  exportMenus,
+  importMenus,
   type MenuTreeNode,
   type MenuCreateRequest,
 } from '@/api/menu'
@@ -24,6 +26,9 @@ import { getRegisteredComponents } from '@/utils/componentRegistry'
 import { usePermissionStore } from '@/stores'
 
 const permissionStore = usePermissionStore()
+
+// ===== 当前右键选中的菜单 ID（控制只显示一个 buttonlist） =====
+const activeMenuId = ref<number | null>(null)
 
 // ===== 树形数据 =====
 const loading = ref(false)
@@ -56,6 +61,10 @@ const menuTypeOptions = [
 
 // ===== 可选组件列表（从注册表获取） =====
 const componentOptions = getRegisteredComponents()
+
+// ===== Excel 导入 =====
+const importInputRef = ref<HTMLInputElement | null>(null)
+const importing = ref(false)
 
 // ===== 加载菜单树 =====
 async function fetchTree() {
@@ -203,8 +212,78 @@ async function handleToggle(data: MenuTreeNode) {
   }
 }
 
+// ===== Excel 导出 =====
+async function handleExport() {
+  try {
+    const res: any = await exportMenus()
+    const blob = new Blob([res], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = '菜单列表.xlsx'
+    link.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '导出失败')
+  }
+}
+
+// ===== Excel 导入 =====
+function triggerImport() {
+  importInputRef.value?.click()
+}
+
+async function handleImportFile(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (!input.files || input.files.length === 0) return
+  importing.value = true
+  try {
+    const res: any = await importMenus(input.files[0])
+    const data = res.data
+    const msg = `导入完成：成功 ${data.successCount} 条，失败 ${data.failCount} 条`
+    if (data.failCount > 0) {
+      ElMessage.warning(msg)
+    } else {
+      ElMessage.success(msg)
+    }
+    fetchTree()
+    permissionStore.reloadMenuTree()
+  } catch (err: any) {
+    ElMessage.error(err?.response?.data?.message || '导入失败')
+  } finally {
+    importing.value = false
+    input.value = ''
+  }
+}
+
+// ===== 右键菜单显示/隐藏控制 =====
+function handleContextMenu(event: Event, id: number) {
+  event.preventDefault()
+  event.stopPropagation()
+  activeMenuId.value = id
+}
+
+function closeContextMenu() {
+  activeMenuId.value = null
+}
+
+function handleDocumentClick(event: MouseEvent) {
+  const target = event.target as HTMLElement
+  if (!target.closest('.menu-popover')) {
+    activeMenuId.value = null
+  }
+}
+
 onMounted(() => {
   fetchTree()
+  document.addEventListener('click', handleDocumentClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick)
 })
 </script>
 
@@ -212,6 +291,8 @@ onMounted(() => {
   <div class="menu">
     <div class="menu-header">
       <el-button type="primary" @click="handleAddRoot">新增顶级菜单</el-button>
+      <el-button :loading="importing" @click="triggerImport">导入</el-button>
+      <el-button @click="handleExport">导出</el-button>
     </div>
     <div v-loading="loading" class="menu-list">
       <el-tree
@@ -224,12 +305,13 @@ onMounted(() => {
       >
         <template #default="{ data }">
           <el-popover
+            :visible="activeMenuId === data.id"
             placement="right"
-            trigger="hover"
+            trigger="manual"
             popper-class="menu-popover"
             :width="100"
           >
-            <div class="button-list">
+            <div class="button-list" @click="closeContextMenu">
               <el-button link type="primary" @click="handleAppend(data)">新增</el-button>
               <el-button link type="primary" @click="handleEdit(data)">编辑</el-button>
               <el-button
@@ -242,7 +324,7 @@ onMounted(() => {
               <el-button link type="danger" @click="handleDelete(data)">删除</el-button>
             </div>
             <template #reference>
-              <span class="tree-node-label">
+              <span class="tree-node-label" @contextmenu.prevent.stop="handleContextMenu($event, data.id)">
                 <el-tag v-if="data.menuType === 1" size="small" type="info" class="type-tag">目录</el-tag>
                 <el-tag v-else-if="data.menuType === 2" size="small" type="success" class="type-tag">菜单</el-tag>
                 <el-tag v-else size="small" type="warning" class="type-tag">按钮</el-tag>
@@ -317,6 +399,14 @@ onMounted(() => {
         <el-button type="primary" @click="handleSave">确定</el-button>
       </template>
     </el-dialog>
+
+    <input
+      ref="importInputRef"
+      type="file"
+      accept=".xlsx,.xls"
+      style="display: none;"
+      @change="handleImportFile"
+    />
   </div>
 </template>
 
@@ -328,6 +418,8 @@ onMounted(() => {
 
 .menu-header {
   margin: 24px 24px 0 24px;
+  display: flex;
+  gap: 8px;
 }
 
 .menu-list {

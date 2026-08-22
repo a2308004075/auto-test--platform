@@ -74,6 +74,7 @@ async function handleSaveProfile() {
       displayName: userInfo.value.displayName,
       role: userInfo.value.role,
       permissions: userInfo.value.permissions,
+      permissionDetails: userInfo.value.permissionDetails,
     })
     ElMessage.success('个人资料保存成功')
   } catch (e: any) {

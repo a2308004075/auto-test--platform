@@ -24,6 +24,7 @@ public class PermissionTreeNode {
     private String path;
     private Integer sortOrder;
     private String description;
+    private String controlMode;
 
     /**
      * 子权限列表

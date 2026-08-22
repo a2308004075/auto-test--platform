@@ -22,6 +22,7 @@ public class MenuListItem {
     private String component;
     private Integer sortNo;
     private Integer isActive;
+    private String permissionCode;
     private String createdAt;
     private String updatedAt;
 }

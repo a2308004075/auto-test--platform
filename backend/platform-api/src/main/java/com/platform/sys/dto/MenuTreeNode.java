@@ -24,6 +24,7 @@ public class MenuTreeNode {
     private String component;
     private Integer sortNo;
     private Integer isActive;
+    private String permissionCode;
 
     /**
      * 子菜单列表

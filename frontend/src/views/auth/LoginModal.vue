@@ -92,6 +92,7 @@ async function handleLogin() {
         displayName: data.user.displayName,
         role: data.user.role,
         permissions: data.user.permissions,
+        permissionDetails: data.user.permissionDetails,
       })
     }
     ElMessage.success('登录成功')

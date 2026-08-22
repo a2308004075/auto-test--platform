@@ -9,12 +9,15 @@ import com.platform.common.response.ApiResponse;
 import com.platform.common.response.PageResponse;
 import com.platform.sys.dto.DictBatchDeleteRequest;
 import com.platform.sys.dto.DictCreateRequest;
+import com.platform.sys.dto.DictImportResult;
 import com.platform.sys.dto.DictListItem;
 import com.platform.sys.service.DictService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.List;
 
@@ -81,5 +84,21 @@ public class DictController {
     @GetMapping("/type/{dictType}")
     public ApiResponse<List<DictListItem>> getByType(@PathVariable String dictType) {
         return ApiResponse.ok(dictService.getByType(dictType));
+    }
+
+    /**
+     * 导出字典列表到 Excel
+     */
+    @GetMapping("/export")
+    public void export(HttpServletResponse response) {
+        dictService.exportDicts(response);
+    }
+
+    /**
+     * 从 Excel 导入字典
+     */
+    @PostMapping("/import")
+    public ApiResponse<DictImportResult> importDicts(@RequestParam("file") MultipartFile file) {
+        return ApiResponse.ok(dictService.importDicts(file));
     }
 }

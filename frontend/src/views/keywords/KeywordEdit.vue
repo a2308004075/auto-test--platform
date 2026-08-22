@@ -14,6 +14,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getKeyword, createKeyword, updateKeyword } from '@/api/keyword'
 import { getApis, getModules } from '@/api/apidoc'
+import { useDict } from '@/composables/useDict'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,7 +23,7 @@ const keywordId = computed(() => Number(route.params.keywordId))
 const isEdit = computed(() => !!keywordId.value)
 
 const methodColors: Record<string, string> = { GET: '', POST: 'success', PUT: 'warning', DELETE: 'danger', PATCH: 'info' }
-const paramTypes = ['string', 'integer', 'number', 'boolean', 'array', 'object']
+const { options: paramTypeOptions } = useDict('param_type')
 
 const activeTab = ref('basic')
 const loading = ref(false)
@@ -223,7 +224,7 @@ onMounted(() => {
             <el-table-column label="类型" width="120">
               <template #default="{ row }">
                 <el-select v-model="row.type" size="small">
-                  <el-option v-for="t in paramTypes" :key="t" :value="t" :label="t" />
+                  <el-option v-for="t in paramTypeOptions" :key="t.value" :value="t.value" :label="t.label" />
                 </el-select>
               </template>
             </el-table-column>

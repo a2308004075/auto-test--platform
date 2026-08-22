@@ -12,6 +12,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getProjects, createProject, updateProject, deleteProject, toggleProjectStatus } from '@/api/project'
 import { useProjectStore, useUserStore } from '@/stores'
+import { useDict } from '@/composables/useDict'
 
 const router = useRouter()
 const projectStore = useProjectStore()
@@ -24,6 +25,7 @@ const loading = ref(false)
 const list = ref<any[]>([])
 const keyword = ref('')
 const statusFilter = ref<string>('')
+const { options: projectStatusOptions } = useDict('project_status')
 const pagination = reactive({ current: 1, pageSize: 9, total: 0 })
 const modalVisible = ref(false)
 const editingId = ref<number>(0)
@@ -52,8 +54,7 @@ async function fetchList() {
       page: pagination.current,
       pageSize: pagination.pageSize,
     }
-    if (statusFilter.value === 'active') params.status = 1
-    else if (statusFilter.value === 'disabled') params.status = 0
+    if (statusFilter.value) params.status = Number(statusFilter.value)
     const res: any = await getProjects(params)
     list.value = res.data?.items || []
     pagination.total = res.data?.total || 0
@@ -169,9 +170,7 @@ onMounted(fetchList)
         @clear="handleSearch"
       />
       <el-select v-model="statusFilter" placeholder="全部状态" style="width: 120px" clearable @change="handleSearch">
-        <el-option label="全部状态" value="" />
-        <el-option label="启用" value="active" />
-        <el-option label="停用" value="disabled" />
+        <el-option v-for="s in projectStatusOptions" :key="s.value" :value="s.value" :label="s.label" />
       </el-select>
     </div>
 
@@ -228,13 +227,16 @@ onMounted(fetchList)
     <el-empty v-if="!list.length && !loading" :description="`暂无项目${isAdmin ? '，点击「新建项目」开始' : ''}`" />
 
     <!-- 分页 -->
-    <div v-if="pagination.total > pagination.pageSize" class="pagination-wrap">
+    <div class="pagination-wrap">
       <el-pagination
         v-model:current-page="pagination.current"
-        :page-size="pagination.pageSize"
+        v-model:page-size="pagination.pageSize"
         :total="pagination.total"
-        layout="total, prev, pager, next"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
         @current-change="fetchList"
+        @size-change="(s: number) => { pagination.pageSize = s; pagination.current = 1; fetchList() }"
       />
     </div>
 
@@ -440,7 +442,7 @@ onMounted(fetchList)
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
 .form-hint {

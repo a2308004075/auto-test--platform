@@ -105,10 +105,17 @@ onMounted(fetchList)
         </template>
       </el-table-column>
     </el-table>
-    <div style="display:flex;justify-content:flex-end;margin-top:16px">
-      <el-pagination background layout="total, prev, pager, next" :total="pagination.total"
-        :page-size="pagination.pageSize" :current-page="pagination.current"
-        @current-change="(p: number) => { pagination.current = p; fetchList() }" />
+    <div class="pagination">
+      <el-pagination
+        v-model:current-page="pagination.current"
+        v-model:page-size="pagination.pageSize"
+        :total="pagination.total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+        @current-change="(p: number) => { pagination.current = p; fetchList() }"
+        @size-change="(s: number) => { pagination.pageSize = s; pagination.current = 1; fetchList() }"
+      />
     </div>
 
     <el-dialog v-model="modalVisible" :title="editingId ? '编辑套件' : '新建套件'" width="500px">
@@ -135,3 +142,11 @@ onMounted(fetchList)
     </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.pagination {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+</style>

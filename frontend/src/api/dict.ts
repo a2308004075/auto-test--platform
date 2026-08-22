@@ -71,3 +71,17 @@ export function batchDeleteDict(ids: number[]) {
 export function getDictByType(dictType: string) {
   return request.get(`/v1/sys/dicts/type/${dictType}`)
 }
+
+/** 导出字典 Excel */
+export function exportDicts() {
+  return request.get('/v1/sys/dicts/export', { responseType: 'blob' })
+}
+
+/** 导入字典 Excel */
+export function importDicts(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post('/v1/sys/dicts/import', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}

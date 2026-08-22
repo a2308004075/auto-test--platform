@@ -12,6 +12,7 @@ import { reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getCase, createCase, updateCase } from '@/api/case'
+import { useDict } from '@/composables/useDict'
 
 const route = useRoute()
 const router = useRouter()
@@ -19,6 +20,7 @@ const projectId = computed(() => Number(route.params.id))
 const caseId = computed(() => Number(route.params.caseId))
 const querySuiteId = computed(() => Number(route.query.suiteId) || 0)
 const isEdit = computed(() => !!caseId.value)
+const { options: priorityOptions } = useDict('priority')
 
 const form = reactive({
   name: '',
@@ -126,10 +128,7 @@ onMounted(() => { if (isEdit.value) loadCase() })
               <el-col :span="12">
                 <el-form-item label="优先级">
                   <el-select v-model="form.priority" style="width:100%">
-                    <el-option value="P0" label="P0" />
-                    <el-option value="P1" label="P1" />
-                    <el-option value="P2" label="P2" />
-                    <el-option value="P3" label="P3" />
+                    <el-option v-for="p in priorityOptions" :key="p.value" :value="p.value" :label="p.label" />
                   </el-select>
                 </el-form-item>
               </el-col>

@@ -12,6 +12,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getSuite, updateSuite } from '@/api/suite'
+import { useDict } from '@/composables/useDict'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,6 +21,7 @@ const suiteId = computed(() => Number(route.params.suiteId))
 
 const loading = ref(false)
 const saving = ref(false)
+const { options: priorityOptions } = useDict('priority')
 
 const form = reactive({
   name: '',
@@ -113,10 +115,7 @@ onMounted(loadSuite)
           <el-col :span="6">
             <el-form-item label="优先级">
               <el-select v-model="form.priority" style="width:100%">
-                <el-option value="P0" label="P0" />
-                <el-option value="P1" label="P1" />
-                <el-option value="P2" label="P2" />
-                <el-option value="P3" label="P3" />
+                <el-option v-for="p in priorityOptions" :key="p.value" :value="p.value" :label="p.label" />
               </el-select>
             </el-form-item>
           </el-col>

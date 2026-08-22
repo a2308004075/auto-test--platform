@@ -18,6 +18,8 @@ import {
   addDict,
   updateDict,
   batchDeleteDict,
+  exportDicts,
+  importDicts,
   type DictListItem,
   type DictCreateRequest,
 } from '@/api/dict'
@@ -31,6 +33,10 @@ const selectionList = ref<DictListItem[]>([])
 // 搜索条件
 const searchType = ref('')
 const searchTypeName = ref('')
+
+// ===== Excel 导入 =====
+const importInputRef = ref<HTMLInputElement | null>(null)
+const importing = ref(false)
 
 // ===== 弹窗 =====
 const dialogVisible = ref(false)
@@ -163,6 +169,52 @@ async function handleBatchDelete() {
   }
 }
 
+// ===== Excel 导出 =====
+async function handleExport() {
+  try {
+    const res: any = await exportDicts()
+    const blob = new Blob([res], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = '字典列表.xlsx'
+    link.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '导出失败')
+  }
+}
+
+// ===== Excel 导入 =====
+function triggerImport() {
+  importInputRef.value?.click()
+}
+
+async function handleImportFile(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (!input.files || input.files.length === 0) return
+  importing.value = true
+  try {
+    const res: any = await importDicts(input.files[0])
+    const data = res.data
+    const msg = `导入完成：成功 ${data.successCount} 条，失败 ${data.failCount} 条`
+    if (data.failCount > 0) {
+      ElMessage.warning(msg)
+    } else {
+      ElMessage.success(msg)
+    }
+    fetchList()
+  } catch (err: any) {
+    ElMessage.error(err?.response?.data?.message || '导入失败')
+  } finally {
+    importing.value = false
+    input.value = ''
+  }
+}
+
 // ===== 重置搜索 =====
 function handleReset() {
   searchType.value = ''
@@ -215,6 +267,8 @@ onMounted(() => {
         <el-button type="danger" :disabled="!selectionList.length" @click="handleBatchDelete">
           批量删除
         </el-button>
+        <el-button :loading="importing" @click="triggerImport">导入</el-button>
+        <el-button @click="handleExport">导出</el-button>
       </div>
 
       <TableFit>
@@ -287,6 +341,14 @@ onMounted(() => {
         <el-button type="primary" :loading="dialogLoading" @click="handleSave">确定</el-button>
       </template>
     </el-dialog>
+
+    <input
+      ref="importInputRef"
+      type="file"
+      accept=".xlsx,.xls"
+      style="display: none;"
+      @change="handleImportFile"
+    />
   </div>
 </template>
 
@@ -327,6 +389,7 @@ onMounted(() => {
 
 .pagination {
   margin-top: 16px;
-  text-align: right;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

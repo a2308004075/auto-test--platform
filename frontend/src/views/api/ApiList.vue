@@ -21,12 +21,15 @@ import BatchBar from '@/components/BatchBar/index.vue'
 import ColumnSettings, { type ColumnItem } from '@/components/ColumnSettings/index.vue'
 import ProPagination from '@/components/ProPagination/index.vue'
 import ApiDebugModal from '@/components/ApiDebugModal/index.vue'
+import { useDict } from '@/composables/useDict'
 
 const route = useRoute()
 const router = useRouter()
 const projectId = computed(() => Number(route.params.id))
 
 const methodColors: Record<string, string> = { GET: '', POST: 'success', PUT: 'warning', DELETE: 'danger', PATCH: 'info' }
+const { options: httpMethodOptions } = useDict('http_method')
+const { options: sourceTypeOptions } = useDict('source_type')
 
 // ===== 列表数据 =====
 const loading = ref(false)
@@ -205,9 +208,8 @@ function resetColumns() {
 
 // ===== 格式化 =====
 function sourceLabel(t?: string) {
-  if (t === 'SWAGGER_IMPORT') return 'Swagger'
-  if (t === 'MANUAL') return '手动'
-  return t || '--'
+  if (!t) return '--'
+  return sourceTypeOptions.value.find((s) => s.value === t)?.label || t
 }
 function formatParams(raw?: string) {
   if (!raw) return '--'
@@ -284,15 +286,14 @@ onMounted(() => { fetchModules(); fetchList() })
           <div class="pro-search-field">
             <span class="pro-search-label">请求方法</span>
             <el-select v-model="search.method" placeholder="全部方法" clearable style="width: 140px">
-              <el-option v-for="m in ['GET','POST','PUT','DELETE','PATCH']" :key="m" :value="m" :label="m" />
+              <el-option v-for="m in httpMethodOptions" :key="m.value" :value="m.value" :label="m.label" />
             </el-select>
           </div>
           <template #collapse>
             <div class="pro-search-field">
               <span class="pro-search-label">接口来源</span>
               <el-select v-model="search.source" placeholder="全部来源" clearable style="width: 160px">
-                <el-option value="SWAGGER_IMPORT" label="Swagger 导入" />
-                <el-option value="MANUAL" label="手动创建" />
+                <el-option v-for="s in sourceTypeOptions" :key="s.value" :value="s.value" :label="s.label" />
               </el-select>
             </div>
           </template>

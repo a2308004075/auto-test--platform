@@ -14,6 +14,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getApi, createApi, updateApi, getModules, getApiReferences, debugApi } from '@/api/apidoc'
 import { getEnvironments } from '@/api/environment'
+import { useDict } from '@/composables/useDict'
 
 const route = useRoute()
 const router = useRouter()
@@ -25,6 +26,8 @@ const activeTab = ref('basic')
 const loading = ref(false)
 const modules = ref<any[]>([])
 const environments = ref<any[]>([])
+const { options: httpMethodOptions } = useDict('http_method')
+const { options: paramTypeOptions } = useDict('param_type')
 
 const form = reactive({
   name: '', httpMethod: 'GET', path: '', service: '', moduleId: null as number | null,
@@ -51,7 +54,6 @@ function syncToForm() {
 
 watch([queryParams, headerParams, responseFields, bodyText], syncToForm, { deep: true })
 
-const paramTypes = ['string', 'integer', 'number', 'boolean', 'array', 'object']
 function addRow(arr: any[]) {
   arr.push({ name: '', type: 'string', required: false, description: '' })
 }
@@ -196,7 +198,7 @@ onMounted(() => {
             <el-col :span="8">
               <el-form-item label="HTTP 方法">
                 <el-select v-model="form.httpMethod" style="width: 100%">
-                  <el-option v-for="m in ['GET','POST','PUT','DELETE','PATCH']" :key="m" :value="m" :label="m" />
+                  <el-option v-for="m in httpMethodOptions" :key="m.value" :value="m.value" :label="m.label" />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -251,7 +253,7 @@ onMounted(() => {
             <el-table-column label="类型" width="120">
               <template #default="{ row }">
                 <el-select v-model="row.type" size="small">
-                  <el-option v-for="t in paramTypes" :key="t" :value="t" :label="t" />
+                  <el-option v-for="t in paramTypeOptions" :key="t.value" :value="t.value" :label="t.label" />
                 </el-select>
               </template>
             </el-table-column>
@@ -280,7 +282,7 @@ onMounted(() => {
             <el-table-column label="类型" width="120">
               <template #default="{ row }">
                 <el-select v-model="row.type" size="small">
-                  <el-option v-for="t in paramTypes" :key="t" :value="t" :label="t" />
+                  <el-option v-for="t in paramTypeOptions" :key="t.value" :value="t.value" :label="t.label" />
                 </el-select>
               </template>
             </el-table-column>
@@ -322,7 +324,7 @@ onMounted(() => {
             <el-table-column label="类型" width="120">
               <template #default="{ row }">
                 <el-select v-model="row.type" size="small">
-                  <el-option v-for="t in paramTypes" :key="t" :value="t" :label="t" />
+                  <el-option v-for="t in paramTypeOptions" :key="t.value" :value="t.value" :label="t.label" />
                 </el-select>
               </template>
             </el-table-column>

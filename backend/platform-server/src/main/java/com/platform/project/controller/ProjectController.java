@@ -41,7 +41,7 @@ public class ProjectController {
      * 创建项目
      */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<ProjectResponse> create(@Valid @RequestBody ProjectCreateRequest request) {
         return ApiResponse.ok(projectService.createProject(request));
     }
@@ -58,7 +58,7 @@ public class ProjectController {
      * 更新项目
      */
     @PostMapping("/{projectId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<ProjectResponse> update(@PathVariable Long projectId,
                                                 @Valid @RequestBody ProjectUpdateRequest request) {
         return ApiResponse.ok(projectService.updateProject(projectId, request));
@@ -68,7 +68,7 @@ public class ProjectController {
      * 删除项目
      */
     @PostMapping("/{projectId}/delete")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<Void> delete(@PathVariable Long projectId) {
         projectService.deleteProject(projectId);
         return ApiResponse.ok();
@@ -78,7 +78,7 @@ public class ProjectController {
      * 启停项目
      */
     @PostMapping("/{projectId}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<ProjectResponse> toggleStatus(@PathVariable Long projectId) {
         return ApiResponse.ok(projectService.toggleStatus(projectId));
     }

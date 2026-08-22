@@ -40,21 +40,23 @@ public class DataInitializer implements ApplicationRunner {
             return;
         }
 
-        // 确认 ADMIN 角色存在
-        UserRole adminRole = userRoleMapper.selectByCode("ADMIN");
+        // 优先使用 SUPER_ADMIN 角色（V23 迁移），降级使用 ADMIN 角色
+        UserRole superAdminRole = userRoleMapper.selectByCode("SUPER_ADMIN");
+        UserRole adminRole = (superAdminRole != null) ? superAdminRole : userRoleMapper.selectByCode("ADMIN");
         if (adminRole == null) {
-            log.error("ADMIN 角色不存在，请检查 user_role 表初始化数据");
+            log.error("SUPER_ADMIN/ADMIN 角色不存在，请检查 user_role 表初始化数据");
             return;
         }
 
+        boolean useSuperAdmin = (superAdminRole != null);
         User admin = new User();
         admin.setId(1L);
         admin.setUsername("admin");
         admin.setPasswordHash(passwordEncoder.encode("Admin@123"));
-        admin.setDisplayName("管理员");
+        admin.setDisplayName(useSuperAdmin ? "超级管理员" : "管理员");
         admin.setRoleId(adminRole.getId());
         admin.setIsActive(1);
         userMapper.insert(admin);
-        log.info("已创建默认 admin 用户（密码：Admin@123）");
+        log.info("已创建默认 admin 用户（角色：{}，密码：Admin@123）", adminRole.getRoleCode());
     }
 }

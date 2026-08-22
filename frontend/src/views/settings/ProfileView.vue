@@ -183,7 +183,9 @@ const avatarInitial = computed(() => {
 
 // 角色标签样式类
 const roleTagClass = computed(() => {
-  return (userInfo.value.role || '').toUpperCase() === 'ADMIN' ? 'role-tag-admin' : 'role-tag-tester'
+  const r = (userInfo.value.role || '').toUpperCase()
+  if (r === 'SUPER_ADMIN') return 'role-tag-super-admin'
+  return r === 'ADMIN' ? 'role-tag-admin' : 'role-tag-tester'
 })
 
 onMounted(() => {
@@ -401,6 +403,11 @@ onMounted(() => {
   resize: vertical;
 }
 /* 角色标签 */
+.role-tag-super-admin {
+  background: rgba(207, 19, 34, 0.1) !important;
+  color: #cf1322 !important;
+  border-color: rgba(207, 19, 34, 0.2) !important;
+}
 .role-tag-admin {
   background: rgba(114, 46, 209, 0.1) !important;
   color: #722ed1 !important;

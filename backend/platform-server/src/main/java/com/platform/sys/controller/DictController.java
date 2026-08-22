@@ -35,7 +35,7 @@ public class DictController {
      * 分页查询字典列表（仅 ADMIN）
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<PageResponse<DictListItem>> page(
             @RequestParam(required = false) String dictType,
             @RequestParam(required = false) String dictTypeName,
@@ -48,7 +48,7 @@ public class DictController {
      * 获取单个字典（仅 ADMIN）
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<DictListItem> get(@PathVariable Long id) {
         return ApiResponse.ok(dictService.get(id));
     }
@@ -57,7 +57,7 @@ public class DictController {
      * 新增字典（仅 ADMIN）
      */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<DictListItem> add(@Valid @RequestBody DictCreateRequest request) {
         return ApiResponse.ok(dictService.addOrUpdate(null, request));
     }
@@ -66,7 +66,7 @@ public class DictController {
      * 更新字典（仅 ADMIN）
      */
     @PostMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<DictListItem> update(@PathVariable Long id,
                                             @Valid @RequestBody DictCreateRequest request) {
         return ApiResponse.ok(dictService.addOrUpdate(id, request));
@@ -76,7 +76,7 @@ public class DictController {
      * 批量删除字典（仅 ADMIN）
      */
     @DeleteMapping("/batch")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<Void> batchDelete(@RequestBody DictBatchDeleteRequest request) {
         dictService.batchDelete(request);
         return ApiResponse.ok(null);
@@ -94,7 +94,7 @@ public class DictController {
      * 导出字典列表到 Excel（仅 ADMIN）
      */
     @GetMapping("/export")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public void export(HttpServletResponse response) {
         dictService.exportDicts(response);
     }
@@ -103,7 +103,7 @@ public class DictController {
      * 从 Excel 导入字典（仅 ADMIN）
      */
     @PostMapping("/import")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<DictImportResult> importDicts(@RequestParam("file") MultipartFile file) {
         return ApiResponse.ok(dictService.importDicts(file));
     }

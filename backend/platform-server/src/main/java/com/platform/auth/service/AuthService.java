@@ -52,8 +52,10 @@ public class AuthService {
 
     private static final String RESERVED_USERNAME = "admin";
     private static final String RESERVED_DISPLAY_NAME = "管理员";
-    /** 内置超级管理员角色编码 */
-    private static final String BUILTIN_ROLE_CODE = "ADMIN";
+    /** admin 账号的显示名（超级管理员） */
+    private static final String SUPER_ADMIN_DISPLAY_NAME = "超级管理员";
+    /** 内置超级管理员角色编码（admin 账号专属，高于 ADMIN） */
+    private static final String BUILTIN_ROLE_CODE = "SUPER_ADMIN";
 
     public AuthService(UserMapper userMapper,
                        UserRoleMapper userRoleMapper,
@@ -123,7 +125,7 @@ public class AuthService {
         }
 
         String roleCode = getRoleCode(user.getRoleId());
-        // admin 账号保护：强制使用 ADMIN 角色，不受角色管理配置影响
+        // admin 账号保护：强制使用 SUPER_ADMIN 角色，不受角色管理配置影响
         if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
             roleCode = BUILTIN_ROLE_CODE;
         }
@@ -180,7 +182,7 @@ public class AuthService {
         }
 
         String roleCode = getRoleCode(user.getRoleId());
-        // admin 账号保护：刷新 Token 时同样强制使用 ADMIN 角色
+        // admin 账号保护：刷新 Token 时同样强制使用 SUPER_ADMIN 角色
         if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
             roleCode = BUILTIN_ROLE_CODE;
         }
@@ -236,10 +238,10 @@ public class AuthService {
         response.setDisplayName(user.getDisplayName());
         response.setBio(user.getBio());
         response.setRoleId(user.getRoleId());
-        // admin 账号保护：强制使用 ADMIN 角色和全部权限，不受角色管理配置影响
+        // admin 账号保护：强制使用 SUPER_ADMIN 角色和全部权限，不受角色管理配置影响
         if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
             response.setRole(BUILTIN_ROLE_CODE);
-            response.setRoleName(RESERVED_DISPLAY_NAME);
+            response.setRoleName(SUPER_ADMIN_DISPLAY_NAME);
             response.setPermissions(Collections.singletonList("*"));
             PermissionBriefDTO dto = new PermissionBriefDTO();
             dto.setCode("*");
@@ -287,8 +289,10 @@ public class AuthService {
 
         // 更新显示名
         if (request.getDisplayName() != null && !request.getDisplayName().isEmpty()) {
-            if (RESERVED_DISPLAY_NAME.equals(request.getDisplayName())) {
-                throw new BusinessException(ErrorCode.ACCOUNT_RESERVED, "用户名「管理员」为系统保留，不可使用");
+            if (RESERVED_DISPLAY_NAME.equals(request.getDisplayName())
+                    || SUPER_ADMIN_DISPLAY_NAME.equals(request.getDisplayName())) {
+                throw new BusinessException(ErrorCode.ACCOUNT_RESERVED,
+                        "用户名「" + request.getDisplayName() + "」为系统保留，不可使用");
             }
             user.setDisplayName(request.getDisplayName());
         }
@@ -443,10 +447,10 @@ public class AuthService {
         response.setDisplayName(user.getDisplayName());
         response.setBio(user.getBio());
         response.setRoleId(user.getRoleId());
-        // admin 账号保护：强制使用 ADMIN 角色和全部权限
+        // admin 账号保护：强制使用 SUPER_ADMIN 角色和全部权限
         if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
             response.setRole(BUILTIN_ROLE_CODE);
-            response.setRoleName(RESERVED_DISPLAY_NAME);
+            response.setRoleName(SUPER_ADMIN_DISPLAY_NAME);
             response.setPermissions(Collections.singletonList("*"));
             PermissionBriefDTO dto = new PermissionBriefDTO();
             dto.setCode("*");
@@ -472,7 +476,7 @@ public class AuthService {
         brief.setId(user.getId());
         brief.setUsername(user.getUsername());
         brief.setDisplayName(user.getDisplayName());
-        // admin 账号保护：强制使用 ADMIN 角色和全部权限
+        // admin 账号保护：强制使用 SUPER_ADMIN 角色和全部权限
         if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
             brief.setRole(BUILTIN_ROLE_CODE);
             brief.setPermissions(Collections.singletonList("*"));

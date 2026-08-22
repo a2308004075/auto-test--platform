@@ -31,7 +31,10 @@ export const useUserStore = defineStore('user', () => {
     JSON.parse(localStorage.getItem('permissionDetails') || '[]'),
   )
   const isLoggedIn = computed(() => !!token.value)
-  const isAdmin = computed(() => (role.value || '').toUpperCase() === 'ADMIN')
+  const isAdmin = computed(() => {
+    const r = (role.value || '').toUpperCase()
+    return r === 'SUPER_ADMIN' || r === 'ADMIN'
+  })
 
   // ===== 记住密码 =====
   const REMEMBER_KEY = 'rememberedCredentials'

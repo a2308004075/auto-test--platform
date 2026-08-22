@@ -81,7 +81,7 @@ const deleteVisible = ref(false)
 const deleteUserRef = ref<any>(null)
 
 // 保留字
-const RESERVED_DISPLAY_NAMES = ['管理员']
+const RESERVED_DISPLAY_NAMES = ['管理员', '超级管理员']
 const RESERVED_ACCOUNTS_LOWER = ['admin']
 
 // ===== 获取用户列表 =====
@@ -349,7 +349,9 @@ function formatDateTime(dt?: string): string {
 }
 
 function getRoleTagClass(role: string): string {
-  return role?.toUpperCase() === 'ADMIN' ? 'role-tag-admin' : 'role-tag-tester'
+  const upper = role?.toUpperCase()
+  if (upper === 'SUPER_ADMIN') return 'role-tag-super-admin'
+  return upper === 'ADMIN' ? 'role-tag-admin' : 'role-tag-tester'
 }
 
 onMounted(() => { fetchUsers(); fetchRoles() })
@@ -592,6 +594,11 @@ onMounted(() => { fetchUsers(); fetchRoles() })
   font-size: 12px;
   border: 1px solid transparent;
   white-space: nowrap;
+}
+.role-tag-super-admin {
+  background: #fff1f0;
+  color: #cf1322;
+  border-color: #ffa39e;
 }
 .role-tag-admin {
   background: #f9f0ff;

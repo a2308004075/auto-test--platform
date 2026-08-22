@@ -43,7 +43,11 @@ const roleInitial = computed(() => {
 const displayName = computed(() => userStore.displayName || userStore.username || '')
 
 // 是否管理员（未登录时即使 localStorage 残留 role 也不视为管理员）
-const isAdmin = computed(() => userStore.isLoggedIn && (userStore.role || '').toUpperCase() === 'ADMIN')
+const isAdmin = computed(() => {
+  if (!userStore.isLoggedIn) return false
+  const r = (userStore.role || '').toUpperCase()
+  return r === 'SUPER_ADMIN' || r === 'ADMIN'
+})
 
 onMounted(() => {
   // 页面刷新后恢复用户信息

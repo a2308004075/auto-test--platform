@@ -37,6 +37,9 @@ public class UserService {
 
     private static final String RESERVED_USERNAME = "admin";
     private static final String RESERVED_DISPLAY_NAME = "管理员";
+    private static final String RESERVED_SUPER_DISPLAY_NAME = "超级管理员";
+    /** 超级管理员角色编码，仅限 admin 账号拥有，不可分配给其他用户 */
+    private static final String RESERVED_SUPER_ROLE_CODE = "SUPER_ADMIN";
 
     private final UserMapper userMapper;
     private final UserRoleMapper userRoleMapper;
@@ -93,6 +96,7 @@ public class UserService {
     public UserResponse createUser(UserCreateRequest request) {
         validateReservedUsername(request.getUsername());
         validateReservedDisplayName(request.getDisplayName());
+        validateSuperAdminRole(request.getRoleId());
 
         // 校验用户名唯一性
         User existing = userMapper.selectByUsername(request.getUsername());
@@ -136,6 +140,11 @@ public class UserService {
             if (request.getDisplayName() != null && !request.getDisplayName().equals(user.getDisplayName())) {
                 throw new BusinessException(ErrorCode.ADMIN_PROTECTED, "系统管理员账号不允许修改用户名");
             }
+        }
+
+        // 非 admin 用户不可分配 SUPER_ADMIN 角色
+        if (request.getRoleId() != null) {
+            validateSuperAdminRole(request.getRoleId());
         }
 
         if (request.getDisplayName() != null) {
@@ -226,8 +235,24 @@ public class UserService {
     }
 
     private void validateReservedDisplayName(String displayName) {
-        if (RESERVED_DISPLAY_NAME.equals(displayName)) {
-            throw new BusinessException(ErrorCode.ACCOUNT_RESERVED, "用户名「管理员」为系统保留，不可使用");
+        if (RESERVED_DISPLAY_NAME.equals(displayName)
+                || RESERVED_SUPER_DISPLAY_NAME.equals(displayName)) {
+            throw new BusinessException(ErrorCode.ACCOUNT_RESERVED,
+                    "用户名「" + displayName + "」为系统保留，不可使用");
+        }
+    }
+
+    /**
+     * 校验角色是否为 SUPER_ADMIN（超级管理员角色仅限 admin 账号拥有，不可分配给其他用户）
+     */
+    private void validateSuperAdminRole(Long roleId) {
+        if (roleId == null) {
+            return;
+        }
+        UserRole role = userRoleMapper.selectById(roleId);
+        if (role != null && RESERVED_SUPER_ROLE_CODE.equals(role.getRoleCode())) {
+            throw new BusinessException(ErrorCode.ADMIN_PROTECTED,
+                    "超级管理员角色仅限 admin 账号拥有，不可分配给其他用户");
         }
     }
 

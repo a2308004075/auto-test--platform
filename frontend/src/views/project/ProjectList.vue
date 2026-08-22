@@ -21,7 +21,11 @@ const userStore = useUserStore()
 const { hasPermission } = usePermission()
 
 // 是否管理员（未登录或非管理员均视为无管理权限）
-const isAdmin = computed(() => userStore.isLoggedIn && (userStore.role || '').toUpperCase() === 'ADMIN')
+const isAdmin = computed(() => {
+  if (!userStore.isLoggedIn) return false
+  const r = (userStore.role || '').toUpperCase()
+  return r === 'SUPER_ADMIN' || r === 'ADMIN'
+})
 
 const loading = ref(false)
 const list = ref<any[]>([])

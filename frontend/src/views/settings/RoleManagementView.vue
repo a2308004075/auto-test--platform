@@ -106,7 +106,8 @@ const roleCodeDisabled = computed(() => {
 
 // ===== 辅助函数 =====
 function isBuiltinRole(row: any): boolean {
-  return row?.roleCode?.toUpperCase() === 'ADMIN'
+  const code = row?.roleCode?.toUpperCase()
+  return code === 'SUPER_ADMIN' || code === 'ADMIN'
 }
 
 function clearFormError(field: keyof typeof formErrors) {

@@ -44,7 +44,7 @@ public class RoleController {
      * 分页查询角色列表（ADMIN）
      */
     @GetMapping("/page")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<PageResponse<RoleResponse>> page(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize,
@@ -56,7 +56,7 @@ public class RoleController {
      * 查询角色详情（含权限分配列表）（ADMIN）
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<RoleResponse> detail(@PathVariable Long id) {
         return ApiResponse.ok(roleService.getRoleDetail(id));
     }
@@ -65,7 +65,7 @@ public class RoleController {
      * 创建角色（ADMIN）
      */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<RoleResponse> create(@Valid @RequestBody RoleCreateRequest request) {
         return ApiResponse.success(roleService.createRole(request), "角色创建成功");
     }
@@ -74,7 +74,7 @@ public class RoleController {
      * 更新角色（ADMIN）
      */
     @PostMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<RoleResponse> update(@PathVariable Long id,
                                             @Valid @RequestBody RoleCreateRequest request) {
         return ApiResponse.success(roleService.updateRole(id, request), "角色更新成功");
@@ -84,7 +84,7 @@ public class RoleController {
      * 删除角色（软删除）（ADMIN）
      */
     @PostMapping("/{id}/delete")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         roleService.deleteRole(id);
         return ApiResponse.success(null, "角色删除成功");
@@ -94,7 +94,7 @@ public class RoleController {
      * 切换角色状态（ADMIN）
      */
     @PostMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<Void> toggleStatus(@PathVariable Long id,
                                            @RequestBody StatusToggleRequest request) {
         roleService.toggleRoleStatus(id, request.getIsActive());
@@ -105,7 +105,7 @@ public class RoleController {
      * 获取角色已分配的权限列表（含按角色 control_mode）（ADMIN）
      */
     @GetMapping("/{id}/permissions")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<List<PermissionAssignmentDTO>> rolePermissions(@PathVariable Long id) {
         return ApiResponse.ok(roleService.getRolePermissions(id));
     }
@@ -114,7 +114,7 @@ public class RoleController {
      * 分配权限（含按角色 control_mode）（ADMIN）
      */
     @PostMapping("/{id}/permissions")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<Void> assignPermissions(@PathVariable Long id,
                                                 @RequestBody List<PermissionAssignmentDTO> permissions) {
         roleService.assignPermissions(id, permissions);
@@ -125,7 +125,7 @@ public class RoleController {
      * 导出角色列表到 Excel（ADMIN）
      */
     @GetMapping("/export")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public void export(HttpServletResponse response) {
         roleService.exportRoles(response);
     }
@@ -134,7 +134,7 @@ public class RoleController {
      * 从 Excel 导入角色（ADMIN）
      */
     @PostMapping("/import")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<RoleImportResult> importRoles(@RequestParam("file") MultipartFile file) {
         return ApiResponse.success(roleService.importRoles(file), "导入完成");
     }

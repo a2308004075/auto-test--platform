@@ -45,13 +45,15 @@ import java.util.stream.Collectors;
  * 角色管理服务
  *
  * <p>提供角色 CRUD、权限分配、Excel 导入导出等功能。
- * ADMIN 角色为系统内置，不可删除/禁用/修改权限，且隐式拥有全部权限。
+ * SUPER_ADMIN 和 ADMIN 角色为系统内置，不可删除/禁用/修改权限，且隐式拥有全部权限。
  */
 @Slf4j
 @Service
 public class RoleService {
 
     private static final String BUILTIN_ROLE_CODE = "ADMIN";
+    /** 内置超级管理员角色编码（admin 账号专属，高于 ADMIN） */
+    private static final String BUILTIN_SUPER_ROLE_CODE = "SUPER_ADMIN";
     /** 系统保留管理员账号 */
     private static final String RESERVED_USERNAME = "admin";
 
@@ -84,10 +86,12 @@ public class RoleService {
 
     /**
      * 查询全部启用的角色列表（供下拉框使用）
+     * <p>过滤 SUPER_ADMIN：超级管理员角色仅限 admin 账号拥有，不可分配给其他用户。</p>
      */
     public List<UserRole> listActiveRoles() {
         LambdaQueryWrapper<UserRole> wrapper = new LambdaQueryWrapper<>();
-        wrapper.orderByAsc(UserRole::getSortOrder)
+        wrapper.ne(UserRole::getRoleCode, BUILTIN_SUPER_ROLE_CODE)
+                .orderByAsc(UserRole::getSortOrder)
                 .orderByAsc(UserRole::getCreatedAt);
         return userRoleMapper.selectList(wrapper);
     }
@@ -285,7 +289,7 @@ public class RoleService {
 
     /**
      * 获取角色的权限编码列表（供 AuthService 调用）
-     * ADMIN 角色返回 ["*"] 表示拥有全部权限
+     * SUPER_ADMIN 和 ADMIN 角色返回 ["*"] 表示拥有全部权限
      */
     public List<String> getPermissionCodesByRoleId(Long roleId) {
         if (roleId == null) {
@@ -295,7 +299,8 @@ public class RoleService {
         if (role == null) {
             return Collections.emptyList();
         }
-        if (BUILTIN_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())) {
+        if (BUILTIN_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())
+                || BUILTIN_SUPER_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())) {
             return Collections.singletonList("*");
         }
         return rolePermissionMapper.selectPermissionCodesByRoleId(roleId);
@@ -303,7 +308,7 @@ public class RoleService {
 
     /**
      * 获取角色的权限详情列表（含按角色 control_mode，供前端 v-permission 指令使用）
-     * ADMIN 角色返回通配符 "*" 详情
+     * SUPER_ADMIN 和 ADMIN 角色返回通配符 "*" 详情
      */
     public List<PermissionBriefDTO> getPermissionDetailsByRoleId(Long roleId) {
         if (roleId == null) {
@@ -313,7 +318,8 @@ public class RoleService {
         if (role == null) {
             return Collections.emptyList();
         }
-        if (BUILTIN_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())) {
+        if (BUILTIN_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())
+                || BUILTIN_SUPER_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())) {
             PermissionBriefDTO dto = new PermissionBriefDTO();
             dto.setCode("*");
             return Collections.singletonList(dto);
@@ -471,7 +477,8 @@ public class RoleService {
         List<List<Object>> rows = new ArrayList<>();
         for (UserRole role : roles) {
             List<String> permissionCodes;
-            if (BUILTIN_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())) {
+            if (BUILTIN_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())
+                    || BUILTIN_SUPER_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())) {
                 permissionCodes = Collections.singletonList("*");
             } else {
                 permissionCodes = rolePermissionMapper.selectPermissionCodesByRoleId(role.getId());
@@ -546,9 +553,10 @@ public class RoleService {
                         continue;
                     }
 
-                    // 跳过 ADMIN 内置角色
-                    if (BUILTIN_ROLE_CODE.equalsIgnoreCase(roleCode)) {
-                        result.getErrors().add("第 " + (i + 1) + " 行: ADMIN 为系统内置角色，已跳过");
+                    // 跳过内置角色（ADMIN / SUPER_ADMIN）
+                    if (BUILTIN_ROLE_CODE.equalsIgnoreCase(roleCode)
+                            || BUILTIN_SUPER_ROLE_CODE.equalsIgnoreCase(roleCode)) {
+                        result.getErrors().add("第 " + (i + 1) + " 行: " + roleCode + " 为系统内置角色，已跳过");
                         result.setFailCount(result.getFailCount() + 1);
                         continue;
                     }
@@ -611,8 +619,9 @@ public class RoleService {
     }
 
     private void checkBuiltinRole(UserRole role) {
-        if (BUILTIN_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())) {
-            // admin 账号保护：允许 admin 账号操作内置角色
+        if (BUILTIN_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())
+                || BUILTIN_SUPER_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())) {
+            // 内置角色保护：仅 admin 账号（SUPER_ADMIN）可操作内置角色
             if (isCurrentUserAdmin()) {
                 return;
             }

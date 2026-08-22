@@ -34,7 +34,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MenuController {
 
-    /** 系统保留管理员账号 */
+    /** 系统保留超级管理员账号 */
     private static final String RESERVED_USERNAME = "admin";
 
     private final MenuService menuService;
@@ -64,7 +64,7 @@ public class MenuController {
      * 获取所有菜单列表（扁平，含停用，供管理页面使用）
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<List<MenuListItem>> list() {
         return ApiResponse.ok(menuService.listAll());
     }
@@ -73,7 +73,7 @@ public class MenuController {
      * 获取单个菜单
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<MenuListItem> get(@PathVariable Long id) {
         return ApiResponse.ok(menuService.get(id));
     }
@@ -82,7 +82,7 @@ public class MenuController {
      * 新增菜单
      */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<MenuListItem> add(@Valid @RequestBody MenuCreateRequest request) {
         return ApiResponse.ok(menuService.add(request));
     }
@@ -91,7 +91,7 @@ public class MenuController {
      * 更新菜单
      */
     @PostMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<MenuListItem> update(@PathVariable Long id,
                                             @Valid @RequestBody MenuCreateRequest request) {
         return ApiResponse.ok(menuService.update(id, request));
@@ -101,7 +101,7 @@ public class MenuController {
      * 删除菜单
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         menuService.delete(id);
         return ApiResponse.ok(null);
@@ -111,7 +111,7 @@ public class MenuController {
      * 切换菜单启用/停用状态
      */
     @PostMapping("/{id}/toggle")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<Void> toggleStatus(@PathVariable Long id) {
         menuService.toggleStatus(id);
         return ApiResponse.ok(null);
@@ -121,7 +121,7 @@ public class MenuController {
      * 导出菜单列表到 Excel（仅 ADMIN）
      */
     @GetMapping("/export")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public void export(HttpServletResponse response) {
         menuService.exportMenus(response);
     }
@@ -130,7 +130,7 @@ public class MenuController {
      * 从 Excel 导入菜单（仅 ADMIN）
      */
     @PostMapping("/import")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ApiResponse<MenuImportResult> importMenus(@RequestParam("file") MultipartFile file) {
         return ApiResponse.ok(menuService.importMenus(file));
     }

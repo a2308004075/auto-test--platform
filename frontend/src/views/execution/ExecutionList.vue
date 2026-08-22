@@ -107,7 +107,7 @@ onMounted(fetchList)
         </template>
       </el-table-column>
     </el-table>
-    <div class="pagination">
+    <div v-if="pagination.total > 0" class="pagination">
       <el-pagination
         v-model:current-page="pagination.current"
         v-model:page-size="pagination.pageSize"

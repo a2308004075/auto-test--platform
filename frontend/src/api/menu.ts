@@ -16,6 +16,7 @@ export interface MenuTreeNode {
   menuType: number
   icon: string
   routePath: string
+  component: string
   sortNo: number
   isActive: number
   children?: MenuTreeNode[]
@@ -28,6 +29,7 @@ export interface MenuListItem {
   menuType: number
   icon: string
   routePath: string
+  component: string
   sortNo: number
   isActive: number
   createdAt: string
@@ -40,6 +42,7 @@ export interface MenuCreateRequest {
   menuType: number
   icon?: string
   routePath?: string
+  component?: string
   sortNo?: number
 }
 

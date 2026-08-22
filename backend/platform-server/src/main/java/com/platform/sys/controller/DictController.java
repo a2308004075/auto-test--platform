@@ -79,7 +79,7 @@ public class DictController {
     }
 
     /**
-     * 根据字典类型查询字典值列表
+     * 根据字典类型查询字典值列表（公开接口，无需登录）
      */
     @GetMapping("/type/{dictType}")
     public ApiResponse<List<DictListItem>> getByType(@PathVariable String dictType) {

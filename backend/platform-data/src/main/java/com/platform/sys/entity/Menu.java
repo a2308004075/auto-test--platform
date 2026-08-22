@@ -47,6 +47,11 @@ public class Menu extends BaseEntity {
     private String routePath;
 
     /**
+     * 前端组件路径（用于动态路由）
+     */
+    private String component;
+
+    /**
      * 排序号（升序）
      */
     private Integer sortNo;

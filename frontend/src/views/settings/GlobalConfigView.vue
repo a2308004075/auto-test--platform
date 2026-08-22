@@ -30,7 +30,7 @@ const notificationForm = reactive({
   smtpPort: '587',
   smtpUsername: '',
   smtpPassword: '',
-  smtpEncryption: 'tls',
+  smtpEncryption: '',
   webhookUrl: '',
   webhookSecret: '',
 })
@@ -70,7 +70,7 @@ async function fetchSettings() {
     notificationForm.smtpPort = map['notification.smtp.port'] ?? '587'
     notificationForm.smtpUsername = map['notification.smtp.username'] ?? ''
     notificationForm.smtpPassword = map['notification.smtp.password'] ?? ''
-    notificationForm.smtpEncryption = map['notification.smtp.encryption'] ?? 'tls'
+    notificationForm.smtpEncryption = map['notification.smtp.encryption'] ?? ''
     notificationForm.webhookUrl = map['notification.webhook.url'] ?? ''
     notificationForm.webhookSecret = map['notification.webhook.secret'] ?? ''
   } catch {
@@ -216,7 +216,7 @@ onMounted(() => { fetchSettings() })
           </div>
           <div class="config-form-group">
             <label class="config-form-label">加密方式</label>
-            <el-select v-model="notificationForm.smtpEncryption" style="width: 100%;">
+            <el-select v-model="notificationForm.smtpEncryption" placeholder="请选择" style="width: 100%;">
               <el-option label="TLS" value="tls" />
               <el-option label="SSL" value="ssl" />
               <el-option label="无" value="none" />

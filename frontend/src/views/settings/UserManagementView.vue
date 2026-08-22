@@ -418,7 +418,7 @@ onMounted(() => { fetchUsers(); fetchRoles() })
           </el-table-column>
         </el-table>
       </div>
-      <div class="um-card-footer">
+      <div v-if="pagination.total > 0" class="um-card-footer">
         <el-pagination
           background
           layout="total, prev, pager, next, jumper"

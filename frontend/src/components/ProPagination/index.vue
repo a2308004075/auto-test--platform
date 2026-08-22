@@ -43,7 +43,7 @@ function onCurrentChange(page: number) {
 </script>
 
 <template>
-  <div class="pro-pagination">
+  <div v-if="total > 0" class="pro-pagination">
     <el-pagination
       :current-page="currentPage"
       :page-size="pageSize"

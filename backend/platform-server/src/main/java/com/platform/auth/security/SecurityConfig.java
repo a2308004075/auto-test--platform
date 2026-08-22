@@ -5,9 +5,13 @@
  */
 package com.platform.auth.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.platform.common.exception.ErrorCode;
+import com.platform.common.response.ApiResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -20,6 +24,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -61,9 +66,25 @@ public class SecurityConfig {
                 ).permitAll()
                 .antMatchers(HttpMethod.GET, "/api/v1/projects").permitAll()
                 .antMatchers(HttpMethod.GET, "/api/v1/roles").permitAll()
+                .antMatchers(HttpMethod.GET, "/api/v1/sys/dicts/type/**").permitAll()
                 .anyRequest().authenticated()
             .and()
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling()
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.setCharacterEncoding("UTF-8");
+                    new ObjectMapper().writeValue(response.getOutputStream(),
+                            ApiResponse.error(ErrorCode.UNAUTHORIZED, "未登录或登录已过期"));
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.setCharacterEncoding("UTF-8");
+                    new ObjectMapper().writeValue(response.getOutputStream(),
+                            ApiResponse.error(ErrorCode.FORBIDDEN, "权限不足"));
+                });
 
         return http.build();
     }

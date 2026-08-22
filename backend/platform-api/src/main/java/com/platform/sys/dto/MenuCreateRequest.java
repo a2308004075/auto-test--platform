@@ -44,6 +44,11 @@ public class MenuCreateRequest {
     private String routePath;
 
     /**
+     * 前端组件路径（用于动态路由）
+     */
+    private String component;
+
+    /**
      * 排序号
      */
     private Integer sortNo;

@@ -2,10 +2,15 @@
  * @author HXN
  * @date 2026-08-18 17:31
  * @description 路由配置文件
+ *
+ * 静态路由仅保留最低限度的骨架路由（登录、Layout + 首页）。
+ * 所有业务路由由 permission store 从后端菜单树动态生成并通过 router.addRoute 注册。
  */
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { usePermissionStore } from '@/stores'
 
+// ===== 静态路由（骨架） =====
 const routes: RouteRecordRaw[] = [
   {
     path: '/login',
@@ -16,206 +21,15 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     component: () => import('@/layouts/Layout.vue'),
+    name: 'Layout',
     redirect: '/home',
     children: [
+      // 首页作为静态兜底路由，确保 API 不可用时仍可访问
       {
         path: '/home',
-        name: 'ProjectList',
+        name: 'Home',
         component: () => import('@/views/project/ProjectList.vue'),
         meta: { title: '首页' },
-      },
-      {
-        path: 'settings',
-        redirect: '/settings/profile',
-      },
-      {
-        path: 'settings/profile',
-        name: 'Profile',
-        component: () => import('@/views/settings/ProfileView.vue'),
-        meta: { title: '个人资料' },
-      },
-      {
-        path: 'settings/users',
-        name: 'UserManagement',
-        component: () => import('@/views/settings/UserManagementView.vue'),
-        meta: { title: '用户列表' },
-      },
-      {
-        path: 'settings/roles',
-        name: 'RoleManagement',
-        component: () => import('@/views/settings/RoleManagementView.vue'),
-        meta: { title: '角色管理' },
-      },
-      {
-        path: 'settings/global-config',
-        name: 'GlobalConfig',
-        component: () => import('@/views/settings/GlobalConfigView.vue'),
-        meta: { title: '全局设置' },
-      },
-      {
-        path: 'settings/menu',
-        name: 'MenuManagement',
-        component: () => import('@/views/settings/MenuManagementView.vue'),
-        meta: { title: '菜单管理' },
-      },
-      {
-        path: 'settings/dict',
-        name: 'DictManagement',
-        component: () => import('@/views/settings/DictManagementView.vue'),
-        meta: { title: '字典管理' },
-      },
-      {
-        path: 'settings/cache',
-        name: 'CacheManagement',
-        component: () => import('@/views/settings/CacheManagementView.vue'),
-        meta: { title: '缓存管理' },
-      },
-      // ===== 项目内路由 =====
-      {
-        path: 'project/:id/dashboard',
-        name: 'ProjectDashboard',
-        component: () => import('@/views/project/ProjectDashboard.vue'),
-        meta: { title: '仪表板', inProject: true },
-      },
-      {
-        path: 'project/:id/apis',
-        name: 'ApiList',
-        component: () => import('@/views/api/ApiList.vue'),
-        meta: { title: '接口管理', inProject: true },
-      },
-      {
-        path: 'project/:id/apis/new',
-        name: 'ApiNew',
-        component: () => import('@/views/api/ApiEdit.vue'),
-        meta: { title: '新建接口', inProject: true },
-      },
-      {
-        path: 'project/:id/apis/:apiId/edit',
-        name: 'ApiEdit',
-        component: () => import('@/views/api/ApiEdit.vue'),
-        meta: { title: '编辑接口', inProject: true },
-      },
-      {
-        path: 'project/:id/apis/:apiId/debug',
-        name: 'ApiDebug',
-        component: () => import('@/views/api/ApiDebug.vue'),
-        meta: { title: '接口调试', inProject: true },
-      },
-      {
-        path: 'project/:id/apis/swagger-import',
-        name: 'SwaggerImport',
-        component: () => import('@/views/api/SwaggerImport.vue'),
-        meta: { title: 'Swagger 导入', inProject: true },
-      },
-      {
-        path: 'project/:id/environments',
-        name: 'EnvironmentList',
-        component: () => import('@/views/environment/EnvironmentList.vue'),
-        meta: { title: '环境配置', inProject: true },
-      },
-      {
-        path: 'project/:id/keywords',
-        name: 'KeywordList',
-        component: () => import('@/views/keywords/KeywordList.vue'),
-        meta: { title: '接口关键字', inProject: true },
-      },
-      {
-        path: 'project/:id/keywords/new',
-        name: 'KeywordNew',
-        component: () => import('@/views/keywords/KeywordEdit.vue'),
-        meta: { title: '新建关键字', inProject: true },
-      },
-      {
-        path: 'project/:id/keywords/:keywordId/edit',
-        name: 'KeywordEdit',
-        component: () => import('@/views/keywords/KeywordEdit.vue'),
-        meta: { title: '编辑关键字', inProject: true },
-      },
-      {
-        path: 'project/:id/tools',
-        name: 'ToolList',
-        component: () => import('@/views/tool/ToolList.vue'),
-        meta: { title: '工具方法', inProject: true },
-      },
-      {
-        path: 'project/:id/actions',
-        name: 'ActionList',
-        component: () => import('@/views/action/ActionList.vue'),
-        meta: { title: 'Action', inProject: true },
-      },
-      {
-        path: 'project/:id/actions/:actionId/edit',
-        name: 'ActionEditor',
-        component: () => import('@/views/action/ActionEditor.vue'),
-        meta: { title: 'Action 编辑', inProject: true },
-      },
-      {
-        path: 'project/:id/actions/:actionId/debug',
-        name: 'ActionDebug',
-        component: () => import('@/views/action/ActionDebug.vue'),
-        meta: { title: 'Action 调试', inProject: true },
-      },
-      // ===== M8 测试套件/用例 =====
-      {
-        path: 'project/:id/suites',
-        name: 'SuiteList',
-        component: () => import('@/views/cases/SuiteList.vue'),
-        meta: { title: '测试套件', inProject: true },
-      },
-      {
-        path: 'project/:id/suites/:suiteId/edit',
-        name: 'SuiteEdit',
-        component: () => import('@/views/cases/SuiteEdit.vue'),
-        meta: { title: '编辑套件', inProject: true },
-      },
-      {
-        path: 'project/:id/cases',
-        name: 'CaseList',
-        component: () => import('@/views/cases/CaseList.vue'),
-        meta: { title: '测试用例', inProject: true },
-      },
-      {
-        path: 'project/:id/cases/new',
-        name: 'CaseNew',
-        component: () => import('@/views/cases/CaseEdit.vue'),
-        meta: { title: '新建用例', inProject: true },
-      },
-      {
-        path: 'project/:id/cases/:caseId/edit',
-        name: 'CaseEdit',
-        component: () => import('@/views/cases/CaseEdit.vue'),
-        meta: { title: '编辑用例', inProject: true },
-      },
-      // ===== M9 测试计划/执行 =====
-      {
-        path: 'project/:id/plans',
-        name: 'PlanList',
-        component: () => import('@/views/execution/PlanList.vue'),
-        meta: { title: '测试计划', inProject: true },
-      },
-      {
-        path: 'project/:id/plans/new',
-        name: 'PlanNew',
-        component: () => import('@/views/execution/PlanEdit.vue'),
-        meta: { title: '新建计划', inProject: true },
-      },
-      {
-        path: 'project/:id/plans/:planId/edit',
-        name: 'PlanEdit',
-        component: () => import('@/views/execution/PlanEdit.vue'),
-        meta: { title: '编辑计划', inProject: true },
-      },
-      {
-        path: 'project/:id/executions',
-        name: 'ExecutionList',
-        component: () => import('@/views/execution/ExecutionList.vue'),
-        meta: { title: '执行记录', inProject: true },
-      },
-      {
-        path: 'project/:id/executions/:executionId',
-        name: 'ExecutionDetail',
-        component: () => import('@/views/execution/ExecutionDetail.vue'),
-        meta: { title: '执行详情', inProject: true },
       },
     ],
   },
@@ -226,20 +40,39 @@ const router = createRouter({
   routes,
 })
 
-// 登录守卫
-router.beforeEach((to, _from, next) => {
+// ===== 动态路由守卫 =====
+router.beforeEach(async (to, _from, next) => {
   const token = localStorage.getItem('token')
+
   // /login 路由重定向到 /home（登录已改为弹窗形式）
   if (to.path === '/login') {
     next('/home')
     return
   }
-  // 允许未登录访问的公开路由
+
+  // 已登录用户：加载菜单树并生成动态路由
+  if (token) {
+    const permissionStore = usePermissionStore()
+    if (!permissionStore.routesGenerated) {
+      try {
+        await permissionStore.loadMenusAndGenerateRoutes(router)
+      } catch {
+        // 加载失败时仍标记为已生成，避免无限重试
+        permissionStore.routesGenerated = true
+      }
+      // 重新导航以匹配新生成的路由
+      next({ ...to, replace: true })
+      return
+    }
+  }
+
+  // 公开路由（无需登录）
   const publicPaths = ['/', '/home']
   if (publicPaths.includes(to.path)) {
     next()
     return
   }
+
   // 其他路由需要登录
   if (!token) {
     next('/home')

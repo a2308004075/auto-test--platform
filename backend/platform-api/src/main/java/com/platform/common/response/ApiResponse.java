@@ -29,7 +29,7 @@ public class ApiResponse<T> {
     }
 
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(0, "success", data);
+        return new ApiResponse<>(0, "操作成功", data);
     }
 
     public static <T> ApiResponse<T> success(T data, String message) {
@@ -40,14 +40,14 @@ public class ApiResponse<T> {
      * 便捷方法：成功响应（无数据）
      */
     public static <T> ApiResponse<T> ok() {
-        return new ApiResponse<>(0, "success", null);
+        return new ApiResponse<>(0, "操作成功", null);
     }
 
     /**
      * 便捷方法：成功响应（带数据）
      */
     public static <T> ApiResponse<T> ok(T data) {
-        return new ApiResponse<>(0, "success", data);
+        return new ApiResponse<>(0, "操作成功", data);
     }
 
     public static <T> ApiResponse<T> error(int code, String message) {

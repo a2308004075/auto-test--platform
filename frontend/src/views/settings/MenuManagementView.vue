@@ -20,6 +20,10 @@ import {
   type MenuTreeNode,
   type MenuCreateRequest,
 } from '@/api/menu'
+import { getRegisteredComponents } from '@/utils/componentRegistry'
+import { usePermissionStore } from '@/stores'
+
+const permissionStore = usePermissionStore()
 
 // ===== 树形数据 =====
 const loading = ref(false)
@@ -39,6 +43,7 @@ const form = reactive<MenuCreateRequest & { parentId: number }>({
   menuType: 2,
   icon: '',
   routePath: '',
+  component: '',
   sortNo: 0,
 })
 
@@ -48,6 +53,9 @@ const menuTypeOptions = [
   { value: 2, label: '菜单' },
   { value: 3, label: '按钮' },
 ]
+
+// ===== 可选组件列表（从注册表获取） =====
+const componentOptions = getRegisteredComponents()
 
 // ===== 加载菜单树 =====
 async function fetchTree() {
@@ -85,6 +93,7 @@ function handleAppend(data: MenuTreeNode) {
   form.menuType = 2
   form.icon = ''
   form.routePath = ''
+  form.component = ''
   form.sortNo = 0
   dialogVisible.value = true
 }
@@ -99,6 +108,7 @@ function handleAddRoot() {
   form.menuType = 1
   form.icon = ''
   form.routePath = ''
+  form.component = ''
   form.sortNo = 0
   dialogVisible.value = true
 }
@@ -113,6 +123,7 @@ function handleEdit(data: MenuTreeNode) {
   form.menuType = data.menuType
   form.icon = data.icon || ''
   form.routePath = data.routePath || ''
+  form.component = data.component || ''
   form.sortNo = data.sortNo || 0
   dialogVisible.value = true
 }
@@ -130,6 +141,7 @@ async function handleSave() {
       menuType: form.menuType,
       icon: form.icon || undefined,
       routePath: form.routePath || undefined,
+      component: form.component || undefined,
       sortNo: form.sortNo || 0,
     }
     if (isEdit.value && editingId.value !== null) {
@@ -141,6 +153,8 @@ async function handleSave() {
     }
     dialogVisible.value = false
     fetchTree()
+    // 同步刷新侧边栏的菜单树
+    permissionStore.reloadMenuTree()
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '操作失败')
   }
@@ -161,6 +175,7 @@ async function handleDelete(data: MenuTreeNode) {
     await deleteMenu(data.id)
     ElMessage.success('菜单删除成功')
     fetchTree()
+    permissionStore.reloadMenuTree()
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '删除失败')
   }
@@ -182,6 +197,7 @@ async function handleToggle(data: MenuTreeNode) {
     await toggleMenuStatus(data.id)
     ElMessage.success(`菜单已${action}`)
     fetchTree()
+    permissionStore.reloadMenuTree()
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '操作失败')
   }
@@ -232,6 +248,7 @@ onMounted(() => {
                 <el-tag v-else size="small" type="warning" class="type-tag">按钮</el-tag>
                 <span class="node-name">{{ data.name }}</span>
                 <span v-if="data.routePath" class="route-path">{{ data.routePath }}</span>
+                <span v-if="data.component" class="component-path">{{ data.component }}</span>
                 <el-tag v-if="data.isActive === 0" size="small" type="danger" class="status-tag">已停用</el-tag>
               </span>
             </template>
@@ -273,6 +290,23 @@ onMounted(() => {
         </el-form-item>
         <el-form-item label="路由路径">
           <el-input v-model="form.routePath" placeholder="如 /settings/profile（可选）" />
+        </el-form-item>
+        <el-form-item label="组件路径">
+          <el-select
+            v-model="form.component"
+            placeholder="选择前端组件（可选）"
+            clearable
+            filterable
+            allow-create
+            style="width: 100%;"
+          >
+            <el-option
+              v-for="comp in componentOptions"
+              :key="comp"
+              :label="comp"
+              :value="comp"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="排序号">
           <el-input-number v-model="form.sortNo" :min="0" :controls="false" style="width: 120px;" />
@@ -322,6 +356,11 @@ onMounted(() => {
 .route-path {
   font-size: 12px;
   color: var(--color-text-secondary, #909399);
+}
+
+.component-path {
+  font-size: 12px;
+  color: var(--el-color-primary, #409eff);
 }
 
 .type-tag {

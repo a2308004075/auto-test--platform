@@ -119,7 +119,7 @@ onMounted(fetchList)
         </template>
       </el-table-column>
     </el-table>
-    <div style="display:flex;justify-content:flex-end;margin-top:16px">
+    <div v-if="pagination.total > 0" style="display:flex;justify-content:flex-end;margin-top:16px">
       <el-pagination background layout="total, prev, pager, next" :total="pagination.total"
         :page-size="pagination.pageSize" :current-page="pagination.current"
         @current-change="(p: number) => { pagination.current = p; fetchList() }" />

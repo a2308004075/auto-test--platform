@@ -19,6 +19,7 @@ public class MenuListItem {
     private Integer menuType;
     private String icon;
     private String routePath;
+    private String component;
     private Integer sortNo;
     private Integer isActive;
     private String createdAt;

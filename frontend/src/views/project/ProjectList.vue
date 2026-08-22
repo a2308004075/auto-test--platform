@@ -227,7 +227,7 @@ onMounted(fetchList)
     <el-empty v-if="!list.length && !loading" :description="`暂无项目${isAdmin ? '，点击「新建项目」开始' : ''}`" />
 
     <!-- 分页 -->
-    <div class="pagination-wrap">
+    <div v-if="pagination.total > 0" class="pagination-wrap">
       <el-pagination
         v-model:current-page="pagination.current"
         v-model:page-size="pagination.pageSize"

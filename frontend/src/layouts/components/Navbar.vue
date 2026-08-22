@@ -12,7 +12,7 @@
 import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useUserStore, useProjectStore, useTagsViewStore } from '@/stores'
+import { useUserStore, useProjectStore, useTagsViewStore, usePermissionStore } from '@/stores'
 import { logout as logoutApi } from '@/api/auth'
 import Hamburger from '@/components/Hamburger/index.vue'
 import Breadcrumb from '@/components/Breadcrumb/index.vue'
@@ -23,6 +23,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const projectStore = useProjectStore()
 const tagsViewStore = useTagsViewStore()
+const permissionStore = usePermissionStore()
 
 // 登录弹窗
 const loginModalOpen = ref(false)
@@ -61,6 +62,7 @@ async function handleLogout() {
     userStore.logout()
     projectStore.clearCurrentProject()
     tagsViewStore.delAllViews()
+    permissionStore.reset()
     ElMessage.success('已退出登录')
     router.push('/home')
   }).catch(() => {})

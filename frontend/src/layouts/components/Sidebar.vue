@@ -1,143 +1,121 @@
 <!--
  @author HXN
  @date 2026-08-20 23:57
- @description 侧边栏导航组件
+ @description 侧边栏导航组件（完全动态菜单）
 -->
 <script setup lang="ts">
 /**
  * 侧边栏组件
- * 使用 Element Plus el-menu 实现暗色主题侧边菜单
- * 系统管理菜单从数据库动态加载（ADMIN 可见额外菜单）
+ * 所有菜单项从 permission store 的菜单树中动态加载
+ * 根据当前页面上下文（首页 / 系统管理 / 项目内）显示对应的菜单子树
  */
-import { computed, ref, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { House, Setting } from '@element-plus/icons-vue'
-import { useUserStore, useAppStore } from '@/stores'
-import { getMenuTree, type MenuTreeNode } from '@/api/menu'
+import { useUserStore, useAppStore, usePermissionStore } from '@/stores'
+import type { MenuTreeNode } from '@/api/menu'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const appStore = useAppStore()
+const permissionStore = usePermissionStore()
 
-// 判断当前是否在项目内页面
+// ===== 上下文判断 =====
 const inProject = computed(() => route.meta?.inProject === true)
-// 判断当前是否在系统管理页面
 const inSettings = computed(() => route.path.startsWith('/settings'))
 const projectId = computed(() => Number(route.params.id) || 0)
+const isCollapse = computed(() => !appStore.sidebarOpened)
 
-// 是否管理员（未登录时即使 localStorage 残留 role 也不视为管理员）
-const isAdmin = computed(() => userStore.isLoggedIn && (userStore.role || '').toUpperCase() === 'ADMIN')
-
-// ===== 动态菜单 =====
+// ===== 动态菜单项 =====
 interface MenuItem {
   key: string
   label: string
   path: string
 }
 
-const dynamicSettingsMenus = ref<MenuItem[]>([])
-
-async function fetchSettingsMenus() {
-  if (!isAdmin.value) return
-  try {
-    const res: any = await getMenuTree()
-    const tree: MenuTreeNode[] = res.data || []
-    // 找到"系统管理"目录节点，提取其子菜单
-    const settingsDir = tree.find(n => n.name === '系统管理')
-    if (settingsDir && settingsDir.children) {
-      dynamicSettingsMenus.value = flattenMenus(settingsDir.children)
-    }
-  } catch {
-    // API 调用失败时回退到静态菜单
-    dynamicSettingsMenus.value = []
-  }
-}
-
-function flattenMenus(nodes: MenuTreeNode[]): MenuItem[] {
+/**
+ * 将菜单树节点展平为 MenuItem 数组
+ * 跳过按钮类型（menuType=3）和无路由路径的目录
+ */
+function flattenMenuNodes(nodes: MenuTreeNode[], pathPrefix = ''): MenuItem[] {
   const result: MenuItem[] = []
-  // 按 sortNo 排序
   const sorted = [...nodes].sort((a, b) => (a.sortNo || 0) - (b.sortNo || 0))
   for (const node of sorted) {
-    // 跳过按钮类型（menuType=3）
-    if (node.menuType !== 3 && node.routePath) {
-      result.push({ key: node.routePath, label: node.name, path: node.routePath })
+    if (node.menuType === 3) continue
+    if (node.routePath) {
+      let path = node.routePath
+      // 项目菜单路径中的 :id 替换为实际项目 ID
+      if (path.includes(':id')) {
+        path = path.replace(':id', String(pathPrefix || projectId.value))
+      }
+      result.push({ key: node.routePath, label: node.name, path })
     }
-    if (node.children && node.children.length) {
-      result.push(...flattenMenus(node.children))
+    if (node.children?.length) {
+      result.push(...flattenMenuNodes(node.children, pathPrefix))
     }
   }
   return result
 }
 
-onMounted(() => {
-  fetchSettingsMenus()
+/** 系统管理菜单项 */
+const settingsMenuItems = computed<MenuItem[]>(() =>
+  flattenMenuNodes(permissionStore.settingsMenus),
+)
+
+/** 项目内菜单项 */
+const projectMenuItems = computed<MenuItem[]>(() =>
+  flattenMenuNodes(permissionStore.projectMenus, String(projectId.value)),
+)
+
+/** 首页菜单项 */
+const homeMenuItem = computed<MenuItem | null>(() => {
+  const home = permissionStore.rootMenus.find(n => n.routePath === '/home')
+  if (home) return { key: '/home', label: home.name, path: '/home' }
+  // 静态兜底
+  return { key: '/home', label: '首页', path: '/home' }
 })
 
-// 侧边栏选中 key
+// ===== 侧边栏选中 key（路径匹配，最长前缀优先） =====
 const activeMenu = computed(() => {
-  const name = (route.name as string) || ''
-  if (name.startsWith('Api') || name === 'SwaggerImport') return 'apis'
-  if (name.startsWith('Environment')) return 'environments'
-  if (name.startsWith('Keyword')) return 'keywords'
-  if (name.startsWith('Tool')) return 'tools'
-  if (name.startsWith('Action')) return 'actions'
-  if (name.startsWith('Suite')) return 'suites'
-  if (name.startsWith('Case')) return 'cases'
-  if (name.startsWith('Plan')) return 'plans'
-  if (name.startsWith('Execution')) return 'executions'
-  if (name === 'ProjectDashboard') return 'dashboard'
-  if (name === 'ProjectList') return 'project'
-  // 系统管理页面使用 route path 作为 key（与动态菜单 key 一致）
-  if (inSettings.value) return route.path
-  return ''
-})
+  const currentPath = route.path
 
-const isCollapse = computed(() => !appStore.sidebarOpened)
+  // 首页精确匹配
+  if (currentPath === '/home') return '/home'
 
-const projectMenuItems = computed(() => {
-  if (!inProject.value) return []
-  const pid = projectId.value
-  return [
-    { key: 'dashboard', label: '仪表板', path: `/project/${pid}/dashboard` },
-    { key: 'apis', label: '接口管理', path: `/project/${pid}/apis` },
-    { key: 'environments', label: '环境配置', path: `/project/${pid}/environments` },
-    { key: 'keywords', label: '接口关键字', path: `/project/${pid}/keywords` },
-    { key: 'tools', label: '工具方法', path: `/project/${pid}/tools` },
-    { key: 'actions', label: 'Action', path: `/project/${pid}/actions` },
-    { key: 'suites', label: '测试套件', path: `/project/${pid}/suites` },
-    { key: 'cases', label: '测试用例', path: `/project/${pid}/cases` },
-    { key: 'plans', label: '测试计划', path: `/project/${pid}/plans` },
-    { key: 'executions', label: '执行记录', path: `/project/${pid}/executions` },
-  ]
-})
+  // 收集当前上下文的所有菜单项
+  let candidates: MenuItem[] = []
+  if (inProject.value) {
+    candidates = projectMenuItems.value
+  } else if (inSettings.value) {
+    candidates = settingsMenuItems.value
+  }
 
-// 系统管理子菜单：静态基础菜单 + 动态加载菜单
-const settingsMenuItems = computed(() => {
-  const items: MenuItem[] = [
-    { key: '/settings/profile', label: '个人资料', path: '/settings/profile' },
-  ]
-  if (isAdmin.value) {
-    if (dynamicSettingsMenus.value.length) {
-      // 使用数据库动态加载的菜单（排除已硬编码的个人资料，避免重复）
-      items.push(...dynamicSettingsMenus.value.filter(m => m.key !== '/settings/profile'))
-    } else {
-      // API 未加载完成时的静态回退
-      items.push({ key: '/settings/users', label: '用户列表', path: '/settings/users' })
-      items.push({ key: '/settings/roles', label: '角色管理', path: '/settings/roles' })
-      items.push({ key: '/settings/global-config', label: '全局设置', path: '/settings/global-config' })
+  // 最长前缀匹配
+  let bestMatch = ''
+  for (const item of candidates) {
+    if (currentPath.startsWith(item.path) && item.path.length > bestMatch.length) {
+      bestMatch = item.path
     }
   }
-  return items
+  return bestMatch
 })
 
+// ===== 菜单点击处理 =====
 function handleMenuSelect(index: string) {
-  // 先查项目菜单
-  const pItem = projectMenuItems.value.find(m => m.key === index)
-  if (pItem) { router.push(pItem.path); return }
-  // 再查系统设置子菜单
-  const sItem = settingsMenuItems.value.find(m => m.key === index)
-  if (sItem) { router.push(sItem.path) }
+  // 查找匹配的菜单项并跳转
+  const allItems = inProject.value
+    ? projectMenuItems.value
+    : inSettings.value
+      ? settingsMenuItems.value
+      : homeMenuItem.value ? [homeMenuItem.value] : []
+
+  const item = allItems.find(m => m.key === index || m.path === index)
+  if (item) {
+    router.push(item.path)
+  } else if (index === 'home') {
+    router.push('/home')
+  }
 }
 </script>
 
@@ -159,26 +137,39 @@ function handleMenuSelect(index: string) {
         mode="vertical"
         @select="handleMenuSelect"
       >
-        <!-- 项目内菜单 -->
+        <!-- ===== 项目内菜单 ===== -->
         <template v-if="inProject">
-          <el-menu-item v-for="item in projectMenuItems" :key="item.key" :index="item.key">
+          <el-menu-item
+            v-for="item in projectMenuItems"
+            :key="item.key"
+            :index="item.key"
+          >
             <span>{{ item.label }}</span>
           </el-menu-item>
         </template>
-        <!-- 非项目页菜单 -->
+
+        <!-- ===== 非项目页面 ===== -->
         <template v-else>
-          <!-- 首页：仅显示首页，不显示系统管理 -->
-          <el-menu-item v-if="!inSettings" index="project">
+          <!-- 首页 -->
+          <el-menu-item v-if="!inSettings && homeMenuItem" index="home">
             <el-icon><House /></el-icon>
-            <span>首页</span>
+            <span>{{ homeMenuItem.label }}</span>
           </el-menu-item>
-          <!-- 系统管理：仅显示系统管理，不显示首页 -->
-          <el-sub-menu v-if="userStore.isLoggedIn && inSettings" index="settings">
+
+          <!-- 系统管理 -->
+          <el-sub-menu
+            v-if="userStore.isLoggedIn && inSettings && settingsMenuItems.length"
+            index="settings"
+          >
             <template #title>
               <el-icon><Setting /></el-icon>
               <span>系统管理</span>
             </template>
-            <el-menu-item v-for="item in settingsMenuItems" :key="item.key" :index="item.key">
+            <el-menu-item
+              v-for="item in settingsMenuItems"
+              :key="item.key"
+              :index="item.key"
+            >
               <span>{{ item.label }}</span>
             </el-menu-item>
           </el-sub-menu>

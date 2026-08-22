@@ -171,6 +171,7 @@ public class MenuService {
         node.setMenuType(menu.getMenuType());
         node.setIcon(menu.getIcon());
         node.setRoutePath(menu.getRoutePath());
+        node.setComponent(menu.getComponent());
         node.setSortNo(menu.getSortNo());
         node.setIsActive(menu.getIsActive());
         return node;
@@ -184,6 +185,7 @@ public class MenuService {
         item.setMenuType(menu.getMenuType());
         item.setIcon(menu.getIcon());
         item.setRoutePath(menu.getRoutePath());
+        item.setComponent(menu.getComponent());
         item.setSortNo(menu.getSortNo());
         item.setIsActive(menu.getIsActive());
         if (menu.getCreatedAt() != null) {

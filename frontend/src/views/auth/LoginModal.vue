@@ -219,23 +219,24 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 120px;
-  height: 40px;
+  min-width: 140px;
+  height: 50px;
   cursor: pointer;
   border-radius: 4px;
   overflow: hidden;
 }
 .captcha-image img {
-  height: 40px;
+  width: 140px;
+  height: 50px;
   border-radius: 4px;
 }
 .captcha-placeholder {
-  height: 40px;
-  line-height: 40px;
+  height: 50px;
+  line-height: 50px;
   color: #909399;
   font-size: 12px;
   text-align: center;
-  width: 120px;
+  width: 140px;
   background: #f5f7fa;
   border-radius: 4px;
 }

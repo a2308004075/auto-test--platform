@@ -232,11 +232,9 @@ onMounted(fetchList)
         v-model:current-page="pagination.current"
         v-model:page-size="pagination.pageSize"
         :total="pagination.total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
+        layout="total, prev, pager, next, jumper"
         background
         @current-change="fetchList"
-        @size-change="(s: number) => { pagination.pageSize = s; pagination.current = 1; fetchList() }"
       />
     </div>
 
@@ -262,6 +260,9 @@ onMounted(fetchList)
 <style scoped>
 .project-home {
   width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-header {
@@ -442,7 +443,8 @@ onMounted(fetchList)
 .pagination-wrap {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: auto;
+  padding-top: 16px;
 }
 
 .form-hint {

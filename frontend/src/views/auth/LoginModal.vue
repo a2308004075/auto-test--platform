@@ -192,6 +192,11 @@ async function handleLogin() {
 </template>
 
 <style scoped>
+.login-dialog {
+  width: 420px !important;
+  min-width: auto !important;
+  max-width: none !important;
+}
 .login-modal {
   padding: 8px 0;
 }

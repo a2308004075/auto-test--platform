@@ -22,20 +22,20 @@ import javax.validation.Valid;
 import java.util.List;
 
 /**
- * 字典管理接口（仅 ADMIN）
+ * 字典管理接口
  */
 @RestController
 @RequestMapping("/api/v1/sys/dicts")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class DictController {
 
     private final DictService dictService;
 
     /**
-     * 分页查询字典列表
+     * 分页查询字典列表（仅 ADMIN）
      */
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PageResponse<DictListItem>> page(
             @RequestParam(required = false) String dictType,
             @RequestParam(required = false) String dictTypeName,
@@ -45,34 +45,38 @@ public class DictController {
     }
 
     /**
-     * 获取单个字典
+     * 获取单个字典（仅 ADMIN）
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<DictListItem> get(@PathVariable Long id) {
         return ApiResponse.ok(dictService.get(id));
     }
 
     /**
-     * 新增字典
+     * 新增字典（仅 ADMIN）
      */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<DictListItem> add(@Valid @RequestBody DictCreateRequest request) {
         return ApiResponse.ok(dictService.addOrUpdate(null, request));
     }
 
     /**
-     * 更新字典
+     * 更新字典（仅 ADMIN）
      */
     @PostMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<DictListItem> update(@PathVariable Long id,
                                             @Valid @RequestBody DictCreateRequest request) {
         return ApiResponse.ok(dictService.addOrUpdate(id, request));
     }
 
     /**
-     * 批量删除字典
+     * 批量删除字典（仅 ADMIN）
      */
     @DeleteMapping("/batch")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> batchDelete(@RequestBody DictBatchDeleteRequest request) {
         dictService.batchDelete(request);
         return ApiResponse.ok(null);
@@ -87,17 +91,19 @@ public class DictController {
     }
 
     /**
-     * 导出字典列表到 Excel
+     * 导出字典列表到 Excel（仅 ADMIN）
      */
     @GetMapping("/export")
+    @PreAuthorize("hasRole('ADMIN')")
     public void export(HttpServletResponse response) {
         dictService.exportDicts(response);
     }
 
     /**
-     * 从 Excel 导入字典
+     * 从 Excel 导入字典（仅 ADMIN）
      */
     @PostMapping("/import")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<DictImportResult> importDicts(@RequestParam("file") MultipartFile file) {
         return ApiResponse.ok(dictService.importDicts(file));
     }

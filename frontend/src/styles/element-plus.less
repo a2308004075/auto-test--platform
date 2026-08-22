@@ -49,6 +49,14 @@
   }
 }
 
+// 登录弹窗固定宽度，覆盖全局 min/max-width 限制
+.login-dialog {
+  --el-dialog-width: 420px !important;
+  width: 420px !important;
+  min-width: auto !important;
+  max-width: none !important;
+}
+
 // 弹窗标题样式（对齐 svc-manager-web：底边框）
 .el-dialog__header {
   border-bottom: 1px solid var(--border-color-base);

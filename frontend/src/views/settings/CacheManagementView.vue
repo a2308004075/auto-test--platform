@@ -14,7 +14,6 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import FlexQueryForm from '@/components/FlexQueryForm/index.vue'
 import TableFit from '@/components/TableFit/index.vue'
 import {
-  getCacheByKey,
   searchCache,
   setCache,
   deleteCache,
@@ -24,7 +23,6 @@ import {
 
 // ===== 搜索 =====
 const searchPattern = ref('')
-const exactKey = ref('')
 const loading = ref(false)
 const cacheList = ref<CacheItem[]>([])
 
@@ -57,37 +55,9 @@ async function handleSearch() {
   }
 }
 
-// ===== 精确查询 =====
-async function handleExactQuery() {
-  if (!exactKey.value.trim()) {
-    ElMessage.warning('请输入完整的缓存 Key')
-    return
-  }
-  loading.value = true
-  try {
-    const res: any = await getCacheByKey(exactKey.value.trim())
-    if (res.data) {
-      cacheList.value = [res.data]
-    } else {
-      cacheList.value = []
-      ElMessage.info('未找到该缓存项')
-    }
-  } catch (e: any) {
-    cacheList.value = []
-    if (e?.response?.status !== 404) {
-      ElMessage.error(e?.response?.data?.message || '查询失败')
-    } else {
-      ElMessage.info('未找到该缓存项')
-    }
-  } finally {
-    loading.value = false
-  }
-}
-
 // ===== 重置 =====
 function handleReset() {
   searchPattern.value = ''
-  exactKey.value = ''
   cacheList.value = []
 }
 
@@ -101,7 +71,7 @@ function openAdd() {
 
 async function handleSave() {
   if (!form.key.trim() || !form.value.trim()) {
-    ElMessage.warning('请填写完整的 Key 和 Value')
+    ElMessage.warning('请填写完整的缓存key和缓存值')
     return
   }
   dialogLoading.value = true
@@ -109,9 +79,8 @@ async function handleSave() {
     await setCache({ ...form })
     ElMessage.success('缓存设置成功')
     dialogVisible.value = false
-    if (searchPattern.value) {
-      handleSearch()
-    }
+    searchPattern.value = form.key
+    await handleSearch()
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '操作失败')
   } finally {
@@ -162,27 +131,17 @@ function formatValue(val: string): string {
     <div class="top">
       <el-form>
         <FlexQueryForm>
-          <el-form-item label="模糊搜索">
+          <el-form-item label="缓存key">
             <el-input
               v-model="searchPattern"
               clearable
-              placeholder="Key 关键词（支持 * 通配符）"
+              placeholder="请输入缓存key"
               class="max-width-300"
               @keyup.enter="handleSearch"
             />
           </el-form-item>
-          <el-form-item label="精确查询">
-            <el-input
-              v-model="exactKey"
-              clearable
-              placeholder="输入完整 Key"
-              class="max-width-300"
-              @keyup.enter="handleExactQuery"
-            />
-          </el-form-item>
           <template #button>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
-            <el-button @click="handleExactQuery">查询</el-button>
             <el-button @click="handleReset">重置</el-button>
           </template>
         </FlexQueryForm>
@@ -204,8 +163,8 @@ function formatValue(val: string): string {
             :max-height="maxHeight"
             style="width: 100%;"
           >
-            <el-table-column prop="key" label="Key" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="value" label="Value" min-width="250" show-overflow-tooltip>
+            <el-table-column prop="key" label="缓存key" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="value" label="缓存值" min-width="250" show-overflow-tooltip>
               <template #default="{ row }">
                 <el-tooltip
                   v-if="row.value && row.value.length > 100"
@@ -217,7 +176,7 @@ function formatValue(val: string): string {
                 <span v-else>{{ row.value }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="ttl" label="TTL" width="120" align="center">
+            <el-table-column prop="ttl" label="过期时间(s)" width="120" align="center">
               <template #default="{ row }">
                 {{ formatTtl(row.ttl) }}
               </template>
@@ -240,13 +199,13 @@ function formatValue(val: string): string {
       :close-on-click-modal="false"
     >
       <el-form :model="form" label-width="120px">
-        <el-form-item label="Key" required>
-          <el-input v-model="form.key" placeholder="请输入缓存 Key" />
+        <el-form-item label="缓存key" required>
+          <el-input v-model="form.key" placeholder="请输入缓存key" />
         </el-form-item>
-        <el-form-item label="Value" required>
-          <el-input v-model="form.value" type="textarea" :rows="3" placeholder="请输入缓存 Value" />
+        <el-form-item label="缓存值" required>
+          <el-input v-model="form.value" type="textarea" :rows="3" placeholder="请输入缓存值" />
         </el-form-item>
-        <el-form-item label="TTL（秒）">
+        <el-form-item label="过期时间(s)">
           <el-input-number
             v-model="form.ttl"
             :min="-1"

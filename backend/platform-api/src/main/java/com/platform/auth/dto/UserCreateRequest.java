@@ -13,7 +13,7 @@ import javax.validation.constraints.Size;
 public class UserCreateRequest {
 
     @NotBlank(message = "账号不能为空")
-    @Size(max = 50, message = "账号长度不能超过 50")
+    @Size(min = 6, max = 50, message = "账号长度必须在 6-50 之间")
     private String username;
 
     @NotBlank(message = "显示名不能为空")

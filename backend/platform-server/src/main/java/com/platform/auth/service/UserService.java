@@ -68,9 +68,8 @@ public class UserService {
         if (roleId != null) {
             wrapper.eq(User::getRoleId, roleId);
         }
-        // admin 账号始终排在最前
-        wrapper.orderByDesc(User::getCreatedAt);
-        wrapper.orderByAsc(User::getId);
+        // admin 账号始终排在最前，其余按创建时间倒序
+        wrapper.last("ORDER BY CASE WHEN username = 'admin' THEN 0 ELSE 1 END, created_at DESC, id ASC");
 
         Page<User> pageParam = new Page<>(page, pageSize);
         Page<User> result = userMapper.selectPage(pageParam, wrapper);

@@ -141,6 +141,9 @@ async function handleCreateUser() {
   if (!createForm.username.trim()) {
     createErrors.username = '请输入账号'
     valid = false
+  } else if (createForm.username.trim().length < 6) {
+    createErrors.username = '账号长度不能少于6位'
+    valid = false
   } else if (RESERVED_ACCOUNTS_LOWER.includes(createForm.username.toLowerCase())) {
     createErrors.username = '账号不能使用"admin"，该账号为系统保留'
     valid = false
@@ -421,7 +424,7 @@ onMounted(() => { fetchUsers(); fetchRoles() })
     <el-dialog v-model="createVisible" title="新建用户" width="440px">
       <el-form label-position="top">
         <el-form-item label="账号" required>
-          <el-input v-model="createForm.username" placeholder="请输入账号（登录用）" @input="clearCreateError('username')" />
+          <el-input v-model="createForm.username" placeholder="请输入账号（至少6位，登录用）" @input="clearCreateError('username')" />
           <div v-if="createErrors.username" class="um-error-msg">{{ createErrors.username }}</div>
         </el-form-item>
         <el-form-item label="用户名" required>

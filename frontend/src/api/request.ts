@@ -8,6 +8,23 @@ import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'a
 import { ElMessage } from 'element-plus'
 
 /**
+ * 401 / 服务不可用时的全局清理回调
+ * 由应用入口注册，用于同步清空 Pinia store，避免 request.ts 直接引入 store 造成循环依赖
+ */
+type UnauthorizedHandler = () => void
+let unauthorizedHandler: UnauthorizedHandler | null = null
+
+export function setUnauthorizedHandler(handler: UnauthorizedHandler) {
+  unauthorizedHandler = handler
+}
+
+function triggerUnauthorizedCleanup() {
+  if (unauthorizedHandler) {
+    unauthorizedHandler()
+  }
+}
+
+/**
  * Axios 实例与拦截器
  * 统一处理请求头、Token 注入、错误响应等
  */
@@ -46,6 +63,7 @@ service.interceptors.response.use(
     const skipGlobalMessage = url.includes('/v1/auth/login')
 
     if (status === 401) {
+      triggerUnauthorizedCleanup()
       localStorage.removeItem('token')
       localStorage.removeItem('refreshToken')
       if (!skipGlobalMessage) {
@@ -64,6 +82,7 @@ service.interceptors.response.use(
       if (token && !isRedirecting) {
         // 已登录用户：自动退出登录
         isRedirecting = true
+        triggerUnauthorizedCleanup()
         localStorage.removeItem('token')
         localStorage.removeItem('refreshToken')
         ElMessage.error('服务连接失败，请稍后重试')

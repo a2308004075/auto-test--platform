@@ -11,11 +11,23 @@ import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import router from './router'
 import App from './App.vue'
 import './styles/global.less'
+import { setUnauthorizedHandler } from './api/request'
+import { useUserStore, useProjectStore, useTagsViewStore } from './stores'
 
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
 app.use(ElementPlus, { locale: zhCn, size: 'default' })
+
+// 注册 401 / 服务不可用时的全局清理回调，同步清空用户相关 store 状态
+setUnauthorizedHandler(() => {
+  const userStore = useUserStore()
+  const projectStore = useProjectStore()
+  const tagsViewStore = useTagsViewStore()
+  userStore.logout()
+  projectStore.clearCurrentProject()
+  tagsViewStore.delAllViews()
+})
 
 app.mount('#app')

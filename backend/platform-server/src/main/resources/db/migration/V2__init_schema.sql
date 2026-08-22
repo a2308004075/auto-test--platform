@@ -11,7 +11,7 @@ SET NAMES utf8mb4;
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS `user_role` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
   `role_name`       VARCHAR(50)   NOT NULL                    COMMENT '角色名称（显示名）',
   `role_code`       VARCHAR(50)   NOT NULL                    COMMENT '角色编码（如 ADMIN、USER）',
   `description`     VARCHAR(255)  DEFAULT NULL                COMMENT '角色描述',
@@ -23,11 +23,11 @@ CREATE TABLE IF NOT EXISTS `user_role` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户角色表';
 
 CREATE TABLE IF NOT EXISTS `user` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
   `username`        VARCHAR(50)   NOT NULL                    COMMENT '账号（登录名）',
   `password_hash`   VARCHAR(255)  NOT NULL                    COMMENT 'bcrypt 哈希密码',
   `display_name`    VARCHAR(50)   NOT NULL                    COMMENT '用户姓名（显示名）',
-  `role_id`         BIGINT(20)      NOT NULL                    COMMENT '角色 ID（关联 user_role.id）',
+  `role_id`         BIGINT      NOT NULL                    COMMENT '角色 ID（关联 user_role.id）',
   `is_active`       BOOLEAN       NOT NULL DEFAULT TRUE       COMMENT '是否启用',
   `last_login_at`   DATETIME      DEFAULT NULL                COMMENT '最近登录时间',
   `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 CREATE TABLE IF NOT EXISTS `global_settings` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
   `config_key`      VARCHAR(100)  NOT NULL                    COMMENT '配置键',
   `config_value`    JSON          NOT NULL                    COMMENT '配置值',
   `description`     VARCHAR(255)  DEFAULT NULL                COMMENT '配置说明',
@@ -50,9 +50,9 @@ CREATE TABLE IF NOT EXISTS `global_settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='全局配置表';
 
 CREATE TABLE IF NOT EXISTS `token_blacklist` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
   `token_jti`       VARCHAR(100)  NOT NULL                    COMMENT 'Token 唯一标识（JWT ID）',
-  `user_id`         BIGINT(20)      NOT NULL                    COMMENT '用户 ID',
+  `user_id`         BIGINT      NOT NULL                    COMMENT '用户 ID',
   `expires_at`      DATETIME      NOT NULL                    COMMENT 'Token 原始过期时间（用于定期清理）',
   `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS `token_blacklist` (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS `project` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
   `name`            VARCHAR(50)   NOT NULL                    COMMENT '项目名称',
   `description`     VARCHAR(500)  DEFAULT NULL                COMMENT '项目描述',
   `source_path`     VARCHAR(500)  DEFAULT NULL                COMMENT '项目源码路径（引擎运行时读取）',
@@ -79,8 +79,8 @@ CREATE TABLE IF NOT EXISTS `project` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='项目表';
 
 CREATE TABLE IF NOT EXISTS `environment` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
-  `project_id`      BIGINT(20)      NOT NULL                    COMMENT '所属项目 ID',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `project_id`      BIGINT      NOT NULL                    COMMENT '所属项目 ID',
   `name`            VARCHAR(50)   NOT NULL                    COMMENT '环境名称，如 test/staging/prod',
   `description`     VARCHAR(255)  DEFAULT NULL                COMMENT '环境描述',
   `config`          JSON          NOT NULL                    COMMENT '环境配置 JSON（host、认证、wss、nacos 等）',
@@ -100,8 +100,8 @@ CREATE TABLE IF NOT EXISTS `environment` (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS `api_module` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
-  `project_id`      BIGINT(20)      NOT NULL                    COMMENT '所属项目 ID',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `project_id`      BIGINT      NOT NULL                    COMMENT '所属项目 ID',
   `name`            VARCHAR(100)  NOT NULL                    COMMENT '分组名称',
   `service_prefix`  VARCHAR(200)  DEFAULT NULL                COMMENT '服务前缀，如 /users',
   `description`     VARCHAR(500)  DEFAULT NULL                COMMENT '分组描述',
@@ -117,8 +117,8 @@ CREATE TABLE IF NOT EXISTS `api_module` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='接口分组表';
 
 CREATE TABLE IF NOT EXISTS `api_endpoint` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
-  `module_id`       BIGINT(20)      NOT NULL                    COMMENT '所属接口分组 ID',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `module_id`       BIGINT      NOT NULL                    COMMENT '所属接口分组 ID',
   `name`            VARCHAR(100)  NOT NULL                    COMMENT '接口名称',
   `path`            VARCHAR(500)  NOT NULL                    COMMENT '请求路径',
   `method`          ENUM('GET','POST','PUT','PATCH','DELETE') NOT NULL COMMENT 'HTTP 方法',
@@ -144,10 +144,10 @@ CREATE TABLE IF NOT EXISTS `api_endpoint` (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS `keyword` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
-  `project_id`      BIGINT(20)      NOT NULL                    COMMENT '所属项目 ID',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `project_id`      BIGINT      NOT NULL                    COMMENT '所属项目 ID',
   `keyword_type`    ENUM('API','TOOL','ACTION','TEST_CASE') NOT NULL COMMENT '关键字类型',
-  `ref_id`          BIGINT(20)      DEFAULT NULL                COMMENT '指向源实体 ID（ApiEndpoint / ToolMethod / Action / TestCase）',
+  `ref_id`          BIGINT      DEFAULT NULL                COMMENT '指向源实体 ID（ApiEndpoint / ToolMethod / Action / TestCase）',
   `name`            VARCHAR(100)  NOT NULL                    COMMENT '关键字名称',
   `description`     VARCHAR(1000) DEFAULT NULL                COMMENT '关键字描述',
   `input_params`    JSON          DEFAULT NULL                COMMENT '输入参数定义',
@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS `keyword` (
   `category`        VARCHAR(100)  DEFAULT NULL                COMMENT '分类',
   `tags`            JSON          DEFAULT NULL                COMMENT '标签列表',
   `is_active`       BOOLEAN       NOT NULL DEFAULT TRUE       COMMENT '是否启用',
-  `created_by`      BIGINT(20)      DEFAULT NULL                COMMENT '创建人 ID',
+  `created_by`      BIGINT      DEFAULT NULL                COMMENT '创建人 ID',
   `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
@@ -171,9 +171,9 @@ CREATE TABLE IF NOT EXISTS `keyword` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='关键字统一表';
 
 CREATE TABLE IF NOT EXISTS `api_keyword` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
-  `keyword_id`      BIGINT(20)      NOT NULL                    COMMENT '关键字元数据 ID',
-  `endpoint_id`     BIGINT(20)      NOT NULL                    COMMENT '绑定的接口 ID',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `keyword_id`      BIGINT      NOT NULL                    COMMENT '关键字元数据 ID',
+  `endpoint_id`     BIGINT      NOT NULL                    COMMENT '绑定的接口 ID',
   `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
@@ -184,8 +184,8 @@ CREATE TABLE IF NOT EXISTS `api_keyword` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='接口关键字源实体表';
 
 CREATE TABLE IF NOT EXISTS `tool_method` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
-  `project_id`      BIGINT(20)      NOT NULL                    COMMENT '所属项目 ID',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `project_id`      BIGINT      NOT NULL                    COMMENT '所属项目 ID',
   `name`            VARCHAR(100)  NOT NULL                    COMMENT '方法名称',
   `keyword`         VARCHAR(20)   NOT NULL                    COMMENT '关键字标识（Action 节点引用）',
   `category`        VARCHAR(100)  DEFAULT NULL                COMMENT '分类',
@@ -196,7 +196,7 @@ CREATE TABLE IF NOT EXISTS `tool_method` (
   `return_description` VARCHAR(255) DEFAULT NULL             COMMENT '返回值说明',
   `is_builtin`      BOOLEAN       NOT NULL DEFAULT FALSE      COMMENT '是否内置方法',
   `is_active`       BOOLEAN       NOT NULL DEFAULT TRUE       COMMENT '是否启用',
-  `created_by`      BIGINT(20)      DEFAULT NULL                COMMENT '创建人 ID',
+  `created_by`      BIGINT      DEFAULT NULL                COMMENT '创建人 ID',
   `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
@@ -208,10 +208,10 @@ CREATE TABLE IF NOT EXISTS `tool_method` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工具方法关键字源实体表';
 
 CREATE TABLE IF NOT EXISTS `action` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
-  `project_id`      BIGINT(20)      NOT NULL                    COMMENT '所属项目 ID',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `project_id`      BIGINT      NOT NULL                    COMMENT '所属项目 ID',
   `nodes`           JSON          NOT NULL                    COMMENT '内部节点树（流程图拓扑序列化）',
-  `created_by`      BIGINT(20)      DEFAULT NULL                COMMENT '创建人 ID',
+  `created_by`      BIGINT      DEFAULT NULL                COMMENT '创建人 ID',
   `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
@@ -226,8 +226,8 @@ CREATE TABLE IF NOT EXISTS `action` (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS `test_suite` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
-  `project_id`      BIGINT(20)      NOT NULL                    COMMENT '所属项目 ID',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `project_id`      BIGINT      NOT NULL                    COMMENT '所属项目 ID',
   `name`            VARCHAR(100)  NOT NULL                    COMMENT '套件名称',
   `description`     VARCHAR(1000) DEFAULT NULL                COMMENT '套件描述',
   `tags`            JSON          DEFAULT NULL                COMMENT '标签列表',
@@ -238,7 +238,7 @@ CREATE TABLE IF NOT EXISTS `test_suite` (
   `per_case_setup_steps`    JSON  DEFAULT NULL                COMMENT '套件级·每条 Setup 步骤树',
   `per_case_teardown_steps` JSON  DEFAULT NULL                COMMENT '套件级·每条 Teardown 步骤树',
   `enable_per_case_setup_teardown` BOOLEAN NOT NULL DEFAULT FALSE COMMENT '是否启用套件级·每条生命周期',
-  `created_by`      BIGINT(20)      DEFAULT NULL                COMMENT '创建人 ID',
+  `created_by`      BIGINT      DEFAULT NULL                COMMENT '创建人 ID',
   `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
@@ -251,8 +251,8 @@ CREATE TABLE IF NOT EXISTS `test_suite` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='测试套件表';
 
 CREATE TABLE IF NOT EXISTS `test_case` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
-  `suite_id`        BIGINT(20)      NOT NULL                    COMMENT '所属测试套件 ID',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `suite_id`        BIGINT      NOT NULL                    COMMENT '所属测试套件 ID',
   `name`            VARCHAR(100)  NOT NULL                    COMMENT '用例名称',
   `description`     VARCHAR(1000) DEFAULT NULL                COMMENT '用例描述',
   `preconditions`   TEXT          DEFAULT NULL                COMMENT '前置条件',
@@ -262,7 +262,7 @@ CREATE TABLE IF NOT EXISTS `test_case` (
   `priority`        ENUM('P0','P1','P2','P3') DEFAULT 'P2'    COMMENT '优先级',
   `timeout`         INT           NOT NULL DEFAULT 30         COMMENT '超时秒数',
   `is_active`       BOOLEAN       NOT NULL DEFAULT TRUE       COMMENT '是否启用',
-  `created_by`      BIGINT(20)      DEFAULT NULL                COMMENT '创建人 ID',
+  `created_by`      BIGINT      DEFAULT NULL                COMMENT '创建人 ID',
   `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
@@ -276,9 +276,9 @@ CREATE TABLE IF NOT EXISTS `test_case` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='测试用例源实体表';
 
 CREATE TABLE IF NOT EXISTS `suite_case_lifecycle` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
-  `suite_id`        BIGINT(20)      NOT NULL                    COMMENT '所属测试套件 ID',
-  `case_id`         BIGINT(20)      NOT NULL                    COMMENT '所属测试用例 ID',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `suite_id`        BIGINT      NOT NULL                    COMMENT '所属测试套件 ID',
+  `case_id`         BIGINT      NOT NULL                    COMMENT '所属测试用例 ID',
   `setup_steps`     JSON          DEFAULT NULL                COMMENT '套件内该用例差异化 Setup 步骤树',
   `teardown_steps`  JSON          DEFAULT NULL                COMMENT '套件内该用例差异化 Teardown 步骤树',
   `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -295,15 +295,15 @@ CREATE TABLE IF NOT EXISTS `suite_case_lifecycle` (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS `test_plan` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
-  `project_id`      BIGINT(20)      NOT NULL                    COMMENT '所属项目 ID',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `project_id`      BIGINT      NOT NULL                    COMMENT '所属项目 ID',
   `name`            VARCHAR(100)  NOT NULL                    COMMENT '计划名称',
   `description`     VARCHAR(1000) DEFAULT NULL                COMMENT '计划描述',
   `suite_ids`       JSON          NOT NULL                    COMMENT '关联的测试套件 ID 列表',
-  `environment_id`  BIGINT(20)      DEFAULT NULL                COMMENT '默认执行环境 ID',
+  `environment_id`  BIGINT      DEFAULT NULL                COMMENT '默认执行环境 ID',
   `schedule_cron`   VARCHAR(100)  DEFAULT NULL                COMMENT '定时执行 cron 表达式',
   `is_active`       BOOLEAN       NOT NULL DEFAULT TRUE       COMMENT '是否启用',
-  `created_by`      BIGINT(20)      DEFAULT NULL                COMMENT '创建人 ID',
+  `created_by`      BIGINT      DEFAULT NULL                COMMENT '创建人 ID',
   `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
@@ -317,9 +317,9 @@ CREATE TABLE IF NOT EXISTS `test_plan` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='测试计划表';
 
 CREATE TABLE IF NOT EXISTS `test_execution` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
-  `plan_id`         BIGINT(20)      NOT NULL                    COMMENT '所属测试计划 ID',
-  `environment_id`  BIGINT(20)      DEFAULT NULL                COMMENT '执行环境 ID',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `plan_id`         BIGINT      NOT NULL                    COMMENT '所属测试计划 ID',
+  `environment_id`  BIGINT      DEFAULT NULL                COMMENT '执行环境 ID',
   `trigger_type`    ENUM('MANUAL','SCHEDULED','CI') NOT NULL DEFAULT 'MANUAL' COMMENT '触发方式',
   `status`          ENUM('PENDING','RUNNING','COMPLETED','FAILED','CANCELLED') NOT NULL DEFAULT 'PENDING' COMMENT '执行状态',
   `total_cases`     INT           NOT NULL DEFAULT 0          COMMENT '总用例数',
@@ -329,7 +329,7 @@ CREATE TABLE IF NOT EXISTS `test_execution` (
   `duration_ms`     INT           DEFAULT NULL                COMMENT '总耗时（毫秒）',
   `started_at`      DATETIME      DEFAULT NULL                COMMENT '开始执行时间',
   `finished_at`     DATETIME      DEFAULT NULL                COMMENT '结束执行时间',
-  `triggered_by`    BIGINT(20)      DEFAULT NULL                COMMENT '触发人 ID',
+  `triggered_by`    BIGINT      DEFAULT NULL                COMMENT '触发人 ID',
   `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_test_execution_plan_id` (`plan_id`),
@@ -343,9 +343,9 @@ CREATE TABLE IF NOT EXISTS `test_execution` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='测试执行记录表';
 
 CREATE TABLE IF NOT EXISTS `test_result` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
-  `execution_id`    BIGINT(20)      NOT NULL                    COMMENT '所属执行记录 ID',
-  `case_id`         BIGINT(20)      NOT NULL                    COMMENT '所属测试用例 ID',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `execution_id`    BIGINT      NOT NULL                    COMMENT '所属执行记录 ID',
+  `case_id`         BIGINT      NOT NULL                    COMMENT '所属测试用例 ID',
   `status`          ENUM('PASSED','FAILED','SKIPPED','ERROR') NOT NULL COMMENT '用例执行结果',
   `actual_result`   TEXT          DEFAULT NULL                COMMENT '实际结果摘要',
   `expected_result` TEXT          DEFAULT NULL                COMMENT '预期结果摘要',

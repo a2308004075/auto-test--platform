@@ -18,11 +18,11 @@ ALTER TABLE `user_role`
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS `permission` (
-  `id`              BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `id`              BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
   `permission_name` VARCHAR(100)  NOT NULL                    COMMENT '权限名称（显示名）',
   `permission_code` VARCHAR(100)  NOT NULL                    COMMENT '权限编码（如 system:role:add）',
   `type`            VARCHAR(10)   NOT NULL DEFAULT 'MENU'     COMMENT '权限类型：MENU-菜单/页面，BUTTON-按钮',
-  `parent_id`       BIGINT(20)    NOT NULL DEFAULT 0          COMMENT '父权限 ID（0 为顶级）',
+  `parent_id`       BIGINT    NOT NULL DEFAULT 0          COMMENT '父权限 ID（0 为顶级）',
   `path`            VARCHAR(200)  DEFAULT NULL                COMMENT '前端路由路径（MENU 类型使用）',
   `sort_order`      INT           NOT NULL DEFAULT 0          COMMENT '排序号（升序）',
   `is_active`       TINYINT       NOT NULL DEFAULT 1          COMMENT '是否启用（0-停用，1-启用）',
@@ -38,9 +38,9 @@ CREATE TABLE IF NOT EXISTS `permission` (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS `role_permission` (
-  `id`             BIGINT(20)    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
-  `role_id`        BIGINT(20)    NOT NULL                    COMMENT '角色 ID（关联 user_role.id）',
-  `permission_id`  BIGINT(20)    NOT NULL                    COMMENT '权限 ID（关联 permission.id）',
+  `id`             BIGINT    NOT NULL AUTO_INCREMENT      COMMENT '自增主键',
+  `role_id`        BIGINT    NOT NULL                    COMMENT '角色 ID（关联 user_role.id）',
+  `permission_id`  BIGINT    NOT NULL                    COMMENT '权限 ID（关联 permission.id）',
   `created_at`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_role_permission` (`role_id`, `permission_id`),

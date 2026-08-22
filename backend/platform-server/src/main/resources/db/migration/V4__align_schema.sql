@@ -18,7 +18,7 @@ ALTER TABLE `api`
   CHANGE COLUMN `method` `http_method` ENUM('GET','POST','PUT','PATCH','DELETE') NOT NULL COMMENT 'HTTP 方法（GET/POST/PUT/DELETE/PATCH）',
   CHANGE COLUMN `parameters` `request_params` JSON DEFAULT NULL COMMENT '请求参数（JSON 数组）',
   CHANGE COLUMN `responses` `response_body` JSON DEFAULT NULL COMMENT '响应体 Schema（JSON）',
-  ADD COLUMN `project_id` BIGINT(20) DEFAULT NULL COMMENT '所属项目 ID' AFTER `id`,
+  ADD COLUMN `project_id` BIGINT DEFAULT NULL COMMENT '所属项目 ID' AFTER `id`,
   ADD COLUMN `service` VARCHAR(100) DEFAULT NULL COMMENT '服务名称' AFTER `name`,
   ADD COLUMN `headers` JSON DEFAULT NULL COMMENT '请求头（JSON 数组）' AFTER `request_body`,
   ADD COLUMN `swagger_operation_id` VARCHAR(200) DEFAULT NULL COMMENT 'Swagger 操作 ID（用于增量同步）' AFTER `source_type`;
@@ -49,8 +49,8 @@ ALTER TABLE `api_keyword`
   DROP INDEX `idx_api_keyword_endpoint_id`;
 
 ALTER TABLE `api_keyword`
-  CHANGE COLUMN `endpoint_id` `api_id` BIGINT(20) NOT NULL COMMENT '绑定的接口 ID',
-  ADD COLUMN `project_id` BIGINT(20) DEFAULT NULL COMMENT '所属项目 ID' AFTER `keyword_id`,
+  CHANGE COLUMN `endpoint_id` `api_id` BIGINT NOT NULL COMMENT '绑定的接口 ID',
+  ADD COLUMN `project_id` BIGINT DEFAULT NULL COMMENT '所属项目 ID' AFTER `keyword_id`,
   ADD COLUMN `test_data` JSON DEFAULT NULL COMMENT '测试数据（JSON 格式）' AFTER `api_id`,
   ADD COLUMN `response_assertion` JSON DEFAULT NULL COMMENT '响应断言配置（JSON 格式）' AFTER `test_data`,
   ADD KEY `idx_api_keyword_api_id` (`api_id`),
@@ -64,13 +64,13 @@ UPDATE `api_keyword` ak JOIN `keyword` k ON ak.`keyword_id` = k.`id` SET ak.`pro
 -- 3. api_module 增加 parent_id（树形分组）
 -- ============================================================
 ALTER TABLE `api_module`
-  ADD COLUMN `parent_id` BIGINT(20) DEFAULT NULL COMMENT '父分组 ID（null=根分组）' AFTER `project_id`,
+  ADD COLUMN `parent_id` BIGINT DEFAULT NULL COMMENT '父分组 ID（null=根分组）' AFTER `project_id`,
   ADD KEY `idx_api_module_parent_id` (`parent_id`);
 
 -- ============================================================
 -- 4. keyword 增加 updated_by 列
 -- ============================================================
 ALTER TABLE `keyword`
-  ADD COLUMN `updated_by` BIGINT(20) DEFAULT NULL COMMENT '更新人 ID' AFTER `created_by`,
+  ADD COLUMN `updated_by` BIGINT DEFAULT NULL COMMENT '更新人 ID' AFTER `created_by`,
   ADD KEY `idx_keyword_updated_by` (`updated_by`),
   ADD CONSTRAINT `fk_keyword_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `user` (`id`) ON DELETE SET NULL;

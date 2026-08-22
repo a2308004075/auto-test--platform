@@ -50,9 +50,6 @@
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
         <li class="menu-item active"><a href="environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
-      </ul>
-      <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
         <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
       </ul>
       <div class="sidebar-divider"></div>
@@ -62,7 +59,7 @@
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
             <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -114,50 +111,50 @@
           <tbody id="varBody">
             <tr class="var-row">
               <td>
-                <div class="key-cell"><span class="required-dot" title="必填"></span><input class="var-input" value="host" readonly></div>
+                <div class="key-cell"><span class="required-dot" title="必填"></span><input class="var-input" value="host" readonly aria-label="host"></div>
               </td>
-              <td><input class="var-input" value="https://pdd-station-supercharge-test.catles.com"></td>
-              <td><input class="var-input" value="服务接口地址"></td>
+              <td><input class="var-input" value="https://pdd-station-supercharge-test.catles.com" aria-label="https://pdd-station-supercharge-test.catles.com"></td>
+              <td><input class="var-input" value="服务接口地址" aria-label="服务接口地址"></td>
               <td style="text-align:center;"><button class="btn btn-link btn-sm btn-danger" onclick="removeRow(this)">删除</button></td>
             </tr>
             <tr class="var-row">
               <td>
-                <div class="key-cell"><span class="required-dot" title="必填"></span><input class="var-input" value="host_authorization" readonly></div>
+                <div class="key-cell"><span class="required-dot" title="必填"></span><input class="var-input" value="host_authorization" readonly aria-label="host_authorization"></div>
               </td>
-              <td><input class="var-input" value="Bearer eyJhbGciOiJSUzI1NiJ9..."></td>
-              <td><input class="var-input" value="接口鉴权 Token"></td>
+              <td><input class="var-input" value="Bearer eyJhbGciOiJSUzI1NiJ9..." aria-label="Bearer eyJhbGciOiJSUzI1NiJ9..."></td>
+              <td><input class="var-input" value="接口鉴权 Token" aria-label="接口鉴权 Token"></td>
               <td style="text-align:center;"><button class="btn btn-link btn-sm btn-danger" onclick="removeRow(this)">删除</button></td>
             </tr>
             <tr class="var-row">
               <td>
-                <div class="key-cell"><input class="var-input" value="wss" readonly></div>
+                <div class="key-cell"><input class="var-input" value="wss" readonly aria-label="wss"></div>
               </td>
-              <td><input class="var-input" value="wss://pdd-station-supercharge-test.catles.com"></td>
-              <td><input class="var-input" value="WebSocket 地址"></td>
+              <td><input class="var-input" value="wss://pdd-station-supercharge-test.catles.com" aria-label="wss://pdd-station-supercharge-test.catles.com"></td>
+              <td><input class="var-input" value="WebSocket 地址" aria-label="WebSocket 地址"></td>
               <td style="text-align:center;"><button class="btn btn-link btn-sm btn-danger" onclick="removeRow(this)">删除</button></td>
             </tr>
             <tr class="var-row">
               <td>
-                <div class="key-cell"><input class="var-input" value="nacos" readonly></div>
+                <div class="key-cell"><input class="var-input" value="nacos" readonly aria-label="nacos"></div>
               </td>
-              <td><input class="var-input" value="https://nacos-pdd-test.catles.com:4484"></td>
-              <td><input class="var-input" value="Nacos 注册中心地址"></td>
+              <td><input class="var-input" value="https://nacos-pdd-test.catles.com:4484" aria-label="https://nacos-pdd-test.catles.com:4484"></td>
+              <td><input class="var-input" value="Nacos 注册中心地址" aria-label="Nacos 注册中心地址"></td>
               <td style="text-align:center;"><button class="btn btn-link btn-sm btn-danger" onclick="removeRow(this)">删除</button></td>
             </tr>
             <tr class="var-row">
               <td>
-                <div class="key-cell"><input class="var-input" value="nacos_accessToken" readonly></div>
+                <div class="key-cell"><input class="var-input" value="nacos_accessToken" readonly aria-label="nacos_accessToken"></div>
               </td>
-              <td><input class="var-input" value="eyJhbGciOiJIUzI1NiJ9..."></td>
-              <td><input class="var-input" value="Nacos 访问令牌"></td>
+              <td><input class="var-input" value="eyJhbGciOiJIUzI1NiJ9..." aria-label="eyJhbGciOiJIUzI1NiJ9..."></td>
+              <td><input class="var-input" value="Nacos 访问令牌" aria-label="Nacos 访问令牌"></td>
               <td style="text-align:center;"><button class="btn btn-link btn-sm btn-danger" onclick="removeRow(this)">删除</button></td>
             </tr>
             <tr class="var-row">
               <td>
-                <div class="key-cell"><input class="var-input" value="company" readonly></div>
+                <div class="key-cell"><input class="var-input" value="company" readonly aria-label="company"></div>
               </td>
-              <td><input class="var-input" value="qkl"></td>
-              <td><input class="var-input" value="公司标识"></td>
+              <td><input class="var-input" value="qkl" aria-label="qkl"></td>
+              <td><input class="var-input" value="公司标识" aria-label="公司标识"></td>
               <td style="text-align:center;"><button class="btn btn-link btn-sm btn-danger" onclick="removeRow(this)">删除</button></td>
             </tr>
           </tbody>

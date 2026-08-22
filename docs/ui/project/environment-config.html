@@ -39,9 +39,6 @@
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="project-dashboard.html"><span class="icon">&#128202;</span> 项目概览</a></li>
         <li class="menu-item active"><a href="environment-config.html"><span class="icon">&#127760;</span> 环境配置</a></li>
-      </ul>
-      <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
         <li class="menu-item"><a href="../api/api-list.html"><span class="icon">&#128196;</span> 接口文档</a></li>
       </ul>
     </nav></aside>
@@ -119,12 +116,12 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">环境名称 <span class="required">*</span></label>
-          <input type="text" class="input w-full" placeholder="如 test / staging / prod">
+          <label class="form-label" for="环境名称">环境名称 <span class="required">*</span></label>
+          <input type="text" class="input w-full" placeholder="如 test / staging / prod" id="环境名称">
         </div>
         <div class="form-group">
-          <label class="form-label">描述</label>
-          <textarea class="textarea w-full" rows="2" placeholder="环境描述"></textarea>
+          <label class="form-label" for="描述">描述</label>
+          <textarea class="textarea w-full" rows="2" placeholder="环境描述" id="描述"></textarea>
         </div>
       </div>
       <div class="modal-footer">

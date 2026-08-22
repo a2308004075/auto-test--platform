@@ -30,9 +30,6 @@
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
         <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
-      </ul>
-      <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
         <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
       </ul>
       <div class="sidebar-divider"></div>
@@ -42,7 +39,7 @@
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
             <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -67,12 +64,12 @@
       <div class="search-form">
         <div class="search-row">
           <div class="search-item">
-            <span class="filter-label">测试计划名称</span>
-            <input type="text" class="input input-search" placeholder="模糊查询">
+            <label class="filter-label" for="execPlanName">测试计划名称</label>
+            <input type="text" id="execPlanName" class="input input-search" placeholder="模糊查询">
           </div>
           <div class="search-item">
-            <span class="filter-label">环境</span>
-            <select class="select">
+            <label class="filter-label" for="execEnv">环境</label>
+            <select id="execEnv" class="select">
               <option>全部环境</option>
               <option>开发环境</option>
               <option>测试环境</option>
@@ -81,8 +78,8 @@
             </select>
           </div>
           <div class="search-item">
-            <span class="filter-label">触发方式</span>
-            <select class="select">
+            <label class="filter-label" for="execTrigger">触发方式</label>
+            <select id="execTrigger" class="select">
               <option>全部触发方式</option>
               <option>手动</option>
               <option>定时</option>
@@ -100,8 +97,8 @@
         </div>
         <div class="search-row collapse-row">
           <div class="search-item">
-            <span class="filter-label">状态</span>
-            <select class="select">
+            <label class="filter-label" for="execStatus">状态</label>
+            <select id="execStatus" class="select">
               <option>全部状态</option>
               <option>通过</option>
               <option>失败</option>
@@ -110,19 +107,19 @@
             </select>
           </div>
           <div class="search-item">
-            <span class="filter-label">开始执行时间</span>
+            <label class="filter-label" for="execStartBegin">开始执行时间</label>
             <div class="date-range">
-              <input type="date" class="input" value="2024-01-08">
+              <input type="date" id="execStartBegin" class="input" value="2024-01-08" aria-label="开始执行时间-起">
               <span class="separator">至</span>
-              <input type="date" class="input" value="2024-01-15">
+              <input type="date" id="execStartEnd" class="input" value="2024-01-15" aria-label="开始执行时间-止">
             </div>
           </div>
           <div class="search-item">
-            <span class="filter-label">结束执行时间</span>
+            <label class="filter-label" for="execEndBegin">结束执行时间</label>
             <div class="date-range">
-              <input type="date" class="input">
+              <input type="date" id="execEndBegin" class="input" aria-label="结束执行时间-起">
               <span class="separator">至</span>
-              <input type="date" class="input">
+              <input type="date" id="execEndEnd" class="input" aria-label="结束执行时间-止">
             </div>
           </div>
         </div>

@@ -30,9 +30,6 @@
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
         <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
-      </ul>
-      <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
         <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
       </ul>
       <div class="sidebar-divider"></div>
@@ -42,7 +39,7 @@
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
             <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -68,9 +65,9 @@
     <div class="card" style="margin-bottom:16px;">
       <div class="card-header">基础信息</div>
       <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
-        <div class="form-group"><label class="form-label">计划名称 <span class="required">*</span></label><input type="text" class="input w-full" value="每日冒烟测试"></div>
-        <div class="form-group"><label class="form-label">绑定环境</label><select class="select w-full"><option selected>开发环境</option><option>测试环境</option><option>预发布环境</option></select></div>
-        <div class="form-group" style="grid-column:1/-1;"><label class="form-label">描述</label><textarea class="textarea w-full" rows="2">每日自动执行冒烟用例，确保核心功能正常</textarea></div>
+        <div class="form-group"><label class="form-label" for="计划名称">计划名称 <span class="required">*</span></label><input type="text" class="input w-full" value="每日冒烟测试" id="计划名称"></div>
+        <div class="form-group"><label class="form-label" for="绑定环境">绑定环境</label><select class="select w-full" id="绑定环境"><option selected>开发环境</option><option>测试环境</option><option>预发布环境</option></select></div>
+        <div class="form-group" style="grid-column:1/-1;"><label class="form-label" for="描述">描述</label><textarea class="textarea w-full" rows="2" id="描述">每日自动执行冒烟用例，确保核心功能正常</textarea></div>
       </div>
     </div>
     <div class="card" style="margin-bottom:16px;">
@@ -93,9 +90,9 @@
           <label class="checkbox-label" style="padding:6px 12px;border:1px solid var(--border-color);border-radius:4px;"><input type="radio" name="strategy"> CI 触发</label>
         </div>
         <div style="padding:12px;background:#fafafa;border-radius:4px;">
-          <div class="form-group"><label class="form-label">Cron 表达式</label><div style="display:flex;gap:8px;align-items:center;"><input type="text" class="input" value="0 8 * * *" style="width:200px;font-family:monospace;"><span style="font-size:12px;color:var(--text-tertiary);">每天 08:00 执行</span></div></div>
+          <div class="form-group"><label class="form-label" for="Cron表达式">Cron 表达式</label><div style="display:flex;gap:8px;align-items:center;"><input type="text" class="input" value="0 8 * * *" style="width:200px;font-family:monospace;" id="Cron表达式"><span style="font-size:12px;color:var(--text-tertiary);">每天 08:00 执行</span></div></div>
           <div style="display:flex;gap:12px;margin-top:8px;">
-            <div class="form-group" style="margin:0;"><label class="form-label">启停</label><div class="switch on"></div></div>
+            <div class="form-group" style="margin:0;"><span class="form-label">启停</span><div class="switch on"></div></div>
           </div>
           <div style="margin-top:12px;font-size:12px;color:var(--text-tertiary);">
             <b>最近 5 次执行时间预览：</b><br>

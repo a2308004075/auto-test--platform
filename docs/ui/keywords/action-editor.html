@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Action 编辑器 - Postman Platform</title>
+  <title>Action关键字 编辑器 - Postman Platform</title>
   <link rel="stylesheet" href="../common/shared-styles.css">
   <script src="../common/lib/x6.js"></script>
   <script src="../common/lib/x6-plugin-selection.js"></script>
@@ -88,9 +88,9 @@
   <header class="layout-header">
     <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
     <div class="header-breadcrumb">
-      <span><a href="action-list.html">Action 关键字</a></span>
+      <span><a href="action-list.html">Action关键字</a></span>
       <span class="sep">&#8250;</span>
-      <span class="current">编辑 Action 关键字</span>
+      <span class="current">编辑 Action关键字</span>
     </div>
     <div class="header-right">
       <div class="header-user">
@@ -108,9 +108,6 @@
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
         <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
-      </ul>
-      <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
         <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
       </ul>
       <div class="sidebar-divider"></div>
@@ -120,7 +117,7 @@
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
             <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item active"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item active"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -140,7 +137,7 @@
   <main class="layout-main">
 
     <div class="edit-header">
-      <h1 style="font-size: 18px;">编辑 Action 关键字</h1>
+      <h1 style="font-size: 18px;">编辑 Action关键字</h1>
       <div class="actions">
         <button class="btn" onclick="window.location.href='action-debug.html'">调试</button>
         <button class="btn btn-primary" onclick="handleSave()">保存</button>
@@ -159,9 +156,9 @@
     <div class="tab-content active" id="tab-basic">
       <div class="card"><div class="card-body">
         <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;">
-          <div class="form-group" style="margin:0;flex:1;min-width:200px;"><label class="form-label">名称 <span class="required">*</span></label><input type="text" class="input w-full" value="电池入仓操作"></div>
-          <div class="form-group" style="margin:0;width:140px;"><label class="form-label">分类</label><select class="select w-full"><option selected>电池管理</option><option>登录认证</option></select></div>
-          <div class="form-group" style="margin:0;width:180px;"><label class="form-label">标签</label><div style="display:flex;gap:4px;"><span class="tag tag-blue">核心</span><input type="text" class="input" placeholder="+" style="width:50px;height:28px;font-size:12px;"></div></div>
+          <div class="form-group" style="margin:0;flex:1;min-width:200px;"><label class="form-label" for="名称">名称 <span class="required">*</span></label><input type="text" class="input w-full" value="电池入仓操作" id="名称"></div>
+          <div class="form-group" style="margin:0;width:140px;"><label class="form-label" for="分类">分类</label><select class="select w-full" id="分类"><option selected>电池管理</option><option>登录认证</option></select></div>
+          <div class="form-group" style="margin:0;width:180px;"><label class="form-label" for="标签">标签</label><div style="display:flex;gap:4px;"><span class="tag tag-blue">核心</span><input type="text" class="input" placeholder="+" style="width:50px;height:28px;font-size:12px;" id="标签"></div></div>
         </div>
       </div></div>
     </div>
@@ -177,8 +174,8 @@
           <table>
             <thead><tr><th>名称</th><th>类型</th><th>必填</th><th>默认值</th><th>说明</th><th style="width:50px;"></th></tr></thead>
             <tbody>
-              <tr><td><input type="text" class="input" value="battery_sn" style="width:130px;font-size:12px;"></td><td><select class="select" style="width:80px;font-size:12px;"><option>str</option></select></td><td><div class="switch on" style="width:34px;height:18px;"></div></td><td><input type="text" class="input" placeholder="无" style="width:100px;font-size:12px;"></td><td><input type="text" class="input" value="电池SN编码" style="width:120px;font-size:12px;"></td><td><button class="btn-link" style="color:var(--error);">×</button></td></tr>
-              <tr><td><input type="text" class="input" value="target_slot" style="width:130px;font-size:12px;"></td><td><select class="select" style="width:80px;font-size:12px;"><option>int</option></select></td><td><div class="switch on" style="width:34px;height:18px;"></div></td><td><input type="text" class="input" placeholder="无" style="width:100px;font-size:12px;"></td><td><input type="text" class="input" value="目标仓位号" style="width:120px;font-size:12px;"></td><td><button class="btn-link" style="color:var(--error);">×</button></td></tr>
+              <tr><td><input type="text" class="input" value="battery_sn" style="width:130px;font-size:12px;" aria-label="battery_sn"></td><td><select class="select" style="width:80px;font-size:12px;" aria-label="输入"><option>str</option></select></td><td><div class="switch on" style="width:34px;height:18px;"></div></td><td><input type="text" class="input" placeholder="无" style="width:100px;font-size:12px;" aria-label="无"></td><td><input type="text" class="input" value="电池SN编码" style="width:120px;font-size:12px;" aria-label="电池SN编码"></td><td><button class="btn-link" style="color:var(--error);">×</button></td></tr>
+              <tr><td><input type="text" class="input" value="target_slot" style="width:130px;font-size:12px;" aria-label="target_slot"></td><td><select class="select" style="width:80px;font-size:12px;" aria-label="输入"><option>int</option></select></td><td><div class="switch on" style="width:34px;height:18px;"></div></td><td><input type="text" class="input" placeholder="无" style="width:100px;font-size:12px;" aria-label="无"></td><td><input type="text" class="input" value="目标仓位号" style="width:120px;font-size:12px;" aria-label="目标仓位号"></td><td><button class="btn-link" style="color:var(--error);">×</button></td></tr>
             </tbody>
           </table>
           <button class="btn btn-sm" style="margin-top:6px;">+ 添加参数</button>
@@ -202,7 +199,7 @@
                 <span class="el-badge">3</span>
               </div>
               <div class="el-body">
-                <input class="el-search" type="text" placeholder="搜索接口关键字…" oninput="filterElItems(this)">
+                <input class="el-search" type="text" placeholder="搜索接口关键字…" oninput="filterElItems(this)" aria-label="搜索接口关键字…">
                 <div class="el-items">
                   <div class="node-drag" data-node-shape="node-api" data-node-type="api" data-node-name="查询仓位状态"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">K</div>查询仓位状态</div>
                   <div class="node-drag" data-node-shape="node-api" data-node-type="api" data-node-name="创建用户"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">K</div>创建用户</div>
@@ -217,7 +214,7 @@
                 <span class="el-badge">3</span>
               </div>
               <div class="el-body">
-                <input class="el-search" type="text" placeholder="搜索工具方法关键字…" oninput="filterElItems(this)">
+                <input class="el-search" type="text" placeholder="搜索工具方法关键字…" oninput="filterElItems(this)" aria-label="搜索工具方法关键字…">
                 <div class="el-items">
                   <div class="node-drag" data-node-shape="node-tool" data-node-type="tool" data-node-name="格式化电池编号"><div class="nd-icon" style="background:#f6ffed;color:#52c41a;">T</div>格式化电池编号</div>
                   <div class="node-drag" data-node-shape="node-tool" data-node-type="tool" data-node-name="MD5加密"><div class="nd-icon" style="background:#f6ffed;color:#52c41a;">T</div>MD5加密</div>
@@ -228,11 +225,11 @@
             <div class="el-section">
               <div class="el-header" onclick="toggleSection(this)">
                 <span class="el-arrow">▸</span>
-                <span>Action 关键字</span>
+                <span>Action关键字</span>
                 <span class="el-badge">3</span>
               </div>
               <div class="el-body">
-                <input class="el-search" type="text" placeholder="搜索 Action 关键字…" oninput="filterElItems(this)">
+                <input class="el-search" type="text" placeholder="搜索 Action关键字…" oninput="filterElItems(this)" aria-label="搜索 Action关键字…">
                 <div class="el-items">
                   <div class="node-drag" data-node-shape="node-action" data-node-type="action" data-node-name="电池入仓操作"><div class="nd-icon" style="background:#fff7e6;color:#fa8c16;">A</div>电池入仓操作</div>
                   <div class="node-drag" data-node-shape="node-action" data-node-type="action" data-node-name="用户登录流程"><div class="nd-icon" style="background:#fff7e6;color:#fa8c16;">A</div>用户登录流程</div>
@@ -247,7 +244,7 @@
                 <span class="el-badge">2</span>
               </div>
               <div class="el-body">
-                <input class="el-search" type="text" placeholder="搜索监听器…" oninput="filterElItems(this)">
+                <input class="el-search" type="text" placeholder="搜索监听器…" oninput="filterElItems(this)" aria-label="搜索监听器…">
                 <div class="el-items">
                   <div class="node-drag" data-node-shape="node-listener" data-node-type="listener" data-node-name="执行前监听"><div class="nd-icon" style="background:#f5f5f5;color:#999;">♪</div>执行前监听</div>
                   <div class="node-drag" data-node-shape="node-listener" data-node-type="listener" data-node-name="执行后监听"><div class="nd-icon" style="background:#f5f5f5;color:#999;">♪</div>执行后监听</div>
@@ -261,7 +258,7 @@
                 <span class="el-badge">3</span>
               </div>
               <div class="el-body">
-                <input class="el-search" type="text" placeholder="搜索断言…" oninput="filterElItems(this)">
+                <input class="el-search" type="text" placeholder="搜索断言…" oninput="filterElItems(this)" aria-label="搜索断言…">
                 <div class="el-items">
                   <div class="node-drag" data-node-shape="node-assert" data-node-type="assert" data-node-name="状态码等于200"><div class="nd-icon" style="background:#fff1f0;color:#f5222d;">断</div>状态码等于200</div>
                   <div class="node-drag" data-node-shape="node-assert" data-node-type="assert" data-node-name="响应包含字段"><div class="nd-icon" style="background:#fff1f0;color:#f5222d;">断</div>响应包含字段</div>
@@ -276,7 +273,7 @@
                 <span class="el-badge">3</span>
               </div>
               <div class="el-body">
-                <input class="el-search" type="text" placeholder="搜索逻辑判断…" oninput="filterElItems(this)">
+                <input class="el-search" type="text" placeholder="搜索逻辑判断…" oninput="filterElItems(this)" aria-label="搜索逻辑判断…">
                 <div class="el-items">
                   <div class="node-drag" data-node-shape="node-logic" data-node-type="logic" data-node-name="状态是否为空"><div class="nd-icon" style="background:#f9f0ff;color:#722ed1;">◇</div>状态是否为空</div>
                   <div class="node-drag" data-node-shape="node-logic" data-node-type="logic" data-node-name="返回值是否成功"><div class="nd-icon" style="background:#f9f0ff;color:#722ed1;">◇</div>返回值是否成功</div>
@@ -303,11 +300,11 @@
               <!-- 画布尺寸设置面板 -->
               <div class="canvas-size-popover" id="sizePopover">
                 <div class="form-group">
-                  <label class="form-label">宽度 (px)</label>
+                  <label class="form-label" for="sizeWidthInput">宽度 (px)</label>
                   <input type="number" class="input" id="sizeWidthInput" min="600" max="3000" step="10">
                 </div>
                 <div class="form-group">
-                  <label class="form-label">高度 (px)</label>
+                  <label class="form-label" for="sizeHeightInput">高度 (px)</label>
                   <input type="number" class="input" id="sizeHeightInput" min="360" max="1200" step="10">
                 </div>
                 <div class="actions">
@@ -456,7 +453,7 @@
         ];
       }
 
-      /* -- 方形节点注册：Action/接口/工具方法关键字 -- */
+      /* -- 方形节点注册：Action关键字/接口/工具方法关键字 -- */
       function registerKeywordNode(name, color, icon, iconBg) {
         Graph.registerNode(name, {
           inherit: 'rect',
@@ -796,8 +793,8 @@
 
         switch (type) {
           case 'action':
-            html = '<h4>节点属性：Action 关键字</h4>' +
-              '<div class="form-group"><label class="form-label">Action 关键字</label>' +
+            html = '<h4>节点属性：Action关键字</h4>' +
+              '<div class="form-group"><label class="form-label">Action关键字</label>' +
               '<select class="select" id="propKeyword"><option>电池入仓操作</option><option>用户登录流程</option><option>订单处理流程</option></select></div>' +
               '<h4 style="font-size:12px;margin-top:12px;">args 参数映射</h4>' +
               '<table style="font-size:12px;margin-top:6px;"><tr><td style="padding:4px;"><code>battery_sn</code></td><td><input class="input" id="propArg0" value="' + escAttr(data.args && data.args[0] || '${battery_sn}') + '" style="width:120px;height:24px;font-size:12px;"></td></tr></table>' +
@@ -1447,7 +1444,7 @@
       var ctxCategories = [
         { title: '接口关键字',     items: ['查询仓位状态','创建用户','获取Token'],       shape: 'node-api',    type: 'api',    icon: 'K', iconBg: '#e6f7ff', color: '#1890ff' },
         { title: '工具方法关键字', items: ['格式化电池编号','MD5加密','时间戳转换'],     shape: 'node-tool',   type: 'tool',   icon: 'T', iconBg: '#f6ffed', color: '#52c41a' },
-        { title: 'Action 关键字',  items: ['电池入仓操作','用户登录流程','订单处理流程'], shape: 'node-action', type: 'action', icon: 'A', iconBg: '#fff7e6', color: '#fa8c16' },
+        { title: 'Action关键字',  items: ['电池入仓操作','用户登录流程','订单处理流程'], shape: 'node-action', type: 'action', icon: 'A', iconBg: '#fff7e6', color: '#fa8c16' },
         { title: '监听器',         items: ['执行前监听','执行后监听'],                  shape: 'node-listener', type: 'listener', icon: '♪', iconBg: '#f5f5f5', color: '#999' },
         { title: '断言',           items: ['状态码等于200','响应包含字段','响应时间校验'], shape: 'node-assert',   type: 'assert',   icon: '断', iconBg: '#fff1f0', color: '#f5222d' },
         { title: '逻辑判断',       items: ['状态是否为空','返回值是否成功','数量是否大于0'], shape: 'node-logic',   type: 'logic',    icon: '◇', iconBg: '#f9f0ff', color: '#722ed1' }
@@ -1586,7 +1583,7 @@
           }
           return result;
         });
-        console.log('Action nodes:', JSON.stringify(nodeTree, null, 2));
+        console.log('Action关键字 nodes:', JSON.stringify(nodeTree, null, 2));
       }
       showToast('保存成功', 'success');
       setTimeout(function() { location.href = 'action-list.html'; }, 1500);

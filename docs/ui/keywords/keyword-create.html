@@ -48,9 +48,6 @@
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
         <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
-      </ul>
-      <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
         <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
       </ul>
       <div class="sidebar-divider"></div>
@@ -60,7 +57,7 @@
           <ul class="sidebar-menu">
             <li class="menu-item active"><a href="../keywords/keyword-list.html">接口关键字</a></li>
             <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -101,11 +98,11 @@
       <div class="card"><div class="card-body">
         <div class="edit-form-row">
           <div class="form-group">
-            <label class="form-label">关键字名称 <span class="required">*</span></label>
+            <label class="form-label" for="kwName">关键字名称 <span class="required">*</span></label>
             <input type="text" class="input w-full" id="kwName" placeholder="例如：创建用户">
           </div>
           <div class="form-group">
-            <label class="form-label">分类 <span class="required">*</span></label>
+            <label class="form-label" for="kwCategory">分类 <span class="required">*</span></label>
             <select class="select w-full" id="kwCategory">
               <option value="">请选择分类</option>
               <option value="1">用户管理</option>
@@ -115,15 +112,15 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">描述</label>
+          <label class="form-label" for="kwDesc">描述</label>
           <textarea class="textarea w-full" id="kwDesc" rows="2" placeholder="关键字功能描述"></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label">标签</label>
+          <label class="form-label" for="标签">标签</label>
           <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
             <span class="tag tag-blue">用户</span>
             <span class="tag tag-blue">注册</span>
-            <input type="text" class="input" placeholder="+ 添加" style="width:80px;height:24px;font-size:12px;">
+            <input type="text" class="input" placeholder="+ 添加" style="width:80px;height:24px;font-size:12px;" id="标签">
           </div>
         </div>
       </div></div>
@@ -133,7 +130,7 @@
     <div class="tab-content" id="tab-api">
       <div class="card"><div class="card-body">
         <div class="form-group">
-          <label class="form-label">目标接口 <span class="required">*</span></label>
+          <label class="form-label" for="kwTargetApi">目标接口 <span class="required">*</span></label>
           <select class="select w-full" id="kwTargetApi" onchange="onApiChange()">
             <option value="">请选择接口...</option>
             <option value="1">POST /api/v1/auth/login - 用户登录</option>
@@ -171,29 +168,29 @@
               <tr>
                 <td><code>username</code></td>
                 <td><span class="tag tag-gray">string</span></td>
-                <td><input type="text" class="input" value="testuser" style="width:180px;"></td>
-                <td><input type="text" class="input" value="用户名" style="width:120px;"></td>
+                <td><input type="text" class="input" value="testuser" aria-label="username预设值" style="width:180px;"></td>
+                <td><input type="text" class="input" value="用户名" aria-label="username说明" style="width:120px;"></td>
                 <td><button class="btn btn-link btn-sm btn-danger" onclick="removeTestDataRow(this)">删除</button></td>
               </tr>
               <tr>
                 <td><code>password</code></td>
                 <td><span class="tag tag-gray">string</span></td>
-                <td><input type="text" class="input" value="Test@1234" style="width:180px;"></td>
-                <td><input type="text" class="input" value="密码" style="width:120px;"></td>
+                <td><input type="text" class="input" value="Test@1234" aria-label="password预设值" style="width:180px;"></td>
+                <td><input type="text" class="input" value="密码" aria-label="password说明" style="width:120px;"></td>
                 <td><button class="btn btn-link btn-sm btn-danger" onclick="removeTestDataRow(this)">删除</button></td>
               </tr>
               <tr>
                 <td><code>email</code></td>
                 <td><span class="tag tag-gray">string</span></td>
-                <td><input type="text" class="input" value="${random_email}" style="width:180px;"></td>
-                <td><input type="text" class="input" value="邮箱(变量)" style="width:120px;"></td>
+                <td><input type="text" class="input" value="${random_email}" aria-label="email预设值" style="width:180px;"></td>
+                <td><input type="text" class="input" value="邮箱(变量)" aria-label="email说明" style="width:120px;"></td>
                 <td><button class="btn btn-link btn-sm btn-danger" onclick="removeTestDataRow(this)">删除</button></td>
               </tr>
               <tr>
                 <td><code>role</code></td>
                 <td><span class="tag tag-gray">string</span></td>
-                <td><input type="text" class="input" value="USER" style="width:180px;"></td>
-                <td><input type="text" class="input" value="角色" style="width:120px;"></td>
+                <td><input type="text" class="input" value="USER" aria-label="role预设值" style="width:180px;"></td>
+                <td><input type="text" class="input" value="角色" aria-label="role说明" style="width:120px;"></td>
                 <td><button class="btn btn-link btn-sm btn-danger" onclick="removeTestDataRow(this)">删除</button></td>
               </tr>
             </tbody>
@@ -209,7 +206,7 @@
         <div class="status-code-section">
           <div class="status-code-header">
             <h4 style="margin: 0;">预期状态码</h4>
-            <input type="text" class="input code-input" value="200">
+            <input type="text" id="expectedStatusCode" class="input code-input" value="200" aria-label="预期状态码">
             <button class="btn btn-sm" onclick="addAssertionField()">+ 添加断言字段</button>
           </div>
           <div class="response-field-header">
@@ -220,15 +217,15 @@
           </div>
           <div id="assertionFieldsContainer">
             <div class="response-field-row">
-              <input type="text" class="input font-mono" value="code" placeholder="字段路径，如 data.id">
-              <input type="text" class="input" value="200" placeholder="预期值">
-              <input type="text" class="input" value="业务码" placeholder="说明">
+              <input type="text" class="input font-mono" value="code" placeholder="字段路径，如 data.id" aria-label="断言字段路径">
+              <input type="text" class="input" value="200" placeholder="预期值" aria-label="断言预期值">
+              <input type="text" class="input" value="业务码" placeholder="说明" aria-label="断言说明">
               <button class="btn btn-link btn-sm btn-danger" onclick="this.closest('.response-field-row').remove();toggleAssertionEmpty()">删除</button>
             </div>
             <div class="response-field-row">
-              <input type="text" class="input font-mono" value="data.id" placeholder="字段路径，如 data.id">
-              <input type="text" class="input" placeholder="非空即可">
-              <input type="text" class="input" value="用户ID" placeholder="说明">
+              <input type="text" class="input font-mono" value="data.id" placeholder="字段路径，如 data.id" aria-label="断言字段路径">
+              <input type="text" class="input" placeholder="非空即可" aria-label="断言预期值">
+              <input type="text" class="input" value="用户ID" placeholder="说明" aria-label="断言说明">
               <button class="btn btn-link btn-sm btn-danger" onclick="this.closest('.response-field-row').remove();toggleAssertionEmpty()">删除</button>
             </div>
           </div>
@@ -283,9 +280,9 @@
       var row = document.createElement('div');
       row.className = 'response-field-row';
       row.innerHTML =
-        '<input type="text" class="input font-mono" placeholder="字段路径，如 data.id">' +
-        '<input type="text" class="input" placeholder="预期值">' +
-        '<input type="text" class="input" placeholder="说明">' +
+        '<input type="text" class="input font-mono" placeholder="字段路径，如 data.id" aria-label="断言字段路径">' +
+        '<input type="text" class="input" placeholder="预期值" aria-label="断言预期值">' +
+        '<input type="text" class="input" placeholder="说明" aria-label="断言说明">' +
         '<button class="btn btn-link btn-sm btn-danger" onclick="this.closest(\'.response-field-row\').remove();toggleAssertionEmpty()">删除</button>';
       container.appendChild(row);
       toggleAssertionEmpty();

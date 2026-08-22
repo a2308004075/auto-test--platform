@@ -9,6 +9,23 @@
     /* No sidebar on home page - full-width layout */
     .layout-header { left: 0 !important; }
     .layout-main { margin-left: 0 !important; }
+    .btn-delete-project {
+      background: none; border: 1px solid #f5222d; cursor: pointer; font-size: 12px;
+      color: #f5222d; padding: 1px 8px; border-radius: 3px;
+      transition: color .2s, background .2s; line-height: 1.6; font-weight: 500;
+    }
+    .btn-delete-project:hover { color: #fff; background: #f5222d; }
+    .btn-edit-project {
+      background: none; border: 1px solid var(--primary); cursor: pointer; font-size: 12px;
+      color: var(--primary); padding: 1px 8px; border-radius: 3px;
+      transition: color .2s, background .2s; line-height: 1.6; font-weight: 500;
+    }
+    .btn-edit-project:hover { color: #fff; background: var(--primary); }
+    .tag-status { cursor: pointer; user-select: none; transition: opacity .2s, transform .15s; }
+    .tag-status:hover { opacity: .7; }
+    .tag-status:active { transform: scale(.92); }
+    .project-card { transition: opacity .4s ease; cursor: pointer; }
+    .project-card[data-status="disabled"] { cursor: default; }
   </style>
 </head>
 <body>
@@ -41,8 +58,8 @@
 
     <!-- Search & Filter Toolbar -->
     <div class="toolbar">
-      <input type="text" class="input input-search" id="searchProjectName" placeholder="搜索项目名称" style="width:220px;" oninput="filterProjectCards()">
-      <select class="select" id="filterProjectStatus" style="width:100px;" onchange="filterProjectCards()">
+      <input type="text" class="input input-search" id="searchProjectName" placeholder="搜索项目名称" style="width:220px;" oninput="filterProjectCards()" aria-label="搜索项目名称">
+      <select class="select" id="filterProjectStatus" style="width:100px;" onchange="filterProjectCards()" aria-label="filter Project Status">
         <option value="">全部状态</option>
         <option value="active">启用</option>
         <option value="disabled">停用</option>
@@ -68,7 +85,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">电池包充放电、SOC估算、故障诊断等接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>128</b></span><span>关键字：<b>48</b></span><span>Action: <b>156</b></span><span>用例：<b>456</b></span><span>套件：<b>15</b></span><span>计划：<b>8</b></span>
+            <span>接口：<b>128</b></span><span>关键字：<b>48</b></span><span>Action关键字: <b>156</b></span><span>用例：<b>456</b></span><span>套件：<b>15</b></span><span>计划：<b>8</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -92,7 +109,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">换电站设备控制、流程管理、监控接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>85</b></span><span>关键字：<b>32</b></span><span>Action: <b>98</b></span><span>用例：<b>234</b></span><span>套件：<b>10</b></span><span>计划：<b>5</b></span>
+            <span>接口：<b>85</b></span><span>关键字：<b>32</b></span><span>Action关键字: <b>98</b></span><span>用例：<b>234</b></span><span>套件：<b>10</b></span><span>计划：<b>5</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -116,7 +133,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">车辆管理、定位追踪、远程控制接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>56</b></span><span>关键字：<b>24</b></span><span>Action: <b>72</b></span><span>用例：<b>189</b></span><span>套件：<b>8</b></span><span>计划：<b>4</b></span>
+            <span>接口：<b>56</b></span><span>关键字：<b>24</b></span><span>Action关键字: <b>72</b></span><span>用例：<b>189</b></span><span>套件：<b>8</b></span><span>计划：<b>4</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -140,7 +157,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">充电桩状态查询、计费、远程控制接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>42</b></span><span>关键字：<b>18</b></span><span>Action: <b>54</b></span><span>用例：<b>156</b></span><span>套件：<b>6</b></span><span>计划：<b>3</b></span>
+            <span>接口：<b>42</b></span><span>关键字：<b>18</b></span><span>Action关键字: <b>54</b></span><span>用例：<b>156</b></span><span>套件：<b>6</b></span><span>计划：<b>3</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -164,7 +181,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">BMS CAN通讯、UDS诊断、报文解析接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>96</b></span><span>关键字：<b>38</b></span><span>Action: <b>115</b></span><span>用例：<b>312</b></span><span>套件：<b>12</b></span><span>计划：<b>6</b></span>
+            <span>接口：<b>96</b></span><span>关键字：<b>38</b></span><span>Action关键字: <b>115</b></span><span>用例：<b>312</b></span><span>套件：<b>12</b></span><span>计划：<b>6</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -188,7 +205,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">OTA固件下载、差分升级、版本回滚接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>63</b></span><span>关键字：<b>26</b></span><span>Action: <b>78</b></span><span>用例：<b>198</b></span><span>套件：<b>7</b></span><span>计划：<b>4</b></span>
+            <span>接口：<b>63</b></span><span>关键字：<b>26</b></span><span>Action关键字: <b>78</b></span><span>用例：<b>198</b></span><span>套件：<b>7</b></span><span>计划：<b>4</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -212,7 +229,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">座舱域控、HMI交互、多媒体控制接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>74</b></span><span>关键字：<b>29</b></span><span>Action: <b>88</b></span><span>用例：<b>267</b></span><span>套件：<b>9</b></span><span>计划：<b>5</b></span>
+            <span>接口：<b>74</b></span><span>关键字：<b>29</b></span><span>Action关键字: <b>88</b></span><span>用例：<b>267</b></span><span>套件：<b>9</b></span><span>计划：<b>5</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -236,7 +253,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">热管理策略、液冷循环、温控精度接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>38</b></span><span>关键字：<b>15</b></span><span>Action: <b>45</b></span><span>用例：<b>124</b></span><span>套件：<b>5</b></span><span>计划：<b>2</b></span>
+            <span>接口：<b>38</b></span><span>关键字：<b>15</b></span><span>Action关键字: <b>45</b></span><span>用例：<b>124</b></span><span>套件：<b>5</b></span><span>计划：<b>2</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -260,7 +277,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">感知融合、目标检测、车道线识别接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>112</b></span><span>关键字：<b>42</b></span><span>Action: <b>130</b></span><span>用例：<b>389</b></span><span>套件：<b>14</b></span><span>计划：<b>7</b></span>
+            <span>接口：<b>112</b></span><span>关键字：<b>42</b></span><span>Action关键字: <b>130</b></span><span>用例：<b>389</b></span><span>套件：<b>14</b></span><span>计划：<b>7</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -283,7 +300,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">发动机控制、变速箱标定、扭矩管理接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>33</b></span><span>关键字：<b>27</b></span><span>Action: <b>52</b></span><span>用例：<b>473</b></span><span>套件：<b>11</b></span><span>计划：<b>6</b></span>
+            <span>接口：<b>33</b></span><span>关键字：<b>27</b></span><span>Action关键字: <b>52</b></span><span>用例：<b>473</b></span><span>套件：<b>11</b></span><span>计划：<b>6</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -307,7 +324,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">EPS转向、ESC稳定性控制、悬架调节接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>29</b></span><span>关键字：<b>34</b></span><span>Action: <b>167</b></span><span>用例：<b>367</b></span><span>套件：<b>9</b></span><span>计划：<b>5</b></span>
+            <span>接口：<b>29</b></span><span>关键字：<b>34</b></span><span>Action关键字: <b>167</b></span><span>用例：<b>367</b></span><span>套件：<b>9</b></span><span>计划：<b>5</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -331,7 +348,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">IVI多媒体、蓝牙音频、导航地图接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>54</b></span><span>关键字：<b>31</b></span><span>Action: <b>173</b></span><span>用例：<b>250</b></span><span>套件：<b>7</b></span><span>计划：<b>4</b></span>
+            <span>接口：<b>54</b></span><span>关键字：<b>31</b></span><span>Action关键字: <b>173</b></span><span>用例：<b>250</b></span><span>套件：<b>7</b></span><span>计划：<b>4</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -355,7 +372,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">气囊触发逻辑、碰撞检测、诊断通信接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>131</b></span><span>关键字：<b>59</b></span><span>Action: <b>52</b></span><span>用例：<b>385</b></span><span>套件：<b>13</b></span><span>计划：<b>7</b></span>
+            <span>接口：<b>131</b></span><span>关键字：<b>59</b></span><span>Action关键字: <b>52</b></span><span>用例：<b>385</b></span><span>套件：<b>13</b></span><span>计划：<b>7</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -379,7 +396,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">TPMS信号采集、低压报警、传感器配对接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>134</b></span><span>关键字：<b>16</b></span><span>Action: <b>41</b></span><span>用例：<b>127</b></span><span>套件：<b>6</b></span><span>计划：<b>3</b></span>
+            <span>接口：<b>134</b></span><span>关键字：<b>16</b></span><span>Action关键字: <b>41</b></span><span>用例：<b>127</b></span><span>套件：<b>6</b></span><span>计划：<b>3</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -403,7 +420,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">EPB控制逻辑、AutoHold、坡道辅助接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>25</b></span><span>关键字：<b>28</b></span><span>Action: <b>140</b></span><span>用例：<b>373</b></span><span>套件：<b>10</b></span><span>计划：<b>5</b></span>
+            <span>接口：<b>25</b></span><span>关键字：<b>28</b></span><span>Action关键字: <b>140</b></span><span>用例：<b>373</b></span><span>套件：<b>10</b></span><span>计划：<b>5</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -427,7 +444,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">BCM灯光、门锁、雨刮、车窗控制接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>29</b></span><span>关键字：<b>59</b></span><span>Action: <b>108</b></span><span>用例：<b>255</b></span><span>套件：<b>8</b></span><span>计划：<b>4</b></span>
+            <span>接口：<b>29</b></span><span>关键字：<b>59</b></span><span>Action关键字: <b>108</b></span><span>用例：<b>255</b></span><span>套件：<b>8</b></span><span>计划：<b>4</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -451,7 +468,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">MCU电机控制、VCU整车控制、DCDC接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>100</b></span><span>关键字：<b>10</b></span><span>Action: <b>131</b></span><span>用例：<b>473</b></span><span>套件：<b>12</b></span><span>计划：<b>6</b></span>
+            <span>接口：<b>100</b></span><span>关键字：<b>10</b></span><span>Action关键字: <b>131</b></span><span>用例：<b>473</b></span><span>套件：<b>12</b></span><span>计划：<b>6</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -475,7 +492,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">远程诊断、紧急救援、车辆追踪接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>144</b></span><span>关键字：<b>43</b></span><span>Action: <b>137</b></span><span>用例：<b>271</b></span><span>套件：<b>11</b></span><span>计划：<b>5</b></span>
+            <span>接口：<b>144</b></span><span>关键字：<b>43</b></span><span>Action关键字: <b>137</b></span><span>用例：<b>271</b></span><span>套件：<b>11</b></span><span>计划：<b>5</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -499,7 +516,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">ADAS域控、网关路由、SOA服务接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>66</b></span><span>关键字：<b>56</b></span><span>Action: <b>51</b></span><span>用例：<b>329</b></span><span>套件：<b>9</b></span><span>计划：<b>4</b></span>
+            <span>接口：<b>66</b></span><span>关键字：<b>56</b></span><span>Action关键字: <b>51</b></span><span>用例：<b>329</b></span><span>套件：<b>9</b></span><span>计划：<b>4</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -523,7 +540,7 @@
           </div>
           <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">CAN/LIN网络拓扑、诊断路由、NM管理接口测试</p>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-secondary);">
-            <span>接口：<b>106</b></span><span>关键字：<b>45</b></span><span>Action: <b>130</b></span><span>用例：<b>117</b></span><span>套件：<b>7</b></span><span>计划：<b>3</b></span>
+            <span>接口：<b>106</b></span><span>关键字：<b>45</b></span><span>Action关键字: <b>130</b></span><span>用例：<b>117</b></span><span>套件：<b>7</b></span><span>计划：<b>3</b></span>
           </div>
         </div>
         <div class="card-footer" style="font-size:11px;color:var(--text-tertiary);">
@@ -546,12 +563,12 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">项目名称 <span class="required">*</span></label>
-          <input type="text" class="input w-full" placeholder="请输入项目名称">
+          <label class="form-label" for="项目名称">项目名称 <span class="required">*</span></label>
+          <input type="text" class="input w-full" placeholder="请输入项目名称" id="项目名称">
         </div>
         <div class="form-group">
-          <label class="form-label">项目描述 <span class="required">*</span></label>
-          <textarea class="textarea w-full" placeholder="请输入项目描述" rows="3"></textarea>
+          <label class="form-label" for="项目描述">项目描述 <span class="required">*</span></label>
+          <textarea class="textarea w-full" placeholder="请输入项目描述" rows="3" id="项目描述"></textarea>
         </div>
       </div>
       <div class="modal-footer">
@@ -569,12 +586,12 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">项目名称 <span class="required">*</span></label>
+          <label class="form-label" for="editProjectName">项目名称 <span class="required">*</span></label>
           <input type="text" class="input w-full" id="editProjectName" placeholder="请输入项目名称" maxlength="50">
           <p style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">必填，最长 50 字符</p>
         </div>
         <div class="form-group">
-          <label class="form-label">项目描述</label>
+          <label class="form-label" for="editProjectDesc">项目描述</label>
           <textarea class="textarea w-full" id="editProjectDesc" placeholder="请输入项目描述" rows="3"></textarea>
         </div>
       </div>
@@ -628,25 +645,6 @@
       </div>
     </div>
   </div>
-  <style>
-    .btn-delete-project {
-      background: none; border: 1px solid #f5222d; cursor: pointer; font-size: 12px;
-      color: #f5222d; padding: 1px 8px; border-radius: 3px;
-      transition: color .2s, background .2s; line-height: 1.6; font-weight: 500;
-    }
-    .btn-delete-project:hover { color: #fff; background: #f5222d; }
-    .btn-edit-project {
-      background: none; border: 1px solid var(--primary); cursor: pointer; font-size: 12px;
-      color: var(--primary); padding: 1px 8px; border-radius: 3px;
-      transition: color .2s, background .2s; line-height: 1.6; font-weight: 500;
-    }
-    .btn-edit-project:hover { color: #fff; background: var(--primary); }
-    .tag-status { cursor: pointer; user-select: none; transition: opacity .2s, transform .15s; }
-    .tag-status:hover { opacity: .7; }
-    .tag-status:active { transform: scale(.92); }
-    .project-card { transition: opacity .4s ease; cursor: pointer; }
-    .project-card[data-status="disabled"] { cursor: default; }
-  </style>
   <script src="../common/nav.js"></script>
   <script>
     // Hide admin-only elements for non-admin users

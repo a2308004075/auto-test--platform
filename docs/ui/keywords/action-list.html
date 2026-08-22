@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Action 关键字 - Postman Platform</title>
+  <title>Action关键字 - Postman Platform</title>
   <link rel="stylesheet" href="../common/shared-styles.css">
   <style>
     .kw-layout { display: flex; background: #fff; border-radius: var(--border-radius-lg); border: 1px solid var(--border-color-secondary); overflow: hidden; min-height: calc(100vh - 180px); }
@@ -83,7 +83,7 @@
     <div class="header-breadcrumb">
       <span>关键字管理</span>
       <span class="sep">&#8250;</span>
-      <span class="current">Action 关键字</span>
+      <span class="current">Action关键字</span>
     </div>
     <div class="header-right">
       <div class="header-user">
@@ -101,9 +101,6 @@
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
         <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
-      </ul>
-      <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
         <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
       </ul>
       <div class="sidebar-divider"></div>
@@ -113,7 +110,7 @@
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
             <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item active"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item active"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -133,30 +130,30 @@
 
   <main class="layout-main">
     <div class="page-header">
-      <h1>Action 关键字</h1>
-      <button class="btn btn-primary" onclick="window.location.href='action-editor.html'">+ 新建 Action</button>
+      <h1>Action关键字</h1>
+      <button class="btn btn-primary" onclick="window.location.href='action-editor.html'">+ 新建 Action关键字</button>
     </div>
 
     <div class="kw-layout">
       <!-- Left: Group Tree -->
       <div class="tree-panel" id="treePanel" oncontextmenu="showBlankContextMenu(event)">
         <div class="tree-search">
-          <input type="text" class="input input-search w-full" placeholder="搜索分组..." style="height: 28px; font-size: 13px;">
+          <input type="text" class="input input-search w-full" placeholder="搜索分组..." style="height: 28px; font-size: 13px;" aria-label="搜索分组...">
         </div>
         <div id="groupTree"></div>
       </div>
 
-      <!-- Right: Action List -->
+      <!-- Right: Action关键字 List -->
       <div class="kw-content">
         <div class="search-card collapsed" id="actionSearchCard">
           <div class="search-form">
             <div class="search-row">
               <div class="search-item">
-                <span class="filter-label">名称</span>
+                <label class="filter-label" for="searchActionName">名称</label>
                 <input type="text" class="input input-search" id="searchActionName" placeholder="输入名称">
               </div>
               <div class="search-item">
-                <span class="filter-label">描述</span>
+                <label class="filter-label" for="searchActionDesc">描述</label>
                 <input type="text" class="input input-search" id="searchActionDesc" placeholder="输入描述">
               </div>
               <div class="search-actions">
@@ -232,7 +229,7 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">分组名称 <span class="required">*</span></label>
+          <label class="form-label" for="groupName">分组名称 <span class="required">*</span></label>
           <input type="text" class="input w-full" id="groupName" placeholder="请输入分组名称，如「登录认证」">
         </div>
       </div>
@@ -252,7 +249,7 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">分组名称 <span class="required">*</span></label>
+          <label class="form-label" for="editGroupName">分组名称 <span class="required">*</span></label>
           <input type="text" class="input w-full" id="editGroupName" placeholder="请输入分组名称">
         </div>
       </div>
@@ -287,12 +284,12 @@
   <div class="modal-overlay" id="batchDeleteModal" style="display: none;">
     <div class="modal" style="width: 400px;">
       <div class="modal-header">
-        <h3>批量删除 Action 关键字</h3>
+        <h3>批量删除 Action关键字</h3>
         <button class="modal-close" onclick="closeBatchDeleteModal()">&#10005;</button>
       </div>
       <div class="modal-body">
         <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
-          确定删除已选中的 <strong id="batchDeleteCount" style="color: var(--error);">0</strong> 条 Action 关键字吗？<br>
+          确定删除已选中的 <strong id="batchDeleteCount" style="color: var(--error);">0</strong> 条 Action关键字吗？<br>
           <span style="color: var(--text-tertiary);">删除后将无法恢复，请谨慎操作。</span>
         </p>
         <div id="batchDeletePreview" style="margin-top: 12px; padding: 12px; background: var(--bg-body); border-radius: var(--border-radius); font-size: 13px; max-height: 160px; overflow-y: auto;"></div>
@@ -308,12 +305,12 @@
   <div class="modal-overlay" id="deleteActionModal" style="display: none;">
     <div class="modal" style="width: 360px;">
       <div class="modal-header">
-        <h3>删除 Action 关键字</h3>
+        <h3>删除 Action关键字</h3>
         <button class="modal-close" onclick="closeDeleteActionModal()">&#10005;</button>
       </div>
       <div class="modal-body">
         <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
-          确定删除 Action 关键字 <strong id="deleteActionName"></strong> 吗？<br>
+          确定删除 Action关键字 <strong id="deleteActionName"></strong> 吗？<br>
           <span style="color: var(--text-tertiary);">删除后将无法恢复。</span>
         </p>
       </div>
@@ -332,22 +329,22 @@
         <button class="modal-close" onclick="closeBatchGroupModal()">&#10005;</button>
       </div>
       <div class="modal-body">
-        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">将已选中的 <b id="batchModalCount" style="color: var(--primary);">0</b> 条 Action 关键字的分组修改为：</p>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">将已选中的 <b id="batchModalCount" style="color: var(--primary);">0</b> 条 Action关键字的分组修改为：</p>
         <div class="form-group">
-          <label class="form-label">目标分组 <span class="required">*</span></label>
+          <label class="form-label" for="目标分组">目标分组 <span class="required">*</span></label>
           <div class="search-select" id="batchGroupSelect" style="width:100%;">
             <div class="search-select-input" tabindex="0">
-              <input type="text" class="input" placeholder="请选择分组" autocomplete="off">
+              <input type="text" class="input" placeholder="请选择分组" autocomplete="off" id="目标分组">
               <span class="search-select-arrow">&#9662;</span>
             </div>
             <div class="search-select-dropdown" id="batchGroupDropdown">
               <div class="search-select-empty" style="display:none;">无匹配分组</div>
             </div>
-            <input type="hidden" class="search-select-value" value="">
+            <input type="hidden" class="search-select-value" value="" aria-label="输入">
           </div>
         </div>
         <div id="batchPreview" style="display:none;margin-top:12px;padding:12px;background:var(--bg-body);border-radius:var(--border-radius);font-size:13px;">
-          <div style="color:var(--text-tertiary);margin-bottom:6px;">以下 Action 关键字的分组将被修改：</div>
+          <div style="color:var(--text-tertiary);margin-bottom:6px;">以下 Action关键字的分组将被修改：</div>
           <div id="batchPreviewList" style="color:var(--text-primary);max-height:120px;overflow-y:auto;"></div>
         </div>
       </div>
@@ -400,7 +397,7 @@
     var columnDefaults = {};
     columnConfig.forEach(function(c) { columnDefaults[c.key] = c.defaultVisible; });
 
-    /* ===== Action 数据 ===== */
+    /* ===== Action关键字 数据 ===== */
     var actionData = [
       { id: 1, name: '用户登录并获取令牌', desc: '完成用户登录并将Token存入变量',     groupId: '1', group: '登录认证', nodeCount: 3, actionRefCount: 3,  caseRefCount: 12, createTime: '2024-01-10', updateTime: '2024-01-12' },
       { id: 2, name: '创建订单完整流程',   desc: '登录→选商品→创建订单→确认',       groupId: '3', group: '订单处理', nodeCount: 6, actionRefCount: 0,  caseRefCount: 8,  createTime: '2024-01-08', updateTime: '2024-01-10' },
@@ -505,7 +502,7 @@
       if (pageItems.length === 0) {
         html = '<tr><td colspan="' + colCount + '" style="text-align:center;padding:48px 20px;color:var(--text-tertiary);">' +
           '<div style="font-size:32px;margin-bottom:8px;opacity:.4;">⚡</div>' +
-          '<div>暂无匹配的 Action 关键字数据</div></td></tr>';
+          '<div>暂无匹配的 Action关键字数据</div></td></tr>';
       }
       pageItems.forEach(function(a) {
         html += '<tr data-id="' + a.id + '">';
@@ -768,7 +765,7 @@
       renderActionRows();
       actionRenderPagination();
       closeDeleteActionModal();
-      showToast('已删除 1 条 Action 关键字', 'success');
+      showToast('已删除 1 条 Action关键字', 'success');
     }
 
     /* ===== 批量操作下拉菜单 ===== */
@@ -950,7 +947,7 @@
       renderActionRows();
       actionRenderPagination();
       closeBatchGroupModal();
-      showToast('已成功将 ' + count + ' 条 Action 关键字的分组修改为「' + escapeHtml(targetGroup.name) + '」', 'success');
+      showToast('已成功将 ' + count + ' 条 Action关键字的分组修改为「' + escapeHtml(targetGroup.name) + '」', 'success');
     }
 
     function openBatchGroupFromDropdown() {
@@ -1014,7 +1011,7 @@
       var ids = getCheckedIds();
       if (ids.length === 0) return;
       document.getElementById('batchDeleteCount').textContent = ids.length;
-      var html = '<div style="color:var(--text-tertiary);margin-bottom:6px;">以下 Action 关键字将被删除：</div>';
+      var html = '<div style="color:var(--text-tertiary);margin-bottom:6px;">以下 Action关键字将被删除：</div>';
       ids.forEach(function(id) {
         var item = actionData.find(function(a) { return a.id === id; });
         if (item) {
@@ -1039,7 +1036,7 @@
       renderActionRows();
       actionRenderPagination();
       closeBatchDeleteModal();
-      showToast('已删除 ' + count + ' 条 Action 关键字', 'success');
+      showToast('已删除 ' + count + ' 条 Action关键字', 'success');
     }
 
     /* ===== 分页逻辑 ===== */

@@ -47,16 +47,16 @@
       <div class="card-body">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 32px;">
           <div class="form-group">
-            <label class="form-label">日志保留天数</label>
+            <label class="form-label" for="日志保留天数">日志保留天数</label>
             <div style="display:flex;align-items:center;gap:8px;">
-              <input type="number" class="input" value="30" style="width:120px;">
+              <input type="number" class="input" value="30" style="width:120px;" id="日志保留天数">
               <span style="font-size:13px;color:var(--text-tertiary);">天</span>
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">报告保留天数</label>
+            <label class="form-label" for="报告保留天数">报告保留天数</label>
             <div style="display:flex;align-items:center;gap:8px;">
-              <input type="number" class="input" value="90" style="width:120px;">
+              <input type="number" class="input" value="90" style="width:120px;" id="报告保留天数">
               <span style="font-size:13px;color:var(--text-tertiary);">天</span>
             </div>
           </div>
@@ -70,11 +70,11 @@
       <div class="card-body">
         <h4 style="font-size:13px;font-weight:600;margin-bottom:10px;">邮件通知 (SMTP)</h4>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
-          <div class="form-group"><label class="form-label">SMTP 服务器地址</label><input type="text" class="input w-full" id="smtpHost" placeholder="smtp.example.com"></div>
-          <div class="form-group"><label class="form-label">端口</label><input type="number" class="input" id="smtpPort" placeholder="587" min="0" max="65535" style="width:120px;"></div>
-          <div class="form-group"><label class="form-label">账号</label><input type="text" class="input w-full" id="smtpUser" placeholder="notify@example.com"></div>
-          <div class="form-group"><label class="form-label">密码</label><input type="password" class="input w-full" id="smtpPass" placeholder="****"></div>
-          <div class="form-group"><label class="form-label">加密方式</label><select class="select w-full" id="smtpEncrypt"><option value="tls">TLS</option><option value="ssl">SSL</option><option value="none">无</option></select></div>
+          <div class="form-group"><label class="form-label" for="smtpHost">SMTP 服务器地址</label><input type="text" class="input w-full" id="smtpHost" placeholder="smtp.example.com"></div>
+          <div class="form-group"><label class="form-label" for="smtpPort">端口</label><input type="number" class="input" id="smtpPort" placeholder="587" min="0" max="65535" style="width:120px;"></div>
+          <div class="form-group"><label class="form-label" for="smtpUser">账号</label><input type="text" class="input w-full" id="smtpUser" placeholder="notify@example.com"></div>
+          <div class="form-group"><label class="form-label" for="smtpPass">密码</label><input type="password" class="input w-full" id="smtpPass" placeholder="****"></div>
+          <div class="form-group"><label class="form-label" for="smtpEncrypt">加密方式</label><select class="select w-full" id="smtpEncrypt"><option value="tls">TLS</option><option value="ssl">SSL</option><option value="none">无</option></select></div>
         </div>
         <div style="display:flex;align-items:center;gap:12px;margin-top:12px;">
           <button class="btn btn-sm" onclick="handleTestSend('smtp')">测试发送</button>
@@ -83,8 +83,8 @@
         <div style="border-top:1px solid var(--border);margin:20px 0;"></div>
         <h4 style="font-size:13px;font-weight:600;margin-bottom:10px;">Webhook 通知</h4>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
-          <div class="form-group"><label class="form-label">Webhook URL</label><input type="text" class="input w-full" id="webhookUrl" placeholder="https://hooks.example.com/notify"></div>
-          <div class="form-group"><label class="form-label">密钥</label><input type="password" class="input w-full" id="webhookSecret" placeholder="Webhook Secret"></div>
+          <div class="form-group"><label class="form-label" for="webhookUrl">Webhook URL</label><input type="text" class="input w-full" id="webhookUrl" placeholder="https://hooks.example.com/notify"></div>
+          <div class="form-group"><label class="form-label" for="webhookSecret">密钥</label><input type="password" class="input w-full" id="webhookSecret" placeholder="Webhook Secret"></div>
         </div>
         <div style="display:flex;align-items:center;gap:12px;margin-top:12px;">
           <button class="btn btn-sm" onclick="handleTestSend('webhook')">测试发送</button>
@@ -100,11 +100,11 @@
       <div class="modal-header"><h3 id="testSendTitle">测试发送</h3><button class="modal-close" onclick="closeTestSendModal()">×</button></div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">接收地址</label>
+          <label class="form-label" for="testRecipient">接收地址</label>
           <input type="text" class="input w-full" id="testRecipient" placeholder="">
         </div>
         <div class="form-group">
-          <label class="form-label">通知内容</label>
+          <label class="form-label" for="testContent">通知内容</label>
           <textarea class="input w-full" id="testContent" rows="3" style="resize:vertical;" placeholder="这是一条测试通知消息">这是一条测试通知消息，如果您收到此消息说明通知配置正确。</textarea>
         </div>
       </div>

@@ -62,9 +62,6 @@
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
         <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
-      </ul>
-      <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
         <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
       </ul>
       <div class="sidebar-divider"></div>
@@ -74,7 +71,7 @@
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
             <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -120,8 +117,8 @@
           <div class="node-panel">
             <h4>节点类型</h4>
             <div class="node-drag" onclick="addNode('setup','api')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> 接口关键字</div>
-            <div class="node-drag" onclick="addNode('setup','tool')"><div class="nd-icon" style="background:#fff7e6;color:#fa8c16;">T</div> 工具方法</div>
-            <div class="node-drag" onclick="addNode('setup','action')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> Action 关键字</div>
+            <div class="node-drag" onclick="addNode('setup','tool')"><div class="nd-icon" style="background:#fff7e6;color:#fa8c16;">T</div> 工具方法关键字</div>
+            <div class="node-drag" onclick="addNode('setup','action')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> Action关键字</div>
             <div class="node-drag" onclick="addNode('setup','wait')"><div class="nd-icon" style="background:#fff1f0;color:#f5222d;">⏱</div> 等待节点</div>
             <div class="node-drag" onclick="addNode('setup','condition')"><div class="nd-icon" style="background:#f9f0ff;color:#722ed1;">?</div> 条件节点</div>
           </div>
@@ -138,8 +135,8 @@
           <div class="node-panel">
             <h4>节点类型</h4>
             <div class="node-drag" onclick="addNode('teardown','api')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> 接口关键字</div>
-            <div class="node-drag" onclick="addNode('teardown','tool')"><div class="nd-icon" style="background:#fff7e6;color:#fa8c16;">T</div> 工具方法</div>
-            <div class="node-drag" onclick="addNode('teardown','action')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> Action 关键字</div>
+            <div class="node-drag" onclick="addNode('teardown','tool')"><div class="nd-icon" style="background:#fff7e6;color:#fa8c16;">T</div> 工具方法关键字</div>
+            <div class="node-drag" onclick="addNode('teardown','action')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> Action关键字</div>
             <div class="node-drag" onclick="addNode('teardown','wait')"><div class="nd-icon" style="background:#fff1f0;color:#f5222d;">⏱</div> 等待节点</div>
             <div class="node-drag" onclick="addNode('teardown','condition')"><div class="nd-icon" style="background:#f9f0ff;color:#722ed1;">?</div> 条件节点</div>
           </div>
@@ -184,7 +181,7 @@
     var kwConfigs = {
       api:    { icon: 'A', color: '#1890ff', bg: '#e6f7ff', badge: 'tag-blue',   label: 'API' },
       tool:   { icon: 'T', color: '#fa8c16', bg: '#fff7e6', badge: 'tag-orange', label: 'TOOL' },
-      action: { icon: 'A', color: '#1890ff', bg: '#e6f7ff', badge: 'tag-blue',   label: 'Action' }
+      action: { icon: 'A', color: '#1890ff', bg: '#e6f7ff', badge: 'tag-blue',   label: 'Action关键字' }
     };
     var logicConfigs = {
       wait:      { icon: '⏱', color: '#f5222d', bg: '#fff1f0', badge: 'tag-red',    label: '等待' },
@@ -311,7 +308,7 @@
       if (!node) { panel.innerHTML = '<h4>节点属性</h4>'; return; }
       if (node.type === 'keyword') {
         var cfg = kwConfigs[node.kwType] || kwConfigs.action;
-        var labels = { api: '接口关键字', tool: '工具方法关键字', action: 'Action 关键字' };
+        var labels = { api: '接口关键字', tool: '工具方法关键字', action: 'Action关键字' };
         panel.innerHTML =
           '<h4>节点属性：关键字</h4>' +
           '<div class="form-group"><label class="form-label">关键字名称</label><input class="input" value="' + node.name + '" readonly></div>' +

@@ -35,9 +35,6 @@
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
         <li class="menu-item active"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
-      </ul>
-      <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
         <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
       </ul>
       <div class="sidebar-divider"></div>
@@ -47,7 +44,7 @@
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
             <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -130,12 +127,12 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">环境名称 <span class="required">*</span></label>
-          <input type="text" class="input w-full" placeholder="如 test / staging / prod">
+          <label class="form-label" for="newEnvName">环境名称 <span class="required">*</span></label>
+          <input type="text" id="newEnvName" class="input w-full" placeholder="如 test / staging / prod">
         </div>
         <div class="form-group">
-          <label class="form-label">描述</label>
-          <textarea class="textarea w-full" rows="2" placeholder="环境描述"></textarea>
+          <label class="form-label" for="newEnvDesc">描述</label>
+          <textarea id="newEnvDesc" class="textarea w-full" rows="2" placeholder="环境描述"></textarea>
         </div>
       </div>
       <div class="modal-footer">

@@ -152,7 +152,7 @@
       <h2>系统登录</h2>
       <form id="loginForm" onsubmit="handleLogin(event)" novalidate>
         <div class="form-group" id="usernameGroup">
-          <label class="form-label">用户名</label>
+          <label class="form-label" for="usernameInput">用户名</label>
           <div class="input-wrapper">
             <span class="icon">&#128100;</span>
             <input type="text" id="usernameInput" class="input" placeholder="请输入用户名"
@@ -161,7 +161,7 @@
           <div class="error-msg" id="usernameError">请输入用户名</div>
         </div>
         <div class="form-group" id="passwordGroup">
-          <label class="form-label">密码</label>
+          <label class="form-label" for="passwordInput">密码</label>
           <div class="input-wrapper">
             <span class="icon">&#128274;</span>
             <input type="password" id="passwordInput" class="input" placeholder="请输入密码"
@@ -172,7 +172,7 @@
         </div>
         <div class="remember-row">
           <label>
-            <input type="checkbox">
+            <input type="checkbox" aria-label="记住我">
             <span>记住我</span>
           </label>
         </div>

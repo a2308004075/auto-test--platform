@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Action 调试 - Postman Platform</title>
+  <title>Action关键字 调试 - Postman Platform</title>
   <link rel="stylesheet" href="../common/shared-styles.css">
   <style>
     .debug-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-height: calc(100vh - 160px); }
@@ -24,7 +24,7 @@
   <header class="layout-header">
     <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
     <div class="header-breadcrumb">
-      <span><a href="action-list.html">Action 关键字</a></span>
+      <span><a href="action-list.html">Action关键字</a></span>
       <span class="sep">&#8250;</span>
       <span>电池入仓操作</span>
       <span class="sep">&#8250;</span>
@@ -46,9 +46,6 @@
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
         <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
-      </ul>
-      <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
         <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
       </ul>
       <div class="sidebar-divider"></div>
@@ -58,7 +55,7 @@
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
             <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item active"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item active"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -80,7 +77,7 @@
     <div class="page-header">
       <h1 style="font-size: 16px; margin: 0;">电池入仓操作</h1>
       <div class="flex gap-8">
-        <select class="select" style="width:140px;"><option>开发环境</option><option>测试环境</option><option>预发布环境</option></select>
+        <select class="select" style="width:140px;" aria-label="输入"><option>开发环境</option><option>测试环境</option><option>预发布环境</option></select>
         <button class="btn btn-primary" onclick="executeDebug()">&#9654; 执行</button>
       </div>
     </div>
@@ -93,8 +90,8 @@
           <table class="param-table">
             <thead><tr><th>参数名</th><th>类型</th><th>测试值</th></tr></thead>
             <tbody>
-              <tr><td><code>battery_sn</code></td><td><span class="tag tag-gray">str</span></td><td><input type="text" class="input" value="BAT20240115001" style="width:100%;"></td></tr>
-              <tr><td><code>target_slot</code></td><td><span class="tag tag-gray">int</span></td><td><input type="text" class="input" value="3" style="width:100%;"></td></tr>
+              <tr><td><code>battery_sn</code></td><td><span class="tag tag-gray">str</span></td><td><input type="text" class="input" value="BAT20240115001" style="width:100%;" aria-label="BAT20240115001"></td></tr>
+              <tr><td><code>target_slot</code></td><td><span class="tag tag-gray">int</span></td><td><input type="text" class="input" value="3" style="width:100%;" aria-label="3"></td></tr>
             </tbody>
           </table>
         </div>

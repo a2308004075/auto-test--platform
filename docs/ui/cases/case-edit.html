@@ -32,7 +32,7 @@
     .st-step-tag .st-remove{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;font-size:9px;color:var(--text-tertiary);cursor:pointer;margin-left:2px;transition:all .15s;line-height:1;}
     .st-step-tag .st-remove:hover{background:var(--error);color:#fff;}
     .st-empty{font-size:11px;color:var(--text-tertiary);padding:2px 0;}
-    /* Action 关键字选择器 */
+    /* Action关键字选择器 */
     .st-add-wrapper{position:relative;display:inline-flex;}
     .st-add-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#fff;border:1px dashed var(--primary);border-radius:3px;font-size:11px;color:var(--primary);cursor:pointer;transition:all .15s;white-space:nowrap;}
     .st-add-btn:hover{background:var(--primary-bg);}
@@ -82,9 +82,6 @@
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
         <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
-      </ul>
-      <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
         <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
       </ul>
       <div class="sidebar-divider"></div>
@@ -94,7 +91,7 @@
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
             <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -129,10 +126,10 @@
     <div class="tab-content active" id="tab-basic">
     <div class="card" style="margin-bottom:12px;">
       <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 20px;">
-        <div class="form-group"><label class="form-label">用例名称 <span class="required">*</span></label><input type="text" class="input w-full" id="caseName" value="电池入仓测试"></div>
-        <div class="form-group"><label class="form-label">优先级</label><select class="select w-full" id="casePriority"><option>P0</option><option selected>P1</option><option>P2</option><option>P3</option></select></div>
-        <div class="form-group"><label class="form-label">标签</label><div id="caseTags" style="display:flex;gap:4px;"><span class="tag tag-purple">电池</span><span class="tag tag-blue">核心</span><input type="text" class="input" placeholder="+" style="width:50px;height:30px;font-size:12px;"></div></div>
-        <div class="form-group" style="grid-column:1/-1;"><label class="form-label">前置条件</label><input type="text" class="input w-full" id="casePrecondition" value="用户已登录，系统有可用空仓位" style="font-size:12px;"></div>
+        <div class="form-group"><label class="form-label" for="caseName">用例名称 <span class="required">*</span></label><input type="text" class="input w-full" id="caseName" value="电池入仓测试"></div>
+        <div class="form-group"><label class="form-label" for="casePriority">优先级</label><select class="select w-full" id="casePriority"><option>P0</option><option selected>P1</option><option>P2</option><option>P3</option></select></div>
+        <div class="form-group"><label class="form-label" for="标签">标签</label><div id="caseTags" style="display:flex;gap:4px;"><span class="tag tag-purple">电池</span><span class="tag tag-blue">核心</span><input type="text" class="input" placeholder="+" aria-label="添加标签" style="width:50px;height:30px;font-size:12px;" id="标签"></div></div>
+        <div class="form-group" style="grid-column:1/-1;"><label class="form-label" for="casePrecondition">前置条件</label><input type="text" class="input w-full" id="casePrecondition" value="用户已登录，系统有可用空仓位" style="font-size:12px;"></div>
       </div>
     </div>
     </div>
@@ -165,7 +162,7 @@
               <span style="color:#52c41a;">▶</span> 串行执行
             </div>
             <div class="step-child">
-              <div class="step-node"><span style="color:#1890ff;">K</span> 用户登录并获取令牌 <span class="tag tag-blue" style="margin-left:auto;font-size:10px;">Action</span></div>
+              <div class="step-node"><span style="color:#1890ff;">K</span> 用户登录并获取令牌 <span class="tag tag-blue" style="margin-left:auto;font-size:10px;">Action关键字</span></div>
               <div class="step-node"><span style="color:#1890ff;">K</span> 查询电池状态 <span class="tag tag-blue" style="margin-left:auto;font-size:10px;">API</span></div>
               <div class="step-node"><span style="color:#722ed1;">?</span> 判断电池是否可用 <span style="font-size:10px;color:var(--text-tertiary);margin-left:auto;">${battery_status}=="normal"</span></div>
               <div class="step-child">
@@ -178,18 +175,18 @@
           </div>
           <div class="prop-panel">
             <h4>步骤属性：用户登录并获取令牌</h4>
-            <div class="form-group"><label class="form-label">关键字</label><select class="select"><option selected>用户登录并获取令牌</option><option>电池入仓操作</option></select></div>
-            <div class="form-group"><label class="form-label">类型</label><select class="select"><option>全部</option><option>API</option><option>TOOL</option><option selected>Action</option></select></div>
+            <div class="form-group"><label class="form-label" for="propKeyword">关键字</label><select id="propKeyword" class="select"><option selected>用户登录并获取令牌</option><option>电池入仓操作</option></select></div>
+            <div class="form-group"><label class="form-label" for="propType">类型</label><select id="propType" class="select"><option>全部</option><option>API</option><option>TOOL</option><option selected>Action关键字</option></select></div>
             <h4 style="margin-top:10px;">args 参数映射</h4>
             <table style="font-size:11px;margin-top:4px;width:100%;">
-              <tr><td style="padding:3px 0;"><code>username</code></td><td><input class="input" value="admin" style="width:100%;height:24px;font-size:11px;"></td></tr>
-              <tr><td style="padding:3px 0;"><code>password</code></td><td><input class="input" value="${env_pwd}" style="width:100%;height:24px;font-size:11px;"></td></tr>
+              <tr><td style="padding:3px 0;"><code>username</code></td><td><input class="input" value="admin" aria-label="username参数值" style="width:100%;height:24px;font-size:11px;"></td></tr>
+              <tr><td style="padding:3px 0;"><code>password</code></td><td><input class="input" value="${env_pwd}" aria-label="password参数值" style="width:100%;height:24px;font-size:11px;"></td></tr>
             </table>
-            <div class="form-group" style="margin-top:10px;"><label class="form-label">save_as</label><input class="input" value="login_result" style="font-size:11px;"></div>
+            <div class="form-group" style="margin-top:10px;"><label class="form-label" for="propSaveAs">save_as</label><input id="propSaveAs" class="input" value="login_result" style="font-size:11px;"></div>
             <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border-color);">
               <h4>校验配置</h4>
-              <div class="form-group"><label class="form-label">状态码断言</label><input class="input" value="200" style="font-size:11px;"></div>
-              <div class="form-group"><label class="form-label">字段断言</label><div style="font-size:11px;color:var(--text-tertiary);">code == 200</div></div>
+              <div class="form-group"><label class="form-label" for="propStatusCode">状态码断言</label><input id="propStatusCode" class="input" value="200" style="font-size:11px;"></div>
+              <div class="form-group"><label class="form-label" for="字段断言">字段断言</label><div style="font-size:11px;color:var(--text-tertiary);">code == 200</div></div>
             </div>
           </div>
         </div>
@@ -209,7 +206,7 @@
     <!-- Tab: 参数化 -->
     <div class="tab-content" id="tab-params">
     <div class="card" id="paramCard">
-      <div class="card-header">参数化 <span style="display:flex;gap:6px;align-items:center;margin-left:8px;font-size:12px;font-weight:400;">数据驱动：<div class="switch" style="width:34px;height:18px;" onclick="this.classList.toggle('on')"></div></span></div>
+      <div class="card-header">参数化 <div style="display:flex;gap:6px;align-items:center;margin-left:8px;font-size:12px;font-weight:400;">数据驱动：<div class="switch" style="width:34px;height:18px;" onclick="this.classList.toggle('on')"></div></div></div>
       <div class="card-body">
         <div style="display:flex;gap:8px;margin-bottom:8px;">
           <button class="btn btn-sm active" onclick="switchParamMode(this,'manual')">手动输入</button>
@@ -218,8 +215,8 @@
         <table>
           <thead><tr><th>#</th><th>battery_sn</th><th>target_slot</th><th>expected_status</th></tr></thead>
           <tbody id="paramTableBody">
-            <tr><td>1</td><td><input class="input" value="BAT001" style="width:130px;font-size:12px;"></td><td><input class="input" value="3" style="width:80px;font-size:12px;"></td><td><input class="input" value="charging" style="width:130px;font-size:12px;"></td></tr>
-            <tr><td>2</td><td><input class="input" value="BAT002" style="width:130px;font-size:12px;"></td><td><input class="input" value="5" style="width:80px;font-size:12px;"></td><td><input class="input" value="charging" style="width:130px;font-size:12px;"></td></tr>
+            <tr><td>1</td><td><input class="input" value="BAT001" aria-label="battery_sn" style="width:130px;font-size:12px;" id="字段断言"></td><td><input class="input" value="3" aria-label="target_slot" style="width:80px;font-size:12px;"></td><td><input class="input" value="charging" aria-label="expected_status" style="width:130px;font-size:12px;"></td></tr>
+            <tr><td>2</td><td><input class="input" value="BAT002" aria-label="battery_sn" style="width:130px;font-size:12px;"></td><td><input class="input" value="5" aria-label="target_slot" style="width:80px;font-size:12px;"></td><td><input class="input" value="charging" aria-label="expected_status" style="width:130px;font-size:12px;"></td></tr>
           </tbody>
         </table>
         <button class="btn btn-sm mt-8" onclick="addParamRow()">+ 添加数据行</button>
@@ -332,7 +329,7 @@
         var kwConfig = {
           api:    { icon: 'A', color: '#1890ff', badge: 'tag-blue',   label: 'API' },
           tool:   { icon: 'T', color: '#fa8c16', badge: 'tag-orange', label: 'TOOL' },
-          action: { icon: 'A', color: '#1890ff', badge: 'tag-blue',   label: 'Action' }
+          action: { icon: 'A', color: '#1890ff', badge: 'tag-blue',   label: 'Action关键字' }
         };
         var cfg = kwConfig[step.keywordType] || kwConfig.action;
         return '<span class="st-step-tag">' +
@@ -368,15 +365,15 @@
       var curTab = getTab(type);
       var tabDefs = [
         { key: 'api',    label: '接口关键字' },
-        { key: 'tool',   label: '工具方法' },
-        { key: 'action', label: 'Action' },
+        { key: 'tool',   label: '工具方法关键字' },
+        { key: 'action', label: 'Action关键字' },
         { key: 'logic',  label: '逻辑控制' }
       ];
       var tabsHtml = '';
       for (var t = 0; t < tabDefs.length; t++) {
         tabsHtml += '<div class="st-picker-tab' + (curTab === tabDefs[t].key ? ' active' : '') + '" onclick="switchPickerTab(\'' + type + '\',\'' + tabDefs[t].key + '\')">' + tabDefs[t].label + '</div>';
       }
-      var placeholder = curTab === 'logic' ? '' : '搜索 ' + ({api:'接口',tool:'工具方法',action:'Action'}[curTab] || 'Action') + ' 关键字...';
+      var placeholder = curTab === 'logic' ? '' : '搜索 ' + ({api:'接口',tool:'工具方法关键字',action:'Action关键字'}[curTab] || 'Action关键字') + '...';
       html += '<div class="st-add-wrapper" id="' + type + 'AddWrapper">' +
         '<button class="st-add-btn" onclick="togglePicker(\'' + type + '\')">+ 添加步骤</button>' +
         '<div class="st-picker" id="' + type + 'Picker">' +
@@ -417,7 +414,7 @@
         if (kw && a.name.toLowerCase().indexOf(kw) === -1 && a.desc.toLowerCase().indexOf(kw) === -1) return false;
         return true;
       });
-      var labels = { api: '接口关键字', tool: '工具方法关键字', action: 'Action 关键字' };
+      var labels = { api: '接口关键字', tool: '工具方法关键字', action: 'Action关键字' };
       if (filtered.length === 0) {
         body.innerHTML = '<div class="st-picker-empty">无匹配的' + (labels[kwType] || '关键字') + '</div>';
         return;

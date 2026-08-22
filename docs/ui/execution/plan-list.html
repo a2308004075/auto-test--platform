@@ -48,9 +48,6 @@
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
         <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
-      </ul>
-      <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
         <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
       </ul>
       <div class="sidebar-divider"></div>
@@ -60,7 +57,7 @@
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
             <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -85,7 +82,7 @@
       <!-- Left: Group Tree -->
       <div class="tree-panel" id="treePanel" oncontextmenu="showBlankContextMenu(event)">
         <div class="tree-search">
-          <input type="text" class="input input-search w-full" placeholder="搜索分组..." style="height: 28px; font-size: 13px;">
+          <input type="text" class="input input-search w-full" placeholder="搜索分组..." style="height: 28px; font-size: 13px;" aria-label="搜索分组...">
         </div>
         <div id="groupTree"></div>
       </div>
@@ -97,17 +94,17 @@
           <div class="search-form">
             <div class="search-row">
               <div class="search-item">
-                <span class="filter-label">计划名称</span>
+                <label class="filter-label" for="searchPlanName">计划名称</label>
                 <input type="text" class="input input-search" id="searchPlanName" placeholder="模糊查询">
               </div>
               <div class="search-item">
-                <span class="filter-label">触发方式</span>
+                <label class="filter-label" for="searchTrigger">触发方式</label>
                 <select class="select" id="searchTrigger">
                   <option>全部触发方式</option><option>定时执行</option><option>手动触发</option><option>CI 触发</option>
                 </select>
               </div>
               <div class="search-item">
-                <span class="filter-label">环境</span>
+                <label class="filter-label" for="searchEnv">环境</label>
                 <select class="select" id="searchEnv">
                   <option>全部环境</option><option>开发环境</option><option>测试环境</option><option>预发布环境</option><option>生产环境</option>
                 </select>
@@ -123,19 +120,19 @@
             </div>
             <div class="search-row collapse-row">
               <div class="search-item">
-                <span class="filter-label">状态</span>
+                <label class="filter-label" for="searchStatus">状态</label>
                 <select class="select" id="searchStatus"><option>全部状态</option><option>启用</option><option>禁用</option></select>
               </div>
               <div class="search-item">
-                <span class="filter-label">关联套件</span>
+                <label class="filter-label" for="searchSuite">关联套件</label>
                 <input type="text" class="input input-search" id="searchSuite" placeholder="套件名称">
               </div>
               <div class="search-item">
-                <span class="filter-label">最近更新</span>
+                <label class="filter-label" for="searchUpdateBegin">最近更新</label>
                 <div class="date-range">
-                  <input type="date" class="input" value="2024-01-01">
+                  <input type="date" id="searchUpdateBegin" class="input" value="2024-01-01" aria-label="最近更新-起">
                   <span class="separator">至</span>
-                  <input type="date" class="input" value="2024-01-15">
+                  <input type="date" id="searchUpdateEnd" class="input" value="2024-01-15" aria-label="最近更新-止">
                 </div>
               </div>
             </div>
@@ -160,8 +157,8 @@
     <div class="modal">
       <div class="modal-header"><h3 id="createGroupTitle">新建分组</h3><button class="modal-close" onclick="closeCreateGroupModal()">&#10005;</button></div>
       <div class="modal-body">
-        <div class="form-group"><label class="form-label">分组名称 <span class="required">*</span></label><input type="text" class="input w-full" id="groupName" placeholder="请输入分组名称，如「日常测试」"></div>
-        <div class="form-group"><label class="form-label">描述</label><input type="text" class="input w-full" id="groupDesc" placeholder="可选，分组描述"></div>
+        <div class="form-group"><label class="form-label" for="groupName">分组名称 <span class="required">*</span></label><input type="text" class="input w-full" id="groupName" placeholder="请输入分组名称，如「日常测试」"></div>
+        <div class="form-group"><label class="form-label" for="groupDesc">描述</label><input type="text" class="input w-full" id="groupDesc" placeholder="可选，分组描述"></div>
       </div>
       <div class="modal-footer"><button class="btn" onclick="closeCreateGroupModal()">取消</button><button class="btn btn-primary" onclick="confirmCreateGroup()">确认创建</button></div>
     </div>
@@ -172,8 +169,8 @@
     <div class="modal">
       <div class="modal-header"><h3>编辑分组</h3><button class="modal-close" onclick="closeEditGroupModal()">&#10005;</button></div>
       <div class="modal-body">
-        <div class="form-group"><label class="form-label">分组名称 <span class="required">*</span></label><input type="text" class="input w-full" id="editGroupName" placeholder="请输入分组名称"></div>
-        <div class="form-group"><label class="form-label">描述</label><input type="text" class="input w-full" id="editGroupDesc" placeholder="可选，分组描述"></div>
+        <div class="form-group"><label class="form-label" for="editGroupName">分组名称 <span class="required">*</span></label><input type="text" class="input w-full" id="editGroupName" placeholder="请输入分组名称"></div>
+        <div class="form-group"><label class="form-label" for="editGroupDesc">描述</label><input type="text" class="input w-full" id="editGroupDesc" placeholder="可选，分组描述"></div>
       </div>
       <div class="modal-footer"><button class="btn" onclick="closeEditGroupModal()">取消</button><button class="btn btn-primary" onclick="confirmEditGroup()">确认保存</button></div>
     </div>

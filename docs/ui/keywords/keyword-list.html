@@ -168,9 +168,6 @@
       <ul class="sidebar-menu">
         <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
         <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
-      </ul>
-      <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
         <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
       </ul>
       <div class="sidebar-divider"></div>
@@ -180,7 +177,7 @@
           <ul class="sidebar-menu">
             <li class="menu-item active"><a href="../keywords/keyword-list.html">接口关键字</a></li>
             <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -208,7 +205,7 @@
       <!-- Left: Group Tree -->
       <div class="tree-panel" id="treePanel" oncontextmenu="showBlankContextMenu(event)">
         <div class="tree-search">
-          <input type="text" class="input input-search w-full" placeholder="搜索分组..." style="height: 28px; font-size: 13px;">
+          <input type="text" class="input input-search w-full" placeholder="搜索分组..." style="height: 28px; font-size: 13px;" aria-label="搜索分组...">
         </div>
         <div id="groupTree"></div>
       </div>
@@ -219,17 +216,17 @@
           <div class="search-form">
             <div class="search-row">
               <div class="search-item">
-                <span class="filter-label">接口关键字</span>
+                <label class="filter-label" for="searchKeyword">接口关键字</label>
                 <input type="text" class="input input-search" id="searchKeyword" placeholder="输入接口关键字">
               </div>
               <div class="search-item">
-                <span class="filter-label">关联接口分组</span>
+                <label class="filter-label" for="searchApiGroup">关联接口分组</label>
                 <select class="select" id="searchApiGroup">
                   <option value="">全部分组</option>
                 </select>
               </div>
               <div class="search-item">
-                <span class="filter-label">关联接口名</span>
+                <label class="filter-label" for="searchApiName">关联接口名</label>
                 <input type="text" class="input input-search" id="searchApiName" placeholder="输入关联接口名">
               </div>
               <div class="search-actions">
@@ -243,7 +240,7 @@
             </div>
             <div class="search-row collapse-row">
               <div class="search-item">
-                <span class="filter-label">关联接口路径</span>
+                <label class="filter-label" for="searchApiPath">关联接口路径</label>
                 <input type="text" class="input input-search" id="searchApiPath" placeholder="输入关联接口路径">
               </div>
             </div>
@@ -311,7 +308,7 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">分组名称 <span class="required">*</span></label>
+          <label class="form-label" for="groupName">分组名称 <span class="required">*</span></label>
           <input type="text" class="input w-full" id="groupName" placeholder="请输入分组名称，如「用户管理」">
         </div>
       </div>
@@ -331,7 +328,7 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">分组名称 <span class="required">*</span></label>
+          <label class="form-label" for="editGroupName">分组名称 <span class="required">*</span></label>
           <input type="text" class="input w-full" id="editGroupName" placeholder="请输入分组名称">
         </div>
       </div>
@@ -413,16 +410,16 @@
       <div class="modal-body">
         <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">将已选中的 <b id="batchModalCount" style="color: var(--primary);">0</b> 条接口关键字的分组修改为：</p>
         <div class="form-group">
-          <label class="form-label">目标分组 <span class="required">*</span></label>
+          <label class="form-label" for="目标分组">目标分组 <span class="required">*</span></label>
           <div class="search-select" id="batchGroupSelect" style="width:100%;">
             <div class="search-select-input" tabindex="0">
-              <input type="text" class="input" placeholder="请选择分组" autocomplete="off">
+              <input type="text" class="input" placeholder="请选择分组" autocomplete="off" id="目标分组">
               <span class="search-select-arrow">&#9662;</span>
             </div>
             <div class="search-select-dropdown" id="batchGroupDropdown">
               <div class="search-select-empty" style="display:none;">无匹配分组</div>
             </div>
-            <input type="hidden" class="search-select-value" value="">
+            <input type="hidden" class="search-select-value" value="" aria-label="输入">
           </div>
         </div>
         <div id="batchPreview" style="display:none;margin-top:12px;padding:12px;background:var(--bg-body);border-radius:var(--border-radius);font-size:13px;">
@@ -462,7 +459,7 @@
         <!-- 环境选择 + 执行按钮 -->
         <div class="test-env-row">
           <span style="font-size:13px;color:var(--text-secondary);">执行环境：</span>
-          <select class="select" id="testEnvSelect">
+          <select class="select" id="testEnvSelect" aria-label="test Env Select">
             <option>开发环境</option>
             <option selected>测试环境</option>
             <option>预发布环境</option>

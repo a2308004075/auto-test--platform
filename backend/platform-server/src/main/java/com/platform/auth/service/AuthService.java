@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 认证服务
+ */
 package com.platform.auth.service;
 
 import com.platform.auth.dto.*;
@@ -42,6 +47,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
     private final CaptchaService captchaService;
+    private final RoleService roleService;
 
     private static final String RESERVED_USERNAME = "admin";
     private static final String RESERVED_DISPLAY_NAME = "管理员";
@@ -52,7 +58,8 @@ public class AuthService {
                        LoginLogMapper loginLogMapper,
                        JwtTokenProvider jwtTokenProvider,
                        PasswordEncoder passwordEncoder,
-                       CaptchaService captchaService) {
+                       CaptchaService captchaService,
+                       RoleService roleService) {
         this.userMapper = userMapper;
         this.userRoleMapper = userRoleMapper;
         this.tokenBlacklistMapper = tokenBlacklistMapper;
@@ -60,6 +67,7 @@ public class AuthService {
         this.jwtTokenProvider = jwtTokenProvider;
         this.passwordEncoder = passwordEncoder;
         this.captchaService = captchaService;
+        this.roleService = roleService;
     }
 
     /**
@@ -225,6 +233,7 @@ public class AuthService {
         response.setIsActive(user.getIsActive());
         response.setLastLoginAt(user.getLastLoginAt());
         response.setCreatedAt(user.getCreatedAt());
+        response.setPermissions(roleService.getPermissionCodesByRoleId(user.getRoleId()));
         return response;
     }
 
@@ -420,6 +429,7 @@ public class AuthService {
         response.setIsActive(user.getIsActive());
         response.setLastLoginAt(user.getLastLoginAt());
         response.setCreatedAt(user.getCreatedAt());
+        response.setPermissions(roleService.getPermissionCodesByRoleId(user.getRoleId()));
         return response;
     }
 
@@ -429,6 +439,7 @@ public class AuthService {
         brief.setUsername(user.getUsername());
         brief.setDisplayName(user.getDisplayName());
         brief.setRole(getRoleCode(user.getRoleId()));
+        brief.setPermissions(roleService.getPermissionCodesByRoleId(user.getRoleId()));
         return brief;
     }
 }

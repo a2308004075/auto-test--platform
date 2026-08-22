@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-18 16:20
+ * @description 跨域请求过滤器
+ */
 package com.platform.filter;
 
 import org.springframework.core.Ordered;

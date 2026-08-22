@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-20 19:14
+ @description 登录弹窗组件
+-->
 <script setup lang="ts">
 /**
  * 登录弹窗组件
@@ -86,6 +91,7 @@ async function handleLogin() {
         username: data.user.username,
         displayName: data.user.displayName,
         role: data.user.role,
+        permissions: data.user.permissions,
       })
     }
     ElMessage.success('登录成功')

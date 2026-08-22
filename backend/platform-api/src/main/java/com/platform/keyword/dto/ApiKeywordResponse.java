@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description ApiKeyword 响应 DTO
+ */
 package com.platform.keyword.dto;
 
 import lombok.Data;

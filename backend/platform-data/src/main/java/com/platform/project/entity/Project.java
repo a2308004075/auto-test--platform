@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 项目实体类
+ */
 package com.platform.project.entity;
 
 import com.baomidou.mybatisplus.annotation.TableLogic;

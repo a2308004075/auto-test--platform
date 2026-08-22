@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description API 接口管理控制器
+ */
 package com.platform.apidoc.controller;
 
 import com.platform.apidoc.dto.*;

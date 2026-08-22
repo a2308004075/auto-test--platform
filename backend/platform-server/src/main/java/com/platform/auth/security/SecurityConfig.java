@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-18 16:20
+ * @description Spring Security 安全配置类
+ */
 package com.platform.auth.security;
 
 import org.springframework.context.annotation.Bean;

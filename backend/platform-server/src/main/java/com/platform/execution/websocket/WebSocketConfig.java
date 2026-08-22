@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description WebSocket 配置类
+ */
 package com.platform.execution.websocket;
 
 import lombok.RequiredArgsConstructor;

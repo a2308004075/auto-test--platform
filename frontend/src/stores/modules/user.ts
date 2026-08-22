@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-18 17:31
+ * @description 用户状态 Store
+ */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { getCurrentUser } from '@/api/auth'
@@ -12,7 +17,9 @@ export const useUserStore = defineStore('user', () => {
   const displayName = ref<string>(localStorage.getItem('displayName') || '')
   const role = ref<string>(localStorage.getItem('role') || '')
   const userId = ref<number>(Number(localStorage.getItem('userId')) || 0)
+  const permissions = ref<string[]>(JSON.parse(localStorage.getItem('permissions') || '[]'))
   const isLoggedIn = computed(() => !!token.value)
+  const isAdmin = computed(() => (role.value || '').toUpperCase() === 'ADMIN')
 
   // ===== 记住密码 =====
   const REMEMBER_KEY = 'rememberedCredentials'
@@ -27,15 +34,17 @@ export const useUserStore = defineStore('user', () => {
     localStorage.setItem('refreshToken', rt)
   }
 
-  function setUserInfo(info: { id: number; username: string; displayName?: string; role?: string }) {
+  function setUserInfo(info: { id: number; username: string; displayName?: string; role?: string; permissions?: string[] }) {
     userId.value = info.id
     username.value = info.username
     displayName.value = info.displayName || info.username
     role.value = info.role || 'TESTER'
+    permissions.value = info.permissions || []
     localStorage.setItem('username', info.username)
     localStorage.setItem('displayName', info.displayName || info.username)
     localStorage.setItem('role', role.value)
     localStorage.setItem('userId', String(info.id))
+    localStorage.setItem('permissions', JSON.stringify(permissions.value))
   }
 
   /**
@@ -52,6 +61,7 @@ export const useUserStore = defineStore('user', () => {
           username: res.data.username,
           displayName: res.data.displayName,
           role: res.data.role,
+          permissions: res.data.permissions,
         })
       }
     } catch {
@@ -67,12 +77,14 @@ export const useUserStore = defineStore('user', () => {
     displayName.value = ''
     role.value = ''
     userId.value = 0
+    permissions.value = []
     localStorage.removeItem('token')
     localStorage.removeItem('refreshToken')
     localStorage.removeItem('username')
     localStorage.removeItem('displayName')
     localStorage.removeItem('role')
     localStorage.removeItem('userId')
+    localStorage.removeItem('permissions')
   }
 
   /**
@@ -103,7 +115,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   return {
-    token, refreshTokenValue, username, displayName, role, userId, isLoggedIn,
+    token, refreshTokenValue, username, displayName, role, userId, isLoggedIn, isAdmin, permissions,
     setToken, setRefreshToken, setUserInfo, fetchCurrentUser, logout,
     loadRememberedCredentials, saveRememberedCredentials, clearRememberedCredentials,
   }

@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description Swagger 文档解析工具类
+ */
 package com.platform.apidoc.util;
 
 import com.fasterxml.jackson.databind.JsonNode;

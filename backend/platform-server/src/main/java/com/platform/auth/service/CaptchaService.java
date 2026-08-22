@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 19:14
+ * @description 验证码服务
+ */
 package com.platform.auth.service;
 
 import cn.hutool.captcha.CaptchaUtil;

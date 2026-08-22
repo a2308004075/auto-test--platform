@@ -1,8 +1,14 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 用户响应 DTO
+ */
 package com.platform.auth.dto;
 
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 用户响应
@@ -26,4 +32,9 @@ public class UserResponse {
     private Integer isActive;
     private LocalDateTime lastLoginAt;
     private LocalDateTime createdAt;
+
+    /**
+     * 权限编码列表（ADMIN 返回 ["*"]）
+     */
+    private List<String> permissions;
 }

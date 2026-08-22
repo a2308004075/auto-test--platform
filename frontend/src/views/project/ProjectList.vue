@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-18 17:31
+ @description 项目列表视图
+-->
 <script setup lang="ts">
 /**
  * 项目列表页（首页） - 对齐 UI 原型 project-list.html

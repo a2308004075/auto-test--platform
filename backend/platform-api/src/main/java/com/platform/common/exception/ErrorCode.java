@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-18 16:20
+ * @description 错误码枚举
+ */
 package com.platform.common.exception;
 
 /**
@@ -47,6 +52,13 @@ public final class ErrorCode {
     public static final int CAPTCHA_INVALID = 1105;
     public static final int CAPTCHA_EXPIRED = 1106;
     public static final int PASSWORD_INCORRECT = 1107;
+
+    // ===== 角色管理 (1108-1112) =====
+    public static final int ROLE_NOT_FOUND = 1108;
+    public static final int ROLE_CODE_DUPLICATE = 1109;
+    public static final int ROLE_HAS_USERS = 1110;
+    public static final int ROLE_IS_BUILTIN = 1111;
+    public static final int EXCEL_IMPORT_FAILED = 1112;
 
     // ===== M2 项目管理 (1200-1299) =====
     public static final int PROJECT_NOT_FOUND = 1200;
@@ -107,9 +119,14 @@ public final class ErrorCode {
     public static final int REPORT_GENERATE_FAILED = 2000;
     public static final int REPORT_EXPORT_TIMEOUT = 2001;
 
+    // ===== 系统管理 (2100-2199) =====
+    public static final int MENU_NOT_FOUND = 2100;
+    public static final int DICT_NOT_FOUND = 2101;
+    public static final int CACHE_KEY_NOT_FOUND = 2102;
+
     // ===== 业务错误码 → HTTP 状态码映射 =====
     private static final int[] UNAUTHORIZED_CODES = {UNAUTHORIZED, ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED};
-    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED};
+    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN};
 
     public static int toHttpStatus(int errorCode) {
         for (int code : UNAUTHORIZED_CODES) {
@@ -123,11 +140,16 @@ public final class ErrorCode {
             case CAPTCHA_INVALID:
             case CAPTCHA_EXPIRED:
             case PASSWORD_INCORRECT:
+            case EXCEL_IMPORT_FAILED:
                 return 400;
             case RESOURCE_NOT_FOUND:
             case SUITE_NOT_FOUND:
             case CASE_NOT_FOUND:
             case PLAN_NOT_FOUND:
+            case ROLE_NOT_FOUND:
+            case MENU_NOT_FOUND:
+            case DICT_NOT_FOUND:
+            case CACHE_KEY_NOT_FOUND:
                 return 404;
             case RESOURCE_CONFLICT:
             case API_DEPENDENCY_CONFLICT:
@@ -140,6 +162,8 @@ public final class ErrorCode {
             case SUITE_NAME_DUPLICATE:
             case CASE_NAME_DUPLICATE:
             case PLAN_NAME_DUPLICATE:
+            case ROLE_CODE_DUPLICATE:
+            case ROLE_HAS_USERS:
                 return 409;
             case EXECUTION_QUEUE_FULL:
                 return 429;

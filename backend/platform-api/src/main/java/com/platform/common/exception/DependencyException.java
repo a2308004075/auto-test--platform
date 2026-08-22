@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 10:05
+ * @description 依赖异常类
+ */
 package com.platform.common.exception;
 
 import lombok.Getter;

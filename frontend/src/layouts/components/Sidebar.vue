@@ -1,12 +1,19 @@
+<!--
+ @author HXN
+ @date 2026-08-20 23:57
+ @description 侧边栏导航组件
+-->
 <script setup lang="ts">
 /**
  * 侧边栏组件
  * 使用 Element Plus el-menu 实现暗色主题侧边菜单
+ * 系统管理菜单从数据库动态加载（ADMIN 可见额外菜单）
  */
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { House, Setting } from '@element-plus/icons-vue'
 import { useUserStore, useAppStore } from '@/stores'
+import { getMenuTree, type MenuTreeNode } from '@/api/menu'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,6 +29,51 @@ const projectId = computed(() => Number(route.params.id) || 0)
 // 是否管理员
 const isAdmin = computed(() => (userStore.role || '').toUpperCase() === 'ADMIN')
 
+// ===== 动态菜单 =====
+interface MenuItem {
+  key: string
+  label: string
+  path: string
+}
+
+const dynamicSettingsMenus = ref<MenuItem[]>([])
+
+async function fetchSettingsMenus() {
+  if (!isAdmin.value) return
+  try {
+    const res: any = await getMenuTree()
+    const tree: MenuTreeNode[] = res.data || []
+    // 找到"系统管理"目录节点，提取其子菜单
+    const settingsDir = tree.find(n => n.name === '系统管理')
+    if (settingsDir && settingsDir.children) {
+      dynamicSettingsMenus.value = flattenMenus(settingsDir.children)
+    }
+  } catch {
+    // API 调用失败时回退到静态菜单
+    dynamicSettingsMenus.value = []
+  }
+}
+
+function flattenMenus(nodes: MenuTreeNode[]): MenuItem[] {
+  const result: MenuItem[] = []
+  // 按 sortNo 排序
+  const sorted = [...nodes].sort((a, b) => (a.sortNo || 0) - (b.sortNo || 0))
+  for (const node of sorted) {
+    // 跳过按钮类型（menuType=3）
+    if (node.menuType !== 3 && node.routePath) {
+      result.push({ key: node.routePath, label: node.name, path: node.routePath })
+    }
+    if (node.children && node.children.length) {
+      result.push(...flattenMenus(node.children))
+    }
+  }
+  return result
+}
+
+onMounted(() => {
+  fetchSettingsMenus()
+})
+
 // 侧边栏选中 key
 const activeMenu = computed(() => {
   const name = (route.name as string) || ''
@@ -36,9 +88,8 @@ const activeMenu = computed(() => {
   if (name.startsWith('Execution')) return 'executions'
   if (name === 'ProjectDashboard') return 'dashboard'
   if (name === 'ProjectList') return 'project'
-  if (name === 'Profile') return 'profile'
-  if (name === 'UserManagement') return 'users'
-  if (name === 'GlobalConfig') return 'global-config'
+  // 系统管理页面使用 route path 作为 key（与动态菜单 key 一致）
+  if (inSettings.value) return route.path
   return ''
 })
 
@@ -61,14 +112,21 @@ const projectMenuItems = computed(() => {
   ]
 })
 
-// 系统管理子菜单
+// 系统管理子菜单：静态基础菜单 + 动态加载菜单
 const settingsMenuItems = computed(() => {
-  const items = [
-    { key: 'profile', label: '个人资料', path: '/settings/profile' },
+  const items: MenuItem[] = [
+    { key: '/settings/profile', label: '个人资料', path: '/settings/profile' },
   ]
   if (isAdmin.value) {
-    items.push({ key: 'users', label: '用户列表', path: '/settings/users' })
-    items.push({ key: 'global-config', label: '全局设置', path: '/settings/global-config' })
+    if (dynamicSettingsMenus.value.length) {
+      // 使用数据库动态加载的菜单
+      items.push(...dynamicSettingsMenus.value)
+    } else {
+      // API 未加载完成时的静态回退
+      items.push({ key: '/settings/users', label: '用户列表', path: '/settings/users' })
+      items.push({ key: '/settings/roles', label: '角色管理', path: '/settings/roles' })
+      items.push({ key: '/settings/global-config', label: '全局设置', path: '/settings/global-config' })
+    }
   }
   return items
 })

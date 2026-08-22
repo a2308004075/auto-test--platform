@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 断言引擎
+ */
 package com.platform.execution.engine;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

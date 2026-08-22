@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-20 15:34
+ @description 工具方法列表视图
+-->
 <script setup lang="ts">
 /**
  * 工具方法列表 - M6

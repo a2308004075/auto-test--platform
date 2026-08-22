@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description HTTP 客户端引擎
+ */
 package com.platform.execution.engine;
 
 import lombok.extern.slf4j.Slf4j;

@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 23:57
+ * @description 权限状态 Store
+ */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { RouteRecordRaw } from 'vue-router'

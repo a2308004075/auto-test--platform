@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 系统设置服务
+ */
 package com.platform.auth.service;
 
 import com.platform.auth.dto.GlobalConfigResponse;

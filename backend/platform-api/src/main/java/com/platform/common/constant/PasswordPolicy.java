@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-22 12:41
+ * @description 密码策略常量类
+ */
 package com.platform.common.constant;
 
 /**

@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 环境更新请求 DTO
+ */
 package com.platform.environment.dto;
 
 import lombok.Data;

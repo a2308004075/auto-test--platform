@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description JWT 认证过滤器
+ */
 package com.platform.auth.security;
 
 import com.platform.auth.entity.User;

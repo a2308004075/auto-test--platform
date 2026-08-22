@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description API 接口实体类
+ */
 package com.platform.apidoc.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;

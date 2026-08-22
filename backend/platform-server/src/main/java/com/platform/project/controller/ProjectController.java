@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 项目管理控制器
+ */
 package com.platform.project.controller;
 
 import com.platform.common.response.ApiResponse;

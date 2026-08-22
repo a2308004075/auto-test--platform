@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-21 15:30
+ @description 增强搜索卡片组件
+-->
 <script setup lang="ts">
 /**
  * 高级搜索折叠卡

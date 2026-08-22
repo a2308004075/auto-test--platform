@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-20 23:57
+ @description 面包屑导航组件
+-->
 <script setup lang="ts">
 /**
  * 面包屑组件

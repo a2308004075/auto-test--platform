@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 工具方法响应 DTO
+ */
 package com.platform.tool.dto;
 
 import lombok.Data;

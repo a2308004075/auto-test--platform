@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-21 23:16
+ @description 个人资料视图
+-->
 <script setup lang="ts">
 /**
  * 个人资料页面
@@ -68,6 +73,7 @@ async function handleSaveProfile() {
       username: userInfo.value.username,
       displayName: userInfo.value.displayName,
       role: userInfo.value.role,
+      permissions: userInfo.value.permissions,
     })
     ElMessage.success('个人资料保存成功')
   } catch (e: any) {

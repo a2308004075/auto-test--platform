@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 测试用例实体类
+ */
 package com.platform.execution.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;

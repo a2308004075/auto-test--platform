@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-18 16:20
+ * @description JSON 工具类
+ */
 package com.platform.common.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;

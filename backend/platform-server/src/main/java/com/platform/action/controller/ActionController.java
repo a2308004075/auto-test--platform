@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description Action 关键字管理控制器
+ */
 package com.platform.action.controller;
 
 import com.platform.action.dto.*;

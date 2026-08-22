@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 环境配置实体类
+ */
 package com.platform.environment.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;

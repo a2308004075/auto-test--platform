@@ -1,4 +1,9 @@
 /**
+ * @author HXN
+ * @date 2026-08-20 10:05
+ * @description common 模块包说明
+ */
+/**
  * 公共基础设施模块
  *
  * <p>职责：为所有业务模块（auth / project / api / keyword / execution）提供统一的

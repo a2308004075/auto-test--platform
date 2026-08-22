@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-18 17:31
+ @description 登录页面视图
+-->
 <script setup lang="ts">
 /**
  * 登录页 - M1

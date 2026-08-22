@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 10:05
+ * @description 数据库实体基类
+ */
 package com.platform.common.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;

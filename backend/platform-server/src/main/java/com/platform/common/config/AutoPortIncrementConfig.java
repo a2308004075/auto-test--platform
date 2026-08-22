@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-21 15:30
+ * @description 端口自增配置类
+ */
 package com.platform.common.config;
 
 import lombok.extern.slf4j.Slf4j;

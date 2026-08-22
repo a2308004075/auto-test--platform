@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-18 17:31
+ * @description HTTP 请求封装
+ */
 import axios from 'axios'
 import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'

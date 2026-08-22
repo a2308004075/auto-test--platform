@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description Swagger 导入结果 DTO
+ */
 package com.platform.apidoc.dto;
 
 import lombok.Data;

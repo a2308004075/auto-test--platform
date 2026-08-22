@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 用户角色关联实体类
+ */
 package com.platform.auth.entity;
 
 import com.baomidou.mybatisplus.annotation.TableLogic;
@@ -28,6 +33,11 @@ public class UserRole extends BaseEntity {
      * 角色描述
      */
     private String description;
+
+    /**
+     * 排序号（升序）
+     */
+    private Integer sortOrder;
 
     /**
      * 是否启用（0-停用，1-启用）

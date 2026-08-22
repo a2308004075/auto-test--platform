@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-20 23:57
+ @description 侧边栏折叠按钮组件
+-->
 <script setup lang="ts">
 /**
  * 折叠按钮

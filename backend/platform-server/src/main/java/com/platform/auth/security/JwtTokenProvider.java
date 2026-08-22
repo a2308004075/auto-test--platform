@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description JWT Token 提供者
+ */
 package com.platform.auth.security;
 
 import io.jsonwebtoken.Claims;

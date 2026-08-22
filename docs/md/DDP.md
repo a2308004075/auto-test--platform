@@ -866,7 +866,7 @@ auto-test-platform/                      ← 项目根目录（已有）
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>auto-test-platform</name>
-    <description>关键字驱动测试管理平台 - 多模块聚合</description>
+    <description>项目管理平台 - 多模块聚合</description>
 
     <!-- 聚合子模块 -->
     <modules>

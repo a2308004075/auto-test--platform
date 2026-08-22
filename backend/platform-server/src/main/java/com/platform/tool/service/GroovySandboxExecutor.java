@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description Groovy 沙箱执行器
+ */
 package com.platform.tool.service;
 
 import com.platform.common.exception.BusinessException;

@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-20 15:34
+ @description 项目仪表盘视图
+-->
 <script setup lang="ts">
 /**
  * 项目概览页 - 对齐 UI 原型 project-dashboard.html

@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 执行消息体
+ */
 package com.platform.execution.mq;
 
 import lombok.Data;

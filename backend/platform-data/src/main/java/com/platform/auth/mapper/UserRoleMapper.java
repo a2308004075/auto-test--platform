@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 19:14
+ * @description 用户角色数据访问接口
+ */
 package com.platform.auth.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;

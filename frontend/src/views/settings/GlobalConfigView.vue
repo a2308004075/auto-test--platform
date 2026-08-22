@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-21 23:16
+ @description 全局配置视图
+-->
 <script setup lang="ts">
 /**
  * 全局配置页面（仅 ADMIN）

@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description API 关键字数据访问接口
+ */
 package com.platform.keyword.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;

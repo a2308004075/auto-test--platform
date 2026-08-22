@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-20 15:34
+ @description Action 调试视图
+-->
 <script setup lang="ts">
 /**
  * Action 调试 - M7

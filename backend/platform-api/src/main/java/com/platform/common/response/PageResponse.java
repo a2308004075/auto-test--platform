@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 10:05
+ * @description 分页响应封装
+ */
 package com.platform.common.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;

@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 数据初始化器
+ */
 package com.platform.common.config;
 
 import com.platform.auth.entity.User;

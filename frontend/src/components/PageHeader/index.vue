@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-21 15:30
+ @description 页头组件
+-->
 <script setup lang="ts">
 /**
  * 统一页头

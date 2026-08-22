@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description ToolTestRequest
+ */
 package com.platform.tool.dto;
 
 import lombok.Data;

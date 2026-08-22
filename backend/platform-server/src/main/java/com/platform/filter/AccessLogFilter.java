@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-22 12:52
+ * @description 访问日志过滤器
+ */
 package com.platform.filter;
 
 import com.fasterxml.jackson.databind.JsonNode;

@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description Action 关键字管理服务
+ */
 package com.platform.action.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;

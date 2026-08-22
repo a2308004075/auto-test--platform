@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 测试用例创建请求 DTO
+ */
 package com.platform.execution.dto;
 
 import lombok.Data;

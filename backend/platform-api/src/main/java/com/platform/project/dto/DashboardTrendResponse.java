@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-21 16:19
+ * @description DashboardTrend 响应 DTO
+ */
 package com.platform.project.dto;
 
 import lombok.Data;

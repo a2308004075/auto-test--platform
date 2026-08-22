@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 用户管理控制器
+ */
 package com.platform.auth.controller;
 
 import com.platform.auth.dto.*;

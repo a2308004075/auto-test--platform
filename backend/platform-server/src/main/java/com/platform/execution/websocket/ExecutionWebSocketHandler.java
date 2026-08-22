@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 执行 WebSocket 处理器
+ */
 package com.platform.execution.websocket;
 
 import lombok.extern.slf4j.Slf4j;

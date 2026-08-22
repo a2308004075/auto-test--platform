@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 环境管理服务
+ */
 package com.platform.environment.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;

@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 工具方法数据访问接口
+ */
 package com.platform.tool.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;

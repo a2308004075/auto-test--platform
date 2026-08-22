@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-21 23:16
+ @description 用户管理视图
+-->
 <script setup lang="ts">
 /**
  * 用户管理页面（仅 ADMIN）

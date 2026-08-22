@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-18 16:20
+ * @description 统一 API 响应封装
+ */
 package com.platform.common.response;
 
 import lombok.Data;

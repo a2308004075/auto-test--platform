@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 修改密码请求 DTO
+ */
 package com.platform.auth.dto;
 
 import com.platform.common.constant.PasswordPolicy;

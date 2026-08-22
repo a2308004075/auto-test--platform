@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 执行 WebSocket 组合式函数
+ */
 import { ref, onUnmounted, type Ref } from 'vue'
 
 export interface ExecutionProgress {

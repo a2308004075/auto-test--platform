@@ -1,4 +1,9 @@
 /**
+ * @author HXN
+ * @date 2026-08-18 16:20
+ * @description auth 模块包说明
+ */
+/**
  * M1 - 认证与用户管理模块
  *
  * <p>职责：用户登录认证、JWT Token 管理、RBAC 权限控制、用户 CRUD、全局配置

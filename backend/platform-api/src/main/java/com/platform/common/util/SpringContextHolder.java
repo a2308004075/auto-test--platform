@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description Spring 上下文持有工具类
+ */
 package com.platform.common.util;
 
 import org.springframework.beans.BeansException;

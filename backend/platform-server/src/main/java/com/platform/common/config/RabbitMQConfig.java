@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-18 16:20
+ * @description RabbitMQ 配置类
+ */
 package com.platform.common.config;
 
 import org.springframework.amqp.core.Binding;

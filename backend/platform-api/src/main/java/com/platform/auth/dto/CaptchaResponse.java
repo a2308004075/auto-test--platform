@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 19:14
+ * @description 验证码响应 DTO
+ */
 package com.platform.auth.dto;
 
 import lombok.Data;

@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-21 15:30
+ * @description API 引用响应 DTO
+ */
 package com.platform.apidoc.dto;
 
 import lombok.Data;

@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-18 16:20
+ * @description Spring Boot 主启动类
+ */
 package com.platform;
 
 import org.mybatis.spring.annotation.MapperScan;
@@ -6,7 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 
 /**
- * 关键字驱动测试管理平台 - Spring Boot 启动类
+ * 项目管理平台 - Spring Boot 启动类
  *
  * 排除 UserDetailsServiceAutoConfiguration：本项目基于 JWT 自定义认证
  * （JwtAuthenticationFilter + UserMapper），不依赖 Spring Security 默认的

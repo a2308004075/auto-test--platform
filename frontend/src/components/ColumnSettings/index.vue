@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-21 15:30
+ @description 列设置组件
+-->
 <script setup lang="ts">
 /**
  * 表字段调整侧滑面板

@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 步骤执行结果
+ */
 package com.platform.execution.engine;
 
 import lombok.Data;

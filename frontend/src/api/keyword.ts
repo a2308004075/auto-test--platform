@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 关键字模块 API
+ */
 import request from './request'
 
 /**

@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 环境管理控制器
+ */
 package com.platform.environment.controller;
 
 import com.platform.common.response.ApiResponse;

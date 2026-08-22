@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-18 17:31
+ * @description 应用入口文件
+ */
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'

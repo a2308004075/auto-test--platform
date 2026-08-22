@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-20 23:57
+ @description 主内容区域组件
+-->
 <script setup lang="ts">
 /**
  * 主内容区

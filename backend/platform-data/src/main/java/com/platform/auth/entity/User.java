@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description 用户实体类
+ */
 package com.platform.auth.entity;
 
 import com.baomidou.mybatisplus.annotation.TableLogic;

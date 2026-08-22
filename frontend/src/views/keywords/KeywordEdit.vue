@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-21 15:30
+ @description 关键字编辑视图
+-->
 <script setup lang="ts">
 /**
  * 接口关键字编辑/新建 - M5

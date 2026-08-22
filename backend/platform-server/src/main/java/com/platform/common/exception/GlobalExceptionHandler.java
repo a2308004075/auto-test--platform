@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-18 16:20
+ * @description 全局异常处理器
+ */
 package com.platform.common.exception;
 
 import com.platform.common.response.ApiResponse;

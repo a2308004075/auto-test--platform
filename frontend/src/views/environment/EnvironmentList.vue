@@ -1,3 +1,8 @@
+<!--
+ @author HXN
+ @date 2026-08-18 17:31
+ @description 环境配置列表视图
+-->
 <script setup lang="ts">
 /**
  * 环境配置列表 - M3

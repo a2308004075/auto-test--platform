@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-18 17:31
+ * @description 路由配置文件
+ */
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
@@ -36,10 +41,34 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '用户列表' },
       },
       {
+        path: 'settings/roles',
+        name: 'RoleManagement',
+        component: () => import('@/views/settings/RoleManagementView.vue'),
+        meta: { title: '角色管理' },
+      },
+      {
         path: 'settings/global-config',
         name: 'GlobalConfig',
         component: () => import('@/views/settings/GlobalConfigView.vue'),
         meta: { title: '全局设置' },
+      },
+      {
+        path: 'settings/menu',
+        name: 'MenuManagement',
+        component: () => import('@/views/settings/MenuManagementView.vue'),
+        meta: { title: '菜单管理' },
+      },
+      {
+        path: 'settings/dict',
+        name: 'DictManagement',
+        component: () => import('@/views/settings/DictManagementView.vue'),
+        meta: { title: '字典管理' },
+      },
+      {
+        path: 'settings/cache',
+        name: 'CacheManagement',
+        component: () => import('@/views/settings/CacheManagementView.vue'),
+        meta: { title: '缓存管理' },
       },
       // ===== 项目内路由 =====
       {

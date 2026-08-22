@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-20 15:34
+ * @description API 模块管理服务
+ */
 package com.platform.apidoc.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;

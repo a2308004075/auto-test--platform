@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-21 23:16
+ * @description 登录日志实体类
+ */
 package com.platform.auth.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;

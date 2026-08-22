@@ -1,3 +1,8 @@
+/**
+ * @author HXN
+ * @date 2026-08-18 16:20
+ * @description Redis 配置类
+ */
 package com.platform.common.config;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;

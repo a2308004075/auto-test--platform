@@ -24,8 +24,10 @@ import {
 } from '@/api/menu'
 import { getRegisteredComponents } from '@/utils/componentRegistry'
 import { usePermissionStore } from '@/stores'
+import { usePermission } from '@/composables/usePermission'
 
 const permissionStore = usePermissionStore()
+const { hasPermission } = usePermission()
 
 // ===== 当前右键选中的菜单 ID（控制只显示一个 buttonlist） =====
 const activeMenuId = ref<number | null>(null)
@@ -290,9 +292,9 @@ onBeforeUnmount(() => {
 <template>
   <div class="menu">
     <div class="menu-header">
-      <el-button type="primary" @click="handleAddRoot">新增顶级菜单</el-button>
-      <el-button :loading="importing" @click="triggerImport">导入</el-button>
-      <el-button @click="handleExport">导出</el-button>
+      <el-button v-if="hasPermission('system:menu:add')" type="primary" @click="handleAddRoot">新增顶级菜单</el-button>
+      <el-button v-if="hasPermission('system:menu:import')" :loading="importing" @click="triggerImport">导入</el-button>
+      <el-button v-if="hasPermission('system:menu:export')" @click="handleExport">导出</el-button>
     </div>
     <div v-loading="loading" class="menu-list">
       <el-tree
@@ -312,16 +314,17 @@ onBeforeUnmount(() => {
             :width="100"
           >
             <div class="button-list" @click="closeContextMenu">
-              <el-button link type="primary" @click="handleAppend(data)">新增</el-button>
-              <el-button link type="primary" @click="handleEdit(data)">编辑</el-button>
+              <el-button v-if="hasPermission('system:menu:add')" link type="primary" @click="handleAppend(data)">新增</el-button>
+              <el-button v-if="hasPermission('system:menu:edit')" link type="primary" @click="handleEdit(data)">编辑</el-button>
               <el-button
+                v-if="hasPermission('system:menu:toggle')"
                 link
                 :type="data.isActive === 1 ? 'warning' : 'success'"
                 @click="handleToggle(data)"
               >
                 {{ data.isActive === 1 ? '停用' : '启用' }}
               </el-button>
-              <el-button link type="danger" @click="handleDelete(data)">删除</el-button>
+              <el-button v-if="hasPermission('system:menu:delete')" link type="danger" @click="handleDelete(data)">删除</el-button>
             </div>
             <template #reference>
               <span class="tree-node-label" @contextmenu.prevent.stop="handleContextMenu($event, data.id)">

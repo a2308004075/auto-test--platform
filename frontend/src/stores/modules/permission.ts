@@ -7,7 +7,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Router } from 'vue-router'
 import { getMenuTree, type MenuTreeNode } from '@/api/menu'
-import { generateDynamicRoutes, addSettingsRedirect, addCatchAllRoute } from '@/utils/routeUtils'
+import { generateDynamicRoutes, addSupplementaryRoutes, addSettingsRedirect, addCatchAllRoute } from '@/utils/routeUtils'
 
 /**
  * 菜单与动态路由状态管理
@@ -56,6 +56,7 @@ export const usePermissionStore = defineStore('permission', () => {
 
       // 生成动态路由
       generateDynamicRoutes(router, menuTree.value)
+      addSupplementaryRoutes(router, 'Layout')
       addSettingsRedirect(router, 'Layout')
       addCatchAllRoute(router)
 

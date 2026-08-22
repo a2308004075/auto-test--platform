@@ -13,9 +13,11 @@ import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getAction, updateAction } from '@/api/action'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
+const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 const actionId = computed(() => Number(route.params.actionId))
 
@@ -137,7 +139,7 @@ onBeforeUnmount(() => { graph?.dispose() })
       <div style="display:flex;align-items:center;gap:12px">
         <el-button type="primary" link @click="router.back()">← 返回</el-button>
         <el-input v-model="actionName" style="width:200px" placeholder="Action 名称" />
-        <el-button type="primary" :loading="saving" @click="handleSave">保存</el-button>
+        <el-button v-if="hasPermission('project:action:edit')" type="primary" :loading="saving" @click="handleSave">保存</el-button>
       </div>
     </div>
 

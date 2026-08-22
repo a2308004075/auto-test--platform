@@ -26,7 +26,7 @@ public class RoleResponse {
     private LocalDateTime updatedAt;
 
     /**
-     * 已分配的权限 ID 列表
+     * 已分配的权限列表（含按角色控制模式）
      */
-    private List<Long> permissionIds;
+    private List<PermissionAssignmentDTO> permissions;
 }

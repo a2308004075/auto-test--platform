@@ -6,10 +6,15 @@
 import { useUserStore } from '@/stores'
 
 /**
- * 权限控制 composable
+ * 权限控制 composable（按角色 control_mode）
  *
  * ADMIN 角色隐式拥有全部权限（后端返回 ["*"]）；
- * 非 ADMIN 角色通过 permissions 列表判断。
+ * 非 ADMIN 角色通过 permissions 列表和 permissionDetails 判断。
+ *
+ * control_mode 存储在 role_permission 表上，按角色独立配置：
+ * - enabled（默认）：有权限时按钮显示且可点击
+ * - disabled：有权限时按钮显示但禁用
+ * - 不在 permissionDetails 中：无权限，按钮隐藏
  */
 export function usePermission() {
   const userStore = useUserStore()
@@ -39,26 +44,26 @@ export function usePermission() {
   }
 
   /**
-   * 获取权限的控制模式
+   * 获取权限的按角色控制模式
    *
-   * @returns 'display'（无权限时隐藏）或 'click'（无权限时禁用），默认 'display'
+   * @returns 'enabled'-显示可点击，'disabled'-显示禁点击；无权限时返回 null
    */
-  function getControlMode(code: string): string {
-    if (userStore.isAdmin) return 'display'
+  function getControlMode(code: string): string | null {
+    if (userStore.isAdmin) return 'enabled'
+    if (!userStore.permissions.includes(code)) return null
     const detail = userStore.permissionDetails.find((d) => d.code === code)
-    return detail?.controlMode || 'display'
+    return detail?.controlMode || 'enabled'
   }
 
   /**
-   * 判断按钮是否应被禁用（仅 click 模式下生效）
+   * 判断按钮是否应被禁用
    *
-   * <p>当用户无权限且 controlMode='click' 时返回 true，表示按钮应显示但禁用；
-   * 当 controlMode='display' 或用户有权限时返回 false。
+   * 当用户有权限但 control_mode='disabled' 时返回 true（显示禁点击）。
+   * 无权限时不返回 true（按钮会被隐藏而非禁用）。
    */
   function isButtonDisabled(code: string): boolean {
     if (userStore.isAdmin) return false
-    if (userStore.permissions.includes(code)) return false
-    return getControlMode(code) === 'click'
+    return getControlMode(code) === 'disabled'
   }
 
   return {

@@ -128,6 +128,14 @@ public class UserService {
             if (currentUserId == null || !currentUserId.equals(user.getId())) {
                 throw new BusinessException(ErrorCode.ADMIN_PROTECTED, "系统管理员账号不允许其他用户编辑");
             }
+            // admin 账号保护：不允许修改角色，确保角色管理配置不影响超级管理员权限
+            if (request.getRoleId() != null && !request.getRoleId().equals(user.getRoleId())) {
+                throw new BusinessException(ErrorCode.ADMIN_PROTECTED, "系统管理员账号不允许修改角色");
+            }
+            // admin 账号保护：不允许修改用户名
+            if (request.getDisplayName() != null && !request.getDisplayName().equals(user.getDisplayName())) {
+                throw new BusinessException(ErrorCode.ADMIN_PROTECTED, "系统管理员账号不允许修改用户名");
+            }
         }
 
         if (request.getDisplayName() != null) {

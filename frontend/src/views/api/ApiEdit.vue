@@ -15,12 +15,14 @@ import { ElMessage } from 'element-plus'
 import { getApi, createApi, updateApi, getModules, getApiReferences, debugApi } from '@/api/apidoc'
 import { getEnvironments } from '@/api/environment'
 import { useDict } from '@/composables/useDict'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
 const projectId = computed(() => Number(route.params.id))
 const apiId = computed(() => Number(route.params.apiId))
 const isEdit = computed(() => !!apiId.value)
+const { hasPermission } = usePermission()
 
 const activeTab = ref('basic')
 const loading = ref(false)
@@ -71,7 +73,8 @@ const pathParams = computed(() => {
 async function fetchModules() {
   try {
     const res: any = await getModules(projectId.value)
-    modules.value = (res.data || []).filter((m: any) => m.isSystem !== 1)
+    // 排除"全部"系统分组（接口不应直接归属"全部"），保留"未分类"及其他用户分组
+    modules.value = (res.data || []).filter((m: any) => !(m.isSystem === 1 && m.name === '全部'))
     if (!form.moduleId && modules.value.length) form.moduleId = modules.value[0].id
   } catch { modules.value = [] }
 }
@@ -168,7 +171,7 @@ onMounted(() => {
         <h2 style="margin: 0">{{ isEdit ? '编辑接口' : '新建接口' }}</h2>
       </div>
       <div class="edit-actions">
-        <el-button type="primary" @click="handleSubmit">保存</el-button>
+        <el-button v-if="hasPermission('project:api:edit')" type="primary" @click="handleSubmit">保存</el-button>
         <el-button @click="router.back()">取消</el-button>
       </div>
     </div>
@@ -389,7 +392,7 @@ onMounted(() => {
             <template #default="{ row }">{{ row.updatedAt?.substring(0, 10) }}</template>
           </el-table-column>
           <el-table-column label="操作" width="80">
-            <template #default="{ row }">
+            <template #default>
               <el-button type="primary" link size="small" @click="router.push(`/project/${projectId}/keywords`)">查看</el-button>
             </template>
           </el-table-column>

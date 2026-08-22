@@ -15,9 +15,11 @@ import { ElMessage } from 'element-plus'
 import { getKeyword, createKeyword, updateKeyword } from '@/api/keyword'
 import { getApis, getModules } from '@/api/apidoc'
 import { useDict } from '@/composables/useDict'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
+const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 const keywordId = computed(() => Number(route.params.keywordId))
 const isEdit = computed(() => !!keywordId.value)
@@ -151,7 +153,7 @@ onMounted(() => {
         <h2 style="margin: 0">{{ isEdit ? '编辑关键字' : '新建关键字' }}</h2>
       </div>
       <div class="edit-actions">
-        <el-button type="primary" @click="handleSubmit">保存</el-button>
+        <el-button v-if="hasPermission('project:keyword:edit')" type="primary" @click="handleSubmit">保存</el-button>
         <el-button @click="router.back()">取消</el-button>
       </div>
     </div>

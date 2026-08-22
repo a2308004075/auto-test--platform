@@ -11,9 +11,11 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getSuites, createSuite, updateSuite, deleteSuite } from '@/api/suite'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
+const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 
 const loading = ref(false)
@@ -80,7 +82,7 @@ onMounted(fetchList)
         <el-input v-model="keyword" placeholder="搜索套件" style="width:220px" clearable @keyup.enter="handleSearch" @clear="handleSearch">
           <template #append><el-button @click="handleSearch">搜索</el-button></template>
         </el-input>
-        <el-button type="primary" @click="openCreate">新建套件</el-button>
+        <el-button v-if="hasPermission('project:suite:add')" type="primary" @click="openCreate">新建套件</el-button>
       </div>
     </div>
 
@@ -99,9 +101,9 @@ onMounted(fetchList)
       <el-table-column label="操作" width="260">
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="router.push(`/project/${projectId}/cases?suiteId=${row.id}`)">查看用例</el-button>
-          <el-button type="primary" link size="small" @click="router.push(`/project/${projectId}/suites/${row.id}/edit`)">步骤配置</el-button>
-          <el-button type="primary" link size="small" @click="openEdit(row)">基本信息</el-button>
-          <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+          <el-button v-if="hasPermission('project:suite:steps')" type="primary" link size="small" @click="router.push(`/project/${projectId}/suites/${row.id}/edit`)">步骤配置</el-button>
+          <el-button v-if="hasPermission('project:suite:edit')" type="primary" link size="small" @click="openEdit(row)">基本信息</el-button>
+          <el-button v-if="hasPermission('project:suite:delete')" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

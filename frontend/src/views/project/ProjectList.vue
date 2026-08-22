@@ -13,10 +13,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getProjects, createProject, updateProject, deleteProject, toggleProjectStatus } from '@/api/project'
 import { useProjectStore, useUserStore } from '@/stores'
 import { useDict } from '@/composables/useDict'
+import { usePermission } from '@/composables/usePermission'
 
 const router = useRouter()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
+const { hasPermission } = usePermission()
 
 // 是否管理员（未登录或非管理员均视为无管理权限）
 const isAdmin = computed(() => userStore.isLoggedIn && (userStore.role || '').toUpperCase() === 'ADMIN')
@@ -156,7 +158,7 @@ onMounted(fetchList)
         <h1 class="page-title">首页</h1>
         <p class="page-desc">选择项目快速进入工作台</p>
       </div>
-      <el-button v-if="isAdmin" type="primary" @click="openCreate">+ 新建项目</el-button>
+      <el-button v-if="hasPermission('home:project:add')" type="primary" @click="openCreate">+ 新建项目</el-button>
     </div>
 
     <!-- 搜索筛选区 -->
@@ -195,13 +197,15 @@ onMounted(fetchList)
             <div class="card-actions" @click.stop>
               <span
                 class="status-tag"
-                :class="[project.status === 1 ? 'tag-active' : 'tag-disabled', { 'is-readonly': !isAdmin }]"
-                @click="isAdmin && handleToggleStatus(project)"
+                :class="[project.status === 1 ? 'tag-active' : 'tag-disabled', { 'is-readonly': !hasPermission('home:project:toggle') }]"
+                @click="hasPermission('home:project:toggle') && handleToggleStatus(project)"
               >
                 {{ project.status === 1 ? '启用' : '停用' }}
               </span>
-              <template v-if="isAdmin">
+              <template v-if="hasPermission('home:project:edit')">
                 <button class="btn-edit" @click="openEdit(project)">编辑</button>
+              </template>
+              <template v-if="hasPermission('home:project:delete')">
                 <button class="btn-delete" @click="handleDelete(project)">删除</button>
               </template>
             </div>
@@ -224,7 +228,7 @@ onMounted(fetchList)
       </div>
     </div>
 
-    <el-empty v-if="!list.length && !loading" :description="`暂无项目${isAdmin ? '，点击「新建项目」开始' : ''}`" />
+    <el-empty v-if="!list.length && !loading" :description="`暂无项目${hasPermission('home:project:add') ? '，点击「新建项目」开始' : ''}`" />
 
     <!-- 分页 -->
     <div v-if="pagination.total > 0" class="pagination-wrap">

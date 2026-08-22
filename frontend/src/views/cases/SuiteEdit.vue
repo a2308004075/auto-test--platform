@@ -13,9 +13,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getSuite, updateSuite } from '@/api/suite'
 import { useDict } from '@/composables/useDict'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
+const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 const suiteId = computed(() => Number(route.params.suiteId))
 
@@ -99,7 +101,7 @@ onMounted(loadSuite)
         <h2 style="margin:0">编辑套件</h2>
         <div style="display:flex;gap:8px">
           <el-button @click="router.back()">返回</el-button>
-          <el-button type="primary" :loading="saving" @click="handleSave">保存</el-button>
+          <el-button v-if="hasPermission('project:suite:edit')" type="primary" :loading="saving" @click="handleSave">保存</el-button>
         </div>
       </div>
 

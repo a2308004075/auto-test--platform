@@ -6,15 +6,14 @@
 /**
  * 密码策略工具
  *
- * 规则：长度 6-32 位，必须同时包含大写字母、小写字母、数字和英文符号。
+ * 规则：长度至少 6 位（无上限），必须同时包含大写字母、小写字母、数字和英文符号。
  * 与后端 PasswordPolicy 常量保持一致。
  */
 
 export const PASSWORD_MIN_LENGTH = 6
-export const PASSWORD_MAX_LENGTH = 32
 
 /** 密码规则简述，用于表单占位文本 */
-export const PASSWORD_RULE_HINT = '6-32位，需包含大写字母、小写字母、数字和英文符号'
+export const PASSWORD_RULE_HINT = '至少6位，需包含大写字母、小写字母、数字和英文符号'
 
 /**
  * 校验密码格式
@@ -27,9 +26,6 @@ export function validatePassword(password: string): string {
   }
   if (password.length < PASSWORD_MIN_LENGTH) {
     return `密码长度不能少于${PASSWORD_MIN_LENGTH}位`
-  }
-  if (password.length > PASSWORD_MAX_LENGTH) {
-    return `密码长度不能超过${PASSWORD_MAX_LENGTH}位`
   }
   if (!/[a-z]/.test(password)) {
     return '密码必须包含小写字母'

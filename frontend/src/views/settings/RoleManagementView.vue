@@ -8,26 +8,34 @@
  * 角色管理页面（仅 ADMIN）
  * 左右分栏布局，对标 svc-manager-web Role.vue
  * 左侧角色列表 + 右侧编辑/权限树
+ *
+ * 权限分配支持两种交互方式：
+ * 1. 复选框：快速勾选/取消权限分配
+ * 2. 右键上下文菜单：精细编辑权限控制模式
+ *    - 页面（MENU）：可访问 / 禁访问
+ *    - 按钮（BUTTON）：隐藏 / 显示禁点击 / 显示可点击
  */
-import { ref, reactive, onMounted, nextTick, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ElTree } from 'element-plus'
 import { Delete, Document } from '@element-plus/icons-vue'
 import { usePermission } from '@/composables/usePermission'
+import { useUserStore } from '@/stores'
 import {
   getRolePage,
   getRoleDetail,
   createRole,
   updateRole,
   deleteRole,
-  toggleRoleStatus,
   getPermissionTree,
-  getRolePermissionIds,
+  getRolePermissions,
   exportRoles,
   importRoles,
 } from '@/api/role'
+import type { PermissionAssignment } from '@/api/role'
 
 const { hasPermission } = usePermission()
+const userStore = useUserStore()
 
 // ===== 列表数据 =====
 const loading = ref(false)
@@ -48,7 +56,6 @@ const formErrors = reactive({ roleName: '', roleCode: '' })
 
 // ===== 权限树 =====
 const permissionTree = ref<any[]>([])
-const checkedPermissionIds = ref<number[]>([])
 const treeRef = ref<InstanceType<typeof ElTree>>()
 const treeProps = { label: 'permissionName', children: 'children' }
 
@@ -63,10 +70,29 @@ interface TreeNodeData {
   disabled?: boolean
 }
 
-function getControlModeLabel(controlMode: string | null): string {
-  if (controlMode === 'click') return '点击'
-  return '显示'
-}
+// ===== 按角色控制模式覆盖 =====
+// 仅存储非默认值的按钮 control_mode（'disabled'）；
+// 'enabled' 为默认值，不存于此 map
+const controlModeOverrides = ref<Record<number, string>>({})
+
+// ===== 刷新计数器（用于强制重新计算 computed） =====
+const refreshKey = ref(0)
+
+// ===== 计算属性：已分配的权限 ID 集合 =====
+const checkedNodeIds = computed(() => {
+  refreshKey.value // 依赖触发
+  const checked = treeRef.value?.getCheckedKeys(false) as any[] || []
+  const halfChecked = treeRef.value?.getHalfCheckedKeys() as any[] || []
+  return new Set([...checked, ...halfChecked].map(Number))
+})
+
+// ===== 右键上下文菜单 =====
+const contextMenu = reactive({
+  visible: false,
+  x: 0,
+  y: 0,
+  nodeData: null as TreeNodeData | null,
+})
 
 // ===== Excel 导入 =====
 const importInputRef = ref<HTMLInputElement | null>(null)
@@ -92,6 +118,87 @@ function setTreeDisabled(tree: any[], disabled: boolean) {
     node.disabled = disabled
     if (node.children) setTreeDisabled(node.children, disabled)
   })
+}
+
+function findNodeInTree(tree: any[], id: number): any | null {
+  for (const node of tree) {
+    if (node.id === id) return node
+    if (node.children) {
+      const found = findNodeInTree(node.children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+// ===== 权限状态判断 =====
+function isNodeAssigned(id: number): boolean {
+  return checkedNodeIds.value.has(id)
+}
+
+function getNodeControlMode(id: number): string {
+  return controlModeOverrides.value[id] || 'enabled'
+}
+
+function getTagType(data: TreeNodeData): string {
+  if (!isNodeAssigned(data.id)) return 'info'
+  if (data.type === 'BUTTON') {
+    return getNodeControlMode(data.id) === 'disabled' ? 'warning' : 'success'
+  }
+  return 'success'
+}
+
+function getTagLabel(data: TreeNodeData): string {
+  if (!isNodeAssigned(data.id)) {
+    return data.type === 'MENU' ? '禁访问' : '隐藏'
+  }
+  if (data.type === 'BUTTON') {
+    return getNodeControlMode(data.id) === 'disabled' ? '显示禁点击' : '显示可点击'
+  }
+  return '可访问'
+}
+
+// ===== 右键上下文菜单 =====
+function onNodeContextMenu(event: MouseEvent, data: TreeNodeData) {
+  if (!isEdit.value) return
+  event.preventDefault()
+  event.stopPropagation()
+  contextMenu.nodeData = data
+  contextMenu.x = event.clientX
+  contextMenu.y = event.clientY
+  contextMenu.visible = true
+}
+
+function hideContextMenu() {
+  contextMenu.visible = false
+  contextMenu.nodeData = null
+}
+
+function handleContextAction(action: string) {
+  const data = contextMenu.nodeData
+  if (!data) return
+  const id = data.id
+
+  if (data.type === 'MENU') {
+    if (action === 'accessible') {
+      treeRef.value?.setChecked(id, true, true)
+    } else if (action === 'inaccessible') {
+      treeRef.value?.setChecked(id, false, true)
+    }
+  } else if (data.type === 'BUTTON') {
+    if (action === 'hidden') {
+      treeRef.value?.setChecked(id, false, false)
+      delete controlModeOverrides.value[id]
+    } else if (action === 'showDisabled') {
+      treeRef.value?.setChecked(id, true, false)
+      controlModeOverrides.value[id] = 'disabled'
+    } else if (action === 'showEnabled') {
+      treeRef.value?.setChecked(id, true, false)
+      delete controlModeOverrides.value[id]
+    }
+  }
+  refreshKey.value++
+  hideContextMenu()
 }
 
 // ===== 获取角色列表 =====
@@ -133,9 +240,9 @@ async function selectRole(role: any) {
     currentRole.value = role
     permIsBuiltin.value = isBuiltinRole(role)
 
-    const [detailRes, idsRes]: any[] = await Promise.all([
+    const [detailRes, permsRes]: any[] = await Promise.all([
       getRoleDetail(role.id),
-      getRolePermissionIds(role.id),
+      getRolePermissions(role.id),
     ])
 
     const data = detailRes.data
@@ -144,11 +251,23 @@ async function selectRole(role: any) {
     form.description = data.description || ''
     form.sortOrder = data.sortOrder ?? 0
 
-    checkedPermissionIds.value = (idsRes.data || []).map(Number)
+    // 重置控制模式覆盖
+    controlModeOverrides.value = {}
 
+    // 设置复选框状态
+    const perms: PermissionAssignment[] = permsRes.data || []
+    const ids = perms.map((p: PermissionAssignment) => p.permissionId)
     setTreeDisabled(permissionTree.value, true)
     await nextTick()
-    treeRef.value?.setCheckedKeys(checkedPermissionIds.value)
+    treeRef.value?.setCheckedKeys(ids)
+
+    // 设置按钮 control_mode 覆盖（仅 disabled 需要记录）
+    perms.forEach((p: PermissionAssignment) => {
+      if (p.controlMode === 'disabled') {
+        controlModeOverrides.value[p.permissionId] = 'disabled'
+      }
+    })
+    refreshKey.value++
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '获取角色详情失败')
   } finally {
@@ -175,16 +294,18 @@ function addRole() {
   form.sortOrder = 0
   formErrors.roleName = ''
   formErrors.roleCode = ''
+  controlModeOverrides.value = {}
   setTreeDisabled(permissionTree.value, false)
   nextTick(() => {
     treeRef.value?.setCheckedKeys([])
+    refreshKey.value++
   })
 }
 
 // ===== 编辑 =====
 function enterEdit() {
   if (!currentRole.value) return
-  if (permIsBuiltin.value) {
+  if (permIsBuiltin.value && !userStore.isAdmin) {
     ElMessage.warning('系统内置 ADMIN 角色不可编辑')
     return
   }
@@ -199,6 +320,7 @@ async function cancel() {
   isEdit.value = false
   formErrors.roleName = ''
   formErrors.roleCode = ''
+  controlModeOverrides.value = {}
   setTreeDisabled(permissionTree.value, true)
 
   if (currentRole.value?.id === -1) {
@@ -212,6 +334,7 @@ async function cancel() {
       form.description = ''
       form.sortOrder = 0
       treeRef.value?.setCheckedKeys([])
+      refreshKey.value++
     }
   } else if (currentRole.value) {
     await selectRole(currentRole.value)
@@ -238,12 +361,20 @@ async function save() {
   const halfCheckedKeys = treeRef.value?.getHalfCheckedKeys() || []
   const allIds = [...checkedKeys, ...halfCheckedKeys].map(Number)
 
+  const permissions: PermissionAssignment[] = allIds.map((id: number) => {
+    const node = findNodeInTree(permissionTree.value, id)
+    const controlMode = node?.type === 'BUTTON'
+      ? (controlModeOverrides.value[id] || 'enabled')
+      : null
+    return { permissionId: id, controlMode }
+  })
+
   const payload = {
     roleName: form.roleName.trim(),
     roleCode: form.roleCode.trim(),
     description: form.description || undefined,
     sortOrder: form.sortOrder ?? 0,
-    permissionIds: allIds,
+    permissions,
   }
 
   loading.value = true
@@ -289,29 +420,6 @@ async function deleteRoleItem(item: any) {
     await fetchRoles()
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '删除失败')
-  }
-}
-
-// ===== 禁用/启用 =====
-async function toggleStatus() {
-  if (!currentRole.value || permIsBuiltin.value) return
-  const action = currentRole.value.isActive === 1 ? '禁用' : '启用'
-  try {
-    await ElMessageBox.confirm(
-      `确定${action}角色「${currentRole.value.roleName}」？`,
-      '操作确认',
-      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' },
-    )
-  } catch {
-    return
-  }
-  try {
-    const isActive = currentRole.value.isActive === 1 ? 0 : 1
-    await toggleRoleStatus(currentRole.value.id, { isActive })
-    ElMessage.success('角色 ' + currentRole.value.roleName + ' 已' + action)
-    await fetchRoles()
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || '操作失败')
   }
 }
 
@@ -361,8 +469,13 @@ async function handleImportFile(e: Event) {
   }
 }
 
-// ===== 初始化 =====
+// ===== 初始化与清理 =====
+function onDocumentClick() {
+  if (contextMenu.visible) hideContextMenu()
+}
+
 onMounted(async () => {
+  document.addEventListener('click', onDocumentClick)
   loading.value = true
   try {
     await Promise.allSettled([fetchRoles(), fetchPermissionTree()])
@@ -372,6 +485,10 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onDocumentClick)
 })
 </script>
 
@@ -430,7 +547,7 @@ onMounted(async () => {
             v-if="hasPermission('system:role:delete')"
             text
             :icon="Delete"
-            :disabled="isEdit || isBuiltinRole(item)"
+            :disabled="isEdit || (isBuiltinRole(item) && !userStore.isAdmin)"
             @click.stop="deleteRoleItem(item)"
           />
         </div>
@@ -475,7 +592,9 @@ onMounted(async () => {
             class="mxw-300"
           />
         </el-form-item>
-        <el-form-item label="权限分配："></el-form-item>
+        <el-form-item label="权限分配：">
+          <span v-if="isEdit" class="perm-hint">右键节点可编辑权限模式</span>
+        </el-form-item>
       </el-form>
       <el-tree
         ref="treeRef"
@@ -485,6 +604,7 @@ onMounted(async () => {
         show-checkbox
         default-expand-all
         class="tree"
+        @node-contextmenu="onNodeContextMenu"
       >
         <template #default="{ data }">
           <span class="perm-node">
@@ -493,12 +613,11 @@ onMounted(async () => {
             </el-icon>
             <span class="perm-node__name">{{ data.permissionName }}</span>
             <el-tag
-              v-if="data.type === 'BUTTON'"
-              :type="data.controlMode === 'click' ? 'warning' : ''"
+              :type="getTagType(data)"
               size="small"
               class="perm-node__tag"
             >
-              {{ getControlModeLabel(data.controlMode) }}
+              {{ getTagLabel(data) }}
             </el-tag>
           </span>
         </template>
@@ -512,18 +631,61 @@ onMounted(async () => {
           <el-button
             v-if="hasPermission('system:role:edit')"
             type="primary"
-            :disabled="!currentRole || permIsBuiltin"
+            :disabled="!currentRole || (permIsBuiltin && !userStore.isAdmin)"
             @click="enterEdit"
           >编辑</el-button>
-          <el-button
-            v-if="currentRole && !permIsBuiltin && hasPermission('system:role:edit')"
-            :type="currentRole.isActive === 1 ? 'warning' : 'success'"
-            @click="toggleStatus"
-          >
-            {{ currentRole.isActive === 1 ? '禁用' : '启用' }}
-          </el-button>
         </template>
       </div>
+    </div>
+
+    <!-- 右键上下文菜单 -->
+    <div
+      v-if="contextMenu.visible && contextMenu.nodeData"
+      class="context-menu"
+      :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
+      @click.stop
+    >
+      <!-- 页面（MENU）上下文菜单 -->
+      <template v-if="contextMenu.nodeData.type === 'MENU'">
+        <div
+          class="context-menu__item"
+          :class="{ 'is-active': isNodeAssigned(contextMenu.nodeData.id) }"
+          @click="handleContextAction('accessible')"
+        >
+          <span>可访问</span>
+        </div>
+        <div
+          class="context-menu__item"
+          :class="{ 'is-active': !isNodeAssigned(contextMenu.nodeData.id) }"
+          @click="handleContextAction('inaccessible')"
+        >
+          <span>禁访问</span>
+        </div>
+      </template>
+      <!-- 按钮（BUTTON）上下文菜单 -->
+      <template v-else-if="contextMenu.nodeData.type === 'BUTTON'">
+        <div
+          class="context-menu__item"
+          :class="{ 'is-active': !isNodeAssigned(contextMenu.nodeData.id) }"
+          @click="handleContextAction('hidden')"
+        >
+          <span>隐藏</span>
+        </div>
+        <div
+          class="context-menu__item"
+          :class="{ 'is-active': isNodeAssigned(contextMenu.nodeData.id) && getNodeControlMode(contextMenu.nodeData.id) === 'disabled' }"
+          @click="handleContextAction('showDisabled')"
+        >
+          <span>显示禁点击</span>
+        </div>
+        <div
+          class="context-menu__item"
+          :class="{ 'is-active': isNodeAssigned(contextMenu.nodeData.id) && getNodeControlMode(contextMenu.nodeData.id) === 'enabled' }"
+          @click="handleContextAction('showEnabled')"
+        >
+          <span>显示可点击</span>
+        </div>
+      </template>
     </div>
 
     <input
@@ -672,6 +834,11 @@ onMounted(async () => {
   margin-top: 4px;
 }
 
+.perm-hint {
+  font-size: 12px;
+  color: var(--color-text-secondary, #909399);
+}
+
 /* ===== 权限树节点样式 ===== */
 
 .perm-node {
@@ -698,5 +865,43 @@ onMounted(async () => {
   line-height: 16px;
   padding: 0 4px;
   height: 18px;
+}
+
+/* ===== 右键上下文菜单样式 ===== */
+
+.context-menu {
+  position: fixed;
+  z-index: 3000;
+  min-width: 120px;
+  background-color: #fff;
+  border: 1px solid var(--border-color-base, #dcdfe6);
+  border-radius: 4px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  padding: 4px 0;
+}
+
+.context-menu__item {
+  padding: 0 16px;
+  height: 32px;
+  line-height: 32px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.context-menu__item:hover {
+  background-color: var(--background-color-base, #f5f7fa);
+  color: var(--color-primary, #409eff);
+}
+
+.context-menu__item.is-active {
+  color: var(--color-primary, #409eff);
+  font-weight: bold;
+}
+
+.context-menu__item.is-active::before {
+  content: '\2713';
+  margin-right: 6px;
+  font-weight: bold;
 }
 </style>

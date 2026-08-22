@@ -9,7 +9,7 @@
  * 双列布局：左侧请求参数输入，右侧响应结果
  * 对齐原型 api-list.html 的 debugModal
  */
-import { ref, reactive, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getApi, debugApi } from '@/api/apidoc'
 import { getEnvironments } from '@/api/environment'

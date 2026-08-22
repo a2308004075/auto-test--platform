@@ -24,8 +24,12 @@ import com.platform.common.exception.ErrorCode;
 import com.platform.common.exception.NotFoundException;
 import com.platform.common.response.PageResponse;
 import com.platform.sys.entity.Dict;
+import com.platform.sys.entity.Menu;
 import com.platform.sys.mapper.DictMapper;
+import com.platform.sys.mapper.MenuMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -48,6 +52,8 @@ import java.util.stream.Collectors;
 public class RoleService {
 
     private static final String BUILTIN_ROLE_CODE = "ADMIN";
+    /** 系统保留管理员账号 */
+    private static final String RESERVED_USERNAME = "admin";
 
     /** 角色字典类型编码，与 sys_dict 表中 user_role 字典对应 */
     private static final String ROLE_DICT_TYPE = "user_role";
@@ -58,17 +64,20 @@ public class RoleService {
     private final RolePermissionMapper rolePermissionMapper;
     private final UserMapper userMapper;
     private final DictMapper dictMapper;
+    private final MenuMapper menuMapper;
 
     public RoleService(UserRoleMapper userRoleMapper,
                        PermissionMapper permissionMapper,
                        RolePermissionMapper rolePermissionMapper,
                        UserMapper userMapper,
-                       DictMapper dictMapper) {
+                       DictMapper dictMapper,
+                       MenuMapper menuMapper) {
         this.userRoleMapper = userRoleMapper;
         this.permissionMapper = permissionMapper;
         this.rolePermissionMapper = rolePermissionMapper;
         this.userMapper = userMapper;
         this.dictMapper = dictMapper;
+        this.menuMapper = menuMapper;
     }
 
     // ===== 公共接口 =====
@@ -106,7 +115,7 @@ public class RoleService {
     }
 
     /**
-     * 查询角色详情（含权限 ID 列表）
+     * 查询角色详情（含权限分配列表）
      */
     public RoleResponse getRoleDetail(Long id) {
         UserRole role = userRoleMapper.selectById(id);
@@ -114,7 +123,7 @@ public class RoleService {
             throw new NotFoundException("角色", id);
         }
         RoleResponse response = toResponse(role);
-        response.setPermissionIds(rolePermissionMapper.selectPermissionIdsByRoleId(id));
+        response.setPermissions(rolePermissionMapper.selectPermissionAssignmentsByRoleId(id));
         return response;
     }
 
@@ -135,8 +144,8 @@ public class RoleService {
         userRoleMapper.insert(role);
 
         // 分配权限
-        if (CollUtil.isNotEmpty(request.getPermissionIds())) {
-            bindPermissions(role.getId(), request.getPermissionIds());
+        if (CollUtil.isNotEmpty(request.getPermissions())) {
+            bindPermissions(role.getId(), request.getPermissions());
         }
 
         // 同步字典
@@ -177,8 +186,8 @@ public class RoleService {
         // 重建权限关联
         rolePermissionMapper.delete(new LambdaQueryWrapper<RolePermission>()
                 .eq(RolePermission::getRoleId, id));
-        if (CollUtil.isNotEmpty(request.getPermissionIds())) {
-            bindPermissions(id, request.getPermissionIds());
+        if (CollUtil.isNotEmpty(request.getPermissions())) {
+            bindPermissions(id, request.getPermissions());
         }
 
         log.info("更新角色成功: id={}, roleCode={}", id, role.getRoleCode());
@@ -249,17 +258,17 @@ public class RoleService {
     }
 
     /**
-     * 获取角色已分配的权限 ID 列表
+     * 获取角色已分配的权限列表（含按角色 control_mode）
      */
-    public List<Long> getRolePermissionIds(Long roleId) {
-        return rolePermissionMapper.selectPermissionIdsByRoleId(roleId);
+    public List<PermissionAssignmentDTO> getRolePermissions(Long roleId) {
+        return rolePermissionMapper.selectPermissionAssignmentsByRoleId(roleId);
     }
 
     /**
-     * 分配权限（先删后插）
+     * 分配权限（先删后插，含按角色 control_mode）
      */
     @Transactional(rollbackFor = Exception.class)
-    public void assignPermissions(Long roleId, List<Long> permissionIds) {
+    public void assignPermissions(Long roleId, List<PermissionAssignmentDTO> permissions) {
         UserRole role = userRoleMapper.selectById(roleId);
         if (role == null) {
             throw new NotFoundException("角色", roleId);
@@ -268,10 +277,10 @@ public class RoleService {
 
         rolePermissionMapper.delete(new LambdaQueryWrapper<RolePermission>()
                 .eq(RolePermission::getRoleId, roleId));
-        if (CollUtil.isNotEmpty(permissionIds)) {
-            bindPermissions(roleId, permissionIds);
+        if (CollUtil.isNotEmpty(permissions)) {
+            bindPermissions(roleId, permissions);
         }
-        log.info("角色权限分配成功: roleId={}, permissionCount={}", roleId, permissionIds.size());
+        log.info("角色权限分配成功: roleId={}, permissionCount={}", roleId, permissions.size());
     }
 
     /**
@@ -293,12 +302,161 @@ public class RoleService {
     }
 
     /**
-     * 获取角色的权限详情列表（含控制模式，供前端 v-permission 指令使用）
+     * 获取角色的权限详情列表（含按角色 control_mode，供前端 v-permission 指令使用）
      * ADMIN 角色返回通配符 "*" 详情
      */
     public List<PermissionBriefDTO> getPermissionDetailsByRoleId(Long roleId) {
-        List<String> codes = getPermissionCodesByRoleId(roleId);
-        return buildPermissionDetails(codes);
+        if (roleId == null) {
+            return Collections.emptyList();
+        }
+        UserRole role = userRoleMapper.selectById(roleId);
+        if (role == null) {
+            return Collections.emptyList();
+        }
+        if (BUILTIN_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())) {
+            PermissionBriefDTO dto = new PermissionBriefDTO();
+            dto.setCode("*");
+            return Collections.singletonList(dto);
+        }
+        return rolePermissionMapper.selectPermissionBriefsByRoleId(roleId);
+    }
+
+    /**
+     * 同步权限：从 sys_menu 表同步页面和按钮到 permission 表
+     *
+     * <p>同步逻辑：
+     * <ul>
+     *     <li>扫描 sys_menu 表中所有设置了 permission_code 的菜单条目</li>
+     *     <li>menu_type=1(目录) 和 menu_type=2(菜单) 同步为 MENU 类型权限</li>
+     *     <li>menu_type=3(按钮) 同步为 BUTTON 类型权限（control_mode 默认 display）</li>
+     *     <li>权限不存在则创建，已存在则更新名称/路径/排序号/父级</li>
+     *     <li>父级关系通过 permission_code 关联解析</li>
+     *     <li>不会删除已有权限</li>
+     * </ul>
+     *
+     * @return 同步结果统计
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public PermissionSyncResult syncPermissions() {
+        PermissionSyncResult result = new PermissionSyncResult();
+
+        // 1. 读取所有 sys_menu 条目（按排序号和 ID 升序，确保父级先于子级处理）
+        LambdaQueryWrapper<Menu> menuWrapper = new LambdaQueryWrapper<>();
+        menuWrapper.orderByAsc(Menu::getSortNo)
+                .orderByAsc(Menu::getId);
+        List<Menu> menus = menuMapper.selectList(menuWrapper);
+
+        // 2. 读取所有已有权限（仅活跃状态，@TableLogic 自动过滤）
+        LambdaQueryWrapper<Permission> permWrapper = new LambdaQueryWrapper<>();
+        permWrapper.orderByAsc(Permission::getSortOrder)
+                .orderByAsc(Permission::getId);
+        List<Permission> existingPerms = permissionMapper.selectList(permWrapper);
+
+        // 3. 构建 permission_code → Permission 映射
+        Map<String, Permission> codeToPerm = new LinkedHashMap<>();
+        for (Permission p : existingPerms) {
+            codeToPerm.put(p.getPermissionCode(), p);
+        }
+
+        // 4. 构建 sys_menu id → permission_code 映射（用于解析父级）
+        Map<Long, String> menuIdToCode = new HashMap<>();
+        for (Menu menu : menus) {
+            if (menu.getPermissionCode() != null && !menu.getPermissionCode().isEmpty()) {
+                menuIdToCode.put(menu.getId(), menu.getPermissionCode());
+            }
+        }
+
+        // 5. 逐条处理 sys_menu，同步到 permission 表
+        for (Menu menu : menus) {
+            String permCode = menu.getPermissionCode();
+            if (permCode == null || permCode.isEmpty()) {
+                result.setSkippedCount(result.getSkippedCount() + 1);
+                continue;
+            }
+
+            // 解析父级 permission ID
+            Long parentId = resolveParentPermissionId(menu, menuIdToCode, codeToPerm);
+
+            // 判断权限类型
+            String permType = (menu.getMenuType() != null && menu.getMenuType() == 3)
+                    ? "BUTTON" : "MENU";
+
+            Permission existing = codeToPerm.get(permCode);
+            if (existing == null) {
+                // 创建新权限
+                Permission perm = new Permission();
+                perm.setPermissionName(menu.getName());
+                perm.setPermissionCode(permCode);
+                perm.setType(permType);
+                perm.setParentId(parentId);
+                perm.setPath("BUTTON".equals(permType) ? null : menu.getRoutePath());
+                perm.setSortOrder(menu.getSortNo() != null ? menu.getSortNo() : 0);
+                perm.setIsActive(1);
+                perm.setControlMode("BUTTON".equals(permType) ? "display" : null);
+                permissionMapper.insert(perm);
+                codeToPerm.put(permCode, perm);
+                result.setCreatedCount(result.getCreatedCount() + 1);
+                result.getCreatedNames().add(menu.getName());
+                log.info("同步权限-新增: code={}, name={}, type={}", permCode, menu.getName(), permType);
+            } else {
+                // 更新已有权限（仅当字段发生变化时）
+                boolean changed = false;
+                if (!menu.getName().equals(existing.getPermissionName())) {
+                    existing.setPermissionName(menu.getName());
+                    changed = true;
+                }
+                if (!"BUTTON".equals(permType)) {
+                    String path = menu.getRoutePath();
+                    if (!Objects.equals(path, existing.getPath())) {
+                        existing.setPath(path);
+                        changed = true;
+                    }
+                }
+                Integer sortNo = menu.getSortNo() != null ? menu.getSortNo() : 0;
+                if (!sortNo.equals(existing.getSortOrder())) {
+                    existing.setSortOrder(sortNo);
+                    changed = true;
+                }
+                if (!parentId.equals(existing.getParentId())) {
+                    existing.setParentId(parentId);
+                    changed = true;
+                }
+                if (changed) {
+                    permissionMapper.updateById(existing);
+                    result.setUpdatedCount(result.getUpdatedCount() + 1);
+                    result.getUpdatedNames().add(menu.getName());
+                    log.info("同步权限-更新: code={}, name={}", permCode, menu.getName());
+                }
+            }
+        }
+
+        log.info("权限同步完成: 新增={}, 更新={}, 跳过={}",
+                result.getCreatedCount(), result.getUpdatedCount(), result.getSkippedCount());
+        return result;
+    }
+
+    /**
+     * 解析菜单的父级 permission ID
+     *
+     * <p>通过 sys_menu 的 parent_id 找到父菜单的 permission_code，
+     * 再通过 permission_code 找到对应的 permission ID。
+     * 若父菜单无 permission_code 或找不到对应权限，返回 0（顶级）。
+     */
+    private Long resolveParentPermissionId(Menu menu,
+                                            Map<Long, String> menuIdToCode,
+                                            Map<String, Permission> codeToPerm) {
+        if (menu.getParentId() == null || menu.getParentId() <= 0) {
+            return 0L;
+        }
+        String parentCode = menuIdToCode.get(menu.getParentId());
+        if (parentCode == null) {
+            return 0L;
+        }
+        Permission parentPerm = codeToPerm.get(parentCode);
+        if (parentPerm == null) {
+            return 0L;
+        }
+        return parentPerm.getId();
     }
 
     // ===== Excel 导入导出 =====
@@ -454,15 +612,32 @@ public class RoleService {
 
     private void checkBuiltinRole(UserRole role) {
         if (BUILTIN_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())) {
+            // admin 账号保护：允许 admin 账号操作内置角色
+            if (isCurrentUserAdmin()) {
+                return;
+            }
             throw new BusinessException(ErrorCode.ROLE_IS_BUILTIN, "系统内置角色不可修改或删除");
         }
     }
 
-    private void bindPermissions(Long roleId, List<Long> permissionIds) {
-        for (Long permissionId : permissionIds) {
+    /**
+     * 判断当前登录用户是否为 admin 账号
+     */
+    private boolean isCurrentUserAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof User) {
+            User currentUser = (User) auth.getPrincipal();
+            return RESERVED_USERNAME.equalsIgnoreCase(currentUser.getUsername());
+        }
+        return false;
+    }
+
+    private void bindPermissions(Long roleId, List<PermissionAssignmentDTO> permissions) {
+        for (PermissionAssignmentDTO pa : permissions) {
             RolePermission rp = new RolePermission();
             rp.setRoleId(roleId);
-            rp.setPermissionId(permissionId);
+            rp.setPermissionId(pa.getPermissionId());
+            rp.setControlMode(pa.getControlMode());
             rolePermissionMapper.insert(rp);
         }
     }
@@ -589,33 +764,6 @@ public class RoleService {
         response.setCreatedAt(role.getCreatedAt());
         response.setUpdatedAt(role.getUpdatedAt());
         return response;
-    }
-
-    /**
-     * 根据权限编码列表构建权限详情（查询 permission 表获取 type 和 controlMode）
-     */
-    private List<PermissionBriefDTO> buildPermissionDetails(List<String> codes) {
-        if (CollUtil.isEmpty(codes)) {
-            return Collections.emptyList();
-        }
-        // ADMIN 通配符
-        if (codes.size() == 1 && "*".equals(codes.get(0))) {
-            PermissionBriefDTO dto = new PermissionBriefDTO();
-            dto.setCode("*");
-            return Collections.singletonList(dto);
-        }
-        LambdaQueryWrapper<Permission> wrapper = new LambdaQueryWrapper<>();
-        wrapper.in(Permission::getPermissionCode, codes);
-        List<Permission> permissions = permissionMapper.selectList(wrapper);
-        List<PermissionBriefDTO> result = new ArrayList<>();
-        for (Permission p : permissions) {
-            PermissionBriefDTO dto = new PermissionBriefDTO();
-            dto.setCode(p.getPermissionCode());
-            dto.setType(p.getType());
-            dto.setControlMode(p.getControlMode());
-            result.add(dto);
-        }
-        return result;
     }
 
     private int parseIntSafe(Object value) {

@@ -34,6 +34,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MenuController {
 
+    /** 系统保留管理员账号 */
+    private static final String RESERVED_USERNAME = "admin";
+
     private final MenuService menuService;
     private final RoleService roleService;
 
@@ -47,7 +50,13 @@ public class MenuController {
             // 未登录时返回空菜单树
             return ApiResponse.ok(Collections.emptyList());
         }
-        List<String> permissionCodes = roleService.getPermissionCodesByRoleId(user.getRoleId());
+        // admin 账号保护：强制返回全部菜单，不受角色管理配置影响
+        List<String> permissionCodes;
+        if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
+            permissionCodes = Collections.singletonList("*");
+        } else {
+            permissionCodes = roleService.getPermissionCodesByRoleId(user.getRoleId());
+        }
         return ApiResponse.ok(menuService.tree(permissionCodes));
     }
 

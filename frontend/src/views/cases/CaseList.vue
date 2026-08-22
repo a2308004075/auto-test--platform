@@ -12,9 +12,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getCases, deleteCase, toggleCaseStatus } from '@/api/case'
 import { getSuites } from '@/api/suite'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
+const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 const suiteId = computed(() => Number(route.query.suiteId) || 0)
 
@@ -91,7 +93,7 @@ onMounted(() => { fetchSuites(); fetchList() })
         <el-input v-model="keyword" placeholder="搜索用例" style="width:200px" clearable @keyup.enter="handleSearch" @clear="handleSearch">
           <template #append><el-button @click="handleSearch">搜索</el-button></template>
         </el-input>
-        <el-button type="primary" @click="openCreate">新建用例</el-button>
+        <el-button v-if="hasPermission('project:case:add')" type="primary" @click="openCreate">新建用例</el-button>
       </div>
     </div>
 
@@ -113,9 +115,9 @@ onMounted(() => { fetchSuites(); fetchList() })
       </el-table-column>
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
-          <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button type="primary" link size="small" @click="handleToggleStatus(row)">{{ row.isActive === 1 ? '禁用' : '启用' }}</el-button>
-          <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+          <el-button v-if="hasPermission('project:case:edit')" type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
+          <el-button v-if="hasPermission('project:case:toggle')" type="primary" link size="small" @click="handleToggleStatus(row)">{{ row.isActive === 1 ? '禁用' : '启用' }}</el-button>
+          <el-button v-if="hasPermission('project:case:delete')" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

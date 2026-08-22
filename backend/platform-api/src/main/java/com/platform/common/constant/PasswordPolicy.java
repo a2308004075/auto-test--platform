@@ -19,9 +19,6 @@ public final class PasswordPolicy {
     /** 密码最小长度 */
     public static final int MIN_LENGTH = 6;
 
-    /** 密码最大长度 */
-    public static final int MAX_LENGTH = 32;
-
     /**
      * 密码组成正则：必须同时包含大写字母、小写字母、数字和英文符号。
      *
@@ -43,5 +40,5 @@ public final class PasswordPolicy {
 
     /** 密码长度校验失败消息 */
     public static final String SIZE_MESSAGE =
-            "密码长度必须在 6-32 之间";
+            "密码长度不能少于 " + MIN_LENGTH + " 位";
 }

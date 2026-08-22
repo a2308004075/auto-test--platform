@@ -13,9 +13,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getCase, createCase, updateCase } from '@/api/case'
 import { useDict } from '@/composables/useDict'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
+const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 const caseId = computed(() => Number(route.params.caseId))
 const querySuiteId = computed(() => Number(route.query.suiteId) || 0)
@@ -106,7 +108,7 @@ onMounted(() => { if (isEdit.value) loadCase() })
       <h2 style="margin:0">{{ isEdit ? '编辑用例' : '新建用例' }}</h2>
       <div style="display:flex;gap:8px">
         <el-button @click="router.back()">返回</el-button>
-        <el-button type="primary" @click="handleSave">保存</el-button>
+        <el-button v-if="hasPermission('project:case:edit')" type="primary" @click="handleSave">保存</el-button>
       </div>
     </div>
 

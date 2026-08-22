@@ -20,6 +20,9 @@ import {
   type CacheItem,
   type CacheSetRequest,
 } from '@/api/cache'
+import { usePermission } from '@/composables/usePermission'
+
+const { hasPermission } = usePermission()
 
 // ===== 搜索 =====
 const searchPattern = ref('')
@@ -151,7 +154,7 @@ function formatValue(val: string): string {
     <!-- 表格区 -->
     <div class="body">
       <div class="function">
-        <el-button type="primary" @click="openAdd">设置缓存</el-button>
+        <el-button v-if="hasPermission('system:cache:set')" type="primary" @click="openAdd">设置缓存</el-button>
       </div>
 
       <TableFit>
@@ -183,7 +186,7 @@ function formatValue(val: string): string {
             </el-table-column>
             <el-table-column label="操作" width="80" align="right" fixed="right">
               <template #default="{ row }">
-                <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+                <el-button v-if="hasPermission('system:cache:delete')" link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>

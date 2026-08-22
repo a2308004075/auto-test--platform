@@ -27,4 +27,11 @@ public class RolePermission extends BaseEntity {
      * 权限 ID（关联 permission.id）
      */
     private Long permissionId;
+
+    /**
+     * 按钮控制模式（按角色）：
+     * enabled-显示可点击，disabled-显示禁点击。
+     * 仅 BUTTON 类型使用，MENU 类型为 null。
+     */
+    private String controlMode;
 }

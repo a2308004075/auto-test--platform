@@ -39,7 +39,7 @@ public class RoleCreateRequest {
     private Integer sortOrder;
 
     /**
-     * 权限 ID 列表（创建/编辑时一并分配）
+     * 权限分配列表（创建/编辑时一并分配，含按角色控制模式）
      */
-    private List<Long> permissionIds;
+    private List<PermissionAssignmentDTO> permissions;
 }

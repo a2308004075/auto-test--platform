@@ -87,6 +87,50 @@ export function addSettingsRedirect(router: Router, layoutName: string): void {
 }
 
 /**
+ * 注册不在菜单系统中但需要路由的子页面（新建/编辑/详情/导入等）
+ * 这些页面不显示在侧边栏，仅通过列表页导航到达
+ * 必须在 generateDynamicRoutes 之后、addCatchAllRoute 之前调用
+ */
+export function addSupplementaryRoutes(router: Router, layoutName: string): void {
+  const routes = [
+    // ===== 接口模块 =====
+    { path: 'project/:id/apis/new',              component: 'api/ApiEdit',          title: '新建接口' },
+    { path: 'project/:id/apis/:apiId/edit',      component: 'api/ApiEdit',          title: '编辑接口' },
+    { path: 'project/:id/apis/swagger-import',   component: 'api/SwaggerImport',    title: '导入Swagger' },
+
+    // ===== 关键字模块 =====
+    { path: 'project/:id/keywords/new',               component: 'keywords/KeywordEdit',  title: '新建关键字' },
+    { path: 'project/:id/keywords/:keywordId/edit',   component: 'keywords/KeywordEdit',  title: '编辑关键字' },
+
+    // ===== Action 模块 =====
+    { path: 'project/:id/actions/:actionId/edit',  component: 'action/ActionEditor',  title: '编辑Action' },
+    { path: 'project/:id/actions/:actionId/debug', component: 'action/ActionDebug',   title: '调试Action' },
+
+    // ===== 测试用例/套件模块 =====
+    { path: 'project/:id/cases/new',                component: 'cases/CaseEdit',   title: '新建用例' },
+    { path: 'project/:id/cases/:caseId/edit',       component: 'cases/CaseEdit',   title: '编辑用例' },
+    { path: 'project/:id/suites/:suiteId/edit',     component: 'cases/SuiteEdit',  title: '步骤配置' },
+
+    // ===== 测试计划/执行模块 =====
+    { path: 'project/:id/plans/new',                       component: 'execution/PlanEdit',        title: '新建计划' },
+    { path: 'project/:id/plans/:planId/edit',              component: 'execution/PlanEdit',        title: '编辑计划' },
+    { path: 'project/:id/executions/:executionId',         component: 'execution/ExecutionDetail', title: '执行详情' },
+  ]
+
+  for (const r of routes) {
+    const component = resolveComponent(r.component)
+    if (component) {
+      router.addRoute(layoutName, {
+        path: r.path,
+        name: generateRouteName(r.path),
+        component,
+        meta: { title: r.title, inProject: true },
+      })
+    }
+  }
+}
+
+/**
  * 注册全局 404 兜底路由（必须在所有动态路由注册完成后调用）
  */
 export function addCatchAllRoute(router: Router): void {

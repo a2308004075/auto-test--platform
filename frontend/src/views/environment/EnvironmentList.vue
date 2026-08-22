@@ -14,8 +14,10 @@ import {
   getEnvironments, createEnvironment, updateEnvironment,
   deleteEnvironment, activateEnvironment, testEnvironment,
 } from '@/api/environment'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
+const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 
 const loading = ref(false)
@@ -97,7 +99,7 @@ onMounted(fetchList)
   <div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h2>环境配置</h2>
-      <el-button type="primary" @click="openCreate">新建环境</el-button>
+      <el-button v-if="hasPermission('project:env:add')" type="primary" @click="openCreate">新建环境</el-button>
     </div>
     <el-table v-loading="loading" :data="list" row-key="id" border style="width:100%">
       <el-table-column prop="name" label="环境名称" width="160" />
@@ -114,10 +116,10 @@ onMounted(fetchList)
       </el-table-column>
       <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
-          <el-button type="primary" link size="small" @click="handleActivate(row)">{{ row.isCurrent === 1 ? '取消激活' : '激活' }}</el-button>
-          <el-button type="primary" link size="small" @click="handleTest(row)">{{ testLoading === row.id ? '测试中...' : '测试' }}</el-button>
-          <el-button type="primary" link size="small" @click="openEdit(row)">编辑</el-button>
-          <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+          <el-button v-if="hasPermission('project:env:activate')" type="primary" link size="small" @click="handleActivate(row)">{{ row.isCurrent === 1 ? '取消激活' : '激活' }}</el-button>
+          <el-button v-if="hasPermission('project:env:test')" type="primary" link size="small" @click="handleTest(row)">{{ testLoading === row.id ? '测试中...' : '测试' }}</el-button>
+          <el-button v-if="hasPermission('project:env:edit')" type="primary" link size="small" @click="openEdit(row)">编辑</el-button>
+          <el-button v-if="hasPermission('project:env:delete')" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

@@ -14,9 +14,9 @@ import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader/index.vue'
 import { getUsers, createUser, updateUser, deleteUser, toggleUserStatus, resetPassword, getRoles } from '@/api/user'
 import { validatePassword, PASSWORD_RULE_HINT } from '@/utils/password'
-import { useUserStore } from '@/stores/modules/user'
+import { usePermission } from '@/composables/usePermission'
 
-const userStore = useUserStore()
+const { hasPermission } = usePermission()
 
 // ===== 列表数据 =====
 const loading = ref(false)
@@ -358,7 +358,7 @@ onMounted(() => { fetchUsers(); fetchRoles() })
 <template>
   <div class="user-mgmt-view">
     <PageHeader title="用户列表">
-      <el-button type="primary" @click="openCreateUser">+ 新建用户</el-button>
+      <el-button v-if="hasPermission('system:user:add')" type="primary" @click="openCreateUser">+ 新建用户</el-button>
     </PageHeader>
 
     <!-- 搜索工具栏 -->
@@ -406,19 +406,15 @@ onMounted(() => { fetchUsers(); fetchRoles() })
             <template #default="{ row }">
               <div class="um-actions">
                 <template v-if="isAdminRow(row)">
-                  <template v-if="userStore.username?.toLowerCase() === 'admin'">
-                    <el-button type="primary" link size="small" @click="openEditUser(row)">编辑</el-button>
-                    <el-button type="primary" link size="small" @click="openRoleAssign(row)">分配角色</el-button>
-                  </template>
                   <el-button type="primary" link size="small" @click="openResetPassword(row)">重置密码</el-button>
                 </template>
                 <template v-else>
-                  <el-button type="primary" link size="small" @click="openEditUser(row)">编辑</el-button>
-                  <el-button type="primary" link size="small" @click="openRoleAssign(row)">分配角色</el-button>
-                  <el-button v-if="row.isActive === 1" type="warning" link size="small" @click="openToggleStatus(row, 'disable')">禁用</el-button>
-                  <el-button v-else type="success" link size="small" @click="openToggleStatus(row, 'enable')">启用</el-button>
-                  <el-button type="primary" link size="small" @click="openResetPassword(row)">重置密码</el-button>
-                  <el-button type="danger" link size="small" @click="openDeleteUser(row)">删除</el-button>
+                  <el-button v-if="hasPermission('system:user:edit')" type="primary" link size="small" @click="openEditUser(row)">编辑</el-button>
+                  <el-button v-if="hasPermission('system:user:edit')" type="primary" link size="small" @click="openRoleAssign(row)">分配角色</el-button>
+                  <el-button v-if="hasPermission('system:user:toggle') && row.isActive === 1" type="warning" link size="small" @click="openToggleStatus(row, 'disable')">禁用</el-button>
+                  <el-button v-if="hasPermission('system:user:toggle') && row.isActive !== 1" type="success" link size="small" @click="openToggleStatus(row, 'enable')">启用</el-button>
+                  <el-button v-if="hasPermission('system:user:reset-password')" type="primary" link size="small" @click="openResetPassword(row)">重置密码</el-button>
+                  <el-button v-if="hasPermission('system:user:delete')" type="danger" link size="small" @click="openDeleteUser(row)">删除</el-button>
                 </template>
               </div>
             </template>

@@ -34,6 +34,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+    /** 系统保留管理员账号 */
+    private static final String RESERVED_USERNAME = "admin";
+    /** 内置超级管理员角色编码 */
+    private static final String BUILTIN_ROLE_CODE = "ADMIN";
 
     private final JwtTokenProvider jwtTokenProvider;
     private final UserMapper userMapper;
@@ -66,6 +70,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         if (user != null) {
                             // 权限信息从 JWT claims 中获取（登录时已写入 role_code）
                             String role = jwtTokenProvider.getRole(claims);
+                            // admin 账号保护：强制使用 ADMIN 角色，不受角色管理配置影响
+                            if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
+                                role = BUILTIN_ROLE_CODE;
+                            }
                             UsernamePasswordAuthenticationToken auth =
                                     new UsernamePasswordAuthenticationToken(
                                             user,

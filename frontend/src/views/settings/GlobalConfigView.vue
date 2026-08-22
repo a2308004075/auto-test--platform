@@ -13,6 +13,9 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader/index.vue'
 import { getSettings, updateSetting, testSmtpSend, testWebhookSend, type GlobalConfigItem } from '@/api/settings'
+import { usePermission } from '@/composables/usePermission'
+
+const { hasPermission } = usePermission()
 
 // ===== 配置数据 =====
 const configLoading = ref(false)
@@ -186,7 +189,7 @@ onMounted(() => { fetchSettings() })
           </div>
         </div>
         <div class="config-save-row">
-          <el-button type="primary" :loading="retentionSaving" @click="handleSaveRetention">保存</el-button>
+          <el-button v-if="hasPermission('system:config:save')" type="primary" :loading="retentionSaving" @click="handleSaveRetention">保存</el-button>
         </div>
       </div>
     </div>
@@ -224,7 +227,7 @@ onMounted(() => { fetchSettings() })
           </div>
         </div>
         <div class="config-test-row">
-          <el-button size="small" @click="openTestSend('smtp')">测试发送</el-button>
+          <el-button v-if="hasPermission('system:config:test')" size="small" @click="openTestSend('smtp')">测试发送</el-button>
           <span v-if="smtpTestStatus" class="config-test-status" style="color: var(--el-color-success);">{{ smtpTestStatus }}</span>
         </div>
 
@@ -243,12 +246,12 @@ onMounted(() => { fetchSettings() })
           </div>
         </div>
         <div class="config-test-row">
-          <el-button size="small" @click="openTestSend('webhook')">测试发送</el-button>
+          <el-button v-if="hasPermission('system:config:test')" size="small" @click="openTestSend('webhook')">测试发送</el-button>
           <span v-if="webhookTestStatus" class="config-test-status" style="color: var(--el-color-success);">{{ webhookTestStatus }}</span>
         </div>
 
         <div class="config-save-row">
-          <el-button type="primary" :loading="notificationSaving" @click="handleSaveNotification">保存</el-button>
+          <el-button v-if="hasPermission('system:config:save')" type="primary" :loading="notificationSaving" @click="handleSaveNotification">保存</el-button>
         </div>
       </div>
     </div>

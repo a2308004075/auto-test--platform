@@ -53,7 +53,7 @@ public class RoleController {
     }
 
     /**
-     * 查询角色详情（含权限 ID 列表）（ADMIN）
+     * 查询角色详情（含权限分配列表）（ADMIN）
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -102,22 +102,22 @@ public class RoleController {
     }
 
     /**
-     * 获取角色已分配的权限 ID 列表（ADMIN）
+     * 获取角色已分配的权限列表（含按角色 control_mode）（ADMIN）
      */
     @GetMapping("/{id}/permissions")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<List<Long>> rolePermissions(@PathVariable Long id) {
-        return ApiResponse.ok(roleService.getRolePermissionIds(id));
+    public ApiResponse<List<PermissionAssignmentDTO>> rolePermissions(@PathVariable Long id) {
+        return ApiResponse.ok(roleService.getRolePermissions(id));
     }
 
     /**
-     * 分配权限（ADMIN）
+     * 分配权限（含按角色 control_mode）（ADMIN）
      */
     @PostMapping("/{id}/permissions")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> assignPermissions(@PathVariable Long id,
-                                                @RequestBody List<Long> permissionIds) {
-        roleService.assignPermissions(id, permissionIds);
+                                                @RequestBody List<PermissionAssignmentDTO> permissions) {
+        roleService.assignPermissions(id, permissions);
         return ApiResponse.success(null, "权限分配成功");
     }
 

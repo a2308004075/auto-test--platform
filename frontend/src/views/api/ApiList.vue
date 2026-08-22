@@ -22,10 +22,12 @@ import ColumnSettings, { type ColumnItem } from '@/components/ColumnSettings/ind
 import ProPagination from '@/components/ProPagination/index.vue'
 import ApiDebugModal from '@/components/ApiDebugModal/index.vue'
 import { useDict } from '@/composables/useDict'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
 const projectId = computed(() => Number(route.params.id))
+const { hasPermission } = usePermission()
 
 const methodColors: Record<string, string> = { GET: '', POST: 'success', PUT: 'warning', DELETE: 'danger', PATCH: 'info' }
 const { options: httpMethodOptions } = useDict('http_method')
@@ -50,15 +52,24 @@ const moduleMap = computed<Record<number, any>>(() => {
 })
 // 用户分组（非系统），用于父分组下拉
 const userModules = computed(() => modules.value.filter((m) => m.isSystem !== 1))
-// 分组树：全部(虚拟) + 用户分组按 parentId 建树
+// 批量移动可选分组（用户分组 + 未分类系统分组）
+const moveTargetModules = computed(() =>
+  modules.value.filter((m) => m.isSystem !== 1 || m.name === '未分类')
+)
+// 分组树：全部(虚拟) + 系统分组(未分类等，排除全部) + 用户分组按 parentId 建树
 const moduleTree = computed(() => {
   const userGroups = modules.value.filter((m) => m.isSystem !== 1)
   const buildTree = (parentId: number | null): any[] =>
     userGroups
       .filter((m) => (m.parentId ?? null) === parentId)
       .map((m) => ({ ...m, children: buildTree(m.id) }))
+  // 系统分组（排除"全部"，用虚拟节点代替）
+  const systemGroups = modules.value
+    .filter((m) => m.isSystem === 1 && m.name !== '全部')
+    .map((m) => ({ ...m, children: [] }))
   return [
     { id: 0, name: '全部', isSystem: 1, apiCount: pagination.total, children: [] },
+    ...systemGroups,
     ...buildTree(null),
   ]
 })
@@ -183,7 +194,6 @@ function handleDeleteGroup(m: any) {
 }
 
 // ===== 表字段调整 =====
-const colSettingsVisible = ref(false)
 const defaultColumns: ColumnItem[] = [
   { key: 'id', label: 'ID', locked: true, visible: true },
   { key: 'name', label: '接口名称', locked: true, visible: true },
@@ -234,8 +244,8 @@ onMounted(() => { fetchModules(); fetchList() })
 <template>
   <div>
     <PageHeader title="接口文档">
-      <el-button @click="router.push(`/project/${projectId}/apis/swagger-import`)">导入 Swagger</el-button>
-      <el-button type="primary" @click="router.push(`/project/${projectId}/apis/new`)">+ 新建接口</el-button>
+      <el-button v-if="hasPermission('project:api:swagger')" @click="router.push(`/project/${projectId}/apis/swagger-import`)">导入 Swagger</el-button>
+      <el-button v-if="hasPermission('project:api:add')" type="primary" @click="router.push(`/project/${projectId}/apis/new`)">+ 新建接口</el-button>
     </PageHeader>
 
     <div class="api-layout">
@@ -243,7 +253,7 @@ onMounted(() => { fetchModules(); fetchList() })
       <div class="module-panel">
         <div class="module-head">
           <span class="module-title">分组</span>
-          <el-button size="small" type="primary" link @click="openCreateGroup()">+ 新建</el-button>
+          <el-button v-if="hasPermission('project:api:group')" size="small" type="primary" link @click="openCreateGroup()">+ 新建</el-button>
         </div>
         <div class="module-tree">
           <el-tree
@@ -261,7 +271,7 @@ onMounted(() => { fetchModules(); fetchList() })
                   <span v-if="data.servicePrefix" class="module-prefix">{{ data.servicePrefix }}</span>
                 </span>
                 <span class="module-count">{{ data.apiCount ?? 0 }}</span>
-                <span v-if="data.isSystem !== 1" class="module-ops" @click.stop>
+                <span v-if="data.isSystem !== 1 && hasPermission('project:api:group')" class="module-ops" @click.stop>
                   <el-button link size="small" @click="openCreateGroup(data.id)">+ 子级</el-button>
                   <el-button link size="small" @click="openEditGroup(data)">编辑</el-button>
                   <el-button link size="small" type="danger" @click="handleDeleteGroup(data)">删除</el-button>
@@ -300,10 +310,15 @@ onMounted(() => { fetchModules(); fetchList() })
         </ProSearchCard>
 
         <div class="table-toolbar">
-          <el-button @click="colSettingsVisible = true">表字段调整</el-button>
+          <ColumnSettings
+            :columns="columns"
+            @update:columns="(v: ColumnItem[]) => (columns = v)"
+            @reset="resetColumns"
+          />
         </div>
 
         <BatchBar
+          v-if="hasPermission('project:api:batch')"
           :selected-count="selectedIds.length"
           :actions="[{ key: 'move', label: '批量修改分组' }, { key: 'delete', label: '批量删除', danger: true }]"
           @action="handleBatchAction"
@@ -342,8 +357,8 @@ onMounted(() => { fetchModules(); fetchList() })
           <el-table-column v-if="isColVisible('action')" label="操作" width="170" fixed="right">
             <template #default="{ row }">
               <el-button type="primary" link size="small" @click="openDebug(row.id)">调试</el-button>
-              <el-button type="primary" link size="small" @click="router.push(`/project/${projectId}/apis/${row.id}/edit`)">编辑</el-button>
-              <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+              <el-button v-if="hasPermission('project:api:edit')" type="primary" link size="small" @click="router.push(`/project/${projectId}/apis/${row.id}/edit`)">编辑</el-button>
+              <el-button v-if="hasPermission('project:api:delete')" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -390,21 +405,13 @@ onMounted(() => { fetchModules(); fetchList() })
         将选中的 <b style="color: #409eff">{{ selectedIds.length }}</b> 条接口移动到：
       </p>
       <el-select v-model="batchMoveTarget" placeholder="选择目标分组" filterable style="width: 100%">
-        <el-option v-for="m in userModules" :key="m.id" :value="m.id" :label="m.name" />
+        <el-option v-for="m in moveTargetModules" :key="m.id" :value="m.id" :label="m.name" />
       </el-select>
       <template #footer>
         <el-button @click="batchMoveVisible = false">取消</el-button>
         <el-button type="primary" @click="handleBatchMove">确认移动</el-button>
       </template>
     </el-dialog>
-
-    <!-- 表字段调整 -->
-    <ColumnSettings
-      v-model="colSettingsVisible"
-      :columns="columns"
-      @update:columns="(v: ColumnItem[]) => (columns = v)"
-      @reset="resetColumns"
-    />
 
     <!-- 调试弹窗 -->
     <ApiDebugModal v-model="debugVisible" :project-id="projectId" :api-id="debugApiId" />

@@ -11,8 +11,10 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTools, createTool, updateTool, deleteTool, testTool } from '@/api/tool'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
+const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 
 const loading = ref(false)
@@ -99,7 +101,7 @@ onMounted(fetchList)
           <el-radio-button value="BUILTIN">内置</el-radio-button>
           <el-radio-button value="CUSTOM">自定义</el-radio-button>
         </el-radio-group>
-        <el-button type="primary" @click="openCreate">新建工具</el-button>
+        <el-button v-if="hasPermission('project:tool:add')" type="primary" @click="openCreate">新建工具</el-button>
       </div>
     </div>
     <el-table v-loading="loading" :data="list" row-key="id" border style="width:100%">
@@ -113,9 +115,9 @@ onMounted(fetchList)
       <el-table-column prop="description" label="描述" show-overflow-tooltip />
       <el-table-column label="操作" width="180" fixed="right">
         <template #default="{ row }">
-          <el-button type="primary" link size="small" @click="openTest(row)">测试</el-button>
-          <el-button type="primary" link size="small" @click="openEdit(row)">编辑</el-button>
-          <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+          <el-button v-if="hasPermission('project:tool:test')" type="primary" link size="small" @click="openTest(row)">测试</el-button>
+          <el-button v-if="hasPermission('project:tool:edit')" type="primary" link size="small" @click="openEdit(row)">编辑</el-button>
+          <el-button v-if="hasPermission('project:tool:delete')" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

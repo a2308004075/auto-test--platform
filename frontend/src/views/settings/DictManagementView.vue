@@ -23,6 +23,9 @@ import {
   type DictListItem,
   type DictCreateRequest,
 } from '@/api/dict'
+import { usePermission } from '@/composables/usePermission'
+
+const { hasPermission } = usePermission()
 
 // ===== 列表数据 =====
 const loading = ref(false)
@@ -263,12 +266,12 @@ onMounted(() => {
     <!-- 表格区 -->
     <div class="table-card">
       <div class="button-list">
-        <el-button type="primary" @click="openAdd">新增字典</el-button>
-        <el-button type="danger" :disabled="!selectionList.length" @click="handleBatchDelete">
+        <el-button v-if="hasPermission('system:dict:add')" type="primary" @click="openAdd">新增字典</el-button>
+        <el-button v-if="hasPermission('system:dict:delete')" type="danger" :disabled="!selectionList.length" @click="handleBatchDelete">
           批量删除
         </el-button>
-        <el-button :loading="importing" @click="triggerImport">导入</el-button>
-        <el-button @click="handleExport">导出</el-button>
+        <el-button v-if="hasPermission('system:dict:import')" :loading="importing" @click="triggerImport">导入</el-button>
+        <el-button v-if="hasPermission('system:dict:export')" @click="handleExport">导出</el-button>
       </div>
 
       <TableFit>
@@ -288,7 +291,7 @@ onMounted(() => {
             <el-table-column prop="dictValueName" label="字典键值描述" min-width="120" />
             <el-table-column label="操作" width="80" align="right" fixed="right">
               <template #default="{ row }">
-                <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+                <el-button v-if="hasPermission('system:dict:edit')" link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
               </template>
             </el-table-column>
           </el-table>

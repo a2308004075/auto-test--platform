@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,6 +52,8 @@ public class AuthService {
 
     private static final String RESERVED_USERNAME = "admin";
     private static final String RESERVED_DISPLAY_NAME = "管理员";
+    /** 内置超级管理员角色编码 */
+    private static final String BUILTIN_ROLE_CODE = "ADMIN";
 
     public AuthService(UserMapper userMapper,
                        UserRoleMapper userRoleMapper,
@@ -120,6 +123,10 @@ public class AuthService {
         }
 
         String roleCode = getRoleCode(user.getRoleId());
+        // admin 账号保护：强制使用 ADMIN 角色，不受角色管理配置影响
+        if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
+            roleCode = BUILTIN_ROLE_CODE;
+        }
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), roleCode);
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
 
@@ -172,7 +179,12 @@ public class AuthService {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND, "用户不存在或已禁用");
         }
 
-        String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), getRoleCode(user.getRoleId()));
+        String roleCode = getRoleCode(user.getRoleId());
+        // admin 账号保护：刷新 Token 时同样强制使用 ADMIN 角色
+        if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
+            roleCode = BUILTIN_ROLE_CODE;
+        }
+        String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), roleCode);
 
         TokenResponse response = new TokenResponse();
         response.setAccessToken(newAccessToken);
@@ -224,17 +236,27 @@ public class AuthService {
         response.setDisplayName(user.getDisplayName());
         response.setBio(user.getBio());
         response.setRoleId(user.getRoleId());
-        String roleCode = getRoleCode(user.getRoleId());
-        response.setRole(roleCode);
-        UserRole role = userRoleMapper.selectById(user.getRoleId());
-        if (role != null) {
-            response.setRoleName(role.getRoleName());
+        // admin 账号保护：强制使用 ADMIN 角色和全部权限，不受角色管理配置影响
+        if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
+            response.setRole(BUILTIN_ROLE_CODE);
+            response.setRoleName(RESERVED_DISPLAY_NAME);
+            response.setPermissions(Collections.singletonList("*"));
+            PermissionBriefDTO dto = new PermissionBriefDTO();
+            dto.setCode("*");
+            response.setPermissionDetails(Collections.singletonList(dto));
+        } else {
+            String roleCode = getRoleCode(user.getRoleId());
+            response.setRole(roleCode);
+            UserRole role = userRoleMapper.selectById(user.getRoleId());
+            if (role != null) {
+                response.setRoleName(role.getRoleName());
+            }
+            response.setPermissions(roleService.getPermissionCodesByRoleId(user.getRoleId()));
+            response.setPermissionDetails(roleService.getPermissionDetailsByRoleId(user.getRoleId()));
         }
         response.setIsActive(user.getIsActive());
         response.setLastLoginAt(user.getLastLoginAt());
         response.setCreatedAt(user.getCreatedAt());
-        response.setPermissions(roleService.getPermissionCodesByRoleId(user.getRoleId()));
-        response.setPermissionDetails(roleService.getPermissionDetailsByRoleId(user.getRoleId()));
         return response;
     }
 
@@ -421,17 +443,27 @@ public class AuthService {
         response.setDisplayName(user.getDisplayName());
         response.setBio(user.getBio());
         response.setRoleId(user.getRoleId());
-        String roleCode = getRoleCode(user.getRoleId());
-        response.setRole(roleCode);
-        UserRole role = userRoleMapper.selectById(user.getRoleId());
-        if (role != null) {
-            response.setRoleName(role.getRoleName());
+        // admin 账号保护：强制使用 ADMIN 角色和全部权限
+        if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
+            response.setRole(BUILTIN_ROLE_CODE);
+            response.setRoleName(RESERVED_DISPLAY_NAME);
+            response.setPermissions(Collections.singletonList("*"));
+            PermissionBriefDTO dto = new PermissionBriefDTO();
+            dto.setCode("*");
+            response.setPermissionDetails(Collections.singletonList(dto));
+        } else {
+            String roleCode = getRoleCode(user.getRoleId());
+            response.setRole(roleCode);
+            UserRole role = userRoleMapper.selectById(user.getRoleId());
+            if (role != null) {
+                response.setRoleName(role.getRoleName());
+            }
+            response.setPermissions(roleService.getPermissionCodesByRoleId(user.getRoleId()));
+            response.setPermissionDetails(roleService.getPermissionDetailsByRoleId(user.getRoleId()));
         }
         response.setIsActive(user.getIsActive());
         response.setLastLoginAt(user.getLastLoginAt());
         response.setCreatedAt(user.getCreatedAt());
-        response.setPermissions(roleService.getPermissionCodesByRoleId(user.getRoleId()));
-        response.setPermissionDetails(roleService.getPermissionDetailsByRoleId(user.getRoleId()));
         return response;
     }
 
@@ -440,9 +472,18 @@ public class AuthService {
         brief.setId(user.getId());
         brief.setUsername(user.getUsername());
         brief.setDisplayName(user.getDisplayName());
-        brief.setRole(getRoleCode(user.getRoleId()));
-        brief.setPermissions(roleService.getPermissionCodesByRoleId(user.getRoleId()));
-        brief.setPermissionDetails(roleService.getPermissionDetailsByRoleId(user.getRoleId()));
+        // admin 账号保护：强制使用 ADMIN 角色和全部权限
+        if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
+            brief.setRole(BUILTIN_ROLE_CODE);
+            brief.setPermissions(Collections.singletonList("*"));
+            PermissionBriefDTO dto = new PermissionBriefDTO();
+            dto.setCode("*");
+            brief.setPermissionDetails(Collections.singletonList(dto));
+        } else {
+            brief.setRole(getRoleCode(user.getRoleId()));
+            brief.setPermissions(roleService.getPermissionCodesByRoleId(user.getRoleId()));
+            brief.setPermissionDetails(roleService.getPermissionDetailsByRoleId(user.getRoleId()));
+        }
         return brief;
     }
 }

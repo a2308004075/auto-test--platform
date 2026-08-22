@@ -11,9 +11,11 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getExecutions, cancelExecution } from '@/api/execution'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
+const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 
 const loading = ref(false)
@@ -102,7 +104,7 @@ onMounted(fetchList)
       <el-table-column label="操作" width="140" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="viewDetail(row)">详情</el-button>
-          <el-button v-if="row.status === 'PENDING' || row.status === 'RUNNING'"
+          <el-button v-if="(row.status === 'PENDING' || row.status === 'RUNNING') && hasPermission('project:execution:cancel')"
             type="danger" link size="small" @click="handleCancel(row)">取消</el-button>
         </template>
       </el-table-column>

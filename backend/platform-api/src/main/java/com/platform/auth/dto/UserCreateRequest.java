@@ -28,7 +28,7 @@ public class UserCreateRequest {
     private String displayName;
 
     @NotBlank(message = "密码不能为空")
-    @Size(min = PasswordPolicy.MIN_LENGTH, max = PasswordPolicy.MAX_LENGTH, message = PasswordPolicy.SIZE_MESSAGE)
+    @Size(min = PasswordPolicy.MIN_LENGTH, message = PasswordPolicy.SIZE_MESSAGE)
     @Pattern(regexp = PasswordPolicy.PATTERN, message = PasswordPolicy.PATTERN_MESSAGE)
     private String password;
 

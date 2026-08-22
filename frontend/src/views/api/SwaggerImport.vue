@@ -11,10 +11,12 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { importSwagger, getModules } from '@/api/apidoc'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
 const projectId = computed(() => Number(route.params.id))
+const { hasPermission } = usePermission()
 
 const currentStep = ref(0)
 const loading = ref(false)
@@ -86,7 +88,7 @@ fetchModules()
         </el-form-item>
         <div style="display:flex;gap:8px">
           <el-button @click="currentStep = 0">上一步</el-button>
-          <el-button type="primary" :loading="loading" @click="handleImport">开始导入</el-button>
+          <el-button v-if="hasPermission('project:api:swagger')" type="primary" :loading="loading" @click="handleImport">开始导入</el-button>
         </div>
       </div>
 

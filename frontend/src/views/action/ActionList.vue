@@ -11,9 +11,11 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getActions, createAction, deleteAction } from '@/api/action'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
+const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 
 const loading = ref(false)
@@ -63,7 +65,7 @@ onMounted(fetchList)
         <el-input v-model="keyword" placeholder="搜索" style="width:200px" clearable @keyup.enter="handleSearch" @clear="handleSearch">
           <template #append><el-button @click="handleSearch">搜索</el-button></template>
         </el-input>
-        <el-button type="primary" @click="handleCreate">新建 Action</el-button>
+        <el-button v-if="hasPermission('project:action:add')" type="primary" @click="handleCreate">新建 Action</el-button>
       </div>
     </div>
     <el-table v-loading="loading" :data="list" row-key="id" border style="width:100%">
@@ -75,9 +77,9 @@ onMounted(fetchList)
       </el-table-column>
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
-          <el-button type="primary" link size="small" @click="router.push(`/project/${projectId}/actions/${row.id}/edit`)">编辑</el-button>
-          <el-button type="primary" link size="small" @click="router.push(`/project/${projectId}/actions/${row.id}/debug`)">调试</el-button>
-          <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+          <el-button v-if="hasPermission('project:action:edit')" type="primary" link size="small" @click="router.push(`/project/${projectId}/actions/${row.id}/edit`)">编辑</el-button>
+          <el-button v-if="hasPermission('project:action:debug')" type="primary" link size="small" @click="router.push(`/project/${projectId}/actions/${row.id}/debug`)">调试</el-button>
+          <el-button v-if="hasPermission('project:action:delete')" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

@@ -12,9 +12,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getPlans, deletePlan } from '@/api/plan'
 import { startExecution } from '@/api/execution'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
+const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 
 const loading = ref(false)
@@ -66,7 +68,7 @@ onMounted(fetchList)
         <el-input v-model="keyword" placeholder="搜索计划" style="width:220px" clearable @keyup.enter="handleSearch" @clear="handleSearch">
           <template #append><el-button @click="handleSearch">搜索</el-button></template>
         </el-input>
-        <el-button type="primary" @click="router.push(`/project/${projectId}/plans/new`)">新建计划</el-button>
+        <el-button v-if="hasPermission('project:plan:add')" type="primary" @click="router.push(`/project/${projectId}/plans/new`)">新建计划</el-button>
       </div>
     </div>
 
@@ -87,9 +89,9 @@ onMounted(fetchList)
       </el-table-column>
       <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
-          <el-button type="success" link size="small" @click="handleRun(row)">执行</el-button>
-          <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+          <el-button v-if="hasPermission('project:plan:run')" type="success" link size="small" @click="handleRun(row)">执行</el-button>
+          <el-button v-if="hasPermission('project:plan:edit')" type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
+          <el-button v-if="hasPermission('project:plan:delete')" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

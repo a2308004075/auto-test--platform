@@ -19,9 +19,11 @@ import ProSearchCard from '@/components/ProSearchCard/index.vue'
 import BatchBar from '@/components/BatchBar/index.vue'
 import ColumnSettings, { type ColumnItem } from '@/components/ColumnSettings/index.vue'
 import ProPagination from '@/components/ProPagination/index.vue'
+import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
+const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 
 const methodColors: Record<string, string> = { GET: '', POST: 'success', PUT: 'warning', DELETE: 'danger', PATCH: 'info' }
@@ -43,7 +45,6 @@ const moduleMap = computed<Record<number, any>>(() => {
   modules.value.forEach((mod) => { m[mod.id] = mod })
   return m
 })
-const userModules = computed(() => modules.value.filter((m: any) => m.isSystem !== 1))
 const moduleTree = computed(() => {
   const userGroups = modules.value.filter((m: any) => m.isSystem !== 1)
   const buildTree = (parentId: number | null): any[] =>
@@ -142,7 +143,6 @@ async function handleGenerate() {
 }
 
 // ===== 表字段调整 =====
-const colSettingsVisible = ref(false)
 const defaultColumns: ColumnItem[] = [
   { key: 'name', label: '关键字名称', locked: true, visible: true },
   { key: 'method', label: '方法', locked: false, visible: true },
@@ -175,8 +175,8 @@ onMounted(() => { fetchModules(); fetchList() })
 <template>
   <div>
     <PageHeader title="接口关键字">
-      <el-button @click="openGenerate">从接口生成</el-button>
-      <el-button type="primary" @click="router.push(`/project/${projectId}/keywords/new`)">+ 新建关键字</el-button>
+      <el-button v-if="hasPermission('project:keyword:from-api')" @click="openGenerate">从接口生成</el-button>
+      <el-button v-if="hasPermission('project:keyword:add')" type="primary" @click="router.push(`/project/${projectId}/keywords/new`)">+ 新建关键字</el-button>
     </PageHeader>
 
     <div class="kw-layout">
@@ -218,10 +218,15 @@ onMounted(() => { fetchModules(); fetchList() })
         </ProSearchCard>
 
         <div class="table-toolbar">
-          <el-button @click="colSettingsVisible = true">表字段调整</el-button>
+          <ColumnSettings
+            :columns="columns"
+            @update:columns="(v: ColumnItem[]) => (columns = v)"
+            @reset="resetColumns"
+          />
         </div>
 
         <BatchBar
+          v-if="hasPermission('project:keyword:batch-delete')"
           :selected-count="selectedIds.length"
           :actions="[{ key: 'delete', label: '批量删除', danger: true }]"
           @action="handleBatchAction"
@@ -267,8 +272,8 @@ onMounted(() => { fetchModules(); fetchList() })
           </el-table-column>
           <el-table-column v-if="isColVisible('action')" label="操作" width="140" fixed="right">
             <template #default="{ row }">
-              <el-button type="primary" link size="small" @click="router.push(`/project/${projectId}/keywords/${row.id}/edit`)">编辑</el-button>
-              <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+              <el-button v-if="hasPermission('project:keyword:edit')" type="primary" link size="small" @click="router.push(`/project/${projectId}/keywords/${row.id}/edit`)">编辑</el-button>
+              <el-button v-if="hasPermission('project:keyword:delete')" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -295,13 +300,6 @@ onMounted(() => { fetchModules(); fetchList() })
       </template>
     </el-dialog>
 
-    <!-- 表字段调整 -->
-    <ColumnSettings
-      v-model="colSettingsVisible"
-      :columns="columns"
-      @update:columns="(v: ColumnItem[]) => (columns = v)"
-      @reset="resetColumns"
-    />
   </div>
 </template>
 

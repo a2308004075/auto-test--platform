@@ -19,7 +19,7 @@ import javax.validation.constraints.Size;
 public class ResetPasswordRequest {
 
     @NotBlank(message = "新密码不能为空")
-    @Size(min = PasswordPolicy.MIN_LENGTH, max = PasswordPolicy.MAX_LENGTH, message = PasswordPolicy.SIZE_MESSAGE)
+    @Size(min = PasswordPolicy.MIN_LENGTH, message = PasswordPolicy.SIZE_MESSAGE)
     @Pattern(regexp = PasswordPolicy.PATTERN, message = PasswordPolicy.PATTERN_MESSAGE)
     private String newPassword;
 }

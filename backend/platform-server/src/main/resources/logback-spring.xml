@@ -73,6 +73,23 @@
         <appender-ref ref="ACCESS"/>
     </logger>
 
+    <!-- ======================== 屏蔽数据库调用详情日志 ========================
+         将 MyBatis mapper 命名空间及数据库基础设施组件的日志级别提升至 WARN，
+         阻止 DEBUG 级别的 SQL 语句、参数绑定、结果集等信息写入 all.log。
+    -->
+    <logger name="com.platform.action.mapper" level="WARN"/>
+    <logger name="com.platform.apidoc.mapper" level="WARN"/>
+    <logger name="com.platform.auth.mapper" level="WARN"/>
+    <logger name="com.platform.environment.mapper" level="WARN"/>
+    <logger name="com.platform.execution.mapper" level="WARN"/>
+    <logger name="com.platform.keyword.mapper" level="WARN"/>
+    <logger name="com.platform.project.mapper" level="WARN"/>
+    <logger name="com.platform.sys.mapper" level="WARN"/>
+    <logger name="com.platform.tool.mapper" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    <logger name="org.apache.ibatis" level="WARN"/>
+    <logger name="org.mybatis.spring" level="WARN"/>
+
     <!-- ======================== 开发环境：控制台 + 文件 ======================== -->
     <springProfile name="dev">
         <root level="INFO">

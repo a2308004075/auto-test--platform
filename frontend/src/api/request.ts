@@ -31,6 +31,8 @@ service.interceptors.request.use(
 )
 
 // 响应拦截器
+let isRedirecting = false // 防止重复跳转
+
 service.interceptors.response.use(
   (response: AxiosResponse) => {
     return response.data
@@ -56,10 +58,22 @@ service.interceptors.response.use(
       if (!skipGlobalMessage) {
         ElMessage.error(data?.message || '请求参数错误')
       }
+    } else if (status === 502 || status === 503 || !status) {
+      // 后端服务未启动或网络不可达
+      const token = localStorage.getItem('token')
+      if (token && !isRedirecting) {
+        // 已登录用户：自动退出登录
+        isRedirecting = true
+        localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
+        ElMessage.error('服务连接失败，请稍后重试')
+        window.location.href = '/home'
+      } else if (!token) {
+        // 未登录用户：仅提示网络错误
+        ElMessage.error('网络连接失败')
+      }
     } else if (status >= 500) {
       ElMessage.error(data?.message || '服务器错误')
-    } else if (!status) {
-      ElMessage.error('网络连接失败')
     }
 
     return Promise.reject(error)

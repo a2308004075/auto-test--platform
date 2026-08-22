@@ -1,9 +1,11 @@
 package com.platform.auth.dto;
 
+import com.platform.common.constant.PasswordPolicy;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 /**
@@ -21,7 +23,8 @@ public class UserCreateRequest {
     private String displayName;
 
     @NotBlank(message = "密码不能为空")
-    @Size(min = 8, max = 128, message = "密码长度必须在 8-128 之间")
+    @Size(min = PasswordPolicy.MIN_LENGTH, max = PasswordPolicy.MAX_LENGTH, message = PasswordPolicy.SIZE_MESSAGE)
+    @Pattern(regexp = PasswordPolicy.PATTERN, message = PasswordPolicy.PATTERN_MESSAGE)
     private String password;
 
     @NotNull(message = "角色 ID 不能为空")

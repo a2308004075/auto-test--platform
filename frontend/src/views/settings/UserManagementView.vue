@@ -8,6 +8,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader/index.vue'
 import { getUsers, createUser, updateUser, deleteUser, toggleUserStatus, resetPassword, getRoles } from '@/api/user'
+import { validatePassword, PASSWORD_RULE_HINT } from '@/utils/password'
 
 // ===== 列表数据 =====
 const loading = ref(false)
@@ -158,6 +159,12 @@ async function handleCreateUser() {
   if (!createForm.password) {
     createErrors.password = '请输入密码'
     valid = false
+  } else {
+    const pwdError = validatePassword(createForm.password)
+    if (pwdError) {
+      createErrors.password = pwdError
+      valid = false
+    }
   }
   if (!valid) return
 
@@ -256,11 +263,9 @@ async function handleResetPassword() {
   resetErrors.newPassword = ''
   resetErrors.confirmPassword = ''
 
-  if (!resetForm.newPassword) {
-    resetErrors.newPassword = '请输入新密码'
-    valid = false
-  } else if (resetForm.newPassword.length < 8) {
-    resetErrors.newPassword = '密码长度不能少于8位'
+  const pwdError = validatePassword(resetForm.newPassword)
+  if (pwdError) {
+    resetErrors.newPassword = pwdError
     valid = false
   }
   if (!resetForm.confirmPassword) {
@@ -432,7 +437,7 @@ onMounted(() => { fetchUsers(); fetchRoles() })
           <div v-if="createErrors.displayName" class="um-error-msg">{{ createErrors.displayName }}</div>
         </el-form-item>
         <el-form-item label="密码" required>
-          <el-input v-model="createForm.password" type="password" show-password placeholder="请输入密码" @input="clearCreateError('password')" />
+          <el-input v-model="createForm.password" type="password" show-password :placeholder="PASSWORD_RULE_HINT" @input="clearCreateError('password')" />
           <div v-if="createErrors.password" class="um-error-msg">{{ createErrors.password }}</div>
         </el-form-item>
         <el-form-item label="角色">
@@ -494,7 +499,7 @@ onMounted(() => { fetchUsers(); fetchRoles() })
       </div>
       <el-form label-position="top">
         <el-form-item label="新密码" required>
-          <el-input v-model="resetForm.newPassword" type="password" show-password placeholder="请输入新密码（至少8位）" @input="clearResetError('newPassword')" />
+          <el-input v-model="resetForm.newPassword" type="password" show-password :placeholder="PASSWORD_RULE_HINT" @input="clearResetError('newPassword')" />
           <div v-if="resetErrors.newPassword" class="um-error-msg">{{ resetErrors.newPassword }}</div>
         </el-form-item>
         <el-form-item label="确认密码" required>

@@ -7,6 +7,7 @@
  * <p>子包结构：
  * <ul>
  *   <li>config - MyBatisPlusConfig, RedisConfig, RabbitMQConfig</li>
+ *   <li>constant - PasswordPolicy（密码策略常量）</li>
  *   <li>entity - BaseEntity（数据库实体基类）</li>
  *   <li>exception - BusinessException, DependencyException, NotFoundException, ErrorCode, GlobalExceptionHandler</li>
  *   <li>response - ApiResponse, PageResponse</li>

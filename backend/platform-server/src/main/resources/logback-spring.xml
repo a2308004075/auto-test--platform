@@ -18,14 +18,13 @@
     <!-- ======================== 全量日志文件（按日期+大小滚动） ======================== -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/application.log</file>
+        <append>false</append>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- 每天生成新文件，单文件最大 100MB -->
             <fileNamePattern>${LOG_PATH}/application.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <maxFileSize>100MB</maxFileSize>
-            <!-- 保留 30 天历史日志 -->
-            <maxHistory>30</maxHistory>
-            <!-- 所有日志文件总大小上限 3GB -->
-            <totalSizeCap>3GB</totalSizeCap>
+            <!-- 启动时清理旧归档文件，不保留历史日志 -->
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
             <pattern>${FILE_PATTERN}</pattern>

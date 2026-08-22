@@ -11,4 +11,5 @@ INSERT INTO global_settings (config_key, config_value, description) VALUES
 ('login.max_attempts', '5', '最大登录失败尝试次数'),
 ('login.lockout_minutes', '30', '账户锁定时长（分钟）'),
 ('session.timeout_minutes', '120', '会话超时时间（分钟）'),
-('password.min_length', '6', '密码最小长度');
+('password.min_length', '6', '密码最小长度'),
+('password.max_length', '32', '密码最大长度');

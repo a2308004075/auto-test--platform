@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
  * 标签页栏
- * 读取 tagsView store，支持关闭/切换
+ * 读取 tagsView store，支持关闭/切换/右键菜单
  */
-import { watch, onMounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTagsViewStore, type TagView } from '@/stores'
 
@@ -11,9 +11,19 @@ const route = useRoute()
 const router = useRouter()
 const tagsViewStore = useTagsViewStore()
 
+const contextMenuVisible = ref(false)
+const contextMenuTop = ref(0)
+const contextMenuLeft = ref(0)
+const selectedView = ref<TagView | null>(null)
+
 onMounted(() => {
   // 首次加载时添加当前路由
   addCurrentTag()
+  document.addEventListener('click', closeContextMenu)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeContextMenu)
 })
 
 watch(
@@ -46,6 +56,58 @@ function handleClose(view: TagView) {
     router.push(last ? last.path : '/home')
   }
 }
+
+function openContextMenu(e: MouseEvent, view: TagView) {
+  e.preventDefault()
+  selectedView.value = view
+  contextMenuTop.value = e.clientY
+  contextMenuLeft.value = e.clientX
+  contextMenuVisible.value = true
+}
+
+function closeContextMenu() {
+  contextMenuVisible.value = false
+  selectedView.value = null
+}
+
+function handleRefresh() {
+  if (!selectedView.value) return
+  // 先切换到目标页签，再执行 F5 整页刷新
+  if (route.path !== selectedView.value.path) {
+    router.push(selectedView.value.path).then(() => {
+      window.location.reload()
+    })
+  } else {
+    window.location.reload()
+  }
+  closeContextMenu()
+}
+
+function handleMenuClose() {
+  if (!selectedView.value || selectedView.value.affix) return
+  handleClose(selectedView.value)
+  closeContextMenu()
+}
+
+function handleCloseOthers() {
+  if (!selectedView.value) return
+  tagsViewStore.delOthersViews(selectedView.value)
+  // 若当前路由已被关闭，则跳转到保留的目标页签
+  if (!tagsViewStore.visitedViews.some(v => v.path === route.path)) {
+    router.push(selectedView.value.path)
+  }
+  closeContextMenu()
+}
+
+function handleCloseAll() {
+  tagsViewStore.delAllViews()
+  // 若当前路由已被关闭，则跳转到保留的第一个页签（通常为首页）
+  if (!tagsViewStore.visitedViews.some(v => v.path === route.path)) {
+    const first = tagsViewStore.visitedViews[0]
+    router.push(first ? first.path : '/home')
+  }
+  closeContextMenu()
+}
 </script>
 
 <template>
@@ -57,6 +119,7 @@ function handleClose(view: TagView) {
         class="tag-item"
         :class="{ active: view.path === route.path }"
         @click="handleClick(view)"
+        @contextmenu.prevent="openContextMenu($event, view)"
       >
         <span class="tag-title">{{ view.title }}</span>
         <span
@@ -69,6 +132,22 @@ function handleClose(view: TagView) {
       </div>
     </div>
   </div>
+
+  <ul
+    v-show="contextMenuVisible"
+    class="context-menu"
+    :style="{ top: contextMenuTop + 'px', left: contextMenuLeft + 'px' }"
+  >
+    <li @click="handleRefresh">刷新</li>
+    <li
+      :class="{ disabled: selectedView?.affix }"
+      @click="handleMenuClose"
+    >
+      关闭
+    </li>
+    <li @click="handleCloseOthers">关闭其他</li>
+    <li @click="handleCloseAll">关闭所有</li>
+  </ul>
 </template>
 
 <style scoped>
@@ -122,5 +201,36 @@ function handleClose(view: TagView) {
 }
 .tag-item:hover .tag-close {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.context-menu {
+  position: fixed;
+  z-index: 3000;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  font-size: 13px;
+  color: #606266;
+  min-width: 100px;
+}
+
+.context-menu li {
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.context-menu li:hover:not(.disabled) {
+  background: #f5f7fa;
+  color: #409eff;
+}
+
+.context-menu li.disabled {
+  color: #c0c4cc;
+  cursor: not-allowed;
 }
 </style>

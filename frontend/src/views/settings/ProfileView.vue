@@ -7,6 +7,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores'
 import { getCurrentUser, updateProfile, changePassword, getLoginLogs } from '@/api/auth'
+import { validatePassword, PASSWORD_RULE_HINT } from '@/utils/password'
 
 const userStore = useUserStore()
 const activeTab = ref('basic')
@@ -87,7 +88,7 @@ const passwordScore = computed(() => {
   const pwd = passwordForm.newPassword
   if (!pwd) return -1
   let score = 0
-  if (pwd.length >= 8) score++
+  if (pwd.length >= 6) score++
   if (pwd.length >= 12) score++
   if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++
   if (/\d/.test(pwd)) score++
@@ -112,8 +113,9 @@ async function handleChangePassword() {
     ElMessage.warning('请输入当前密码')
     return
   }
-  if (!passwordForm.newPassword || passwordForm.newPassword.length < 8) {
-    ElMessage.warning('新密码至少 8 位')
+  const pwdError = validatePassword(passwordForm.newPassword)
+  if (pwdError) {
+    ElMessage.warning(pwdError)
     return
   }
   if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -258,7 +260,7 @@ onMounted(() => {
             </el-form-item>
             <div class="profile-form-grid">
               <el-form-item label="新密码" required>
-                <el-input v-model="passwordForm.newPassword" type="password" show-password placeholder="至少 8 位，含字母和数字" />
+                <el-input v-model="passwordForm.newPassword" type="password" show-password :placeholder="PASSWORD_RULE_HINT" />
                 <div v-if="strengthInfo" class="password-strength">
                   <div class="password-strength-bar">
                     <div class="password-strength-fill" :style="{ width: strengthInfo.width, background: strengthInfo.color }" />

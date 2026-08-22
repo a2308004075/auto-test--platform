@@ -45,11 +45,11 @@ public class DataInitializer implements ApplicationRunner {
         User admin = new User();
         admin.setId(1L);
         admin.setUsername("admin");
-        admin.setPasswordHash(passwordEncoder.encode("admin123"));
+        admin.setPasswordHash(passwordEncoder.encode("Admin@123"));
         admin.setDisplayName("管理员");
         admin.setRoleId(adminRole.getId());
         admin.setIsActive(1);
         userMapper.insert(admin);
-        log.info("已创建默认 admin 用户（密码：admin123）");
+        log.info("已创建默认 admin 用户（密码：Admin@123）");
     }
 }

@@ -52,10 +52,10 @@ import java.util.stream.Collectors;
 public class RoleService {
 
     private static final String BUILTIN_ROLE_CODE = "ADMIN";
-    /** 内置超级管理员角色编码（admin 账号专属，高于 ADMIN） */
+    /** 内置超级管理员角色编码（superAdmin 账号专属，高于 ADMIN） */
     private static final String BUILTIN_SUPER_ROLE_CODE = "SUPER_ADMIN";
     /** 系统保留管理员账号 */
-    private static final String RESERVED_USERNAME = "admin";
+    private static final String RESERVED_USERNAME = "superAdmin";
 
     /** 角色字典类型编码，与 sys_dict 表中 user_role 字典对应 */
     private static final String ROLE_DICT_TYPE = "user_role";
@@ -86,7 +86,7 @@ public class RoleService {
 
     /**
      * 查询全部启用的角色列表（供下拉框使用）
-     * <p>过滤 SUPER_ADMIN：超级管理员角色仅限 admin 账号拥有，不可分配给其他用户。</p>
+     * <p>过滤 SUPER_ADMIN：超级管理员仅限 superAdmin 账号拥有，不可分配给其他用户。</p>
      */
     public List<UserRole> listActiveRoles() {
         LambdaQueryWrapper<UserRole> wrapper = new LambdaQueryWrapper<>();
@@ -621,7 +621,7 @@ public class RoleService {
     private void checkBuiltinRole(UserRole role) {
         if (BUILTIN_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())
                 || BUILTIN_SUPER_ROLE_CODE.equalsIgnoreCase(role.getRoleCode())) {
-            // 内置角色保护：仅 admin 账号（SUPER_ADMIN）可操作内置角色
+            // 内置角色保护：仅 superAdmin 账号（SUPER_ADMIN）可操作内置角色
             if (isCurrentUserAdmin()) {
                 return;
             }
@@ -630,7 +630,7 @@ public class RoleService {
     }
 
     /**
-     * 判断当前登录用户是否为 admin 账号
+     * 判断当前登录用户是否为 superAdmin 账号
      */
     private boolean isCurrentUserAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

@@ -29,6 +29,7 @@ import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -416,6 +417,9 @@ public class MenuService {
 
     private List<MenuTreeNode> buildChildren(Map<Long, List<MenuTreeNode>> grouped, Long parentId) {
         List<MenuTreeNode> children = grouped.getOrDefault(parentId, new ArrayList<>());
+        // 显式按 sortNo → id 升序排序，确保菜单显示顺序与数据库 sort_no 一致
+        children.sort(Comparator.comparingInt((MenuTreeNode n) -> n.getSortNo() == null ? 0 : n.getSortNo())
+                .thenComparingLong(MenuTreeNode::getId));
         for (MenuTreeNode child : children) {
             child.setChildren(buildChildren(grouped, child.getId()));
         }

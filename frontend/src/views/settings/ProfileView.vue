@@ -26,8 +26,8 @@ const profileForm = reactive({
   bio: '',
 })
 
-// admin 账号保护
-const isAdminAccount = computed(() => userInfo.value.username === 'admin')
+// superAdmin 账号保护
+const isAdminAccount = computed(() => userInfo.value.username === 'superAdmin')
 
 async function fetchCurrentUser() {
   profileLoading.value = true
@@ -49,14 +49,14 @@ async function handleSaveProfile() {
     ElMessage.warning('用户名不能为空')
     return
   }
-  // 非admin用户校验保留字
+  // 非superAdmin用户校验保留字
   if (!isAdminAccount.value) {
     if (profileForm.displayName === '管理员') {
       ElMessage.warning('用户名不能为"管理员"，该名称为系统保留')
       return
     }
-    if (profileForm.username && profileForm.username.toLowerCase() === 'admin') {
-      ElMessage.warning('账号不能使用"admin"，该账号为系统保留')
+    if (profileForm.username && profileForm.username.toLowerCase() === 'superadmin') {
+      ElMessage.warning('账号不能使用"superAdmin"，该账号为系统保留')
       return
     }
   }

@@ -8,12 +8,13 @@
  * 侧边栏组件
  * 所有菜单项从 permission store 的菜单树中动态加载
  * 根据当前页面上下文（首页 / 系统管理 / 项目内）显示对应的菜单子树
+ * 支持层级目录渲染（目录 → el-sub-menu，菜单项 → el-menu-item）
  */
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { House, Setting } from '@element-plus/icons-vue'
 import { useUserStore, useAppStore, usePermissionStore } from '@/stores'
 import type { MenuTreeNode } from '@/api/menu'
+import SidebarMenuItem from './SidebarMenuItem.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -58,12 +59,23 @@ function flattenMenuNodes(nodes: MenuTreeNode[], pathPrefix = ''): MenuItem[] {
   return result
 }
 
-/** 系统管理菜单项 */
+/** 按 sortNo → id 升序排序菜单节点 */
+function sortByOrder(nodes: MenuTreeNode[]): MenuTreeNode[] {
+  return [...nodes].sort((a, b) => (a.sortNo || 0) - (b.sortNo || 0) || a.id - b.id)
+}
+
+/** 排序后的项目菜单（用于模板渲染） */
+const sortedProjectMenus = computed(() => sortByOrder(permissionStore.projectMenus))
+
+/** 排序后的系统管理菜单（用于模板渲染） */
+const sortedSettingsMenus = computed(() => sortByOrder(permissionStore.settingsMenus))
+
+/** 系统管理菜单项（扁平，用于路由匹配） */
 const settingsMenuItems = computed<MenuItem[]>(() =>
   flattenMenuNodes(permissionStore.settingsMenus),
 )
 
-/** 项目内菜单项 */
+/** 项目内菜单项（扁平，用于路由匹配） */
 const projectMenuItems = computed<MenuItem[]>(() =>
   flattenMenuNodes(permissionStore.projectMenus, String(projectId.value)),
 )
@@ -101,6 +113,15 @@ const activeMenu = computed(() => {
   return bestMatch
 })
 
+// ===== 默认展开的目录 =====
+const projectDefaultOpeneds = computed(() =>
+  permissionStore.projectMenus.filter(n => n.menuType === 1).map(n => n.name),
+)
+
+const settingsDefaultOpeneds = computed(() =>
+  permissionStore.settingsMenus.filter(n => n.menuType === 1).map(n => n.name),
+)
+
 // ===== 菜单点击处理 =====
 function handleMenuSelect(index: string) {
   // 查找匹配的菜单项并跳转
@@ -128,6 +149,7 @@ function handleMenuSelect(index: string) {
     <el-scrollbar wrap-class="scrollbar-wrapper">
       <el-menu
         :default-active="activeMenu"
+        :default-openeds="inProject ? projectDefaultOpeneds : settingsDefaultOpeneds"
         :collapse="isCollapse"
         background-color="#001529"
         text-color="#bfcbd9"
@@ -137,42 +159,26 @@ function handleMenuSelect(index: string) {
         mode="vertical"
         @select="handleMenuSelect"
       >
-        <!-- ===== 项目内菜单 ===== -->
+        <!-- ===== 项目内菜单（层级渲染） ===== -->
         <template v-if="inProject">
-          <el-menu-item
-            v-for="item in projectMenuItems"
-            :key="item.key"
-            :index="item.key"
-          >
-            <span>{{ item.label }}</span>
-          </el-menu-item>
+          <template v-for="node in sortedProjectMenus" :key="node.id">
+            <SidebarMenuItem :node="node" :path-prefix="String(projectId)" />
+          </template>
         </template>
 
         <!-- ===== 非项目页面 ===== -->
         <template v-else>
           <!-- 首页 -->
           <el-menu-item v-if="!inSettings && homeMenuItem" index="home">
-            <el-icon><House /></el-icon>
             <span>{{ homeMenuItem.label }}</span>
           </el-menu-item>
 
-          <!-- 系统管理 -->
-          <el-sub-menu
-            v-if="userStore.isLoggedIn && inSettings && settingsMenuItems.length"
-            index="settings"
-          >
-            <template #title>
-              <el-icon><Setting /></el-icon>
-              <span>系统管理</span>
+          <!-- 系统管理（层级渲染） -->
+          <template v-if="userStore.isLoggedIn && inSettings">
+            <template v-for="node in sortedSettingsMenus" :key="node.id">
+              <SidebarMenuItem :node="node" />
             </template>
-            <el-menu-item
-              v-for="item in settingsMenuItems"
-              :key="item.key"
-              :index="item.key"
-            >
-              <span>{{ item.label }}</span>
-            </el-menu-item>
-          </el-sub-menu>
+          </template>
         </template>
       </el-menu>
     </el-scrollbar>

@@ -50,11 +50,11 @@ public class AuthService {
     private final CaptchaService captchaService;
     private final RoleService roleService;
 
-    private static final String RESERVED_USERNAME = "admin";
+    private static final String RESERVED_USERNAME = "superAdmin";
     private static final String RESERVED_DISPLAY_NAME = "管理员";
-    /** admin 账号的显示名（超级管理员） */
+    /** superAdmin 账号的显示名（超级管理员） */
     private static final String SUPER_ADMIN_DISPLAY_NAME = "超级管理员";
-    /** 内置超级管理员角色编码（admin 账号专属，高于 ADMIN） */
+    /** 内置超级管理员角色编码（superAdmin 账号专属，高于 ADMIN） */
     private static final String BUILTIN_ROLE_CODE = "SUPER_ADMIN";
 
     public AuthService(UserMapper userMapper,
@@ -125,7 +125,7 @@ public class AuthService {
         }
 
         String roleCode = getRoleCode(user.getRoleId());
-        // admin 账号保护：强制使用 SUPER_ADMIN 角色，不受角色管理配置影响
+        // superAdmin 账号保护：强制使用 SUPER_ADMIN 角色，不受角色管理配置影响
         if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
             roleCode = BUILTIN_ROLE_CODE;
         }
@@ -182,7 +182,7 @@ public class AuthService {
         }
 
         String roleCode = getRoleCode(user.getRoleId());
-        // admin 账号保护：刷新 Token 时同样强制使用 SUPER_ADMIN 角色
+        // superAdmin 账号保护：刷新 Token 时同样强制使用 SUPER_ADMIN 角色
         if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
             roleCode = BUILTIN_ROLE_CODE;
         }
@@ -238,7 +238,7 @@ public class AuthService {
         response.setDisplayName(user.getDisplayName());
         response.setBio(user.getBio());
         response.setRoleId(user.getRoleId());
-        // admin 账号保护：强制使用 SUPER_ADMIN 角色和全部权限，不受角色管理配置影响
+        // superAdmin 账号保护：强制使用 SUPER_ADMIN 角色和全部权限，不受角色管理配置影响
         if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
             response.setRole(BUILTIN_ROLE_CODE);
             response.setRoleName(SUPER_ADMIN_DISPLAY_NAME);
@@ -277,7 +277,7 @@ public class AuthService {
 
         boolean isAdmin = RESERVED_USERNAME.equalsIgnoreCase(user.getUsername());
 
-        // admin 账号保护：不允许修改用户名和显示名
+        // superAdmin 账号保护：不允许修改用户名和显示名
         if (isAdmin) {
             if (request.getDisplayName() != null && !request.getDisplayName().equals(user.getDisplayName())) {
                 throw new BusinessException(ErrorCode.ADMIN_PROTECTED, "系统管理员账号不允许修改显示名");
@@ -301,9 +301,10 @@ public class AuthService {
         if (request.getUsername() != null && !request.getUsername().isEmpty()
                 && !request.getUsername().equals(user.getUsername())) {
             if (RESERVED_USERNAME.equalsIgnoreCase(request.getUsername())) {
-                throw new BusinessException(ErrorCode.ACCOUNT_RESERVED, "账号 'admin' 为系统保留，不可使用");
+                throw new BusinessException(ErrorCode.ACCOUNT_RESERVED, "账号 'superAdmin' 为系统保留，不可使用");
             }
-            User existing = userMapper.selectByUsername(request.getUsername());
+            // 唯一性校验需包含已禁用账号，避免禁用账号同名时触发数据库约束报错
+            User existing = userMapper.selectByUsernameIncludeInactive(request.getUsername());
             if (existing != null) {
                 throw new BusinessException(ErrorCode.USERNAME_DUPLICATE, "账号已存在");
             }
@@ -447,7 +448,7 @@ public class AuthService {
         response.setDisplayName(user.getDisplayName());
         response.setBio(user.getBio());
         response.setRoleId(user.getRoleId());
-        // admin 账号保护：强制使用 SUPER_ADMIN 角色和全部权限
+        // superAdmin 账号保护：强制使用 SUPER_ADMIN 角色和全部权限
         if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
             response.setRole(BUILTIN_ROLE_CODE);
             response.setRoleName(SUPER_ADMIN_DISPLAY_NAME);
@@ -476,7 +477,7 @@ public class AuthService {
         brief.setId(user.getId());
         brief.setUsername(user.getUsername());
         brief.setDisplayName(user.getDisplayName());
-        // admin 账号保护：强制使用 SUPER_ADMIN 角色和全部权限
+        // superAdmin 账号保护：强制使用 SUPER_ADMIN 角色和全部权限
         if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
             brief.setRole(BUILTIN_ROLE_CODE);
             brief.setPermissions(Collections.singletonList("*"));

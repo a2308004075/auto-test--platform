@@ -13,6 +13,13 @@ export function getUsers(params?: { keyword?: string; account?: string; displayN
   return request.get('/v1/users', { params })
 }
 
+/**
+ * 检查账号是否可用（新建用户时实时校验）
+ */
+export function checkAccount(account: string) {
+  return request.get('/v1/users/check-account', { params: { account } })
+}
+
 export function createUser(data: any) {
   return request.post('/v1/users', data)
 }

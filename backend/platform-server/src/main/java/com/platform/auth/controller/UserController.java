@@ -49,6 +49,17 @@ public class UserController {
     }
 
     /**
+     * 检查账号是否可用（新建用户时前端实时校验）
+     *
+     * @param account 待校验账号
+     */
+    @GetMapping("/check-account")
+    public ApiResponse<AccountCheckResponse> checkAccount(@RequestParam(required = false) String account) {
+        AccountCheckResponse response = userService.checkAccountAvailable(account);
+        return ApiResponse.success(response);
+    }
+
+    /**
      * 创建用户
      */
     @PostMapping

@@ -18,10 +18,20 @@ import org.apache.ibatis.annotations.Select;
 public interface UserMapper extends BaseMapper<User> {
 
     /**
-     * 根据用户名查询用户
+     * 根据用户名查询用户（仅启用，登录流程使用）
      */
     @Select("SELECT * FROM user WHERE username = #{username} AND is_active = 1")
     User selectByUsername(@Param("username") String username);
+
+    /**
+     * 根据用户名查询用户（包含已禁用账号，唯一性校验使用）
+     *
+     * <p>与 {@link #selectByUsername} 的区别：不带 is_active 条件，
+     * 能查出已禁用（逻辑删除）的账号，避免禁用账号同名时唯一性校验被绕过。
+     * 登录流程不可使用此方法（禁用账号不应登录）。
+     */
+    @Select("SELECT * FROM user WHERE username = #{username}")
+    User selectByUsernameIncludeInactive(@Param("username") String username);
 
     /**
      * 根据 ID 查询启用的用户

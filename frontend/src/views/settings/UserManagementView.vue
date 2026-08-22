@@ -12,7 +12,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader/index.vue'
-import { getUsers, createUser, updateUser, deleteUser, toggleUserStatus, resetPassword, getRoles } from '@/api/user'
+import { getUsers, createUser, updateUser, deleteUser, toggleUserStatus, resetPassword, getRoles, checkAccount } from '@/api/user'
+import { User as UserIcon, CircleCheck, CircleClose, Loading as LoadingIcon, InfoFilled } from '@element-plus/icons-vue'
 import { validatePassword, PASSWORD_RULE_HINT } from '@/utils/password'
 import { usePermission } from '@/composables/usePermission'
 
@@ -42,6 +43,10 @@ const createErrors = reactive({
   displayName: '',
   password: '',
 })
+
+// 账号实时校验状态：null=未校验, true=可用, false=已占用
+const accountChecking = ref(false)
+const accountAvailable = ref<boolean | null>(null)
 
 // ===== 编辑用户弹窗 =====
 const editVisible = ref(false)
@@ -82,7 +87,7 @@ const deleteUserRef = ref<any>(null)
 
 // 保留字
 const RESERVED_DISPLAY_NAMES = ['管理员', '超级管理员']
-const RESERVED_ACCOUNTS_LOWER = ['admin']
+const RESERVED_ACCOUNTS_LOWER = ['superadmin']
 
 // ===== 获取用户列表 =====
 async function fetchUsers() {
@@ -134,11 +139,41 @@ function openCreateUser() {
   createErrors.username = ''
   createErrors.displayName = ''
   createErrors.password = ''
+  accountAvailable.value = null
+  accountChecking.value = false
   createVisible.value = true
 }
 
 function clearCreateError(field: keyof typeof createErrors) {
   createErrors[field] = ''
+  if (field === 'username') {
+    accountAvailable.value = null
+  }
+}
+
+// ===== 账号实时校验 =====
+async function checkAccountAvailable() {
+  const username = createForm.username.trim()
+  // 本地校验未通过时不请求后端
+  if (!username || username.length < 6 || RESERVED_ACCOUNTS_LOWER.includes(username.toLowerCase())) {
+    accountAvailable.value = null
+    return
+  }
+  accountChecking.value = true
+  try {
+    const res: any = await checkAccount(username)
+    if (res.data?.available) {
+      accountAvailable.value = true
+      createErrors.username = ''
+    } else {
+      accountAvailable.value = false
+      createErrors.username = res.data?.message || '账号不可用'
+    }
+  } catch {
+    accountAvailable.value = null
+  } finally {
+    accountChecking.value = false
+  }
 }
 
 async function handleCreateUser() {
@@ -154,7 +189,7 @@ async function handleCreateUser() {
     createErrors.username = '账号长度不能少于6位'
     valid = false
   } else if (RESERVED_ACCOUNTS_LOWER.includes(createForm.username.toLowerCase())) {
-    createErrors.username = '账号不能使用"admin"，该账号为系统保留'
+    createErrors.username = '账号不能使用"superAdmin"，该账号为系统保留'
     valid = false
   }
   if (!createForm.displayName.trim()) {
@@ -175,6 +210,14 @@ async function handleCreateUser() {
     }
   }
   if (!valid) return
+
+  // 账号唯一性校验（若尚未实时校验，提交前补校验）
+  if (accountAvailable.value !== true) {
+    await checkAccountAvailable()
+    if (accountAvailable.value !== true) {
+      return
+    }
+  }
 
   try {
     await createUser({
@@ -340,7 +383,7 @@ async function handleDeleteUser() {
 
 // ===== 辅助函数 =====
 function isAdminRow(row: any): boolean {
-  return row.username?.toLowerCase() === 'admin'
+  return row.username?.toLowerCase() === 'superadmin'
 }
 
 function formatDateTime(dt?: string): string {
@@ -376,9 +419,19 @@ onMounted(() => { fetchUsers(); fetchRoles() })
     <div class="um-card">
       <div class="um-table-wrapper">
         <el-table v-loading="loading" :data="userList" row-key="id" style="width: 100%;" :header-cell-style="{ background: '#fafafa' }">
-          <el-table-column prop="username" label="账号" width="120">
+          <el-table-column prop="username" width="140">
+            <template #header>
+              <el-tooltip content="账号为系统唯一标识，不可重复" placement="top">
+                <span>账号 <el-icon style="vertical-align: middle; color: #909399;"><InfoFilled /></el-icon></span>
+              </el-tooltip>
+            </template>
             <template #default="{ row }">
-              <b>{{ row.username }}</b>
+              <el-tooltip content="账号为系统唯一标识" placement="top">
+                <span class="um-account-cell">
+                  <el-icon class="um-account-icon"><UserIcon /></el-icon>
+                  <b>{{ row.username }}</b>
+                </span>
+              </el-tooltip>
             </template>
           </el-table-column>
           <el-table-column prop="displayName" label="用户名" min-width="120" />
@@ -439,7 +492,13 @@ onMounted(() => { fetchUsers(); fetchRoles() })
     <el-dialog v-model="createVisible" title="新建用户" width="440px">
       <el-form label-position="top">
         <el-form-item label="账号" required>
-          <el-input v-model="createForm.username" placeholder="请输入账号（至少6位，登录用）" @input="clearCreateError('username')" />
+          <el-input v-model="createForm.username" placeholder="请输入账号（至少6位，登录用）" @input="clearCreateError('username')" @blur="checkAccountAvailable">
+            <template #suffix>
+              <el-icon v-if="accountChecking" class="is-loading"><LoadingIcon /></el-icon>
+              <el-icon v-else-if="accountAvailable === true" style="color: #67c23a;"><CircleCheck /></el-icon>
+              <el-icon v-else-if="accountAvailable === false" style="color: #f56c6c;"><CircleClose /></el-icon>
+            </template>
+          </el-input>
           <div v-if="createErrors.username" class="um-error-msg">{{ createErrors.username }}</div>
         </el-form-item>
         <el-form-item label="用户名" required>
@@ -458,7 +517,7 @@ onMounted(() => { fetchUsers(); fetchRoles() })
       </el-form>
       <template #footer>
         <el-button @click="createVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleCreateUser">确定</el-button>
+        <el-button type="primary" :disabled="accountChecking || accountAvailable === false" @click="handleCreateUser">确定</el-button>
       </template>
     </el-dialog>
 
@@ -582,6 +641,17 @@ onMounted(() => { fetchUsers(); fetchRoles() })
   border-top: 1px solid #f0f0f0;
   display: flex;
   justify-content: flex-end;
+}
+
+/* 账号单元格（唯一标识） */
+.um-account-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.um-account-icon {
+  color: #1890ff;
+  font-size: 14px;
 }
 
 /* 角色标签 */

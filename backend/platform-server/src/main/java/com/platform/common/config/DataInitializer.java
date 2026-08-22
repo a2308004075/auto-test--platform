@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * 应用启动数据初始化器
- * 负责创建默认 admin 用户等基础数据
+ * 负责创建默认 superAdmin 用户等基础数据
  */
 @Component
 @RequiredArgsConstructor
@@ -34,9 +34,9 @@ public class DataInitializer implements ApplicationRunner {
     }
 
     private void initAdminUser() {
-        User existing = userMapper.selectByUsername("admin");
+        User existing = userMapper.selectByUsernameIncludeInactive("superAdmin");
         if (existing != null) {
-            log.debug("admin 用户已存在，跳过初始化");
+            log.debug("superAdmin 用户已存在，跳过初始化");
             return;
         }
 
@@ -51,12 +51,12 @@ public class DataInitializer implements ApplicationRunner {
         boolean useSuperAdmin = (superAdminRole != null);
         User admin = new User();
         admin.setId(1L);
-        admin.setUsername("admin");
+        admin.setUsername("superAdmin");
         admin.setPasswordHash(passwordEncoder.encode("Admin@123"));
         admin.setDisplayName(useSuperAdmin ? "超级管理员" : "管理员");
         admin.setRoleId(adminRole.getId());
         admin.setIsActive(1);
         userMapper.insert(admin);
-        log.info("已创建默认 admin 用户（角色：{}，密码：Admin@123）", adminRole.getRoleCode());
+        log.info("已创建默认 superAdmin 用户（角色：{}，密码：Admin@123）", adminRole.getRoleCode());
     }
 }

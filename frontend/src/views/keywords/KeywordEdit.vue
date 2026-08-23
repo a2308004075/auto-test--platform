@@ -12,10 +12,11 @@
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getKeyword, createKeyword, updateKeyword } from '@/api/keyword'
+import { getKeyword, createKeyword, updateKeyword, getKeywordDependencies } from '@/api/keyword'
 import { getApis, getModules } from '@/api/apidoc'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
+import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -43,6 +44,8 @@ const form = reactive({
   testData: '[]', responseAssertion: '{}',
 })
 const referenceCount = ref(0)
+const referenceList = ref<any[]>([])
+const referenceLoading = ref(false)
 
 // ===== 测试数据可视化编辑（序列化为 JSON 存入 form.testData） =====
 function parseArr(raw?: string): any[] {
@@ -120,6 +123,15 @@ async function fetchKeyword() {
   } catch { ElMessage.error('加载关键字失败') } finally { loading.value = false }
 }
 
+async function fetchDependencies() {
+  if (!isEdit.value) return
+  referenceLoading.value = true
+  try {
+    const res: any = await getKeywordDependencies(projectId.value, keywordId.value)
+    referenceList.value = res.data || []
+  } catch { referenceList.value = [] } finally { referenceLoading.value = false }
+}
+
 // 关联接口信息
 const currentApi = computed(() => apis.value.find((a: any) => a.id === form.apiId))
 const currentModule = computed(() => {
@@ -188,21 +200,16 @@ onMounted(() => {
   fetchApis()
   fetchModules()
   fetchKeyword()
+  fetchDependencies()
 })
 </script>
 
 <template>
   <div v-loading="loading">
-    <div class="edit-header">
-      <div class="edit-title">
-        <el-button type="primary" link @click="router.back()">← 返回</el-button>
-        <h2 style="margin: 0">{{ isEdit ? '编辑接口关键字' : '创建接口关键字' }}</h2>
-      </div>
-      <div class="edit-actions">
-        <el-button v-if="hasPermission('project:keyword:edit')" type="primary" @click="handleSubmit">保存</el-button>
-        <el-button @click="router.back()">取消</el-button>
-      </div>
-    </div>
+    <EditPageHeader :title="isEdit ? '编辑接口关键字' : '创建接口关键字'">
+      <el-button v-if="hasPermission('project:keyword:edit')" type="primary" @click="handleSubmit">保存</el-button>
+      <el-button @click="router.back()">取消</el-button>
+    </EditPageHeader>
 
     <el-tabs v-model="activeTab">
       <!-- Tab: 基础信息 -->
@@ -322,16 +329,33 @@ onMounted(() => {
       <!-- Tab: 引用关系 -->
       <el-tab-pane label="引用关系" name="refs" :disabled="!isEdit">
         <div class="refs-header">
-          <h4 style="margin: 0; font-size: 14px; font-weight: 600">Action关键字 引用</h4>
+          <h4 style="margin: 0; font-size: 14px; font-weight: 600">引用关系详情</h4>
           <el-tag type="primary" size="small">{{ referenceCount }} 个引用</el-tag>
         </div>
-        <div class="empty-state">
-          <div class="empty-icon">📋</div>
-          <div>引用关系详情需后端补充端点支持</div>
-          <div style="font-size: 12px; color: #c0c4cc; margin-top: 4px">
-            当前关键字被 {{ referenceCount }} 个 Action 关键字引用，详细引用列表需后端补充查询接口
-          </div>
-        </div>
+        <el-table v-loading="referenceLoading" :data="referenceList" size="small" style="max-width: 800px">
+          <el-table-column label="引用类型" width="120">
+            <template #default="{ row }">
+              <el-tag :type="row.refType === 'ACTION' ? 'primary' : 'success'" size="small">
+                {{ row.refType === 'ACTION' ? 'Action关键字' : '测试用例' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="refName" label="名称" min-width="200">
+            <template #default="{ row }">
+              <el-button link type="primary" @click="router.push(`/project/${projectId}/${row.refType === 'ACTION' ? 'actions' : 'cases'}/${row.refId}/edit`)">
+                {{ row.refName }}
+              </el-button>
+            </template>
+          </el-table-column>
+          <el-table-column prop="refDescription" label="描述" min-width="200" show-overflow-tooltip>
+            <template #default="{ row }">
+              {{ row.refDescription || '-' }}
+            </template>
+          </el-table-column>
+          <template #empty>
+            <div style="padding: 24px 0; color: #c0c4cc; font-size: 13px">暂无引用关系</div>
+          </template>
+        </el-table>
       </el-tab-pane>
     </el-tabs>
 
@@ -349,21 +373,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.edit-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.edit-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.edit-actions {
-  display: flex;
-  gap: 8px;
-}
 .params-section {
   margin-bottom: 24px;
 }

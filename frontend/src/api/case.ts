@@ -36,6 +36,10 @@ export function toggleCaseStatus(projectId: number, caseId: number) {
   return request.post(`/v1/projects/${projectId}/cases/${caseId}/status`)
 }
 
+export function debugCase(projectId: number, caseId: number, data?: { environmentId?: number }) {
+  return request.post(`/v1/projects/${projectId}/cases/${caseId}/debug`, data || {})
+}
+
 // ===== 用例分组 API =====
 
 export function getCaseGroups(projectId: number) {

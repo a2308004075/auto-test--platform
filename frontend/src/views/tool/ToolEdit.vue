@@ -12,9 +12,10 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getTool, createTool, updateTool, testTool, getTools } from '@/api/tool'
+import { getTool, createTool, updateTool, testTool, getTools, getToolDependencies } from '@/api/tool'
 import CodeEditor from '@/components/CodeEditor/index.vue'
 import { usePermission } from '@/composables/usePermission'
+import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -44,6 +45,8 @@ async function fetchCategoryOptions() {
 }
 
 // ===== 表单 =====
+const referenceList = ref<any[]>([])
+const referenceLoading = ref(false)
 const DEFAULT_CODE = '// 在此编写 Groovy 代码\n// 可使用 request, response, context, vars 等内置变量\n\ndef execute() {\n    return "Hello"\n}'
 const form = reactive({
   name: '',
@@ -252,29 +255,33 @@ async function fetchTool() {
   } catch { ElMessage.error('加载工具方法失败') } finally { loading.value = false }
 }
 
+async function fetchDependencies() {
+  if (!toolId.value) return
+  referenceLoading.value = true
+  try {
+    const res: any = await getToolDependencies(projectId.value, toolId.value)
+    referenceList.value = res.data || []
+  } catch { referenceList.value = [] } finally { referenceLoading.value = false }
+}
+
 onMounted(() => {
   fetchCategoryOptions()
   const id = Number(route.params.toolId)
   if (id) {
     toolId.value = id
     fetchTool()
+    fetchDependencies()
   }
 })
 </script>
 
 <template>
   <div v-loading="loading">
-    <div class="edit-header">
-      <div class="edit-title">
-        <el-button type="primary" link @click="router.push(`/project/${projectId}/tools`)">← 返回</el-button>
-        <h2 style="margin: 0">{{ isEdit ? '编辑工具方法' : '新建工具方法' }}</h2>
-      </div>
-      <div class="edit-actions">
-        <el-button v-if="hasPermission('project:tool:test')" @click="handleTest">测试</el-button>
-        <el-button v-if="hasPermission('project:tool:edit')" type="primary" @click="handleSubmit">保存</el-button>
-        <el-button @click="router.push(`/project/${projectId}/tools`)">取消</el-button>
-      </div>
-    </div>
+    <EditPageHeader :title="isEdit ? '编辑工具方法' : '新建工具方法'" :back-route="`/project/${projectId}/tools`">
+      <el-button v-if="hasPermission('project:tool:test')" @click="handleTest">测试</el-button>
+      <el-button v-if="hasPermission('project:tool:edit')" type="primary" @click="handleSubmit">保存</el-button>
+      <el-button @click="router.push(`/project/${projectId}/tools`)">取消</el-button>
+    </EditPageHeader>
 
     <el-tabs v-model="activeTab">
       <!-- Tab: 基础信息 -->
@@ -335,11 +342,32 @@ onMounted(() => {
 
       <!-- Tab: 引用关系 -->
       <el-tab-pane v-if="isEdit" label="引用关系" name="refs">
-        <div class="empty-state">
-          <div class="empty-icon">📋</div>
-          <div>引用关系详情需后端补充端点支持</div>
-          <div style="font-size: 12px; color: #c0c4cc; margin-top: 4px">当前引用次数可在列表页查看</div>
+        <div class="refs-header">
+          <h4 style="margin: 0; font-size: 14px; font-weight: 600">引用关系详情</h4>
+          <el-tag type="primary" size="small">{{ referenceList.length }} 个引用</el-tag>
         </div>
+        <el-table v-loading="referenceLoading" :data="referenceList" size="small" style="max-width: 800px">
+          <el-table-column label="引用类型" width="120">
+            <template #default="{ row }">
+              <el-tag type="primary" size="small">Action关键字</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="refName" label="名称" min-width="200">
+            <template #default="{ row }">
+              <el-button link type="primary" @click="router.push(`/project/${projectId}/actions/${row.refId}/edit`)">
+                {{ row.refName }}
+              </el-button>
+            </template>
+          </el-table-column>
+          <el-table-column prop="refDescription" label="描述" min-width="200" show-overflow-tooltip>
+            <template #default="{ row }">
+              {{ row.refDescription || '-' }}
+            </template>
+          </el-table-column>
+          <template #empty>
+            <div style="padding: 24px 0; color: #c0c4cc; font-size: 13px">暂无引用关系</div>
+          </template>
+        </el-table>
       </el-tab-pane>
     </el-tabs>
 
@@ -398,21 +426,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.edit-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.edit-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.edit-actions {
-  display: flex;
-  gap: 8px;
-}
 .code-card-header {
   display: flex;
   justify-content: space-between;
@@ -479,5 +492,11 @@ onMounted(() => {
   font-family: Consolas, 'Courier New', monospace;
   white-space: pre-wrap;
   word-break: break-all;
+}
+.refs-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 </style>

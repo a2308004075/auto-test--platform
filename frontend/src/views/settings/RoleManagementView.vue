@@ -824,7 +824,7 @@ onUnmounted(() => {
 }
 
 .error-msg {
-  color: #ff4d4f;
+  color: #f56c6c;
   font-size: 12px;
   margin-top: 4px;
 }

@@ -9,7 +9,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.platform.action.entity.Action;
 import com.platform.action.entity.ActionNode;
+import com.platform.action.mapper.ActionMapper;
 import com.platform.action.mapper.ActionNodeMapper;
 import com.platform.apidoc.dto.ApiDebugRequest;
 import com.platform.apidoc.dto.ApiDebugResponse;
@@ -18,6 +20,7 @@ import com.platform.apidoc.mapper.ApiMapper;
 import com.platform.apidoc.service.ApiService;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
+import com.platform.common.dto.ReferenceDetailResponse;
 import com.platform.common.response.PageResponse;
 import com.platform.execution.entity.TestCase;
 import com.platform.execution.mapper.TestCaseMapper;
@@ -57,6 +60,7 @@ public class ApiKeywordService {
     private final ApiMapper apiMapper;
     private final ApiModuleMapper apiModuleMapper;
     private final ActionNodeMapper actionNodeMapper;
+    private final ActionMapper actionMapper;
     private final TestCaseMapper testCaseMapper;
     private final ProjectService projectService;
     private final ObjectMapper objectMapper;
@@ -320,6 +324,55 @@ public class ApiKeywordService {
         }
 
         return apiService.debug(api.getId(), debugRequest);
+    }
+
+    /**
+     * 查询关键字引用关系详情（被哪些 Action 和测试用例引用）
+     */
+    public List<ReferenceDetailResponse> getDependencies(Long keywordId) {
+        findKeywordById(keywordId);
+        List<ReferenceDetailResponse> result = new ArrayList<>();
+
+        // 查询 Action 节点引用
+        LambdaQueryWrapper<ActionNode> nodeWrapper = new LambdaQueryWrapper<>();
+        nodeWrapper.eq(ActionNode::getRefKeywordId, keywordId);
+        List<ActionNode> nodes = actionNodeMapper.selectList(nodeWrapper);
+        // 去重 Action ID
+        List<Long> actionIds = nodes.stream()
+                .map(ActionNode::getActionId)
+                .distinct()
+                .collect(Collectors.toList());
+        if (!actionIds.isEmpty()) {
+            for (Long actionId : actionIds) {
+                Action action = actionMapper.selectById(actionId);
+                if (action != null) {
+                    ReferenceDetailResponse ref = new ReferenceDetailResponse();
+                    ref.setRefType("ACTION");
+                    ref.setRefId(action.getId());
+                    ref.setRefName(action.getName());
+                    ref.setRefDescription(action.getDescription());
+                    result.add(ref);
+                }
+            }
+        }
+
+        // 查询测试用例引用
+        LambdaQueryWrapper<TestCase> caseWrapper = new LambdaQueryWrapper<>();
+        String kwIdStr = String.valueOf(keywordId);
+        caseWrapper.and(w -> w.like(TestCase::getSteps, kwIdStr)
+                .or().like(TestCase::getSetupSteps, kwIdStr)
+                .or().like(TestCase::getTeardownSteps, kwIdStr));
+        List<TestCase> cases = testCaseMapper.selectList(caseWrapper);
+        for (TestCase tc : cases) {
+            ReferenceDetailResponse ref = new ReferenceDetailResponse();
+            ref.setRefType("TEST_CASE");
+            ref.setRefId(tc.getId());
+            ref.setRefName(tc.getName());
+            ref.setRefDescription(tc.getDescription());
+            result.add(ref);
+        }
+
+        return result;
     }
 
     // ───────────────────── 私有方法 ─────────────────────

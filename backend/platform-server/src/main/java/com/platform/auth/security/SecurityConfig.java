@@ -62,7 +62,8 @@ public class SecurityConfig {
                     "/api/v1/auth/captcha",
                     "/actuator/health",
                     "/error",
-                    "/ws/**"
+                    "/ws/**",
+                    "/api/v1/webhook/**"
                 ).permitAll()
                 .antMatchers(HttpMethod.GET, "/api/v1/projects").permitAll()
                 .antMatchers(HttpMethod.GET, "/api/v1/roles").permitAll()

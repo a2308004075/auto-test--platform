@@ -39,11 +39,11 @@ const form = reactive({ name: '', description: '' })
 
 // 项目名首字取色
 const colorPalette = [
-  '#1890ff', '#fa8c16', '#52c41a', '#f5222d', '#2f54eb',
+  '#409eff', '#e6a23c', '#67c23a', '#f56c6c', '#337ecc',
   '#eb2f96', '#722ed1', '#13c2c2', '#a0d911', '#fa541c', '#595959',
 ]
 const bgPalette = [
-  '#e6f7ff', '#fff7e6', '#f6ffed', '#fff1f0', '#f0f5ff',
+  '#ecf5ff', '#fdf6ec', '#f0f9eb', '#fef0f0', '#f4ecff',
   '#fff0f6', '#f9f0ff', '#e6fffb', '#fcffe6', '#fff2e8', '#f0f0f0',
 ]
 
@@ -381,14 +381,14 @@ onMounted(fetchList)
 }
 .status-tag.is-readonly:hover { opacity: 1; }
 .tag-active {
-  background: #f6ffed;
-  color: #52c41a;
-  border: 1px solid #b7eb8f;
+  background: #f0f9eb;
+  color: #67c23a;
+  border: 1px solid #b3e19d;
 }
 .tag-disabled {
   background: #f5f5f5;
   color: #909399;
-  border: 1px solid #d9d9d9;
+  border: 1px solid #dcdfe6;
 }
 
 .btn-edit, .btn-delete {

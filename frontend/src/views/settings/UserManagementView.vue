@@ -650,7 +650,7 @@ onMounted(() => { fetchUsers(); fetchRoles() })
   gap: 4px;
 }
 .um-account-icon {
-  color: #1890ff;
+  color: #409eff;
   font-size: 14px;
 }
 
@@ -666,19 +666,19 @@ onMounted(() => { fetchUsers(); fetchRoles() })
   white-space: nowrap;
 }
 .role-tag-super-admin {
-  background: #fff1f0;
+  background: #fef0f0;
   color: #cf1322;
-  border-color: #ffa39e;
+  border-color: #fab6b6;
 }
 .role-tag-admin {
-  background: #f9f0ff;
+  background: #f4ecff;
   color: #722ed1;
   border-color: #d3adf7;
 }
 .role-tag-tester {
-  background: #e6f7ff;
-  color: #1890ff;
-  border-color: #91d5ff;
+  background: #ecf5ff;
+  color: #409eff;
+  border-color: #a0cfff;
 }
 
 /* 状态标签 */
@@ -693,14 +693,14 @@ onMounted(() => { fetchUsers(); fetchRoles() })
   white-space: nowrap;
 }
 .status-active {
-  background: #f6ffed;
-  color: #52c41a;
-  border-color: #b7eb8f;
+  background: #f0f9eb;
+  color: #67c23a;
+  border-color: #b3e19d;
 }
 .status-disabled {
   background: #fafafa;
   color: rgba(0, 0, 0, 0.45);
-  border-color: #d9d9d9;
+  border-color: #dcdfe6;
 }
 
 /* 时间 */
@@ -719,7 +719,7 @@ onMounted(() => { fetchUsers(); fetchRoles() })
 
 /* 错误提示 */
 .um-error-msg {
-  color: #ff4d4f;
+  color: #f56c6c;
   font-size: 12px;
   margin-top: 4px;
 }
@@ -728,11 +728,11 @@ onMounted(() => { fetchUsers(); fetchRoles() })
 .um-reset-warn {
   margin-bottom: 16px;
   padding: 10px 14px;
-  background: #fffbe6;
-  border: 1px solid #ffe58f;
+  background: #fdf6ec;
+  border: 1px solid #f5dab1;
   border-radius: 4px;
   font-size: 13px;
-  color: #874d00;
+  color: #8c6e00;
 }
 .um-warn-icon {
   margin-right: 4px;
@@ -749,6 +749,6 @@ onMounted(() => { fetchUsers(); fetchRoles() })
   font-size: 13px;
 }
 .um-confirm-danger {
-  color: #ff4d4f;
+  color: #f56c6c;
 }
 </style>

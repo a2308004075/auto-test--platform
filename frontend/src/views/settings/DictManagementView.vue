@@ -24,6 +24,7 @@ import {
   type DictCreateRequest,
 } from '@/api/dict'
 import { usePermission } from '@/composables/usePermission'
+import PageHeader from '@/components/PageHeader/index.vue'
 
 const { hasPermission } = usePermission()
 
@@ -233,6 +234,7 @@ onMounted(() => {
 
 <template>
   <div class="dictionary">
+    <PageHeader title="字典管理" />
     <!-- 查询区 -->
     <div class="form">
       <el-form inline>

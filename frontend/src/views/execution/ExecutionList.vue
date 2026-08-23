@@ -18,6 +18,7 @@ import { useDict, type DictOption } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
 import ProPagination from '@/components/ProPagination/index.vue'
+import PageHeader from '@/components/PageHeader/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -131,9 +132,7 @@ onMounted(() => { loadEnvironments(); fetchList() })
 <template>
   <div>
     <!-- 页头 -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h2 style="margin:0">执行记录</h2>
-    </div>
+    <PageHeader title="执行记录" />
 
     <!-- 搜索卡片 -->
     <ProSearchCard :loading="loading" @search="handleSearch" @reset="handleReset">

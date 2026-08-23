@@ -14,6 +14,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getApis, deleteApi, batchDeleteApis, batchMoveApis, getModules, createModule, updateModule, deleteModule,
+  syncSwaggerUrl,
 } from '@/api/apidoc'
 import PageHeader from '@/components/PageHeader/index.vue'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
@@ -336,6 +337,34 @@ function openDebug(id: number) {
   debugVisible.value = true
 }
 
+// ===== Swagger URL 同步 =====
+const syncVisible = ref(false)
+const syncLoading = ref(false)
+const syncForm = reactive({ url: '', moduleId: null as number | null })
+
+function openSyncDialog() {
+  syncForm.url = ''
+  syncForm.moduleId = activeModuleId.value || null
+  syncVisible.value = true
+}
+
+async function handleSyncSubmit() {
+  if (!syncForm.url) { ElMessage.warning('请输入 Swagger URL'); return }
+  if (!syncForm.moduleId) { ElMessage.warning('请选择目标分组'); return }
+  syncLoading.value = true
+  try {
+    const res: any = await syncSwaggerUrl(projectId.value, { url: syncForm.url, moduleId: syncForm.moduleId })
+    const result = res.data
+    ElMessage.success(`同步完成：新增 ${result.created} 条，更新 ${result.updated} 条，共 ${result.total} 条`)
+    syncVisible.value = false
+    fetchModules(); fetchList()
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '同步失败')
+  } finally {
+    syncLoading.value = false
+  }
+}
+
 // ===== 生命周期 =====
 const treeRef = ref()
 function onDocClick() { closeContextMenu() }
@@ -351,6 +380,7 @@ onBeforeUnmount(() => {
 <template>
   <div>
     <PageHeader title="接口文档">
+      <el-button v-if="hasPermission('project:api:swagger')" @click="openSyncDialog">URL 同步</el-button>
       <el-button v-if="hasPermission('project:api:swagger')" @click="router.push(`/project/${projectId}/apis/swagger-import`)">导入 Swagger</el-button>
       <el-button v-if="hasPermission('project:api:add')" type="primary" @click="router.push(`/project/${projectId}/apis/new`)">+ 新建接口</el-button>
     </PageHeader>
@@ -571,6 +601,27 @@ onBeforeUnmount(() => {
 
     <!-- 调试弹窗 -->
     <ApiDebugModal v-model="debugVisible" :project-id="projectId" :api-id="debugApiId" />
+
+    <!-- Swagger URL 同步弹窗 -->
+    <el-dialog v-model="syncVisible" title="Swagger URL 同步" width="520px" destroy-on-close>
+      <el-form label-position="top">
+        <el-form-item label="Swagger JSON URL" required>
+          <el-input v-model="syncForm.url" placeholder="如 http://localhost:8080/v2/api-docs" clearable />
+        </el-form-item>
+        <el-form-item label="目标分组" required>
+          <el-select v-model="syncForm.moduleId" placeholder="选择导入目标分组" filterable style="width: 100%">
+            <el-option v-for="m in modules.filter((x: any) => x.isSystem !== 1 || x.name === '未分类')" :key="m.id" :value="m.id" :label="m.name" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <div style="color: #909399; font-size: 12px; margin-top: -8px">
+        系统将从指定 URL 拉取 Swagger JSON 文档，并以增量方式导入到选定的分组中（已存在的接口更新，新接口创建）。
+      </div>
+      <template #footer>
+        <el-button @click="syncVisible = false">取消</el-button>
+        <el-button type="primary" :loading="syncLoading" @click="handleSyncSubmit">开始同步</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 右键上下文菜单 -->
     <Teleport to="body">

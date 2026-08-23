@@ -13,6 +13,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { importSwagger, getModules } from '@/api/apidoc'
+import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -199,10 +200,7 @@ fetchModules()
 
 <template>
   <div>
-    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px">
-      <el-button type="primary" link @click="router.back()">← 返回</el-button>
-      <h2 style="margin: 0">Swagger 导入</h2>
-    </div>
+    <EditPageHeader title="Swagger 导入" />
 
     <div class="import-container">
       <!-- 步骤条 -->

@@ -32,3 +32,7 @@ export function deleteTool(projectId: number, toolId: number) {
 export function testTool(projectId: number, toolId: number, data: any) {
   return request.post(`/v1/projects/${projectId}/tools/${toolId}/test`, data)
 }
+
+export function getToolDependencies(projectId: number, toolId: number) {
+  return request.get(`/v1/projects/${projectId}/tools/${toolId}/dependencies`)
+}

@@ -42,6 +42,10 @@ export function importSwagger(projectId: number, data: any) {
   return request.post(`/v1/projects/${projectId}/apis/swagger-import`, data)
 }
 
+export function syncSwaggerUrl(projectId: number, data: { url: string; moduleId: number }) {
+  return request.post(`/v1/projects/${projectId}/apis/swagger-sync-url`, data)
+}
+
 export function debugApi(projectId: number, apiId: number, data: any) {
   return request.post(`/v1/projects/${projectId}/apis/${apiId}/debug`, data)
 }

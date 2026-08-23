@@ -16,6 +16,7 @@ import { getApi, createApi, updateApi, getModules, getApiReferences, debugApi } 
 import { getEnvironments } from '@/api/environment'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
+import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -220,16 +221,10 @@ onMounted(() => {
 
 <template>
   <div v-loading="loading">
-    <div class="edit-header">
-      <div class="edit-title">
-        <el-button type="primary" link @click="router.back()">← 返回</el-button>
-        <h2 style="margin: 0">{{ isEdit ? '编辑接口' : '新建接口' }}</h2>
-      </div>
-      <div class="edit-actions">
+    <EditPageHeader :title="isEdit ? '编辑接口' : '新建接口'">
         <el-button v-if="hasPermission('project:api:edit')" type="primary" @click="handleSubmit">保存</el-button>
         <el-button @click="router.back()">取消</el-button>
-      </div>
-    </div>
+    </EditPageHeader>
 
     <el-tabs v-model="activeTab" @tab-change="(t: string) => onTabChange(t)">
       <!-- Tab: 基础信息 -->
@@ -516,21 +511,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.edit-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.edit-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.edit-actions {
-  display: flex;
-  gap: 8px;
-}
 .params-section {
   margin-bottom: 24px;
 }

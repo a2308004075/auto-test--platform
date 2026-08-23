@@ -12,6 +12,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getEnvironment, updateEnvironment } from '@/api/environment'
+import EditPageHeader from '@/components/EditPageHeader/index.vue'
 import { useProjectStore } from '@/stores/modules/project'
 
 const route = useRoute()
@@ -116,13 +117,10 @@ onMounted(fetchDetail)
 <template>
   <div>
     <!-- 页面头部 -->
-    <div class="page-header">
-      <h2>编辑环境变量</h2>
-      <div class="header-actions">
-        <el-button @click="handleCancel">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSave">保存</el-button>
-      </div>
-    </div>
+    <EditPageHeader title="编辑环境变量" :back-route="`/project/${projectId}/environments`">
+      <el-button @click="handleCancel">取消</el-button>
+      <el-button type="primary" :loading="saving" @click="handleSave">保存</el-button>
+    </EditPageHeader>
 
     <!-- 项目上下文栏 -->
     <div class="env-project-bar">
@@ -187,31 +185,13 @@ onMounted(fetchDetail)
 </template>
 
 <style scoped>
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.page-header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.header-actions {
-  display: flex;
-  gap: 8px;
-}
-
 .env-project-bar {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: #f0f5ff;
-  border: 1px solid #d6e4ff;
+  background: #ecf5ff;
+  border: 1px solid #c6e2ff;
   border-radius: 6px;
   margin-bottom: 16px;
   font-size: 13px;
@@ -220,7 +200,7 @@ onMounted(fetchDetail)
 
 .env-project-bar .project-name {
   font-weight: 600;
-  color: #1890ff;
+  color: #409eff;
 }
 
 .env-project-bar .bar-sep {
@@ -322,7 +302,7 @@ onMounted(fetchDetail)
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #ff4d4f;
+  background: #f56c6c;
   flex-shrink: 0;
 }
 

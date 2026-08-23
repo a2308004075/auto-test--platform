@@ -360,6 +360,45 @@ public class ApiService {
         return result;
     }
 
+    /**
+     * 从 URL 同步 Swagger 文档（拉取远程 Swagger JSON 后增量导入）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public SwaggerImportResult syncFromUrl(SwaggerSyncRequest request) {
+        projectService.findActiveById(request.getProjectId());
+
+        String swaggerJson;
+        try {
+            URL url = new URL(request.getUrl());
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(30000);
+            conn.setRequestProperty("Accept", "application/json");
+
+            int statusCode = conn.getResponseCode();
+            if (statusCode < 200 || statusCode >= 300) {
+                throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
+                        "获取 Swagger 文档失败，HTTP 状态码：" + statusCode);
+            }
+
+            swaggerJson = readStream(conn.getInputStream());
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("从 URL 获取 Swagger 文档失败: {}", e.getMessage());
+            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
+                    "获取 Swagger 文档失败：" + e.getMessage());
+        }
+
+        // 复用已有的增量导入逻辑
+        SwaggerImportRequest importRequest = new SwaggerImportRequest();
+        importRequest.setProjectId(request.getProjectId());
+        importRequest.setModuleId(request.getModuleId());
+        importRequest.setSwaggerJson(swaggerJson);
+        return importSwagger(importRequest);
+    }
+
     // ───────────────────── 私有方法 ─────────────────────
 
     private Api findById(Long apiId) {

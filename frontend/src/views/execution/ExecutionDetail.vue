@@ -15,6 +15,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getExecution, getExecutionResults, cancelExecution, startExecution } from '@/api/execution'
 import { useExecutionWebSocket } from '@/composables/useExecutionWebSocket'
 import { useDict, type DictOption } from '@/composables/useDict'
+import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -56,6 +57,11 @@ const liveMessage = computed(() => progress.value?.message || '')
 const liveProgressPercent = computed(() => progress.value?.progressPercent || 0)
 const livePassRate = computed(() => progress.value?.passRate || 0)
 const liveCurrentCase = computed(() => progress.value?.currentCaseName || '')
+
+const detailTitle = computed(() => {
+  const name = liveExecution.value?.planName || '执行详情'
+  return liveExecution.value?.id ? `${name} #${liveExecution.value.id}` : name
+})
 
 const { options: _statusOptions } = useDict('execution_status')
 const { options: triggerOptions } = useDict('trigger_type')
@@ -190,23 +196,15 @@ onMounted(loadData)
 <template>
   <div>
     <!-- 页头：计划名 + 状态 + 操作按钮 -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="display:flex;align-items:center;gap:12px">
-        <h2 style="margin:0">
-          {{ liveExecution.planName || '执行详情' }}<template v-if="liveExecution.id"> #{{ liveExecution.id }}</template>
-        </h2>
-        <el-tag v-if="liveExecution.status" :type="(statusTypeMap[liveExecution.status] || 'info') as any">
-          {{ statusLabels[liveExecution.status] || liveExecution.status }}
-        </el-tag>
-        <el-tag v-if="connected" type="success" size="small" effect="dark">实时</el-tag>
-      </div>
-      <div style="display:flex;gap:8px">
-        <el-button type="primary" @click="handleReRun">重新执行</el-button>
-        <el-button @click="router.back()">返回</el-button>
-        <el-button @click="refresh">刷新</el-button>
-        <el-button v-if="canCancel" type="danger" @click="handleCancel">取消执行</el-button>
-      </div>
-    </div>
+    <EditPageHeader :title="detailTitle">
+      <el-tag v-if="liveExecution.status" :type="(statusTypeMap[liveExecution.status] || 'info') as any">
+        {{ statusLabels[liveExecution.status] || liveExecution.status }}
+      </el-tag>
+      <el-tag v-if="connected" type="success" size="small" effect="dark">实时</el-tag>
+      <el-button type="primary" @click="handleReRun">重新执行</el-button>
+      <el-button @click="refresh">刷新</el-button>
+      <el-button v-if="canCancel" type="danger" @click="handleCancel">取消执行</el-button>
+    </EditPageHeader>
 
     <!-- 实时进度提示 -->
     <el-alert v-if="liveMessage && connected" :title="liveMessage" type="info" show-icon

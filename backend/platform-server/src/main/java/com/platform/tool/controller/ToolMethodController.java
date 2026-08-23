@@ -5,6 +5,7 @@
  */
 package com.platform.tool.controller;
 
+import com.platform.common.dto.ReferenceDetailResponse;
 import com.platform.common.response.ApiResponse;
 import com.platform.common.response.PageResponse;
 import com.platform.tool.dto.*;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  * 工具方法管理接口
@@ -66,5 +68,14 @@ public class ToolMethodController {
                                              @PathVariable Long toolId,
                                              @Valid @RequestBody ToolTestRequest request) {
         return ApiResponse.ok(toolMethodService.testTool(toolId, request));
+    }
+
+    /**
+     * 查询工具方法引用关系详情
+     */
+    @GetMapping("/{toolId}/dependencies")
+    public ApiResponse<List<ReferenceDetailResponse>> getDependencies(@PathVariable Long projectId,
+                                                                       @PathVariable Long toolId) {
+        return ApiResponse.ok(toolMethodService.getDependencies(toolId));
     }
 }

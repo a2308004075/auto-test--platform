@@ -79,4 +79,15 @@ public class EnvironmentController {
                                                        @PathVariable Long envId) {
         return ApiResponse.ok(environmentService.getDetail(envId));
     }
+
+    /**
+     * 测试目标服务连通性
+     */
+    @PostMapping("/{envId}/test-connection")
+    public ApiResponse<EnvironmentTestConnectionResponse> testConnection(
+            @PathVariable Long projectId,
+            @PathVariable Long envId,
+            @RequestBody EnvironmentTestConnectionRequest request) {
+        return ApiResponse.ok(environmentService.testConnection(envId, request));
+    }
 }

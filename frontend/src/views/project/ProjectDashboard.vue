@@ -30,10 +30,10 @@ function healthGrade(score: number) {
   return '较差'
 }
 function healthColor(score: number) {
-  if (score >= 90) return '#52c41a'
-  if (score >= 75) return '#52c41a'
-  if (score >= 60) return '#faad14'
-  return '#f5222d'
+  if (score >= 90) return '#67c23a'
+  if (score >= 75) return '#67c23a'
+  if (score >= 60) return '#e6a23c'
+  return '#f56c6c'
 }
 
 // SVG 圆环参数
@@ -58,57 +58,57 @@ const kpiCards = computed(() => {
 
   return [
     {
-      icon: '✓', iconBg: '#f6ffed', label: '用例通过率',
-      value: `${s.passRate || 0}%`, color: '#52c41a',
+      icon: '✓', iconBg: '#f0f9eb', label: '用例通过率',
+      value: `${s.passRate || 0}%`, color: '#67c23a',
       trend: s.passRateWeekDelta != null ? { delta: Math.abs(s.passRateWeekDelta), isUp: s.passRateWeekDelta >= 0, label: 'vs 上周' } : null,
       footer: '',
       tip: '所有测试用例在最近一次完整执行中的通过比例。计算公式：通过用例数 / 总执行用例数 × 100%',
     },
     {
-      icon: '◎', iconBg: '#e6f7ff', label: '接口覆盖率',
+      icon: '◎', iconBg: '#ecf5ff', label: '接口覆盖率',
       value: `${s.apiCoverageRate || 0}%`, color: '',
       trend: null,
       footer: `${s.coveredApiCount || 0}/${s.apiCount || 0} 个接口`,
       tip: '已有测试用例覆盖的 API 接口占项目总接口数的比例。计算公式：已覆盖接口数 / 总接口数 × 100%',
     },
     {
-      icon: '⚠', iconBg: '#fff2f0', label: '缺陷密度',
+      icon: '⚠', iconBg: '#fef0f0', label: '缺陷密度',
       value: `${s.defectDensity || 0}`, color: '',
       trend: s.defectDensityMonthDelta != null ? { delta: Math.abs(s.defectDensityMonthDelta), isUp: s.defectDensityMonthDelta > 0, label: 'vs 上月' } : null,
       footer: '缺陷/接口',
       tip: '平均每个接口关联的缺陷数量，用于衡量代码质量水平。计算公式：总缺陷数 / 总接口数',
     },
     {
-      icon: '▶', iconBg: '#e6f7ff', label: '本周执行次数',
+      icon: '▶', iconBg: '#ecf5ff', label: '本周执行次数',
       value: `${s.weeklyExecutionCount || 0}`, color: '',
       trend: s.weeklyExecDelta != null ? { delta: Math.abs(s.weeklyExecDelta), isUp: s.weeklyExecDelta >= 0, label: 'vs 上周' } : null,
       footer: '',
       tip: '当前自然周内所有测试计划的累计执行次数，含手动触发和定时触发',
     },
     {
-      icon: '⏱', iconBg: '#fffbe6', label: '缺陷修复时效',
+      icon: '⏱', iconBg: '#fdf6ec', label: '缺陷修复时效',
       value: `${s.defectFixTime || 0}`, color: '', suffix: ' 天',
       trend: s.defectFixTimeMonthDelta != null ? { delta: Math.abs(s.defectFixTimeMonthDelta), isUp: s.defectFixTimeMonthDelta > 0, label: 'vs 上月' } : null,
       footer: '',
       tip: '从缺陷发现到修复确认的平均耗时，用于衡量团队响应速度。计算方式：所有缺陷修复耗时之和 / 已修复缺陷总数',
     },
     {
-      icon: '📋', iconBg: '#f0e6ff', label: '套件完成率',
+      icon: '📋', iconBg: '#f4ecff', label: '套件完成率',
       value: `${s.suiteCompletionRate || 0}%`, color: '',
       trend: null,
       footer: `${s.completedSuiteCount || 0}/${s.suiteCount || 0} 个套件`,
       tip: '已完成执行的测试套件占总测试套件的比例。计算公式：已执行套件数 / 总套件数 × 100%',
     },
     {
-      icon: '🐛', iconBg: '#fff2f0', label: '缺陷逃逸率',
-      value: `${s.defectEscapeRate || 0}%`, color: (s.defectEscapeRate || 0) > 5 ? '#faad14' : '',
+      icon: '🐛', iconBg: '#fef0f0', label: '缺陷逃逸率',
+      value: `${s.defectEscapeRate || 0}%`, color: (s.defectEscapeRate || 0) > 5 ? '#e6a23c' : '',
       trend: s.defectEscapeRateMonthDelta != null ? { delta: Math.abs(s.defectEscapeRateMonthDelta), isUp: s.defectEscapeRateMonthDelta > 0, label: 'vs 上月' } : null,
       footer: '',
       tip: '上线后发现的缺陷占总缺陷数的比例，反映测试有效性。计算公式：线上缺陷数 / 总缺陷数 × 100%。该值越低越好',
     },
     {
-      icon: '↻', iconBg: '#f6ffed', label: '回归通过率',
-      value: `${s.regressionPassRate || 0}%`, color: '#52c41a',
+      icon: '↻', iconBg: '#f0f9eb', label: '回归通过率',
+      value: `${s.regressionPassRate || 0}%`, color: '#67c23a',
       trend: s.passRateWeekDelta != null ? { delta: Math.abs(s.passRateWeekDelta), isUp: s.passRateWeekDelta >= 0, label: 'vs 上周' } : null,
       footer: '',
       tip: '回归测试套件的用例通过率，用于评估版本迭代对已有功能的影响程度。回归通过率越高，说明版本变更对存量功能的破坏越小',
@@ -153,14 +153,14 @@ function updatePassRateChart() {
     series: [
       {
         type: 'line', data: values, smooth: true,
-        lineStyle: { color: '#1890ff', width: 2 },
+        lineStyle: { color: '#409eff', width: 2 },
         areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(24,144,255,0.15)' },
-          { offset: 1, color: 'rgba(24,144,255,0.01)' },
+          { offset: 0, color: 'rgba(64,158,255,0.15)' },
+          { offset: 1, color: 'rgba(64,158,255,0.01)' },
         ]) },
-        itemStyle: { color: '#1890ff' },
+        itemStyle: { color: '#409eff' },
         symbolSize: 6,
-        markLine: { silent: true, data: [{ yAxis: 95, label: { formatter: '目标 95%', position: 'insideEndTop', fontSize: 10, color: '#faad14' }, lineStyle: { color: '#faad14', type: 'dashed', opacity: 0.6 } }] },
+        markLine: { silent: true, data: [{ yAxis: 95, label: { formatter: '目标 95%', position: 'insideEndTop', fontSize: 10, color: '#e6a23c' }, lineStyle: { color: '#e6a23c', type: 'dashed', opacity: 0.6 } }] },
       },
     ],
   })
@@ -179,8 +179,8 @@ function updateExecFreqChart() {
     tooltip: { trigger: 'axis' },
     legend: { bottom: 0, textStyle: { fontSize: 11, color: 'rgba(0,0,0,.45)' }, itemWidth: 8, itemHeight: 8 },
     series: [
-      { name: '通过', type: 'bar', stack: 'exec', data: passed, itemStyle: { color: '#52c41a' }, barWidth: '60%' },
-      { name: '失败', type: 'bar', stack: 'exec', data: failed, itemStyle: { color: '#ff4d4f' } },
+      { name: '通过', type: 'bar', stack: 'exec', data: passed, itemStyle: { color: '#67c23a' }, barWidth: '60%' },
+      { name: '失败', type: 'bar', stack: 'exec', data: failed, itemStyle: { color: '#f56c6c' } },
     ],
   })
 }
@@ -198,8 +198,8 @@ function updateDefectTrendChart() {
     tooltip: { trigger: 'axis' },
     legend: { bottom: 0, textStyle: { fontSize: 11, color: 'rgba(0,0,0,.45)' }, itemWidth: 8, itemHeight: 8 },
     series: [
-      { name: '新增缺陷', type: 'line', data: newCounts, smooth: true, lineStyle: { color: '#ff4d4f', width: 2 }, itemStyle: { color: '#ff4d4f' }, symbolSize: 6 },
-      { name: '已修复', type: 'line', data: fixedCounts, smooth: true, lineStyle: { color: '#52c41a', width: 2 }, itemStyle: { color: '#52c41a' }, symbolSize: 6 },
+      { name: '新增缺陷', type: 'line', data: newCounts, smooth: true, lineStyle: { color: '#f56c6c', width: 2 }, itemStyle: { color: '#f56c6c' }, symbolSize: 6 },
+      { name: '已修复', type: 'line', data: fixedCounts, smooth: true, lineStyle: { color: '#67c23a', width: 2 }, itemStyle: { color: '#67c23a' }, symbolSize: 6 },
     ],
   })
 }
@@ -397,10 +397,10 @@ watch(projectId, fetchDashboard)
                 </el-tooltip>
               </span>
               <div class="coverage-bar-wrap">
-                <div class="coverage-bar" :style="{ width: (m.percentage || 0) + '%', background: (m.percentage || 0) >= 80 ? '#52c41a' : '#faad14' }"></div>
+                <div class="coverage-bar" :style="{ width: (m.percentage || 0) + '%', background: (m.percentage || 0) >= 80 ? '#67c23a' : '#e6a23c' }"></div>
               </div>
               <span class="coverage-count">{{ m.count }}</span>
-              <span class="coverage-pct" :style="{ color: (m.percentage || 0) >= 80 ? '#52c41a' : '#faad14' }">{{ m.percentage || 0 }}%</span>
+              <span class="coverage-pct" :style="{ color: (m.percentage || 0) >= 80 ? '#67c23a' : '#e6a23c' }">{{ m.percentage || 0 }}%</span>
             </div>
           </div>
           <el-empty v-else description="暂无模块数据" :image-size="60" />
@@ -410,7 +410,7 @@ watch(projectId, fetchDashboard)
       <div class="card">
         <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
           <span>质量风险 Top 5</span>
-          <a style="font-size:12px;font-weight:normal;color:#1890ff;cursor:pointer;" @click="router.push(`/project/${projectId}/cases`)">查看全部 →</a>
+          <a style="font-size:12px;font-weight:normal;color:#409eff;cursor:pointer;" @click="router.push(`/project/${projectId}/cases`)">查看全部 →</a>
         </div>
         <div class="card-body">
           <div v-if="trend.qualityRiskTop5?.length">
@@ -454,7 +454,7 @@ watch(projectId, fetchDashboard)
 }
 .overview-header-left .status-tag {
   font-size: 12px; font-weight: 500;
-  background: #f6ffed; color: #52c41a;
+  background: #f0f9eb; color: #67c23a;
   padding: 2px 10px; border-radius: 3px;
 }
 .overview-header-left .status-tag.disabled {
@@ -466,7 +466,7 @@ watch(projectId, fetchDashboard)
 }
 .overview-header-right { text-align: right; flex-shrink: 0; padding-left: 20px; }
 .last-exec { font-size: 12px; color: rgba(0,0,0,.45); }
-.last-exec a { color: #1890ff; cursor: pointer; margin-left: 6px; }
+.last-exec a { color: #409eff; cursor: pointer; margin-left: 6px; }
 .last-exec a:hover { text-decoration: underline; }
 .data-update-time { font-size: 11px; color: rgba(0,0,0,.25); margin-top: 4px; }
 
@@ -510,7 +510,7 @@ watch(projectId, fetchDashboard)
   cursor: help; font-style: normal; line-height: 1;
   transition: color .15s, background .15s;
 }
-.metric-help-btn:hover { color: #1890ff; background: #e6f4ff; }
+.metric-help-btn:hover { color: #409eff; background: #ecf5ff; }
 
 /* Layer 3: KPI 卡片 */
 .overview-kpi-row {
@@ -540,8 +540,8 @@ watch(projectId, fetchDashboard)
   display: flex; align-items: center; gap: 6px;
   font-size: 12px; color: rgba(0,0,0,.45); margin-top: 4px;
 }
-.overview-kpi-footer .trend-up { color: #52c41a; font-weight: 500; }
-.overview-kpi-footer .trend-down { color: #ff4d4f; font-weight: 500; }
+.overview-kpi-footer .trend-up { color: #67c23a; font-weight: 500; }
+.overview-kpi-footer .trend-down { color: #f56c6c; font-weight: 500; }
 .overview-kpi-footer .footer-sep { color: rgba(0,0,0,.25); }
 
 /* Layer 4: 趋势分析 */
@@ -562,8 +562,8 @@ watch(projectId, fetchDashboard)
 }
 .card-body { padding: 16px; }
 .trend-controls { display: flex; align-items: center; gap: 12px; }
-.trend-target-line { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #faad14; }
-.trend-target-dot { width: 8px; height: 2px; background: #faad14; border-radius: 1px; }
+.trend-target-line { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #e6a23c; }
+.trend-target-dot { width: 8px; height: 2px; background: #e6a23c; border-radius: 1px; }
 
 /* Layer 5: 覆盖率 & 风险 */
 .overview-section { margin-bottom: 16px; }
@@ -592,18 +592,18 @@ watch(projectId, fetchDashboard)
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 700; flex-shrink: 0;
 }
-.unstable-rank.top { background: #fff2f0; color: #ff4d4f; }
+.unstable-rank.top { background: #fef0f0; color: #f56c6c; }
 .unstable-rank.normal { background: #f0f0f0; color: rgba(0,0,0,.45); }
 .unstable-info { flex: 1; min-width: 0; }
 .unstable-name { font-size: 13px; color: rgba(0,0,0,.88); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .unstable-meta { font-size: 11px; color: rgba(0,0,0,.45); margin-top: 2px; }
-.unstable-fail { font-size: 12px; font-weight: 600; color: #ff4d4f; flex-shrink: 0; }
+.unstable-fail { font-size: 12px; font-weight: 600; color: #f56c6c; flex-shrink: 0; }
 .risk-monitor-footer {
   margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0;
   display: flex; align-items: center; gap: 8px;
   font-size: 13px; color: rgba(0,0,0,.65);
 }
-.risk-count { font-weight: 600; color: #ff4d4f; }
+.risk-count { font-weight: 600; color: #f56c6c; }
 
 @media (max-width: 1200px) {
   .overview-kpi-row { grid-template-columns: repeat(2, 1fr); }

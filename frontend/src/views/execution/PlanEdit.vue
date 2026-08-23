@@ -16,6 +16,7 @@ import { ElMessage } from 'element-plus'
 import { getPlan, createPlan, updatePlan, getPlanGroups } from '@/api/plan'
 import { getSuites } from '@/api/suite'
 import { getEnvironments } from '@/api/environment'
+import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -161,13 +162,10 @@ onMounted(() => {
 
 <template>
   <div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h2 style="margin:0">{{ isEdit ? `编辑测试计划：${form.name || '加载中...'}` : '新建测试计划' }}</h2>
-      <div style="display:flex;gap:8px">
-        <el-button @click="router.back()">取消</el-button>
-        <el-button type="primary" @click="handleSave">保存</el-button>
-      </div>
-    </div>
+    <EditPageHeader :title="isEdit ? `编辑测试计划：${form.name || '加载中...'}` : '新建测试计划'">
+      <el-button @click="router.back()">取消</el-button>
+      <el-button type="primary" @click="handleSave">保存</el-button>
+    </EditPageHeader>
 
     <!-- 卡片一：基础信息 -->
     <el-card style="margin-bottom:16px">

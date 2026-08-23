@@ -28,3 +28,11 @@ export function updateEnvironment(projectId: number, envId: number, data: any) {
 export function deleteEnvironment(projectId: number, envId: number) {
   return request.post(`/v1/projects/${projectId}/environments/${envId}/delete`)
 }
+
+export function activateEnvironment(projectId: number, envId: number) {
+  return request.post(`/v1/projects/${projectId}/environments/${envId}/activate`)
+}
+
+export function testEnvironmentConnection(projectId: number, envId: number, data: { url: string; method?: string }) {
+  return request.post(`/v1/projects/${projectId}/environments/${envId}/test-connection`, data)
+}

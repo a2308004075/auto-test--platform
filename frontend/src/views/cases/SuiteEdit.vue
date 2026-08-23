@@ -16,6 +16,7 @@ import { getSuite, updateSuite, getSuiteLifecycle, saveSuiteLifecycle } from '@/
 import { getCases } from '@/api/case'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
+import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -68,13 +69,13 @@ const selectedIndex = reactive<{ setup: number | null; teardown: number | null }
 
 // 节点类型配置
 const kwConfigs: Record<string, { icon: string; color: string; bg: string; badge: string; label: string }> = {
-  api: { icon: 'A', color: '#1890ff', bg: '#e6f7ff', badge: '', label: 'API' },
-  tool: { icon: 'T', color: '#fa8c16', bg: '#fff7e6', badge: 'warning', label: 'TOOL' },
-  action: { icon: 'A', color: '#1890ff', bg: '#e6f7ff', badge: '', label: 'Action' },
+  api: { icon: 'A', color: '#409eff', bg: '#ecf5ff', badge: '', label: 'API' },
+  tool: { icon: 'T', color: '#e6a23c', bg: '#fdf6ec', badge: 'warning', label: 'TOOL' },
+  action: { icon: 'A', color: '#409eff', bg: '#ecf5ff', badge: '', label: 'Action' },
 }
 const logicConfigs: Record<string, { icon: string; color: string; bg: string; badge: string; label: string }> = {
-  wait: { icon: '⏱', color: '#f5222d', bg: '#fff1f0', badge: 'danger', label: '等待' },
-  condition: { icon: '?', color: '#722ed1', bg: '#f9f0ff', badge: '', label: '条件' },
+  wait: { icon: '⏱', color: '#f56c6c', bg: '#fef0f0', badge: 'danger', label: '等待' },
+  condition: { icon: '?', color: '#722ed1', bg: '#f4ecff', badge: '', label: '条件' },
 }
 
 // 示例关键字（后续可从后端加载）
@@ -249,13 +250,10 @@ onMounted(loadSuite)
   <div v-loading="loading">
     <div v-if="!loading">
       <!-- 页头 -->
-      <div class="edit-header">
-        <h2 style="margin: 0; font-size: 18px">{{ pageTitle }}</h2>
-        <div class="edit-header-actions">
-          <el-button v-if="hasPermission('project:suite:edit')" type="primary" :loading="saving" @click="handleSave">保存</el-button>
-          <el-button @click="router.back()">取消</el-button>
-        </div>
-      </div>
+      <EditPageHeader :title="pageTitle">
+        <el-button v-if="hasPermission('project:suite:edit')" type="primary" :loading="saving" @click="handleSave">保存</el-button>
+        <el-button @click="router.back()">取消</el-button>
+      </EditPageHeader>
 
       <!-- 上下文信息条 -->
       <div class="context-bar">
@@ -309,23 +307,23 @@ onMounted(loadSuite)
             <div class="node-panel">
               <h4 class="node-panel-title">节点类型</h4>
               <div class="node-drag" @click="addNode(activeTab, 'api')">
-                <div class="nd-icon" style="background: #e6f7ff; color: #1890ff">A</div>
+                <div class="nd-icon" style="background: #ecf5ff; color: #409eff">A</div>
                 <span>接口关键字</span>
               </div>
               <div class="node-drag" @click="addNode(activeTab, 'tool')">
-                <div class="nd-icon" style="background: #fff7e6; color: #fa8c16">T</div>
+                <div class="nd-icon" style="background: #fdf6ec; color: #e6a23c">T</div>
                 <span>工具方法</span>
               </div>
               <div class="node-drag" @click="addNode(activeTab, 'action')">
-                <div class="nd-icon" style="background: #e6f7ff; color: #1890ff">A</div>
+                <div class="nd-icon" style="background: #ecf5ff; color: #409eff">A</div>
                 <span>Action关键字</span>
               </div>
               <div class="node-drag" @click="addNode(activeTab, 'wait')">
-                <div class="nd-icon" style="background: #fff1f0; color: #f5222d">⏱</div>
+                <div class="nd-icon" style="background: #fef0f0; color: #f56c6c">⏱</div>
                 <span>等待节点</span>
               </div>
               <div class="node-drag" @click="addNode(activeTab, 'condition')">
-                <div class="nd-icon" style="background: #f9f0ff; color: #722ed1">?</div>
+                <div class="nd-icon" style="background: #f4ecff; color: #722ed1">?</div>
                 <span>条件节点</span>
               </div>
             </div>
@@ -338,7 +336,7 @@ onMounted(loadSuite)
                   :class="['tree-node', { selected: getSelectedIndex(activeTab) === null }]"
                   @click="selectNode(activeTab, null)"
                 >
-                  <span class="tn-icon" style="color: #52c41a">▶</span>
+                  <span class="tn-icon" style="color: #67c23a">▶</span>
                   <span>{{ getData(activeTab).name }}</span>
                   <span class="tn-count">{{ getData(activeTab).children.length }} 个子节点</span>
                 </div>
@@ -350,7 +348,7 @@ onMounted(loadSuite)
                     :class="['tree-node', { selected: getSelectedIndex(activeTab) === idx }]"
                     @click="selectNode(activeTab, idx)"
                   >
-                    <span v-if="node.type === 'keyword'" class="tn-icon" :style="{ color: kwConfigs[node.kwType || 'action']?.color || '#1890ff' }">
+                    <span v-if="node.type === 'keyword'" class="tn-icon" :style="{ color: kwConfigs[node.kwType || 'action']?.color || '#409eff' }">
                       {{ kwConfigs[node.kwType || 'action']?.icon || 'A' }}
                     </span>
                     <span v-else class="tn-icon" :style="{ color: logicConfigs[node.type]?.color || '#909399' }">
@@ -475,27 +473,17 @@ onMounted(loadSuite)
 </template>
 
 <style scoped>
-.edit-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.edit-header-actions {
-  display: flex;
-  gap: 8px;
-}
 .context-bar {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  background: #f0f5ff;
-  border: 1px solid #adc6ff;
+  background: #ecf5ff;
+  border: 1px solid #c6e2ff;
   border-radius: 4px;
   margin-bottom: 14px;
   font-size: 13px;
-  color: #1d39c4;
+  color: #337ecc;
 }
 .ctx-icon {
   font-size: 16px;
@@ -540,7 +528,7 @@ onMounted(loadSuite)
 }
 .node-drag:hover {
   border-color: #409eff;
-  box-shadow: 0 1px 4px rgba(24, 144, 255, 0.15);
+  box-shadow: 0 1px 4px rgba(64, 158, 255, 0.15);
 }
 .nd-icon {
   width: 22px;
@@ -585,7 +573,7 @@ onMounted(loadSuite)
 .tree-node.selected {
   border-color: #409eff;
   background: #ecf5ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.15);
 }
 .tn-icon {
   width: 20px;

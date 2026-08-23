@@ -25,6 +25,7 @@ import {
 import { getRegisteredComponents } from '@/utils/componentRegistry'
 import { usePermissionStore } from '@/stores'
 import { usePermission } from '@/composables/usePermission'
+import PageHeader from '@/components/PageHeader/index.vue'
 
 const permissionStore = usePermissionStore()
 const { hasPermission } = usePermission()
@@ -291,11 +292,11 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="menu">
-    <div class="menu-header">
+    <PageHeader title="菜单管理">
       <el-button v-if="hasPermission('system:menu:add')" type="primary" @click="handleAddRoot">新增顶级菜单</el-button>
       <el-button v-if="hasPermission('system:menu:import')" :loading="importing" @click="triggerImport">导入</el-button>
       <el-button v-if="hasPermission('system:menu:export')" @click="handleExport">导出</el-button>
-    </div>
+    </PageHeader>
     <div v-loading="loading" class="menu-list">
       <el-tree
         :data="treeData"
@@ -417,12 +418,6 @@ onBeforeUnmount(() => {
 .menu {
   display: flex;
   flex-direction: column;
-}
-
-.menu-header {
-  margin: 24px 24px 0 24px;
-  display: flex;
-  gap: 8px;
 }
 
 .menu-list {

@@ -21,6 +21,7 @@ import {
   type CacheSetRequest,
 } from '@/api/cache'
 import { usePermission } from '@/composables/usePermission'
+import PageHeader from '@/components/PageHeader/index.vue'
 
 const { hasPermission } = usePermission()
 
@@ -130,6 +131,7 @@ function formatValue(val: string): string {
 
 <template>
   <div class="cache">
+    <PageHeader title="缓存管理" />
     <!-- 查询区 -->
     <div class="top">
       <el-form>

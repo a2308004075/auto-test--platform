@@ -7,6 +7,11 @@ package com.platform.tool.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.platform.action.entity.Action;
+import com.platform.action.entity.ActionNode;
+import com.platform.action.mapper.ActionMapper;
+import com.platform.action.mapper.ActionNodeMapper;
+import com.platform.common.dto.ReferenceDetailResponse;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
 import com.platform.common.response.PageResponse;
@@ -30,6 +35,8 @@ import java.util.List;
 public class ToolMethodService {
 
     private final ToolMethodMapper toolMethodMapper;
+    private final ActionNodeMapper actionNodeMapper;
+    private final ActionMapper actionMapper;
     private final GroovySandboxExecutor groovySandboxExecutor;
     private final ProjectService projectService;
 
@@ -152,6 +159,37 @@ public class ToolMethodService {
         tm.setTestInput(request.getTestInput());
         tm.setTestResult(Integer.valueOf(1).equals(result.getSuccess()) ? result.getOutput() : result.getError());
         toolMethodMapper.updateById(tm);
+
+        return result;
+    }
+
+    /**
+     * 查询工具方法引用关系详情（被哪些 Action 引用）
+     */
+    public List<ReferenceDetailResponse> getDependencies(Long toolId) {
+        findById(toolId);
+        List<ReferenceDetailResponse> result = new ArrayList<>();
+
+        LambdaQueryWrapper<ActionNode> nodeWrapper = new LambdaQueryWrapper<>();
+        nodeWrapper.eq(ActionNode::getRefToolId, toolId);
+        List<ActionNode> nodes = actionNodeMapper.selectList(nodeWrapper);
+        List<Long> actionIds = new ArrayList<>();
+        for (ActionNode node : nodes) {
+            if (!actionIds.contains(node.getActionId())) {
+                actionIds.add(node.getActionId());
+            }
+        }
+        for (Long actionId : actionIds) {
+            Action action = actionMapper.selectById(actionId);
+            if (action != null) {
+                ReferenceDetailResponse ref = new ReferenceDetailResponse();
+                ref.setRefType("ACTION");
+                ref.setRefId(action.getId());
+                ref.setRefName(action.getName());
+                ref.setRefDescription(action.getDescription());
+                result.add(ref);
+            }
+        }
 
         return result;
     }

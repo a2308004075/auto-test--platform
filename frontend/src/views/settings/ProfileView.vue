@@ -105,11 +105,11 @@ const passwordScore = computed(() => {
 
 const strengthInfo = computed(() => {
   const levels = [
-    { width: '20%', color: '#ff4d4f', label: '弱' },
-    { width: '40%', color: '#faad14', label: '较弱' },
-    { width: '60%', color: '#faad14', label: '一般' },
-    { width: '80%', color: '#52c41a', label: '较强' },
-    { width: '100%', color: '#52c41a', label: '强' },
+    { width: '20%', color: '#f56c6c', label: '弱' },
+    { width: '40%', color: '#e6a23c', label: '较弱' },
+    { width: '60%', color: '#e6a23c', label: '一般' },
+    { width: '80%', color: '#67c23a', label: '较强' },
+    { width: '100%', color: '#67c23a', label: '强' },
   ]
   if (passwordScore.value < 0) return null
   return levels[Math.min(passwordScore.value, levels.length) - 1] || levels[0]
@@ -297,9 +297,9 @@ onMounted(() => {
               暂无登录记录
             </div>
             <div v-for="item in logList" :key="item.id" class="activity-item">
-              <div class="activity-dot" :style="{ background: item.status === 'SUCCESS' ? '#52c41a' : '#ff4d4f' }" />
+              <div class="activity-dot" :style="{ background: item.status === 'SUCCESS' ? '#67c23a' : '#f56c6c' }" />
               <div class="activity-content">
-                <div class="activity-desc" :style="{ color: item.status === 'FAILED' ? '#ff4d4f' : '' }">
+                <div class="activity-desc" :style="{ color: item.status === 'FAILED' ? '#f56c6c' : '' }">
                   {{ item.status === 'SUCCESS' ? '登录成功' : '登录失败' }}
                   <span v-if="item.browser || item.os"> — {{ item.browser }} / {{ item.os }}</span>
                   <span v-if="item.message">（{{ item.message }}）</span>
@@ -344,7 +344,7 @@ onMounted(() => {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  background: linear-gradient(135deg, #409eff 0%, #337ecc 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -352,7 +352,7 @@ onMounted(() => {
   font-size: 32px;
   font-weight: 600;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
 }
 .profile-avatar-info h2 {
   font-size: 20px;
@@ -414,9 +414,9 @@ onMounted(() => {
   border-color: rgba(114, 46, 209, 0.2) !important;
 }
 .role-tag-tester {
-  background: rgba(24, 144, 255, 0.1) !important;
-  color: #1890ff !important;
-  border-color: rgba(24, 144, 255, 0.2) !important;
+  background: rgba(64, 158, 255, 0.1) !important;
+  color: #409eff !important;
+  border-color: rgba(64, 158, 255, 0.2) !important;
 }
 .form-hint {
   font-size: 12px;

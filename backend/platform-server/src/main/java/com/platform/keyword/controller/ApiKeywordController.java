@@ -6,6 +6,7 @@
 package com.platform.keyword.controller;
 
 import com.platform.apidoc.dto.ApiDebugResponse;
+import com.platform.common.dto.ReferenceDetailResponse;
 import com.platform.common.response.ApiResponse;
 import com.platform.common.response.PageResponse;
 import com.platform.keyword.dto.ApiKeywordCreateRequest;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  * 接口关键字管理接口
@@ -98,5 +100,14 @@ public class ApiKeywordController {
                                                 @PathVariable Long keywordId,
                                                 @Valid @RequestBody ApiKeywordDebugRequest request) {
         return ApiResponse.ok(apiKeywordService.debug(keywordId, request));
+    }
+
+    /**
+     * 查询关键字引用关系详情
+     */
+    @GetMapping("/{keywordId}/dependencies")
+    public ApiResponse<List<ReferenceDetailResponse>> getDependencies(@PathVariable Long projectId,
+                                                                       @PathVariable Long keywordId) {
+        return ApiResponse.ok(apiKeywordService.getDependencies(keywordId));
     }
 }

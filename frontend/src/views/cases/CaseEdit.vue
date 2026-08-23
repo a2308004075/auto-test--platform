@@ -12,9 +12,10 @@
 import { reactive, ref, onMounted, computed, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getCase, createCase, updateCase } from '@/api/case'
+import { getCase, createCase, updateCase, debugCase } from '@/api/case'
 import { getKeywords } from '@/api/keyword'
 import { getActions } from '@/api/action'
+import { getEnvironments } from '@/api/environment'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
 import PageHeader from '@/components/PageHeader/index.vue'
@@ -125,23 +126,23 @@ const pickerState = reactive({
 })
 
 const logicTypes = [
-  { type: 'serial', icon: '&#9654;', color: '#52c41a', name: '串行执行', desc: '子节点按顺序依次执行' },
-  { type: 'parallel', icon: '&#10744;', color: '#fa8c16', name: '并行执行', desc: '子节点同时执行' },
+  { type: 'serial', icon: '&#9654;', color: '#67c23a', name: '串行执行', desc: '子节点按顺序依次执行' },
+  { type: 'parallel', icon: '&#10744;', color: '#e6a23c', name: '并行执行', desc: '子节点同时执行' },
   { type: 'condition', icon: '?', color: '#722ed1', name: '条件判断', desc: '根据表达式判断分支' },
-  { type: 'wait', icon: '&#9201;', color: '#f5222d', name: '等待', desc: '固定等待指定时长' },
+  { type: 'wait', icon: '&#9201;', color: '#f56c6c', name: '等待', desc: '固定等待指定时长' },
 ]
 
 // ===== 步骤标签配置（对齐原型 step tag 渲染） =====
 const keywordConfig: Record<string, { icon: string; color: string; tagType: any; label: string }> = {
-  api: { icon: 'A', color: '#1890ff', tagType: 'primary', label: 'API' },
-  tool: { icon: 'T', color: '#fa8c16', tagType: 'warning', label: 'TOOL' },
-  action: { icon: 'A', color: '#1890ff', tagType: 'primary', label: 'Action关键字' },
+  api: { icon: 'A', color: '#409eff', tagType: 'primary', label: 'API' },
+  tool: { icon: 'T', color: '#e6a23c', tagType: 'warning', label: 'TOOL' },
+  action: { icon: 'A', color: '#409eff', tagType: 'primary', label: 'Action关键字' },
 }
 const logicConfig: Record<string, { icon: string; color: string; tagType: any; label: string }> = {
-  serial: { icon: '&#9654;', color: '#52c41a', tagType: 'success', label: '串行执行' },
-  parallel: { icon: '&#10744;', color: '#fa8c16', tagType: 'warning', label: '并行执行' },
+  serial: { icon: '&#9654;', color: '#67c23a', tagType: 'success', label: '串行执行' },
+  parallel: { icon: '&#10744;', color: '#e6a23c', tagType: 'warning', label: '并行执行' },
   condition: { icon: '?', color: '#722ed1', tagType: 'info', label: '条件判断' },
-  wait: { icon: '&#9201;', color: '#f5222d', tagType: 'danger', label: '等待' },
+  wait: { icon: '&#9201;', color: '#f56c6c', tagType: 'danger', label: '等待' },
 }
 
 const pickerTabs = [
@@ -322,6 +323,79 @@ function addParamColumn() {
   paramRows.value.forEach((row) => row.push(''))
 }
 
+// ===== CSV 导入 =====
+const csvFileName = ref('')
+
+function handleCsvUpload(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    ElMessage.warning('请选择 CSV 文件')
+    return
+  }
+
+  csvFileName.value = file.name
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    try {
+      const text = e.target?.result as string
+      const lines = text.split(/\r?\n/).filter((line) => line.trim())
+      if (lines.length === 0) {
+        ElMessage.warning('CSV 文件为空')
+        return
+      }
+
+      // 解析 CSV 行（支持引号包裹的字段）
+      function parseCsvLine(line: string): string[] {
+        const result: string[] = []
+        let current = ''
+        let inQuotes = false
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i]
+          if (inQuotes) {
+            if (ch === '"' && line[i + 1] === '"') { current += '"'; i++ }
+            else if (ch === '"') { inQuotes = false }
+            else { current += ch }
+          } else {
+            if (ch === '"') { inQuotes = true }
+            else if (ch === ',') { result.push(current.trim()); current = '' }
+            else { current += ch }
+          }
+        }
+        result.push(current.trim())
+        return result
+      }
+
+      // 第一行为表头
+      const headers = parseCsvLine(lines[0])
+      if (headers.length === 0 || headers.every((h) => !h)) {
+        ElMessage.warning('CSV 表头为空')
+        return
+      }
+      paramHeaders.value = headers
+
+      // 其余行为数据
+      const rows: string[][] = []
+      for (let i = 1; i < lines.length; i++) {
+        const values = parseCsvLine(lines[i])
+        // 补齐列数
+        while (values.length < headers.length) values.push('')
+        rows.push(values.slice(0, headers.length))
+      }
+      paramRows.value = rows.length > 0 ? rows : [new Array(headers.length).fill('')]
+
+      ElMessage.success(`CSV 导入成功：${headers.length} 列，${rows.length} 行数据`)
+    } catch {
+      ElMessage.error('CSV 文件解析失败')
+    }
+  }
+  reader.readAsText(file, 'UTF-8')
+  // 重置 input 以允许重复选择同一文件
+  input.value = ''
+}
+
 // ===== 加载用例 =====
 async function loadCase() {
   if (!caseId.value) return
@@ -406,6 +480,44 @@ async function handleSave() {
 const setupOpen = ref(true)
 const teardownOpen = ref(false)
 
+// ===== 调试弹窗 =====
+const debugVisible = ref(false)
+const debugLoading = ref(false)
+const debugResult = ref<any>(null)
+const debugEnvId = ref<number | undefined>(undefined)
+const debugEnvs = ref<any[]>([])
+
+async function openDebugModal() {
+  if (!isEdit.value) { ElMessage.warning('请先保存用例后再调试'); return }
+  debugResult.value = null
+  debugLoading.value = false
+  debugEnvId.value = undefined
+  debugVisible.value = true
+  try {
+    const res: any = await getEnvironments(projectId.value)
+    debugEnvs.value = res.data || []
+  } catch { debugEnvs.value = [] }
+}
+
+async function handleRunDebug() {
+  debugLoading.value = true
+  debugResult.value = null
+  try {
+    const res: any = await debugCase(projectId.value, caseId.value, { environmentId: debugEnvId.value })
+    debugResult.value = res.data
+  } catch (e: any) {
+    debugResult.value = { status: 'ERROR', message: e?.response?.data?.message || '调试执行失败', stepLogs: [] }
+  } finally {
+    debugLoading.value = false
+  }
+}
+
+function debugStatusType(status: string) {
+  if (status === 'PASSED') return 'success'
+  if (status === 'FAILED' || status === 'ERROR') return 'danger'
+  return 'info'
+}
+
 // ===== 生命周期 =====
 onMounted(() => {
   loadKeywords()
@@ -435,6 +547,7 @@ watch(activeTab, (v) => {
   <div>
     <PageHeader :title="isEdit ? '编辑用例' : '新建用例'">
       <el-button @click="router.back()">返回</el-button>
+      <el-button v-if="isEdit" @click="openDebugModal">调试</el-button>
       <el-button v-if="hasPermission('project:case:edit')" type="primary" @click="handleSave">{{ isEdit ? '保存' : '创建' }}</el-button>
     </PageHeader>
 
@@ -500,7 +613,7 @@ watch(activeTab, (v) => {
           <div class="st-section">
             <div class="st-section-header" @click="setupOpen = !setupOpen">
               <span>
-                <span style="color:#52c41a;margin-right:4px">&#9654;</span>
+                <span style="color:#67c23a;margin-right:4px">&#9654;</span>
                 Test Setup
                 <span style="font-size:12px;color:#909399;font-weight:400;margin-left:8px">用例执行前调用的关键字与逻辑控制序列</span>
               </span>
@@ -567,19 +680,19 @@ watch(activeTab, (v) => {
             <div class="node-panel">
               <h4 style="font-size:12px;color:#909399;margin-bottom:8px">步骤类型</h4>
               <div class="node-drag" @click="addCanvasStep()">
-                <div class="nd-icon" style="background:#e6f7ff;color:#1890ff">K</div> 关键字步骤
+                <div class="nd-icon" style="background:#ecf5ff;color:#409eff">K</div> 关键字步骤
               </div>
               <div class="node-drag">
-                <div class="nd-icon" style="background:#f6ffed;color:#52c41a">&#9654;</div> 串行步骤
+                <div class="nd-icon" style="background:#f0f9eb;color:#67c23a">&#9654;</div> 串行步骤
               </div>
               <div class="node-drag">
-                <div class="nd-icon" style="background:#fff7e6;color:#fa8c16">&#10744;</div> 并行步骤
+                <div class="nd-icon" style="background:#fdf6ec;color:#e6a23c">&#10744;</div> 并行步骤
               </div>
               <div class="node-drag">
-                <div class="nd-icon" style="background:#f9f0ff;color:#722ed1">?</div> 条件步骤
+                <div class="nd-icon" style="background:#f4ecff;color:#722ed1">?</div> 条件步骤
               </div>
               <div class="node-drag">
-                <div class="nd-icon" style="background:#fff1f0;color:#f5222d">&#9201;</div> 等待步骤
+                <div class="nd-icon" style="background:#fef0f0;color:#f56c6c">&#9201;</div> 等待步骤
               </div>
             </div>
 
@@ -593,7 +706,7 @@ watch(activeTab, (v) => {
                 :class="['step-node', { selected: selectedStepIndex === idx }]"
                 @click="selectCanvasStep(idx)"
               >
-                <span style="color:#1890ff">K</span>
+                <span style="color:#409eff">K</span>
                 <span style="flex:1">{{ step.name || `步骤 ${idx + 1}` }}</span>
                 <el-tag size="small" type="info" style="margin-left:auto;font-size:10px">关键字</el-tag>
                 <el-button type="danger" link size="small" style="margin-left:8px" @click.stop="removeCanvasStep(idx)">删除</el-button>
@@ -656,7 +769,7 @@ watch(activeTab, (v) => {
           <div class="st-section" style="border-top:1px solid #ebeef5">
             <div class="st-section-header" @click="teardownOpen = !teardownOpen">
               <span>
-                <span style="color:#f5222d;margin-right:4px">&#9632;</span>
+                <span style="color:#f56c6c;margin-right:4px">&#9632;</span>
                 Test Teardown
                 <span style="font-size:12px;color:#909399;font-weight:400;margin-left:8px">用例执行后调用的关键字与逻辑控制序列</span>
               </span>
@@ -756,12 +869,71 @@ watch(activeTab, (v) => {
               <el-button size="small" @click="addParamColumn">+ 添加参数列</el-button>
             </div>
           </div>
-          <div v-else style="text-align:center;padding:40px;color:#c0c4cc">
-            CSV 导入功能：请选择 CSV 文件（功能开发中）
+          <div v-else>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+              <el-upload
+                :auto-upload="false"
+                :show-file-list="false"
+                accept=".csv"
+                @change="handleCsvUpload"
+              >
+                <el-button size="small" type="primary">选择 CSV 文件</el-button>
+              </el-upload>
+              <span v-if="csvFileName" style="font-size:12px;color:#606266">
+                已导入：<strong>{{ csvFileName }}</strong>（{{ paramRows.length }} 行数据）
+              </span>
+            </div>
+            <div v-if="csvFileName" style="margin-bottom:8px;font-size:12px;color:#909399">
+              导入的数据已填充到下方表格，可手动编辑后保存。
+              <el-button link type="primary" size="small" @click="paramMode = 'manual'">切换到手动编辑</el-button>
+            </div>
+            <div v-if="!csvFileName" style="text-align:center;padding:32px;color:#c0c4cc">
+              <div style="font-size:28px;margin-bottom:8px;opacity:0.4">📄</div>
+              <div>请选择 CSV 文件导入参数化数据</div>
+              <div style="font-size:12px;margin-top:4px">CSV 第一行为参数名（表头），后续行为数据值</div>
+            </div>
           </div>
         </el-card>
       </el-tab-pane>
     </el-tabs>
+
+    <!-- 用例调试弹窗 -->
+    <el-dialog v-model="debugVisible" title="用例调试" width="720px" destroy-on-close>
+      <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px">
+        <span style="font-size: 13px; color: #606266">执行环境：</span>
+        <el-select v-model="debugEnvId" placeholder="不选择环境" clearable style="width: 200px" size="small">
+          <el-option v-for="env in debugEnvs" :key="env.id" :value="env.id" :label="env.name" />
+        </el-select>
+        <el-button type="primary" size="small" :loading="debugLoading" @click="handleRunDebug">
+          {{ debugLoading ? '执行中...' : '执行调试' }}
+        </el-button>
+      </div>
+      <div v-if="debugResult">
+        <el-divider style="margin: 8px 0" />
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px">
+          <el-tag :type="debugStatusType(debugResult.status) as any" size="large">{{ debugResult.status }}</el-tag>
+          <span style="color: #606266">{{ debugResult.message }}</span>
+          <span style="margin-left: auto; color: #909399; font-size: 13px">耗时：{{ debugResult.durationMs }}ms</span>
+        </div>
+        <div v-if="debugResult.stepLogs && debugResult.stepLogs.length" style="max-height: 300px; overflow-y: auto">
+          <el-table :data="debugResult.stepLogs" border size="small" style="width: 100%">
+            <el-table-column prop="stepName" label="步骤名称" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="phase" label="阶段" width="80" />
+            <el-table-column label="状态" width="80">
+              <template #default="{ row }">
+                <el-tag :type="debugStatusType(row.status) as any" size="small">{{ row.status }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="message" label="消息" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="durationMs" label="耗时" width="80" />
+          </el-table>
+        </div>
+        <div v-else-if="debugResult.status !== 'ERROR'" style="text-align: center; color: #c0c4cc; padding: 20px">无步骤日志</div>
+      </div>
+      <template #footer>
+        <el-button @click="debugVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 

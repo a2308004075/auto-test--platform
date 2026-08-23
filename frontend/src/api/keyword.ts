@@ -36,3 +36,7 @@ export function generateKeyword(projectId: number, apiId: number) {
 export function debugKeyword(projectId: number, keywordId: number, data: { environmentId: number }) {
   return request.post(`/v1/projects/${projectId}/keywords/${keywordId}/debug`, data)
 }
+
+export function getKeywordDependencies(projectId: number, keywordId: number) {
+  return request.get(`/v1/projects/${projectId}/keywords/${keywordId}/dependencies`)
+}

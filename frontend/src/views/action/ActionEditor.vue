@@ -18,6 +18,7 @@ import { getAction, updateAction } from '@/api/action'
 import { getKeywords } from '@/api/keyword'
 import { getTools } from '@/api/tool'
 import { usePermission } from '@/composables/usePermission'
+import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -122,11 +123,11 @@ const elementCategories = ref<ElementCategory[]>([
 
 // 节点类型配置
 const nodeTypeConfig: Record<string, { color: string; icon: string; iconBg: string; label: string }> = {
-  API_KEYWORD: { color: '#1890ff', icon: 'K', iconBg: '#e6f7ff', label: '接口关键字' },
-  TOOL_METHOD: { color: '#52c41a', icon: 'T', iconBg: '#f6ffed', label: '工具方法' },
-  ACTION: { color: '#fa8c16', icon: 'A', iconBg: '#fff7e6', label: 'Action关键字' },
-  CONDITION: { color: '#722ed1', icon: '◇', iconBg: '#f9f0ff', label: '逻辑判断' },
-  ASSERT: { color: '#f5222d', icon: '断', iconBg: '#fff1f0', label: '断言' },
+  API_KEYWORD: { color: '#409eff', icon: 'K', iconBg: '#ecf5ff', label: '接口关键字' },
+  TOOL_METHOD: { color: '#67c23a', icon: 'T', iconBg: '#f0f9eb', label: '工具方法' },
+  ACTION: { color: '#e6a23c', icon: 'A', iconBg: '#fdf6ec', label: 'Action关键字' },
+  CONDITION: { color: '#722ed1', icon: '◇', iconBg: '#f4ecff', label: '逻辑判断' },
+  ASSERT: { color: '#f56c6c', icon: '断', iconBg: '#fef0f0', label: '断言' },
   LISTENER: { color: '#999', icon: '♪', iconBg: '#f5f5f5', label: '监听器' },
   START: { color: '#67c23a', icon: '▶', iconBg: '#f0f9eb', label: '开始' },
   END: { color: '#f56c6c', icon: '■', iconBg: '#fef0f0', label: '结束' },
@@ -223,10 +224,10 @@ function getNodeMarkup(color: string, icon: string, iconBg: string) {
 function registerNodes(Graph: any) {
   const portConfig = {
     groups: {
-      top: { position: 'top', attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5 } } },
-      bottom: { position: 'bottom', attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5 } } },
-      left: { position: 'left', attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5 } } },
-      right: { position: 'right', attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5 } } },
+      top: { position: 'top', attrs: { circle: { r: 5, magnet: true, stroke: '#dcdfe6', fill: '#fff', strokeWidth: 1.5 } } },
+      bottom: { position: 'bottom', attrs: { circle: { r: 5, magnet: true, stroke: '#dcdfe6', fill: '#fff', strokeWidth: 1.5 } } },
+      left: { position: 'left', attrs: { circle: { r: 5, magnet: true, stroke: '#dcdfe6', fill: '#fff', strokeWidth: 1.5 } } },
+      right: { position: 'right', attrs: { circle: { r: 5, magnet: true, stroke: '#dcdfe6', fill: '#fff', strokeWidth: 1.5 } } },
     },
     items: [{ group: 'top' }, { group: 'bottom' }, { group: 'left' }, { group: 'right' }],
   }
@@ -241,9 +242,9 @@ function registerNodes(Graph: any) {
       ports: portConfig,
     })
   }
-  registerSquare('node-action', '#fa8c16', 'A', '#fff7e6')
-  registerSquare('node-api', '#1890ff', 'K', '#e6f7ff')
-  registerSquare('node-tool', '#52c41a', 'T', '#f6ffed')
+  registerSquare('node-action', '#e6a23c', 'A', '#fdf6ec')
+  registerSquare('node-api', '#409eff', 'K', '#ecf5ff')
+  registerSquare('node-tool', '#67c23a', 'T', '#f0f9eb')
   registerSquare('node-listener', '#999', '♪', '#f5f5f5')
 
   // 注册菱形节点（断言）
@@ -261,13 +262,13 @@ function registerNodes(Graph: any) {
           style: 'margin:0;padding:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;',
           children: [{
             tagName: 'div',
-            style: 'width:100%;height:100%;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);display:flex;align-items:center;justify-content:center;background:#fff1f0;',
-            children: [{ tagName: 'span', style: 'font-size:11px;color:#f5222d;font-weight:600;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;padding:0 4px;', selector: 'label', attrs: { 'data-label': '1' } }],
+            style: 'width:100%;height:100%;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);display:flex;align-items:center;justify-content:center;background:#fef0f0;',
+            children: [{ tagName: 'span', style: 'font-size:11px;color:#f56c6c;font-weight:600;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;padding:0 4px;', selector: 'label', attrs: { 'data-label': '1' } }],
           }],
         }],
       },
     ],
-    attrs: { body: { refPoints: '0.5,0 1,0.5 0.5,1 0,0.5', fill: '#fff1f0', stroke: 'none', strokeWidth: 0 } },
+    attrs: { body: { refPoints: '0.5,0 1,0.5 0.5,1 0,0.5', fill: '#fef0f0', stroke: 'none', strokeWidth: 0 } },
     ports: portConfig,
   })
 
@@ -286,17 +287,17 @@ function registerNodes(Graph: any) {
           style: 'margin:0;padding:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;',
           children: [{
             tagName: 'div',
-            style: 'width:100%;height:100%;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);display:flex;align-items:center;justify-content:center;background:#f9f0ff;',
+            style: 'width:100%;height:100%;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);display:flex;align-items:center;justify-content:center;background:#f4ecff;',
             children: [{ tagName: 'span', style: 'font-size:11px;color:#722ed1;font-weight:600;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;padding:0 4px;', selector: 'label', attrs: { 'data-label': '1' } }],
           }],
         }],
       },
     ],
-    attrs: { body: { refPoints: '0.5,0 1,0.5 0.5,1 0,0.5', fill: '#f9f0ff', stroke: 'none', strokeWidth: 0 } },
+    attrs: { body: { refPoints: '0.5,0 1,0.5 0.5,1 0,0.5', fill: '#f4ecff', stroke: 'none', strokeWidth: 0 } },
     ports: {
       groups: {
-        yes: { position: 'right', attrs: { circle: { r: 5, magnet: true, stroke: '#52c41a', fill: '#fff', strokeWidth: 1.5 } } },
-        no: { position: 'bottom', attrs: { circle: { r: 5, magnet: true, stroke: '#ff4d4f', fill: '#fff', strokeWidth: 1.5 } } },
+        yes: { position: 'right', attrs: { circle: { r: 5, magnet: true, stroke: '#67c23a', fill: '#fff', strokeWidth: 1.5 } } },
+        no: { position: 'bottom', attrs: { circle: { r: 5, magnet: true, stroke: '#f56c6c', fill: '#fff', strokeWidth: 1.5 } } },
       },
       items: [{ id: 'yes', group: 'yes' }, { id: 'no', group: 'no' }],
     },
@@ -589,7 +590,7 @@ function onElementDragStart(e: DragEvent, item: { name: string; type: string; sh
   e.dataTransfer!.setData('text/plain', JSON.stringify(item))
   // 创建拖拽预览
   dragGhost = document.createElement('div')
-  dragGhost.style.cssText = 'position:fixed;z-index:9999;opacity:.75;pointer-events:none;padding:8px 12px;background:#fff;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;'
+  dragGhost.style.cssText = 'position:fixed;z-index:9999;opacity:.75;pointer-events:none;padding:8px 12px;background:#fff;border:1px solid #dcdfe6;border-radius:4px;font-size:13px;'
   dragGhost.textContent = item.name
   document.body.appendChild(dragGhost)
 }
@@ -908,24 +909,18 @@ onBeforeUnmount(() => {
 <template>
   <div v-loading="loading" class="action-editor">
     <!-- 编辑器头部 -->
-    <div class="edit-header">
-      <div style="display: flex; align-items: center; gap: 12px">
-        <el-button type="primary" link @click="router.back()">← 返回</el-button>
-        <h2 style="margin: 0; font-size: 18px">编辑 Action关键字</h2>
-      </div>
-      <div style="display: flex; gap: 8px">
-        <el-button @click="gotoDebug">调试</el-button>
-        <el-button
-          v-if="hasPermission('project:action:edit')"
-          type="primary"
-          :loading="saving"
-          @click="handleSave"
-        >
-          保存
-        </el-button>
-        <el-button @click="router.back()">取消</el-button>
-      </div>
-    </div>
+    <EditPageHeader title="编辑 Action关键字">
+      <el-button @click="gotoDebug">调试</el-button>
+      <el-button
+        v-if="hasPermission('project:action:edit')"
+        type="primary"
+        :loading="saving"
+        @click="handleSave"
+      >
+        保存
+      </el-button>
+      <el-button @click="router.back()">取消</el-button>
+    </EditPageHeader>
 
     <!-- Tab 页签 -->
     <el-tabs v-model="activeTab" @tab-change="(n: string) => onTabChange(n)">
@@ -1232,7 +1227,7 @@ onBeforeUnmount(() => {
                   </el-form-item>
                   <div style="margin-top: 12px; padding: 10px; background: #fafafa; border-radius: 4px; font-size: 12px">
                     <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px">
-                      <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #52c41a"></span>
+                      <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #67c23a"></span>
                       <strong>是（满足条件）</strong>
                       <span style="color: #909399">→ 右侧分支</span>
                     </div>

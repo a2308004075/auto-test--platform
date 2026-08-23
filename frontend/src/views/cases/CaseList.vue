@@ -12,8 +12,9 @@
 import { ref, reactive, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getCases, deleteCase, toggleCaseStatus, getCaseGroups, createCaseGroup, updateCaseGroup, deleteCaseGroup } from '@/api/case'
+import { getCases, deleteCase, toggleCaseStatus, debugCase, getCaseGroups, createCaseGroup, updateCaseGroup, deleteCaseGroup } from '@/api/case'
 import { getSuites } from '@/api/suite'
+import { getEnvironments } from '@/api/environment'
 import PageHeader from '@/components/PageHeader/index.vue'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
 import BatchBar from '@/components/BatchBar/index.vue'
@@ -273,7 +274,51 @@ function handleDelete(record: any) {
 }
 
 function handleDebug(record: any) {
-  router.push(`/project/${projectId}/actions/${record.id}/debug`)
+  debugRecord.value = record
+  debugResult.value = null
+  debugLoading.value = false
+  debugEnvId.value = undefined
+  debugVisible.value = true
+  // 加载环境列表
+  loadDebugEnvs()
+}
+
+// ===== 调试弹窗 =====
+const debugVisible = ref(false)
+const debugLoading = ref(false)
+const debugRecord = ref<any>(null)
+const debugResult = ref<any>(null)
+const debugEnvId = ref<number | undefined>(undefined)
+const debugEnvs = ref<any[]>([])
+
+async function loadDebugEnvs() {
+  try {
+    const res: any = await getEnvironments(projectId.value)
+    debugEnvs.value = res.data || []
+  } catch { debugEnvs.value = [] }
+}
+
+async function handleRunDebug() {
+  if (!debugRecord.value) return
+  debugLoading.value = true
+  debugResult.value = null
+  try {
+    const res: any = await debugCase(projectId.value, debugRecord.value.id, {
+      environmentId: debugEnvId.value,
+    })
+    debugResult.value = res.data
+  } catch (e: any) {
+    debugResult.value = { status: 'ERROR', message: e?.response?.data?.message || '调试执行失败', stepLogs: [] }
+  } finally {
+    debugLoading.value = false
+  }
+}
+
+function debugStatusType(status: string) {
+  if (status === 'PASSED') return 'success'
+  if (status === 'FAILED') return 'danger'
+  if (status === 'ERROR') return 'danger'
+  return 'info'
 }
 
 // ===== 分组 CRUD =====
@@ -582,6 +627,52 @@ onBeforeUnmount(() => {
         </template>
       </div>
     </Teleport>
+
+    <!-- 用例调试弹窗 -->
+    <el-dialog v-model="debugVisible" title="用例调试" width="720px" destroy-on-close>
+      <div style="margin-bottom: 12px">
+        <span style="font-weight: 600">{{ debugRecord?.name }}</span>
+        <span v-if="debugRecord?.description" style="color: #909399; margin-left: 8px; font-size: 13px">{{ debugRecord.description }}</span>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px">
+        <span style="font-size: 13px; color: #606266">执行环境：</span>
+        <el-select v-model="debugEnvId" placeholder="不选择环境" clearable style="width: 200px" size="small">
+          <el-option v-for="env in debugEnvs" :key="env.id" :value="env.id" :label="env.name" />
+        </el-select>
+        <el-button type="primary" size="small" :loading="debugLoading" @click="handleRunDebug">
+          {{ debugLoading ? '执行中...' : '执行调试' }}
+        </el-button>
+      </div>
+      <!-- 调试结果 -->
+      <div v-if="debugResult">
+        <el-divider style="margin: 8px 0" />
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px">
+          <el-tag :type="debugStatusType(debugResult.status) as any" size="large">{{ debugResult.status }}</el-tag>
+          <span style="color: #606266">{{ debugResult.message }}</span>
+          <span style="margin-left: auto; color: #909399; font-size: 13px">耗时：{{ debugResult.durationMs }}ms</span>
+        </div>
+        <!-- 步骤日志 -->
+        <div v-if="debugResult.stepLogs && debugResult.stepLogs.length" style="max-height: 300px; overflow-y: auto">
+          <el-table :data="debugResult.stepLogs" border size="small" style="width: 100%">
+            <el-table-column prop="stepName" label="步骤名称" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="phase" label="阶段" width="80" />
+            <el-table-column label="状态" width="80">
+              <template #default="{ row }">
+                <el-tag :type="debugStatusType(row.status) as any" size="small">{{ row.status }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="message" label="消息" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="durationMs" label="耗时" width="80" />
+          </el-table>
+        </div>
+        <div v-else-if="debugResult.status !== 'ERROR'" style="text-align: center; color: #c0c4cc; padding: 20px">
+          无步骤日志
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="debugVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 

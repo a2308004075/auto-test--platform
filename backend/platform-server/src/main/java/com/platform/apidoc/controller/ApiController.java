@@ -110,6 +110,16 @@ public class ApiController {
     }
 
     /**
+     * 从 URL 同步 Swagger 文档（增量导入）
+     */
+    @PostMapping("/swagger-sync-url")
+    public ApiResponse<SwaggerImportResult> swaggerSyncUrl(@PathVariable Long projectId,
+                                                            @Valid @RequestBody SwaggerSyncRequest request) {
+        request.setProjectId(projectId);
+        return ApiResponse.ok(apiService.syncFromUrl(request));
+    }
+
+    /**
      * 接口调试
      */
     @PostMapping("/{apiId}/debug")

@@ -15,6 +15,7 @@ import { getPlans, deletePlan, getPlanGroups, createPlanGroup, updatePlanGroup, 
 import { startExecution } from '@/api/execution'
 import { getEnvironments } from '@/api/environment'
 import { usePermission } from '@/composables/usePermission'
+import PageHeader from '@/components/PageHeader/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -342,11 +343,10 @@ onMounted(() => {
 
 <template>
   <div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h2 style="margin:0">测试计划</h2>
+    <PageHeader title="测试计划">
       <el-button v-if="hasPermission('project:plan:add')" type="primary"
         @click="router.push(`/project/${projectId}/plans/new`)">+ 新建计划</el-button>
-    </div>
+    </PageHeader>
 
     <div class="plan-layout">
       <!-- 左侧分组树 -->

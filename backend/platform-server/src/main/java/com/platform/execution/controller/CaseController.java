@@ -10,6 +10,8 @@ import com.platform.common.exception.ErrorCode;
 import com.platform.common.response.ApiResponse;
 import com.platform.common.response.PageResponse;
 import com.platform.execution.dto.CaseCreateRequest;
+import com.platform.execution.dto.CaseDebugRequest;
+import com.platform.execution.dto.CaseDebugResponse;
 import com.platform.execution.dto.CaseResponse;
 import com.platform.execution.dto.CaseUpdateRequest;
 import com.platform.execution.service.CaseService;
@@ -92,5 +94,18 @@ public class CaseController {
     public ApiResponse<CaseResponse> toggleStatus(@PathVariable Long projectId,
                                                    @PathVariable Long caseId) {
         return ApiResponse.ok(caseService.toggleStatus(caseId));
+    }
+
+    /**
+     * 用例调试：同步执行单条用例并返回详细结果
+     */
+    @PostMapping("/{caseId}/debug")
+    public ApiResponse<CaseDebugResponse> debug(@PathVariable Long projectId,
+                                                 @PathVariable Long caseId,
+                                                 @RequestBody(required = false) CaseDebugRequest request) {
+        if (request == null) {
+            request = new CaseDebugRequest();
+        }
+        return ApiResponse.ok(caseService.debugCase(caseId, request));
     }
 }

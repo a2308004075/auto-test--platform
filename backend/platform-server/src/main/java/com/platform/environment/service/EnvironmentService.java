@@ -22,6 +22,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 /**
  * 环境配置管理服务
@@ -170,6 +176,54 @@ public class EnvironmentService {
     }
 
     // ───────────────────── 私有方法 ─────────────────────
+
+    private static final OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .followRedirects(true)
+            .build();
+
+    /**
+     * 测试目标服务连通性
+     */
+    public EnvironmentTestConnectionResponse testConnection(Long envId, EnvironmentTestConnectionRequest request) {
+        findById(envId);
+
+        String method = request.getMethod() == null ? "GET" : request.getMethod().toUpperCase();
+        long startTime = System.currentTimeMillis();
+
+        try {
+            Request.Builder builder = new Request.Builder().url(request.getUrl());
+            switch (method) {
+                case "POST":
+                    builder.post(RequestBody.create(null, new byte[0]));
+                    break;
+                case "HEAD":
+                    builder.head();
+                    break;
+                default:
+                    builder.get();
+                    break;
+            }
+
+            Response response = HTTP_CLIENT.newCall(builder.build()).execute();
+            long duration = System.currentTimeMillis() - startTime;
+            int statusCode = response.code();
+            response.close();
+
+            if (statusCode >= 200 && statusCode < 400) {
+                return EnvironmentTestConnectionResponse.success(statusCode, duration);
+            } else {
+                return EnvironmentTestConnectionResponse.error("目标服务返回状态码：" + statusCode);
+            }
+        } catch (Exception e) {
+            long duration = System.currentTimeMillis() - startTime;
+            log.warn("测试连接失败 [envId={}]: {}", envId, e.getMessage());
+            EnvironmentTestConnectionResponse resp = EnvironmentTestConnectionResponse.error(e.getMessage());
+            resp.setDurationMs(duration);
+            return resp;
+        }
+    }
 
     private Environment findById(Long envId) {
         Environment env = environmentMapper.selectById(envId);

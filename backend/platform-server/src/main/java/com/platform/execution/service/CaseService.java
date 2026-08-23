@@ -12,13 +12,20 @@ import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
 import com.platform.common.response.PageResponse;
 import com.platform.execution.dto.CaseCreateRequest;
+import com.platform.execution.dto.CaseDebugRequest;
+import com.platform.execution.dto.CaseDebugResponse;
 import com.platform.execution.dto.CaseResponse;
 import com.platform.execution.dto.CaseUpdateRequest;
+import com.platform.execution.engine.CaseExecutor;
+import com.platform.execution.engine.ExecutionContext;
+import com.platform.execution.engine.StepResult;
 import com.platform.execution.entity.TestCase;
 import com.platform.execution.entity.TestSuite;
 import com.platform.execution.mapper.TestCaseMapper;
 import com.platform.execution.mapper.TestSuiteMapper;
+import com.platform.environment.service.EnvironmentService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,7 +34,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -35,11 +44,14 @@ import java.util.Set;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CaseService {
 
     private final TestCaseMapper testCaseMapper;
     private final TestSuiteMapper testSuiteMapper;
     private final CaseGroupService caseGroupService;
+    private final CaseExecutor caseExecutor;
+    private final EnvironmentService environmentService;
 
     /**
      * 分页查询测试用例
@@ -194,6 +206,60 @@ public class CaseService {
         c.setIsActive(Integer.valueOf(1).equals(c.getIsActive()) ? 0 : 1);
         testCaseMapper.updateById(c);
         return toResponse(c);
+    }
+
+    /**
+     * 用例调试：同步执行单条用例并返回结果
+     */
+    public CaseDebugResponse debugCase(Long caseId, CaseDebugRequest request) {
+        TestCase testCase = testCaseMapper.selectById(caseId);
+        if (testCase == null) {
+            throw new BusinessException(ErrorCode.CASE_NOT_FOUND, "测试用例不存在：" + caseId);
+        }
+
+        // 从套件获取项目 ID
+        TestSuite suite = testSuiteMapper.selectById(testCase.getSuiteId());
+        Long projectId = suite != null ? suite.getProjectId() : null;
+
+        // 构建执行上下文
+        ExecutionContext context = new ExecutionContext();
+        context.setProjectId(projectId);
+
+        // 加载环境变量（如果指定了环境）
+        if (request != null && request.getEnvironmentId() != null) {
+            context.setEnvironmentId(request.getEnvironmentId());
+            try {
+                Map<String, String> variables = environmentService.getVariablesAsMap(request.getEnvironmentId());
+                String host = variables.get("host");
+                if (host != null && !host.isEmpty()) {
+                    context.setBaseUrl(host);
+                }
+                for (Map.Entry<String, String> entry : variables.entrySet()) {
+                    context.setVariable(entry.getKey(), entry.getValue());
+                }
+            } catch (Exception e) {
+                log.warn("加载环境变量失败: {}", e.getMessage());
+            }
+        }
+
+        // 同步执行用例
+        StepResult result = caseExecutor.execute(testCase, context);
+
+        // 构建响应
+        CaseDebugResponse response = new CaseDebugResponse();
+        response.setStatus(result.getStatus());
+        response.setMessage(result.getMessage());
+        response.setDurationMs(result.getDurationMs());
+
+        if (result.getResponse() != null && result.getResponse().containsKey("stepLogs")) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> stepLogs = (List<Map<String, Object>>) result.getResponse().get("stepLogs");
+            response.setStepLogs(stepLogs);
+        } else {
+            response.setStepLogs(Collections.emptyList());
+        }
+
+        return response;
     }
 
     private long countByName(Long suiteId, String name, Long excludeId) {

@@ -20,7 +20,6 @@ public class EnvironmentResponse {
     private Long projectId;
     private String name;
     private String description;
-    private Integer isCurrent;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

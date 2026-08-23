@@ -8,13 +8,21 @@
  * 主内容区
  * 原生 main 标签 + router-view + transition
  */
+import { useRoute } from 'vue-router'
+import { useTagsViewStore } from '@/stores'
+
+const route = useRoute()
+const tagsViewStore = useTagsViewStore()
 </script>
 
 <template>
   <main class="app-main">
     <router-view v-slot="{ Component }">
       <transition name="fade-transform" mode="out-in">
-        <component :is="Component" />
+        <component
+          :is="Component"
+          :key="route.path + tagsViewStore.refreshKeys[route.path]"
+        />
       </transition>
     </router-view>
   </main>

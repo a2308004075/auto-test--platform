@@ -5,7 +5,6 @@
  */
 package com.platform.environment.entity;
 
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.platform.common.entity.BaseEntity;
 import lombok.Data;
@@ -24,10 +23,4 @@ public class Environment extends BaseEntity {
     private String name;
 
     private String description;
-
-    /**
-     * 是否为当前激活环境（0-否，1-是）
-     */
-    @TableField("is_current")
-    private Integer isCurrent;
 }

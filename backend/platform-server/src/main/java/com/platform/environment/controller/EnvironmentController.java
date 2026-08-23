@@ -63,31 +63,11 @@ public class EnvironmentController {
     }
 
     /**
-     * 激活/取消激活环境
-     */
-    @PostMapping("/{envId}/activate")
-    public ApiResponse<EnvironmentResponse> activate(@PathVariable Long projectId,
-                                                      @PathVariable Long envId) {
-        return ApiResponse.ok(environmentService.activate(envId));
-    }
-
-    /**
      * 获取环境详情（含变量列表）
      */
     @GetMapping("/{envId}")
     public ApiResponse<EnvironmentResponse> getDetail(@PathVariable Long projectId,
                                                        @PathVariable Long envId) {
         return ApiResponse.ok(environmentService.getDetail(envId));
-    }
-
-    /**
-     * 测试目标服务连通性
-     */
-    @PostMapping("/{envId}/test-connection")
-    public ApiResponse<EnvironmentTestConnectionResponse> testConnection(
-            @PathVariable Long projectId,
-            @PathVariable Long envId,
-            @RequestBody EnvironmentTestConnectionRequest request) {
-        return ApiResponse.ok(environmentService.testConnection(envId, request));
     }
 }

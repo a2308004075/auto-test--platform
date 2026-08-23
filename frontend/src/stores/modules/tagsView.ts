@@ -23,6 +23,8 @@ export interface TagView {
 export const useTagsViewStore = defineStore('tagsView', () => {
   const visitedViews = ref<TagView[]>([])
   const cachedViews = ref<string[]>([])
+  /** 各页签强制重渲染 key，用于刷新当前页签 */
+  const refreshKeys = ref<Record<string, number>>({})
 
   function addView(view: TagView) {
     if (visitedViews.value.some(v => v.path === view.path)) return
@@ -47,5 +49,9 @@ export const useTagsViewStore = defineStore('tagsView', () => {
     cachedViews.value = []
   }
 
-  return { visitedViews, cachedViews, addView, delView, delOthersViews, delAllViews }
+  function refreshView(path: string) {
+    refreshKeys.value[path] = (refreshKeys.value[path] || 0) + 1
+  }
+
+  return { visitedViews, cachedViews, refreshKeys, addView, delView, delOthersViews, delAllViews, refreshView }
 })

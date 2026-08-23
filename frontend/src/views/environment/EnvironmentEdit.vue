@@ -31,6 +31,7 @@ interface VarRow {
   varKey: string
   varValue: string
   description: string
+  isFixed?: boolean
 }
 
 const variables = ref<VarRow[]>([])
@@ -44,11 +45,20 @@ async function fetchDetail() {
     if (data) {
       envName.value = data.name || ''
       envDescription.value = data.description || ''
-      variables.value = (data.variables || []).map((v: any) => ({
+      const apiVars: VarRow[] = (data.variables || []).map((v: any) => ({
         varKey: v.varKey || '',
         varValue: v.varValue || '',
         description: v.description || '',
       }))
+      // 确保固定变量 host、header 始终在顶部
+      const hostVar = apiVars.find(v => v.varKey === 'host') || { varKey: 'host', varValue: '', description: '' }
+      const headerVar = apiVars.find(v => v.varKey === 'header') || { varKey: 'header', varValue: '', description: '' }
+      const customVars = apiVars.filter(v => v.varKey !== 'host' && v.varKey !== 'header')
+      variables.value = [
+        { ...hostVar, isFixed: true },
+        { ...headerVar, isFixed: true },
+        ...customVars.map(v => ({ ...v, isFixed: false })),
+      ]
     }
   } catch (e: any) {
     ElMessage.error('加载环境详情失败')
@@ -58,7 +68,7 @@ async function fetchDetail() {
 }
 
 function addVarRow() {
-  variables.value.push({ varKey: '', varValue: '', description: '' })
+  variables.value.push({ varKey: '', varValue: '', description: '', isFixed: false })
 }
 
 function removeRow(index: number) {
@@ -71,13 +81,15 @@ function removeRow(index: number) {
  * 2. 变量名不能重复
  */
 function validateVariables(): boolean {
-  for (let i = 0; i < variables.value.length; i++) {
-    if (!variables.value[i].varKey.trim()) {
-      ElMessage.warning(`第 ${i + 1} 行的变量名不能为空`)
+  const customVars = variables.value.filter(v => !v.isFixed)
+  for (let i = 0; i < customVars.length; i++) {
+    if (!customVars[i].varKey.trim()) {
+      const actualIndex = variables.value.indexOf(customVars[i])
+      ElMessage.warning(`第 ${actualIndex + 1} 行的变量名不能为空`)
       return false
     }
   }
-  const keys = variables.value.map((v) => v.varKey.trim())
+  const keys = customVars.map((v) => v.varKey.trim())
   const seen = new Set<string>()
   for (let i = 0; i < keys.length; i++) {
     if (seen.has(keys[i])) {
@@ -140,6 +152,7 @@ onMounted(fetchDetail)
       <!-- 变量工具栏 -->
       <div class="env-edit-toolbar">
         <el-button type="primary" size="small" @click="addVarRow">+ 添加变量</el-button>
+        <span class="var-hint">host、header 为固定变量，不可删除或重命名</span>
         <span class="var-count">共 {{ varCount }} 个变量</span>
       </div>
 
@@ -159,7 +172,7 @@ onMounted(fetchDetail)
               <td>
                 <div class="key-cell">
                   <span class="required-dot" title="必填"></span>
-                  <el-input v-model="row.varKey" placeholder="变量名" maxlength="100" />
+                  <el-input v-model="row.varKey" placeholder="变量名" maxlength="100" :disabled="row.isFixed" />
                 </div>
               </td>
               <td>
@@ -169,9 +182,10 @@ onMounted(fetchDetail)
                 <el-input v-model="row.description" placeholder="描述" />
               </td>
               <td class="action-cell">
-                <el-button type="danger" link size="small" @click="removeRow(index)">
+                <el-button v-if="!row.isFixed" type="danger" link size="small" @click="removeRow(index)">
                   删除
                 </el-button>
+                <span v-else class="fixed-tag">固定</span>
               </td>
             </tr>
             <tr v-if="variables.length === 0">
@@ -243,6 +257,16 @@ onMounted(fetchDetail)
   margin-left: auto;
   font-size: 12px;
   color: rgba(0, 0, 0, 0.45);
+}
+
+.var-hint {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.fixed-tag {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.25);
 }
 
 .var-table-wrapper {

@@ -6,7 +6,6 @@
 package com.platform.environment.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
 import com.platform.environment.dto.*;
@@ -16,25 +15,17 @@ import com.platform.environment.mapper.EnvironmentMapper;
 import com.platform.environment.mapper.EnvironmentVariableMapper;
 import com.platform.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
 /**
  * 环境配置管理服务
  */
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class EnvironmentService {
 
     private final EnvironmentMapper environmentMapper;
@@ -47,7 +38,7 @@ public class EnvironmentService {
     public List<EnvironmentResponse> listByProject(Long projectId) {
         LambdaQueryWrapper<Environment> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Environment::getProjectId, projectId);
-        wrapper.orderByDesc(Environment::getIsCurrent, Environment::getCreatedAt);
+        wrapper.orderByDesc(Environment::getCreatedAt);
 
         List<Environment> list = environmentMapper.selectList(wrapper);
         List<EnvironmentResponse> result = new ArrayList<>();
@@ -58,8 +49,9 @@ public class EnvironmentService {
     }
 
     /**
-     * 创建环境（仅基本信息，变量通过编辑页单独管理）
+     * 创建环境（自动预置 host、header 两个固定变量，用户可通过编辑页添加自定义变量）
      */
+    @Transactional(rollbackFor = Exception.class)
     public EnvironmentResponse create(EnvironmentCreateRequest request) {
         projectService.findActiveById(request.getProjectId());
 
@@ -67,9 +59,13 @@ public class EnvironmentService {
         env.setProjectId(request.getProjectId());
         env.setName(request.getName());
         env.setDescription(request.getDescription());
-        env.setIsCurrent(0);
 
         environmentMapper.insert(env);
+
+        // 预置固定变量 host、header
+        insertPresetVariable(env.getId(), "host", "", 0);
+        insertPresetVariable(env.getId(), "header", "", 1);
+
         return toBasicResponse(env);
     }
 
@@ -105,33 +101,6 @@ public class EnvironmentService {
     }
 
     /**
-     * 激活环境（互斥：同一项目下只能有一个激活环境）
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public EnvironmentResponse activate(Long envId) {
-        Environment env = findById(envId);
-
-        if (Integer.valueOf(1).equals(env.getIsCurrent())) {
-            // 取消激活
-            env.setIsCurrent(0);
-            environmentMapper.updateById(env);
-        } else {
-            // 先将同项目下其他环境取消激活
-            LambdaUpdateWrapper<Environment> updateWrapper = new LambdaUpdateWrapper<>();
-            updateWrapper.eq(Environment::getProjectId, env.getProjectId())
-                    .eq(Environment::getIsCurrent, 1)
-                    .set(Environment::getIsCurrent, 0);
-            environmentMapper.update(null, updateWrapper);
-
-            // 激活目标环境
-            env.setIsCurrent(1);
-            environmentMapper.updateById(env);
-        }
-
-        return toBasicResponse(env);
-    }
-
-    /**
      * 获取环境详情（含变量列表）
      */
     public EnvironmentResponse getDetail(Long envId) {
@@ -139,21 +108,6 @@ public class EnvironmentService {
         EnvironmentResponse response = toBasicResponse(env);
         response.setVariables(listVariables(envId));
         return response;
-    }
-
-    /**
-     * 获取当前激活的环境
-     */
-    public EnvironmentResponse getActiveEnvironment(Long projectId) {
-        LambdaQueryWrapper<Environment> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Environment::getProjectId, projectId)
-                .eq(Environment::getIsCurrent, 1)
-                .last("LIMIT 1");
-        Environment env = environmentMapper.selectOne(wrapper);
-        if (env == null) {
-            return null;
-        }
-        return toBasicResponse(env);
     }
 
     /**
@@ -177,54 +131,6 @@ public class EnvironmentService {
 
     // ───────────────────── 私有方法 ─────────────────────
 
-    private static final OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
-            .followRedirects(true)
-            .build();
-
-    /**
-     * 测试目标服务连通性
-     */
-    public EnvironmentTestConnectionResponse testConnection(Long envId, EnvironmentTestConnectionRequest request) {
-        findById(envId);
-
-        String method = request.getMethod() == null ? "GET" : request.getMethod().toUpperCase();
-        long startTime = System.currentTimeMillis();
-
-        try {
-            Request.Builder builder = new Request.Builder().url(request.getUrl());
-            switch (method) {
-                case "POST":
-                    builder.post(RequestBody.create(null, new byte[0]));
-                    break;
-                case "HEAD":
-                    builder.head();
-                    break;
-                default:
-                    builder.get();
-                    break;
-            }
-
-            Response response = HTTP_CLIENT.newCall(builder.build()).execute();
-            long duration = System.currentTimeMillis() - startTime;
-            int statusCode = response.code();
-            response.close();
-
-            if (statusCode >= 200 && statusCode < 400) {
-                return EnvironmentTestConnectionResponse.success(statusCode, duration);
-            } else {
-                return EnvironmentTestConnectionResponse.error("目标服务返回状态码：" + statusCode);
-            }
-        } catch (Exception e) {
-            long duration = System.currentTimeMillis() - startTime;
-            log.warn("测试连接失败 [envId={}]: {}", envId, e.getMessage());
-            EnvironmentTestConnectionResponse resp = EnvironmentTestConnectionResponse.error(e.getMessage());
-            resp.setDurationMs(duration);
-            return resp;
-        }
-    }
-
     private Environment findById(Long envId) {
         Environment env = environmentMapper.selectById(envId);
         if (env == null) {
@@ -242,9 +148,28 @@ public class EnvironmentService {
         deleteWrapper.eq(EnvironmentVariable::getEnvironmentId, envId);
         environmentVariableMapper.delete(deleteWrapper);
 
-        // 批量插入新变量
-        int sortNo = 0;
+        // 从请求中提取 host、header 的值（固定变量，键名锁定）
+        String hostValue = "";
+        String headerValue = "";
+        List<EnvironmentVariableDTO> customVars = new ArrayList<>();
         for (EnvironmentVariableDTO dto : dtos) {
+            String key = dto.getVarKey();
+            if ("host".equals(key)) {
+                hostValue = dto.getVarValue() != null ? dto.getVarValue() : "";
+            } else if ("header".equals(key)) {
+                headerValue = dto.getVarValue() != null ? dto.getVarValue() : "";
+            } else {
+                customVars.add(dto);
+            }
+        }
+
+        // 先插入固定变量 host、header
+        insertPresetVariable(envId, "host", hostValue, 0);
+        insertPresetVariable(envId, "header", headerValue, 1);
+
+        // 再插入自定义变量
+        int sortNo = 2;
+        for (EnvironmentVariableDTO dto : customVars) {
             EnvironmentVariable variable = new EnvironmentVariable();
             variable.setEnvironmentId(envId);
             variable.setVarKey(dto.getVarKey());
@@ -253,6 +178,18 @@ public class EnvironmentService {
             variable.setSortNo(sortNo++);
             environmentVariableMapper.insert(variable);
         }
+    }
+
+    /**
+     * 插入预置固定变量
+     */
+    private void insertPresetVariable(Long envId, String key, String value, int sortNo) {
+        EnvironmentVariable variable = new EnvironmentVariable();
+        variable.setEnvironmentId(envId);
+        variable.setVarKey(key);
+        variable.setVarValue(value);
+        variable.setSortNo(sortNo);
+        environmentVariableMapper.insert(variable);
     }
 
     /**
@@ -284,7 +221,6 @@ public class EnvironmentService {
         response.setProjectId(env.getProjectId());
         response.setName(env.getName());
         response.setDescription(env.getDescription());
-        response.setIsCurrent(env.getIsCurrent());
         response.setCreatedAt(env.getCreatedAt());
         response.setUpdatedAt(env.getUpdatedAt());
         return response;

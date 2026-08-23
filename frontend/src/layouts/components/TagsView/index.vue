@@ -75,16 +75,13 @@ function closeContextMenu() {
   selectedView.value = null
 }
 
-function handleRefresh() {
+async function handleRefresh() {
   if (!selectedView.value) return
-  // 先切换到目标页签，再执行 F5 整页刷新
+  // 切换到目标页签后再强制重渲染，仅刷新当前页签内容
   if (route.path !== selectedView.value.path) {
-    router.push(selectedView.value.path).then(() => {
-      window.location.reload()
-    })
-  } else {
-    window.location.reload()
+    await router.push(selectedView.value.path)
   }
+  tagsViewStore.refreshView(selectedView.value.path)
   closeContextMenu()
 }
 

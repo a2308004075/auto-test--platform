@@ -44,19 +44,6 @@ function circleDash(score: number) {
   return `${filled.toFixed(1)} ${circleC.toFixed(1)}`
 }
 
-// 从通过率趋势数据计算周环比（近7天 vs 前7天，仅取有执行记录的天）
-function calcPassRateWeeklyDelta(): { delta: number; isUp: boolean } | null {
-  const data = trend.value?.passRateTrend || []
-  if (data.length < 8) return null
-  const recent = data.slice(-7).filter((p: any) => p.value > 0)
-  const prev = data.slice(-14, -7).filter((p: any) => p.value > 0)
-  if (recent.length === 0 || prev.length === 0) return null
-  const recentAvg = recent.reduce((s: number, p: any) => s + p.value, 0) / recent.length
-  const prevAvg = prev.reduce((s: number, p: any) => s + p.value, 0) / prev.length
-  const delta = Math.round((recentAvg - prevAvg) * 10) / 10
-  return { delta: Math.abs(delta), isUp: delta >= 0 }
-}
-
 // 健康度维度数据（tooltip 对齐原型）
 const healthDimensions = computed(() => [
   { label: '通过率得分', value: stats.value.passRateScore || 0, tip: '基于所有测试用例的通过率计算，权重 35%。通过率越高，该项得分越高' },
@@ -68,13 +55,12 @@ const healthDimensions = computed(() => [
 // KPI 卡片定义（tooltip 对齐原型，footer 增加趋势对比）
 const kpiCards = computed(() => {
   const s = stats.value
-  const passDelta = calcPassRateWeeklyDelta()
 
   return [
     {
       icon: '✓', iconBg: '#f6ffed', label: '用例通过率',
       value: `${s.passRate || 0}%`, color: '#52c41a',
-      trend: passDelta ? { delta: passDelta.delta, isUp: passDelta.isUp, label: 'vs 上周' } : null,
+      trend: s.passRateWeekDelta != null ? { delta: Math.abs(s.passRateWeekDelta), isUp: s.passRateWeekDelta >= 0, label: 'vs 上周' } : null,
       footer: '',
       tip: '所有测试用例在最近一次完整执行中的通过比例。计算公式：通过用例数 / 总执行用例数 × 100%',
     },
@@ -88,21 +74,21 @@ const kpiCards = computed(() => {
     {
       icon: '⚠', iconBg: '#fff2f0', label: '缺陷密度',
       value: `${s.defectDensity || 0}`, color: '',
-      trend: null,
+      trend: s.defectDensityMonthDelta != null ? { delta: Math.abs(s.defectDensityMonthDelta), isUp: s.defectDensityMonthDelta > 0, label: 'vs 上月' } : null,
       footer: '缺陷/接口',
       tip: '平均每个接口关联的缺陷数量，用于衡量代码质量水平。计算公式：总缺陷数 / 总接口数',
     },
     {
       icon: '▶', iconBg: '#e6f7ff', label: '本周执行次数',
       value: `${s.weeklyExecutionCount || 0}`, color: '',
-      trend: null,
+      trend: s.weeklyExecDelta != null ? { delta: Math.abs(s.weeklyExecDelta), isUp: s.weeklyExecDelta >= 0, label: 'vs 上周' } : null,
       footer: '',
       tip: '当前自然周内所有测试计划的累计执行次数，含手动触发和定时触发',
     },
     {
       icon: '⏱', iconBg: '#fffbe6', label: '缺陷修复时效',
       value: `${s.defectFixTime || 0}`, color: '', suffix: ' 天',
-      trend: null,
+      trend: s.defectFixTimeMonthDelta != null ? { delta: Math.abs(s.defectFixTimeMonthDelta), isUp: s.defectFixTimeMonthDelta > 0, label: 'vs 上月' } : null,
       footer: '',
       tip: '从缺陷发现到修复确认的平均耗时，用于衡量团队响应速度。计算方式：所有缺陷修复耗时之和 / 已修复缺陷总数',
     },
@@ -116,14 +102,14 @@ const kpiCards = computed(() => {
     {
       icon: '🐛', iconBg: '#fff2f0', label: '缺陷逃逸率',
       value: `${s.defectEscapeRate || 0}%`, color: (s.defectEscapeRate || 0) > 5 ? '#faad14' : '',
-      trend: null,
+      trend: s.defectEscapeRateMonthDelta != null ? { delta: Math.abs(s.defectEscapeRateMonthDelta), isUp: s.defectEscapeRateMonthDelta > 0, label: 'vs 上月' } : null,
       footer: '',
       tip: '上线后发现的缺陷占总缺陷数的比例，反映测试有效性。计算公式：线上缺陷数 / 总缺陷数 × 100%。该值越低越好',
     },
     {
       icon: '↻', iconBg: '#f6ffed', label: '回归通过率',
       value: `${s.regressionPassRate || 0}%`, color: '#52c41a',
-      trend: passDelta ? { delta: passDelta.delta, isUp: passDelta.isUp, label: 'vs 上周' } : null,
+      trend: s.passRateWeekDelta != null ? { delta: Math.abs(s.passRateWeekDelta), isUp: s.passRateWeekDelta >= 0, label: 'vs 上周' } : null,
       footer: '',
       tip: '回归测试套件的用例通过率，用于评估版本迭代对已有功能的影响程度。回归通过率越高，说明版本变更对存量功能的破坏越小',
     },
@@ -133,8 +119,10 @@ const kpiCards = computed(() => {
 // ── ECharts 实例管理 ──
 let passRateChart: echarts.ECharts | null = null
 let execFreqChart: echarts.ECharts | null = null
+let defectTrendChart: echarts.ECharts | null = null
 const passRateRef = ref<HTMLElement>()
 const execFreqRef = ref<HTMLElement>()
+const defectTrendRef = ref<HTMLElement>()
 const timeRange = ref('day')
 
 function initCharts() {
@@ -145,6 +133,10 @@ function initCharts() {
   if (execFreqRef.value) {
     execFreqChart = echarts.init(execFreqRef.value)
     updateExecFreqChart()
+  }
+  if (defectTrendRef.value) {
+    defectTrendChart = echarts.init(defectTrendRef.value)
+    updateDefectTrendChart()
   }
 }
 
@@ -193,9 +185,29 @@ function updateExecFreqChart() {
   })
 }
 
+function updateDefectTrendChart() {
+  if (!defectTrendChart) return
+  const data = trend.value?.defectTrend || []
+  const weeks = data.map((d: any) => d.week)
+  const newCounts = data.map((d: any) => d.newCount)
+  const fixedCounts = data.map((d: any) => d.fixedCount)
+  defectTrendChart.setOption({
+    grid: { left: 30, right: 10, top: 10, bottom: 30 },
+    xAxis: { type: 'category', data: weeks, axisLabel: { fontSize: 10, color: 'rgba(0,0,0,.45)' }, boundaryGap: false },
+    yAxis: { type: 'value', axisLabel: { fontSize: 10, color: 'rgba(0,0,0,.45)' }, splitLine: { lineStyle: { color: '#f0f0f0' } } },
+    tooltip: { trigger: 'axis' },
+    legend: { bottom: 0, textStyle: { fontSize: 11, color: 'rgba(0,0,0,.45)' }, itemWidth: 8, itemHeight: 8 },
+    series: [
+      { name: '新增缺陷', type: 'line', data: newCounts, smooth: true, lineStyle: { color: '#ff4d4f', width: 2 }, itemStyle: { color: '#ff4d4f' }, symbolSize: 6 },
+      { name: '已修复', type: 'line', data: fixedCounts, smooth: true, lineStyle: { color: '#52c41a', width: 2 }, itemStyle: { color: '#52c41a' }, symbolSize: 6 },
+    ],
+  })
+}
+
 function handleResize() {
   passRateChart?.resize()
   execFreqChart?.resize()
+  defectTrendChart?.resize()
 }
 
 async function fetchDashboard() {
@@ -224,6 +236,7 @@ onMounted(() => {
 onUnmounted(() => {
   passRateChart?.dispose()
   execFreqChart?.dispose()
+  defectTrendChart?.dispose()
   window.removeEventListener('resize', handleResize)
 })
 
@@ -356,18 +369,14 @@ watch(projectId, fetchDashboard)
             <div ref="execFreqRef" style="width:100%;height:140px;"></div>
           </div>
         </div>
-        <!-- 缺陷趋势（暂无数据，显示占位） -->
+        <!-- 缺陷趋势（ECharts 双线图） -->
         <div class="card trend-card-side">
           <div class="card-header" style="padding:12px 16px;">
             <span style="font-size:13px;font-weight:600;">缺陷趋势</span>
             <span style="font-size:11px;color:rgba(0,0,0,.45);">近 4 周</span>
           </div>
-          <div class="card-body defect-trend-empty">
-            <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
-              <path d="M8 40h32M12 40V20m8 20V14m8 26V24m8 16V18" stroke="#dcdfe6" stroke-width="3" stroke-linecap="round"/>
-              <path d="M8 14l10-6 10 4 12-8" stroke="#dcdfe6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-            </svg>
-            <span>缺陷追踪模块暂未上线</span>
+          <div class="card-body" style="padding:12px 16px;">
+            <div ref="defectTrendRef" style="width:100%;height:140px;"></div>
           </div>
         </div>
       </div>
@@ -555,13 +564,6 @@ watch(projectId, fetchDashboard)
 .trend-controls { display: flex; align-items: center; gap: 12px; }
 .trend-target-line { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #faad14; }
 .trend-target-dot { width: 8px; height: 2px; background: #faad14; border-radius: 1px; }
-
-/* 缺陷趋势占位 */
-.defect-trend-empty {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  min-height: 140px; gap: 8px;
-  color: rgba(0,0,0,.25); font-size: 13px;
-}
 
 /* Layer 5: 覆盖率 & 风险 */
 .overview-section { margin-bottom: 16px; }

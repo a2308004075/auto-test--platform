@@ -54,4 +54,14 @@ public class ExecutionResponse {
     private String triggeredByName;
 
     private LocalDateTime createdAt;
+
+    /**
+     * 通过率（百分比，如 91.7）
+     */
+    private Double passRate;
+
+    /**
+     * 执行进度百分比（0~100）
+     */
+    private Integer progressPercent;
 }

@@ -6,14 +6,14 @@
 <script setup lang="ts">
 /**
  * 测试计划编辑 - M9
- * 卡片一：基础信息（名称 + 环境 + 描述）
+ * 卡片一：基础信息（名称 + 环境 + 分组 + 描述）
  * 卡片二：关联测试套件（checkbox 卡片布局）
  * 卡片三：执行策略（触发方式 + Cron 配置 + 启停 + 预览）
  */
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getPlan, createPlan, updatePlan } from '@/api/plan'
+import { getPlan, createPlan, updatePlan, getPlanGroups } from '@/api/plan'
 import { getSuites } from '@/api/suite'
 import { getEnvironments } from '@/api/environment'
 
@@ -36,6 +36,7 @@ const form = reactive({
 
 const suites = ref<any[]>([])
 const environments = ref<any[]>([])
+const groups = ref<any[]>([])
 
 async function loadSuites() {
   try {
@@ -49,6 +50,13 @@ async function loadEnvironments() {
     const res: any = await getEnvironments(projectId.value)
     environments.value = res.data || []
   } catch { environments.value = [] }
+}
+
+async function loadGroups() {
+  try {
+    const res: any = await getPlanGroups(projectId.value)
+    groups.value = res.data || []
+  } catch { groups.value = [] }
 }
 
 async function loadPlan() {
@@ -73,7 +81,12 @@ async function handleSave() {
   if (!form.name) { ElMessage.warning('请输入计划名称'); return }
   try {
     if (isEdit.value) {
-      await updatePlan(planId.value, { ...form })
+      const data: any = { ...form }
+      // 编辑模式下 groupId 为 null 表示清除分组（归入"未分组"）
+      if (form.groupId === null) {
+        data.clearGroup = true
+      }
+      await updatePlan(planId.value, data)
       ElMessage.success('保存成功')
     } else {
       await createPlan(projectId.value, { ...form })
@@ -141,6 +154,7 @@ function toggleSuite(suiteId: number) {
 onMounted(() => {
   loadSuites()
   loadEnvironments()
+  loadGroups()
   if (isEdit.value) loadPlan()
 })
 </script>
@@ -148,7 +162,7 @@ onMounted(() => {
 <template>
   <div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h2 style="margin:0">{{ isEdit ? '编辑测试计划' : '新建测试计划' }}</h2>
+      <h2 style="margin:0">{{ isEdit ? `编辑测试计划：${form.name || '加载中...'}` : '新建测试计划' }}</h2>
       <div style="display:flex;gap:8px">
         <el-button @click="router.back()">取消</el-button>
         <el-button type="primary" @click="handleSave">保存</el-button>
@@ -160,16 +174,23 @@ onMounted(() => {
       <template #header><span>基础信息</span></template>
       <el-form label-position="top">
         <el-row :gutter="16">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="计划名称" required>
               <el-input v-model="form.name" placeholder="请输入计划名称" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="绑定环境">
               <el-select v-model="form.environmentId" placeholder="选择执行环境" clearable style="width:100%">
                 <el-option v-for="env in environments" :key="env.id" :value="env.id"
                   :label="`${env.name}${env.isCurrent === 1 ? '（当前）' : ''}`" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="所属分组">
+              <el-select v-model="form.groupId" placeholder="未分组" clearable style="width:100%">
+                <el-option v-for="g in groups" :key="g.id" :value="g.id" :label="g.name" />
               </el-select>
             </el-form-item>
           </el-col>

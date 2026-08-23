@@ -16,6 +16,7 @@ public class ActionResponse {
     private Long projectId;
     private String name;
     private String description;
+    private Long groupId;
     private String nodes;
     private String inputParams;
     private String outputParams;

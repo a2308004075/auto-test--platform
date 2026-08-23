@@ -30,9 +30,10 @@ public class ActionController {
     public ApiResponse<PageResponse<ActionResponse>> list(
             @PathVariable Long projectId,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long groupId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.ok(actionService.list(projectId, keyword, page, pageSize));
+        return ApiResponse.ok(actionService.list(projectId, keyword, groupId, page, pageSize));
     }
 
     @PostMapping
@@ -59,6 +60,18 @@ public class ActionController {
     public ApiResponse<Void> delete(@PathVariable Long projectId,
                                      @PathVariable Long actionId) {
         actionService.delete(actionId);
+        return ApiResponse.ok();
+    }
+
+    @PostMapping("/batch-move")
+    public ApiResponse<Void> batchMove(@PathVariable Long projectId,
+                                        @RequestBody Map<String, Object> body) {
+        @SuppressWarnings("unchecked")
+        List<Number> actionIds = (List<Number>) body.get("actionIds");
+        Long targetGroupId = body.get("targetGroupId") != null
+                ? ((Number) body.get("targetGroupId")).longValue() : null;
+        List<Long> ids = actionIds.stream().map(Number::longValue).collect(java.util.stream.Collectors.toList());
+        actionService.batchMove(projectId, ids, targetGroupId);
         return ApiResponse.ok();
     }
 

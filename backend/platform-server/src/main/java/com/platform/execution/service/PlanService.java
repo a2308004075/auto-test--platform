@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,10 +56,18 @@ public class PlanService {
     /**
      * 分页查询测试计划
      *
-     * @param groupId 分组 ID（null=不过滤，0=未分组，其他=指定分组含子分组）
+     * @param groupId       分组 ID（null=不过滤，0=未分组，其他=指定分组含子分组）
+     * @param triggerType   触发方式（null=不过滤）
+     * @param environmentId 环境 ID（null=不过滤）
+     * @param status        状态 1=启用 0=禁用（null=不过滤）
+     * @param updateBegin   更新日期起（yyyy-MM-dd，null=不过滤）
+     * @param updateEnd     更新日期止（yyyy-MM-dd，null=不过滤）
      */
     public PageResponse<PlanResponse> listPlans(Long projectId, String keyword,
-                                                 Long groupId, int page, int pageSize) {
+                                                 Long groupId, String triggerType,
+                                                 Long environmentId, Integer status,
+                                                 String updateBegin, String updateEnd,
+                                                 int page, int pageSize) {
         LambdaQueryWrapper<TestPlan> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TestPlan::getProjectId, projectId);
 
@@ -78,6 +87,34 @@ public class PlanService {
             wrapper.and(w -> w.like(TestPlan::getName, keyword)
                     .or().like(TestPlan::getDescription, keyword));
         }
+
+        // 按触发方式过滤
+        if (StringUtils.hasText(triggerType)) {
+            wrapper.eq(TestPlan::getTriggerType, triggerType);
+        }
+
+        // 按环境 ID 过滤
+        if (environmentId != null) {
+            wrapper.eq(TestPlan::getEnvironmentId, environmentId);
+        }
+
+        // 按状态过滤
+        if (status != null) {
+            wrapper.eq(TestPlan::getIsActive, status);
+        }
+
+        // 按更新日期范围过滤
+        if (StringUtils.hasText(updateBegin)) {
+            try {
+                wrapper.ge(TestPlan::getUpdatedAt, LocalDate.parse(updateBegin).atStartOfDay());
+            } catch (Exception ignored) { /* 忽略无效日期格式 */ }
+        }
+        if (StringUtils.hasText(updateEnd)) {
+            try {
+                wrapper.le(TestPlan::getUpdatedAt, LocalDate.parse(updateEnd).atTime(23, 59, 59));
+            } catch (Exception ignored) { /* 忽略无效日期格式 */ }
+        }
+
         wrapper.orderByDesc(TestPlan::getCreatedAt);
 
         Page<TestPlan> result = testPlanMapper.selectPage(new Page<>(page, pageSize), wrapper);
@@ -140,7 +177,10 @@ public class PlanService {
         if (request.getDescription() != null) {
             plan.setDescription(request.getDescription());
         }
-        if (request.getGroupId() != null) {
+        // 分组处理：clearGroup=true 时置空（归入未分组），否则有值则更新
+        if (Boolean.TRUE.equals(request.getClearGroup())) {
+            plan.setGroupId(null);
+        } else if (request.getGroupId() != null) {
             plan.setGroupId(request.getGroupId());
         }
         if (request.getSuiteIds() != null) {

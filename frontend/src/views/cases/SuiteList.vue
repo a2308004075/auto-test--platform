@@ -46,19 +46,24 @@ const groupMap = computed<Record<number, any>>(() => {
   return m
 })
 
-// 分组树构建
+// 分组树构建（含分隔线节点）
 const groupTree = computed(() => {
   const userGroups = groups.value
   const buildTree = (parentId: number | null): any[] =>
     userGroups
       .filter((g: any) => (g.parentId ?? null) === parentId)
       .map((g: any) => ({ ...g, children: buildTree(g.id) }))
-  // 统计未分组数量
-  const ungroupedCount = pagination.total - groups.value.reduce((sum: number, g: any) => sum + (g.suiteCount || 0), 0)
+
+  const userTree = buildTree(null)
+  // 仅统计顶层用户分组的递归套件数（后端已含后代计数）
+  const topLevelCount = userTree.reduce((sum: number, g: any) => sum + (g.suiteCount || 0), 0)
+  const ungroupedCount = Math.max(0, pagination.total - topLevelCount)
+
   return [
-    { id: null, name: '全部', isSystem: true, suiteCount: pagination.total, children: [] },
-    { id: -1, name: '未分组', isSystem: true, suiteCount: Math.max(0, ungroupedCount), children: [] },
-    ...buildTree(null),
+    { id: null, name: '全部', isSystem: true, isDivider: false, suiteCount: pagination.total, children: [] },
+    { id: -1, name: '未分组', isSystem: true, isDivider: false, suiteCount: ungroupedCount, children: [] },
+    { id: '__divider__', name: '', isSystem: false, isDivider: true, suiteCount: 0, children: [] },
+    ...userTree,
   ]
 })
 
@@ -68,6 +73,7 @@ const filteredGroupTree = computed(() => {
   const matchRecursive = (nodes: any[]): any[] => {
     const result: any[] = []
     for (const node of nodes) {
+      if (node.isDivider) continue
       const childMatches = matchRecursive(node.children || [])
       if (node.name.toLowerCase().includes(kw) || childMatches.length > 0) {
         result.push({ ...node, children: childMatches.length > 0 ? childMatches : node.children })
@@ -77,17 +83,19 @@ const filteredGroupTree = computed(() => {
   }
   // 系统节点始终显示
   const systemNodes = groupTree.value.filter((n: any) => n.isSystem)
-  const userNodes = groupTree.value.filter((n: any) => !n.isSystem)
-  return [...systemNodes, ...matchRecursive(userNodes)]
+  const userNodes = groupTree.value.filter((n: any) => !n.isSystem && !n.isDivider)
+  const matched = matchRecursive(userNodes)
+  return matched.length > 0 ? [...systemNodes, { id: '__divider__', name: '', isSystem: false, isDivider: true, suiteCount: 0, children: [] }, ...matched] : systemNodes
 })
 
 function filterNode(value: string, data: any) {
   if (!value) return true
-  if (data.isSystem) return true
+  if (data.isSystem || data.isDivider) return true
   return data.name.toLowerCase().includes(value.toLowerCase())
 }
 
 function onGroupNodeClick(data: any) {
+  if (data.isDivider) return
   activeGroupId.value = data.id === activeGroupId.value ? null : data.id
   pagination.current = 1
   clearSelection()
@@ -366,7 +374,9 @@ function onDocClick() { closeContextMenu() }
             @node-click="onGroupNodeClick"
           >
             <template #default="{ data }">
+              <div v-if="data.isDivider" class="group-tree-divider" />
               <div
+                v-else
                 :class="['group-tree-node', { active: activeGroupId === data.id }]"
                 @contextmenu.stop="handleNodeContextmenu($event, data)"
               >
@@ -402,7 +412,7 @@ function onDocClick() { closeContextMenu() }
           <el-table-column prop="name" label="套件名称" min-width="200">
             <template #default="{ row }">
               <div class="suite-name-cell">
-                <span class="suite-name">{{ row.name }}</span>
+                <span class="suite-name suite-name-link" @click="router.push(`/project/${projectId}/suites/${row.id}/edit`)">{{ row.name }}</span>
                 <div v-if="row.description" class="suite-desc">{{ row.description }}</div>
               </div>
             </template>
@@ -608,6 +618,16 @@ function onDocClick() { closeContextMenu() }
   flex-shrink: 0;
   margin-left: 2px;
 }
+.group-tree-divider {
+  height: 1px;
+  background: #ebeef5;
+  margin: 6px 8px;
+}
+.group-tree :deep(.el-tree-node:has(.group-tree-divider)) {
+  height: auto;
+  padding: 0;
+  pointer-events: none;
+}
 .suite-content {
   flex: 1;
   min-width: 0;
@@ -625,6 +645,15 @@ function onDocClick() { closeContextMenu() }
 }
 .suite-name {
   font-weight: 500;
+}
+.suite-name-link {
+  cursor: pointer;
+  color: #409eff;
+  transition: color 0.15s;
+}
+.suite-name-link:hover {
+  color: #66b1ff;
+  text-decoration: underline;
 }
 .suite-desc {
   font-size: 12px;

@@ -12,7 +12,7 @@
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTools, deleteTool, testTool } from '@/api/tool'
+import { getTools, deleteTool, testTool, updateTool } from '@/api/tool'
 import PageHeader from '@/components/PageHeader/index.vue'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
 import BatchBar from '@/components/BatchBar/index.vue'
@@ -32,10 +32,11 @@ const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 const selectedRows = ref<any[]>([])
 
 // ===== 搜索条件 =====
-const search = reactive({ keyword: '', description: '' })
+const search = reactive({ keyword: '', param: '', description: '' })
 
 // ===== 分组树（按 category 动态构建） =====
 const activeCategory = ref('ALL')
+const groupSearch = ref('')
 
 const categoryTree = computed(() => {
   const categories = new Map<string, number>()
@@ -48,13 +49,23 @@ const categoryTree = computed(() => {
       categories.set(cat, (categories.get(cat) || 0) + 1)
     }
   })
-  return [
+  const systemNodes = [
     { id: 'ALL', name: '全部', count: allTools.value.length, isSystem: true },
     { id: 'UNGROUPED', name: '未分组', count: ungroupedCount, isSystem: true },
-    ...Array.from(categories.entries()).map(([name, count]) => ({
-      id: name, name, count, isSystem: false,
-    })),
   ]
+  const userNodes = Array.from(categories.entries()).map(([name, count]) => ({
+    id: name, name, count, isSystem: false,
+  }))
+  return [...systemNodes, ...userNodes]
+})
+
+const filteredCategoryTree = computed(() => {
+  const kw = groupSearch.value.trim().toLowerCase()
+  if (!kw) return categoryTree.value
+  return categoryTree.value.filter((node) => {
+    if (node.isSystem) return true
+    return node.name.toLowerCase().includes(kw)
+  })
 })
 
 function onCategoryClick(node: any) {
@@ -71,8 +82,10 @@ const filteredList = computed(() => {
     result = result.filter((t) => t.category === activeCategory.value)
   }
   const kw = search.keyword.trim().toLowerCase()
+  const paramKw = search.param.trim().toLowerCase()
   const desc = search.description.trim().toLowerCase()
   if (kw) result = result.filter((t) => t.name?.toLowerCase().includes(kw))
+  if (paramKw) result = result.filter((t) => formatParams(t.paramDefinitions).toLowerCase().includes(paramKw))
   if (desc) result = result.filter((t) => t.description?.toLowerCase().includes(desc))
   return result
 })
@@ -92,7 +105,7 @@ watch(filteredList, () => {
 
 function handleSearch() { pagination.current = 1 }
 function handleReset() {
-  Object.assign(search, { keyword: '', description: '' })
+  Object.assign(search, { keyword: '', param: '', description: '' })
   activeCategory.value = 'ALL'
   pagination.current = 1
 }
@@ -112,6 +125,7 @@ function handleSelectionChange(rows: any[]) { selectedRows.value = rows }
 function clearSelection() { selectedRows.value = [] }
 function handleBatchAction(key: string) {
   if (key === 'delete') handleBatchDelete()
+  else if (key === 'group') openBatchGroup()
 }
 function handleBatchDelete() {
   ElMessageBox.confirm(
@@ -133,6 +147,29 @@ function handleDelete(record: any) {
     .catch(() => {})
 }
 
+// ===== 批量修改分组 =====
+const batchGroupVisible = ref(false)
+const batchGroupTarget = ref<string>('')
+const availableCategories = computed(() =>
+  categoryTree.value.filter((c) => !c.isSystem).map((c) => ({ id: c.id, name: c.name }))
+)
+function openBatchGroup() {
+  batchGroupTarget.value = ''
+  batchGroupVisible.value = true
+}
+async function applyBatchGroup() {
+  if (!batchGroupTarget.value) { ElMessage.warning('请输入或选择目标分组'); return }
+  try {
+    for (const tool of selectedRows.value) {
+      await updateTool(projectId.value, tool.id, { ...tool, category: batchGroupTarget.value })
+    }
+    ElMessage.success(`已成功将 ${selectedRows.value.length} 条工具方法的分组修改为「${batchGroupTarget.value}」`)
+    batchGroupVisible.value = false
+    clearSelection()
+    fetchAllTools()
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
+}
+
 // ===== 表字段调整 =====
 const defaultColumns: ColumnItem[] = [
   { key: 'id', label: 'ID', locked: true, visible: true },
@@ -141,6 +178,7 @@ const defaultColumns: ColumnItem[] = [
   { key: 'returnType', label: '返回', locked: false, visible: false },
   { key: 'category', label: '分组', locked: false, visible: false },
   { key: 'desc', label: '描述', locked: false, visible: false },
+  { key: 'refCount', label: '被引用次数', locked: false, visible: false },
   { key: 'createTime', label: '创建时间', locked: false, visible: false },
   { key: 'action', label: '操作', locked: true, visible: true },
 ]
@@ -228,9 +266,18 @@ onMounted(fetchAllTools)
         <div class="module-head">
           <span class="module-title">工具分组</span>
         </div>
+        <div class="module-tree-search">
+          <el-input
+            v-model="groupSearch"
+            placeholder="搜索分组..."
+            clearable
+            size="small"
+            prefix-icon="Search"
+          />
+        </div>
         <div class="module-tree">
           <div
-            v-for="node in categoryTree"
+            v-for="node in filteredCategoryTree"
             :key="node.id"
             :class="['module-tree-node', { active: activeCategory === node.id }]"
             @click="onCategoryClick(node)"
@@ -250,6 +297,11 @@ onMounted(fetchAllTools)
               style="width: 180px" @keyup.enter="handleSearch" />
           </div>
           <div class="pro-search-field">
+            <span class="pro-search-label">参数</span>
+            <el-input v-model="search.param" placeholder="输入参数" clearable
+              style="width: 180px" @keyup.enter="handleSearch" />
+          </div>
+          <div class="pro-search-field">
             <span class="pro-search-label">描述</span>
             <el-input v-model="search.description" placeholder="输入描述" clearable
               style="width: 180px" @keyup.enter="handleSearch" />
@@ -265,9 +317,12 @@ onMounted(fetchAllTools)
         </div>
 
         <BatchBar
-          v-if="hasPermission('project:tool:delete')"
+          v-if="hasPermission('project:tool:edit')"
           :selected-count="selectedIds.length"
-          :actions="[{ key: 'delete', label: '批量删除', danger: true }]"
+          :actions="[
+            { key: 'group', label: '批量修改分组' },
+            { key: 'delete', label: '批量删除', danger: true },
+          ]"
           @action="handleBatchAction"
           @clear="clearSelection"
         />
@@ -296,6 +351,9 @@ onMounted(fetchAllTools)
             </template>
           </el-table-column>
           <el-table-column v-if="isColVisible('desc')" prop="description" label="描述" show-overflow-tooltip />
+          <el-table-column v-if="isColVisible('refCount')" label="被引用次数" width="100">
+            <template #default="{ row }">{{ row.referenceCount ?? 0 }}</template>
+          </el-table-column>
           <el-table-column v-if="isColVisible('createTime')" label="创建时间" width="120">
             <template #default="{ row }">{{ row.createdAt?.substring(0, 10) }}</template>
           </el-table-column>
@@ -360,6 +418,40 @@ onMounted(fetchAllTools)
         <el-button type="primary" :loading="testLoading" :disabled="testParams.length === 0" @click="handleTest">▶ 执行测试</el-button>
       </template>
     </el-dialog>
+
+    <!-- 批量修改分组弹窗 -->
+    <el-dialog v-model="batchGroupVisible" title="批量修改分组" width="420px">
+      <p style="font-size: 13px; color: var(--el-text-color-secondary, #606266); margin-bottom: 16px">
+        将已选中的 <b style="color: var(--el-color-primary, #409eff)">{{ selectedRows.length }}</b> 条工具方法的分组修改为：
+      </p>
+      <el-form-item label="目标分组" required>
+        <el-select
+          v-model="batchGroupTarget"
+          placeholder="请选择或输入分组名称"
+          filterable
+          allow-create
+          default-first-option
+          style="width: 100%"
+        >
+          <el-option v-for="cat in availableCategories" :key="cat.id" :value="cat.name" :label="cat.name" />
+        </el-select>
+      </el-form-item>
+      <div v-if="selectedRows.length" class="batch-preview">
+        <div class="batch-preview-title">以下工具方法的分组将被修改：</div>
+        <div v-for="row in selectedRows" :key="row.id" class="batch-preview-item">
+          <span style="color: var(--el-text-color-secondary, #606266)">{{ row.name }}</span>
+          <span class="batch-preview-arrow">{{ row.category || '未分组' }}</span>
+          <span style="color: var(--el-text-color-disabled, #c0c4cc)">→</span>
+          <span style="color: var(--el-color-primary, #409eff); font-weight: 500; margin-left: 4px">
+            {{ batchGroupTarget || '请选择' }}
+          </span>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="batchGroupVisible = false">取消</el-button>
+        <el-button type="primary" @click="applyBatchGroup">确认修改</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -386,6 +478,10 @@ onMounted(fetchAllTools)
   font-weight: 600;
   font-size: 14px;
   color: var(--el-text-color-primary, #303133);
+}
+.module-tree-search {
+  margin-top: 8px;
+  margin-bottom: 8px;
 }
 .module-tree {
   max-height: 560px;
@@ -472,5 +568,26 @@ onMounted(fetchAllTools)
   font-family: Consolas, 'Courier New', monospace;
   white-space: pre-wrap;
   word-break: break-all;
+}
+.batch-preview {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--el-fill-color-light, #f5f7fa);
+  border-radius: 4px;
+  font-size: 13px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.batch-preview-title {
+  color: var(--el-text-color-secondary, #909399);
+  margin-bottom: 6px;
+}
+.batch-preview-item {
+  padding: 2px 0;
+}
+.batch-preview-arrow {
+  margin: 0 6px;
+  color: var(--el-text-color-disabled, #c0c4cc);
+  font-size: 12px;
 }
 </style>

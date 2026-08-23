@@ -196,22 +196,34 @@ function handleBatchAction(key: string) {
 }
 function clearSelection() { selectedRows.value = [] }
 
+// ===== 批量删除 =====
+const batchDeleteVisible = ref(false)
 function handleBatchDelete() {
-  ElMessageBox.confirm(
-    `确定删除选中的 ${selectedIds.value.length} 个接口？`,
-    '批量删除',
-    { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' },
-  ).then(async () => {
+  batchDeleteVisible.value = true
+}
+async function confirmBatchDelete() {
+  try {
     await batchDeleteApis(projectId.value, selectedIds.value)
-    ElMessage.success('删除成功')
+    ElMessage.success('已删除 ' + selectedIds.value.length + ' 条接口')
+    batchDeleteVisible.value = false
     clearSelection()
     fetchModules(); fetchList()
-  }).catch(() => {})
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '删除失败') }
 }
 
 // 批量改组
 const batchMoveVisible = ref(false)
 const batchMoveTarget = ref<number | null>(null)
+const batchMovePreview = computed(() => {
+  const target = modules.value.find((m: any) => m.id === batchMoveTarget.value)
+  return selectedRows.value.map((r: any) => ({
+    name: r.name,
+    method: r.httpMethod,
+    path: r.path,
+    oldGroup: r.moduleName || moduleMap.value[r.moduleId]?.name || '未分类',
+    newGroup: target?.name || '',
+  }))
+})
 async function handleBatchMove() {
   if (!batchMoveTarget.value) { ElMessage.warning('请选择目标分组'); return }
   try {
@@ -224,10 +236,22 @@ async function handleBatchMove() {
   } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
 }
 
+// ===== 单条删除 =====
+const deleteApiVisible = ref(false)
+const deleteApiRow = ref<any>(null)
 function handleDelete(record: any) {
-  ElMessageBox.confirm(`确定删除接口「${record.name}」？`, '确认删除', { type: 'warning' })
-    .then(async () => { await deleteApi(projectId.value, record.id); ElMessage.success('删除成功'); fetchModules(); fetchList() })
-    .catch(() => {})
+  deleteApiRow.value = record
+  deleteApiVisible.value = true
+}
+async function confirmDeleteApi() {
+  if (!deleteApiRow.value) return
+  try {
+    await deleteApi(projectId.value, deleteApiRow.value.id)
+    ElMessage.success('删除成功')
+    deleteApiVisible.value = false
+    deleteApiRow.value = null
+    fetchModules(); fetchList()
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '删除失败') }
 }
 
 // ===== 分组 CRUD =====
@@ -443,8 +467,8 @@ onBeforeUnmount(() => {
           </el-table-column>
           <el-table-column v-if="isColVisible('action')" label="操作" width="170" fixed="right">
             <template #default="{ row }">
-              <el-button type="primary" link size="small" @click="openDebug(row.id)">调试</el-button>
               <el-button v-if="hasPermission('project:api:edit')" type="primary" link size="small" @click="router.push(`/project/${projectId}/apis/${row.id}/edit`)">编辑</el-button>
+              <el-button type="primary" link size="small" @click="openDebug(row.id)">调试</el-button>
               <el-button v-if="hasPermission('project:api:delete')" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
             </template>
           </el-table-column>
@@ -487,16 +511,61 @@ onBeforeUnmount(() => {
     </el-dialog>
 
     <!-- 批量修改分组弹窗 -->
-    <el-dialog v-model="batchMoveVisible" title="批量修改分组" width="420px">
+    <el-dialog v-model="batchMoveVisible" title="批量修改分组" width="480px">
       <p style="margin: 0 0 12px; color: #606266; font-size: 13px;">
-        将选中的 <b style="color: #409eff">{{ selectedIds.length }}</b> 条接口移动到：
+        将选中的 <b style="color: #409eff">{{ selectedIds.length }}</b> 条接口的分组修改为：
       </p>
-      <el-select v-model="batchMoveTarget" placeholder="选择目标分组" filterable style="width: 100%">
+      <el-select v-model="batchMoveTarget" placeholder="选择目标分组" filterable style="width: 100%; margin-bottom: 12px">
         <el-option v-for="m in moveTargetModules" :key="m.id" :value="m.id" :label="m.name" />
       </el-select>
+      <div v-if="batchMovePreview.length" class="batch-preview">
+        <div class="batch-preview-title">以下接口的分组将被修改：</div>
+        <div class="batch-preview-list">
+          <div v-for="item in batchMovePreview" :key="item.name" class="batch-preview-item">
+            <span class="batch-preview-name">{{ item.name }}</span>
+            <span class="batch-preview-old">{{ item.oldGroup }}</span>
+            <span class="batch-preview-arrow">→</span>
+            <span :class="['batch-preview-new', { empty: !item.newGroup }]">{{ item.newGroup || '请选择目标分组' }}</span>
+          </div>
+        </div>
+      </div>
       <template #footer>
         <el-button @click="batchMoveVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleBatchMove">确认移动</el-button>
+        <el-button type="primary" @click="handleBatchMove">确认修改</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 单条删除确认弹窗 -->
+    <el-dialog v-model="deleteApiVisible" title="删除接口" width="400px">
+      <p style="font-size: 14px; color: #606266; line-height: 1.6; margin: 0">
+        确定删除接口 <strong style="color: #303133">{{ deleteApiRow?.name }}</strong> 吗？<br>
+        <span style="color: #909399; font-size: 13px;">删除后将无法恢复。</span>
+      </p>
+      <template #footer>
+        <el-button @click="deleteApiVisible = false">取消</el-button>
+        <el-button type="danger" @click="confirmDeleteApi">确认删除</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 批量删除确认弹窗 -->
+    <el-dialog v-model="batchDeleteVisible" title="批量删除接口" width="440px">
+      <p style="font-size: 14px; color: #606266; line-height: 1.6; margin: 0 0 12px">
+        确定删除已选中的 <strong style="color: #f56c6c">{{ selectedIds.length }}</strong> 条接口吗？<br>
+        <span style="color: #909399; font-size: 13px;">删除后将无法恢复，请谨慎操作。</span>
+      </p>
+      <div v-if="selectedRows.length" class="batch-preview">
+        <div class="batch-preview-title">以下接口将被删除：</div>
+        <div class="batch-preview-list">
+          <div v-for="row in selectedRows" :key="row.id" class="batch-preview-item">
+            <el-tag :type="methodColors[row.httpMethod] || 'info'" size="small" style="margin-right: 6px">{{ row.httpMethod }}</el-tag>
+            <span style="color: #606266; font-family: monospace; font-size: 12px">{{ row.path }}</span>
+            <span style="color: #909399; font-size: 12px; margin-left: 4px">({{ row.name }})</span>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="batchDeleteVisible = false">取消</el-button>
+        <el-button type="danger" @click="confirmBatchDelete">确认删除</el-button>
       </template>
     </el-dialog>
 
@@ -651,5 +720,48 @@ onBeforeUnmount(() => {
   height: 1px;
   background: #ebeef5;
   margin: 4px 0;
+}
+
+/* 批量操作预览列表 */
+.batch-preview {
+  margin-top: 8px;
+  padding: 12px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.batch-preview-title {
+  color: #909399;
+  margin-bottom: 6px;
+}
+.batch-preview-list {
+  max-height: 160px;
+  overflow-y: auto;
+}
+.batch-preview-item {
+  padding: 3px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.batch-preview-name {
+  color: #606266;
+}
+.batch-preview-old {
+  color: #909399;
+  font-size: 12px;
+}
+.batch-preview-arrow {
+  color: #909399;
+  font-size: 12px;
+}
+.batch-preview-new {
+  color: #409eff;
+  font-weight: 500;
+}
+.batch-preview-new.empty {
+  color: #c0c4cc;
+  font-style: italic;
+  font-weight: normal;
 }
 </style>

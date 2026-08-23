@@ -47,6 +47,48 @@ const headerParams = ref<any[]>([])
 const responseFields = ref<any[]>([])
 const bodyText = ref('{}')
 
+// ===== 响应定义模式：手动定义 / 从示例推断 =====
+const schemaMode = ref<'manual' | 'infer'>('manual')
+const inferExample = ref('')
+function inferFields() {
+  try {
+    const parsed = JSON.parse(inferExample.value)
+    const fields: any[] = []
+    const traverse = (obj: any, prefix = '') => {
+      if (obj === null || typeof obj !== 'object') return
+      if (Array.isArray(obj)) {
+        if (obj.length > 0) traverse(obj[0], prefix)
+        return
+      }
+      for (const key in obj) {
+        const val = obj[key]
+        const fieldPath = prefix ? `${prefix}.${key}` : key
+        if (val === null) {
+          fields.push({ name: fieldPath, type: 'string', required: true, description: '' })
+        } else if (Array.isArray(val)) {
+          fields.push({ name: fieldPath, type: 'array', required: true, description: '' })
+          if (val.length > 0 && typeof val[0] === 'object') traverse(val[0], fieldPath + '[]')
+        } else if (typeof val === 'object') {
+          fields.push({ name: fieldPath, type: 'object', required: true, description: '' })
+          traverse(val, fieldPath)
+        } else if (typeof val === 'number') {
+          fields.push({ name: fieldPath, type: 'integer', required: true, description: '' })
+        } else if (typeof val === 'boolean') {
+          fields.push({ name: fieldPath, type: 'boolean', required: true, description: '' })
+        } else {
+          fields.push({ name: fieldPath, type: 'string', required: true, description: '' })
+        }
+      }
+    }
+    traverse(parsed)
+    if (fields.length === 0) { ElMessage.warning('未能从示例中推断出字段'); return }
+    responseFields.value = fields
+    ElMessage.success(`已推断出 ${fields.length} 个字段`)
+  } catch {
+    ElMessage.warning('JSON 格式不正确，请检查示例内容')
+  }
+}
+
 function syncToForm() {
   form.requestParams = JSON.stringify(queryParams.value)
   form.headers = JSON.stringify(headerParams.value)
@@ -328,7 +370,21 @@ onMounted(() => {
             <h4>响应字段</h4>
             <el-button size="small" @click="addRow(responseFields)">+ 添加字段</el-button>
           </div>
-          <el-table :data="responseFields" size="small" border style="max-width: 800px">
+          <!-- 模式切换 -->
+          <div class="schema-mode">
+            <el-button
+              :type="schemaMode === 'manual' ? 'primary' : 'default'"
+              size="small"
+              @click="schemaMode = 'manual'"
+            >手动定义</el-button>
+            <el-button
+              :type="schemaMode === 'infer' ? 'primary' : 'default'"
+              size="small"
+              @click="schemaMode = 'infer'"
+            >从示例推断</el-button>
+          </div>
+          <!-- 手动定义模式：可视化表格编辑 -->
+          <el-table v-if="schemaMode === 'manual'" :data="responseFields" size="small" border style="max-width: 800px">
             <el-table-column label="字段名" width="200">
               <template #default="{ row }"><el-input v-model="row.name" size="small" placeholder="如 data.id" style="font-family: monospace" /></template>
             </el-table-column>
@@ -351,6 +407,21 @@ onMounted(() => {
               </template>
             </el-table-column>
           </el-table>
+          <!-- 从示例推断模式：粘贴 JSON 自动生成字段 -->
+          <div v-if="schemaMode === 'infer'" class="infer-area" style="max-width: 800px">
+            <p style="color: #909399; font-size: 13px; margin: 0 0 8px">粘贴 JSON 响应示例，系统将自动推断字段定义：</p>
+            <el-input
+              v-model="inferExample"
+              type="textarea"
+              :rows="10"
+              placeholder='{"code":0,"message":"success","data":{"items":[],"total":0}}'
+              style="font-family: monospace"
+            />
+            <div style="margin-top: 8px; display: flex; gap: 8px">
+              <el-button type="primary" size="small" @click="inferFields">推断字段</el-button>
+              <el-button size="small" @click="schemaMode = 'manual'">返回手动编辑</el-button>
+            </div>
+          </div>
         </div>
       </el-tab-pane>
 
@@ -422,7 +493,11 @@ onMounted(() => {
 
       <!-- Tab: 引用关系 -->
       <el-tab-pane label="引用关系" name="refs" :disabled="!isEdit">
-        <el-table v-loading="refsLoading" :data="references" size="small" border style="max-width: 800px">
+        <div class="refs-header">
+          <h4 style="margin: 0; font-size: 14px; font-weight: 600">接口关键字引用</h4>
+          <el-tag v-if="references.length" type="primary" size="small">{{ references.length }} 个引用</el-tag>
+        </div>
+        <el-table v-loading="refsLoading" :data="references" size="small" border style="max-width: 800px; margin-top: 12px">
           <el-table-column prop="keywordName" label="关键字名称" />
           <el-table-column prop="createdBy" label="创建人" width="120" />
           <el-table-column label="修改时间" width="140">
@@ -463,6 +538,17 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 600;
   margin: 0 0 8px;
+}
+.schema-mode {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.refs-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 .section-head {
   display: flex;

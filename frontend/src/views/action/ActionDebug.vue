@@ -151,14 +151,22 @@ async function handleDebug() {
   }
 }
 
-// 变量列表（从 output.variables 提取）
+// 变量列表（从 output.variables 提取，匹配来源节点）
 const variableList = computed(() => {
   const vars = debugResult.value?.output?.variables
   if (!vars || typeof vars !== 'object') return []
+  // 从 nodeResults 构建 save_as → nodeKey 映射
+  const sourceMap: Record<string, string> = {}
+  const nodeResults = debugResult.value?.nodeResults || []
+  for (const nr of nodeResults) {
+    const saveAs = nr.saveAs || nr.save_as || ''
+    const nodeKey = nr.nodeKey || nr.name || ''
+    if (saveAs) sourceMap[saveAs] = nodeKey
+  }
   return Object.entries(vars).map(([name, value]) => ({
     name,
     value: typeof value === 'object' ? JSON.stringify(value) : String(value),
-    source: '',
+    source: sourceMap[name] || '',
   }))
 })
 
@@ -176,12 +184,17 @@ onMounted(loadData)
 <template>
   <div v-loading="loading">
     <div v-if="!loading">
-      <!-- 页头：Action名称 + 环境选择 + 执行按钮 -->
+      <!-- 页头：面包屑导航 + 环境选择 + 执行按钮 -->
       <div class="debug-header">
-        <el-button type="primary" link @click="router.back()">← 返回</el-button>
-        <h2 style="margin: 0; font-size: 16px">
-          {{ action?.name || '' }}
-        </h2>
+        <el-breadcrumb separator="/">
+          <el-breadcrumb-item>
+            <a @click.prevent="router.push(`/project/${projectId}/actions`)" href="javascript:void(0)">Action关键字</a>
+          </el-breadcrumb-item>
+          <el-breadcrumb-item>
+            <a @click.prevent="router.push(`/project/${projectId}/actions/${actionId}/edit`)" href="javascript:void(0)">{{ action?.name || '' }}</a>
+          </el-breadcrumb-item>
+          <el-breadcrumb-item>调试</el-breadcrumb-item>
+        </el-breadcrumb>
         <div style="margin-left: auto; display: flex; gap: 8px; align-items: center">
           <el-select
             v-model="selectedEnvId"
@@ -433,6 +446,12 @@ onMounted(loadData)
                       <el-table-column label="变量名" width="120">
                         <template #default="{ row }">
                           <code>{{ row.name }}</code>
+                        </template>
+                      </el-table-column>
+                      <el-table-column label="来源节点" width="120">
+                        <template #default="{ row }">
+                          <span v-if="row.source" style="font-size: 12px; color: #409eff">{{ row.source }}</span>
+                          <span v-else style="color: #c0c4cc; font-size: 12px">--</span>
                         </template>
                       </el-table-column>
                       <el-table-column label="值">

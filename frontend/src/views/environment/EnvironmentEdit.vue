@@ -64,14 +64,32 @@ function removeRow(index: number) {
   variables.value.splice(index, 1)
 }
 
-async function handleSave() {
-  // 校验变量名不能为空
+/**
+ * 校验变量列表
+ * 1. 变量名不能为空
+ * 2. 变量名不能重复
+ */
+function validateVariables(): boolean {
   for (let i = 0; i < variables.value.length; i++) {
     if (!variables.value[i].varKey.trim()) {
       ElMessage.warning(`第 ${i + 1} 行的变量名不能为空`)
-      return
+      return false
     }
   }
+  const keys = variables.value.map((v) => v.varKey.trim())
+  const seen = new Set<string>()
+  for (let i = 0; i < keys.length; i++) {
+    if (seen.has(keys[i])) {
+      ElMessage.warning(`变量名「${keys[i]}」重复，请检查`)
+      return false
+    }
+    seen.add(keys[i])
+  }
+  return true
+}
+
+async function handleSave() {
+  if (!validateVariables()) return
 
   saving.value = true
   try {
@@ -143,26 +161,14 @@ onMounted(fetchDetail)
               <td>
                 <div class="key-cell">
                   <span class="required-dot" title="必填"></span>
-                  <input
-                    v-model="row.varKey"
-                    class="var-input"
-                    placeholder="变量名"
-                  />
+                  <el-input v-model="row.varKey" placeholder="变量名" maxlength="100" />
                 </div>
               </td>
               <td>
-                <input
-                  v-model="row.varValue"
-                  class="var-input"
-                  placeholder="变量值"
-                />
+                <el-input v-model="row.varValue" placeholder="变量值" />
               </td>
               <td>
-                <input
-                  v-model="row.description"
-                  class="var-input"
-                  placeholder="描述"
-                />
+                <el-input v-model="row.description" placeholder="描述" />
               </td>
               <td class="action-cell">
                 <el-button type="danger" link size="small" @click="removeRow(index)">
@@ -280,7 +286,7 @@ onMounted(fetchDetail)
 }
 
 .var-table .col-key {
-  width: 200px;
+  width: 220px;
 }
 
 .var-table .col-value {
@@ -288,11 +294,11 @@ onMounted(fetchDetail)
 }
 
 .var-table .col-desc {
-  width: 200px;
+  width: 220px;
 }
 
 .var-table .col-action {
-  width: 70px;
+  width: 80px;
   text-align: center;
 }
 
@@ -320,26 +326,8 @@ onMounted(fetchDetail)
   flex-shrink: 0;
 }
 
-.var-input {
-  width: 100%;
-  height: 32px;
-  padding: 4px 11px;
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
-  font-size: 13px;
-  color: rgba(0, 0, 0, 0.85);
-  background: #fff;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.var-input:focus {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.06);
-}
-
-.var-input::placeholder {
-  color: rgba(0, 0, 0, 0.25);
+.key-cell :deep(.el-input) {
+  flex: 1;
 }
 
 .action-cell {

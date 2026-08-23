@@ -9,7 +9,7 @@
  * 基本信息 + 三面板 Setup/Teardown 可视化编排器
  * 对齐原型 suite-st-edit.html
  */
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getSuite, updateSuite, getSuiteLifecycle, saveSuiteLifecycle } from '@/api/suite'
@@ -39,6 +39,12 @@ const form = reactive({
   enableOnceSetupTeardown: 0,
   enablePerCaseSetupTeardown: 0,
 })
+
+// ===== 动态标题 =====
+const pageTitle = computed(() => form.name ? `${form.name} — Setup/Teardown 配置` : 'Setup/Teardown 配置')
+const contextText = computed(() => '套件级 · 整体 — 整个套件执行前后各调用一次')
+
+watch(pageTitle, (title) => { document.title = title }, { immediate: true })
 
 // ===== 编排器数据结构 =====
 interface StepNode {
@@ -244,7 +250,7 @@ onMounted(loadSuite)
     <div v-if="!loading">
       <!-- 页头 -->
       <div class="edit-header">
-        <h2 style="margin: 0; font-size: 18px">Setup/Teardown 配置</h2>
+        <h2 style="margin: 0; font-size: 18px">{{ pageTitle }}</h2>
         <div class="edit-header-actions">
           <el-button v-if="hasPermission('project:suite:edit')" type="primary" :loading="saving" @click="handleSave">保存</el-button>
           <el-button @click="router.back()">取消</el-button>
@@ -254,7 +260,7 @@ onMounted(loadSuite)
       <!-- 上下文信息条 -->
       <div class="context-bar">
         <span class="ctx-icon">ℹ</span>
-        <span>套件级 · 整体 — 整个套件执行前后各调用一次</span>
+        <span>{{ contextText }}</span>
       </div>
 
       <!-- 基本信息 -->

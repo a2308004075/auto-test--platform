@@ -10,6 +10,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { getEnvironments, createEnvironment, deleteEnvironment } from '@/api/environment'
 import { useProjectStore } from '@/stores/modules/project'
 import { usePermission } from '@/composables/usePermission'
@@ -23,7 +24,15 @@ const projectId = computed(() => Number(route.params.id))
 const loading = ref(false)
 const list = ref<any[]>([])
 const modalVisible = ref(false)
+const formRef = ref<FormInstance>()
 const form = reactive({ name: '', description: '' })
+
+const rules = reactive<FormRules>({
+  name: [
+    { required: true, message: '请输入环境名称', trigger: 'blur' },
+    { max: 50, message: '环境名称长度不能超过 50 个字符', trigger: 'blur' },
+  ],
+})
 
 async function fetchList() {
   loading.value = true
@@ -42,19 +51,18 @@ function openCreate() {
   modalVisible.value = true
 }
 
-async function handleCreate() {
-  if (!form.name) {
-    ElMessage.warning('请输入环境名称')
-    return
-  }
-  try {
-    await createEnvironment(projectId.value, { ...form, projectId: projectId.value })
-    ElMessage.success('创建成功')
-    modalVisible.value = false
-    fetchList()
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || '创建失败')
-  }
+function handleCreate() {
+  formRef.value?.validate(async (valid) => {
+    if (!valid) return
+    try {
+      await createEnvironment(projectId.value, { ...form, projectId: projectId.value })
+      ElMessage.success('创建成功')
+      modalVisible.value = false
+      fetchList()
+    } catch (e: any) {
+      ElMessage.error(e?.response?.data?.message || '创建失败')
+    }
+  })
 }
 
 function handleEdit(record: any) {
@@ -73,6 +81,10 @@ function handleDelete(record: any) {
       fetchList()
     })
     .catch(() => {})
+}
+
+function handleDialogClosed() {
+  formRef.value?.resetFields()
 }
 
 onMounted(fetchList)
@@ -99,9 +111,10 @@ onMounted(fetchList)
     <!-- 环境列表表格 -->
     <div class="env-table-section">
       <el-table v-loading="loading" :data="list" row-key="id" style="width: 100%">
-        <el-table-column prop="name" label="环境名称" min-width="140">
+        <el-table-column prop="name" label="环境名称" min-width="160">
           <template #default="{ row }">
             <strong>{{ row.name }}</strong>
+            <el-tag v-if="row.isCurrent === 1" type="success" size="small" style="margin-left: 8px;">当前</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="description" label="描述" min-width="240" show-overflow-tooltip>
@@ -136,21 +149,26 @@ onMounted(fetchList)
             </el-button>
           </template>
         </el-table-column>
+        <template #empty>
+          <div class="empty-text">暂无环境配置，点击「新建环境」开始创建</div>
+        </template>
       </el-table>
     </div>
 
     <!-- 新建环境弹窗 -->
-    <el-dialog v-model="modalVisible" title="新建环境" width="480px">
-      <el-form label-position="top">
-        <el-form-item label="环境名称" required>
-          <el-input v-model="form.name" placeholder="如 test / staging / prod" />
+    <el-dialog v-model="modalVisible" title="新建环境" width="480px" @closed="handleDialogClosed">
+      <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
+        <el-form-item label="环境名称" prop="name">
+          <el-input v-model="form.name" placeholder="如 test / staging / prod" maxlength="50" show-word-limit />
         </el-form-item>
-        <el-form-item label="描述">
+        <el-form-item label="描述" prop="description">
           <el-input
             v-model="form.description"
             type="textarea"
             :rows="2"
             placeholder="环境描述"
+            maxlength="200"
+            show-word-limit
           />
         </el-form-item>
       </el-form>
@@ -202,5 +220,11 @@ onMounted(fetchList)
   background: #fff;
   border-radius: 8px;
   border: 1px solid #f0f0f0;
+}
+
+.empty-text {
+  padding: 32px 0;
+  color: rgba(0, 0, 0, 0.25);
+  font-size: 13px;
 }
 </style>

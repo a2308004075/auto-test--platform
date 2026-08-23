@@ -96,6 +96,8 @@ public final class ErrorCode {
     public static final int ACTION_NODE_SERIALIZE_FAILED = 1702;
     public static final int ACTION_CIRCULAR_REFERENCE = 1703;
     public static final int ACTION_DEPENDENCY_CONFLICT = 1704;
+    public static final int ACTION_GROUP_NOT_FOUND = 1705;
+    public static final int ACTION_GROUP_SYSTEM = 1706;
 
     // ===== M8 测试用例 (1800-1899) =====
     public static final int STEP_VALIDATION_FAILED = 1800;
@@ -124,7 +126,7 @@ public final class ErrorCode {
 
     // ===== 业务错误码 → HTTP 状态码映射 =====
     private static final int[] UNAUTHORIZED_CODES = {UNAUTHORIZED, ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED};
-    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, CASE_GROUP_SYSTEM};
+    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, CASE_GROUP_SYSTEM, ACTION_GROUP_SYSTEM};
 
     public static int toHttpStatus(int errorCode) {
         for (int code : UNAUTHORIZED_CODES) {
@@ -146,6 +148,7 @@ public final class ErrorCode {
             case PLAN_NOT_FOUND:
             case SUITE_GROUP_NOT_FOUND:
             case CASE_GROUP_NOT_FOUND:
+            case ACTION_GROUP_NOT_FOUND:
             case ROLE_NOT_FOUND:
             case MENU_NOT_FOUND:
             case DICT_NOT_FOUND:

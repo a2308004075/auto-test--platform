@@ -53,17 +53,28 @@ public class ActionService {
     private final ObjectMapper objectMapper;
     private final ActionExecutor actionExecutor;
     private final EnvironmentService environmentService;
+    private final ActionGroupService actionGroupService;
 
     /**
      * 分页查询 Action 列表
      */
-    public PageResponse<ActionResponse> list(Long projectId, String keyword,
+    public PageResponse<ActionResponse> list(Long projectId, String keyword, Long groupId,
                                                int page, int pageSize) {
         LambdaQueryWrapper<Action> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Action::getProjectId, projectId);
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(Action::getName, keyword)
                     .or().like(Action::getDescription, keyword));
+        }
+        if (groupId != null) {
+            if (groupId == 0) {
+                // 0 = 未分组
+                wrapper.isNull(Action::getGroupId);
+            } else {
+                // 正数 = 指定分组含子分组
+                Set<Long> idSet = actionGroupService.getDescendantGroupIds(groupId);
+                wrapper.in(Action::getGroupId, idSet);
+            }
         }
         wrapper.orderByDesc(Action::getCreatedAt);
 
@@ -102,6 +113,7 @@ public class ActionService {
         action.setProjectId(request.getProjectId());
         action.setName(request.getName());
         action.setDescription(request.getDescription());
+        action.setGroupId(request.getGroupId());
         action.setInputParams(request.getInputParams());
         action.setOutputParams(request.getOutputParams());
         action.setIsActive(1);
@@ -144,6 +156,9 @@ public class ActionService {
         }
         if (request.getDescription() != null) {
             action.setDescription(request.getDescription());
+        }
+        if (request.getGroupId() != null) {
+            action.setGroupId(request.getGroupId());
         }
         if (request.getInputParams() != null) {
             action.setInputParams(request.getInputParams());
@@ -194,6 +209,22 @@ public class ActionService {
 
         deleteNodes(actionId);
         actionMapper.deleteById(actionId);
+    }
+
+    /**
+     * 批量修改 Action 分组
+     * <p>targetGroupId 为 0 时设为 NULL（归入未分组）。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void batchMove(Long projectId, List<Long> actionIds, Long targetGroupId) {
+        Long resolvedGroupId = (targetGroupId != null && targetGroupId == 0) ? null : targetGroupId;
+        for (Long id : actionIds) {
+            Action action = actionMapper.selectById(id);
+            if (action != null && action.getProjectId().equals(projectId)) {
+                action.setGroupId(resolvedGroupId);
+                actionMapper.updateById(action);
+            }
+        }
     }
 
     /**

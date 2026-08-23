@@ -24,6 +24,11 @@ public class PlanUpdateRequest {
      */
     private Long groupId;
 
+    /**
+     * 是否清除分组（设为 true 时将 groupId 置为 null，计划归入"未分组"）
+     */
+    private Boolean clearGroup;
+
     private List<Long> suiteIds;
 
     private Long environmentId;

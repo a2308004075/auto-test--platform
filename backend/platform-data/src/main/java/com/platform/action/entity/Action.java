@@ -26,6 +26,11 @@ public class Action extends BaseEntity {
     private String description;
 
     /**
+     * 所属分组 ID
+     */
+    private Long groupId;
+
+    /**
      * 节点配置（JSON 数组）
      */
     private String nodes;

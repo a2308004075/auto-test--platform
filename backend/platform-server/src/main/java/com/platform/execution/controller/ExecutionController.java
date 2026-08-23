@@ -43,10 +43,18 @@ public class ExecutionController {
      */
     @GetMapping("/api/v1/projects/{projectId}/executions")
     public ApiResponse<PageResponse<ExecutionResponse>> list(@PathVariable Long projectId,
+                                                             @RequestParam(required = false) String planName,
+                                                             @RequestParam(required = false) Long environmentId,
                                                              @RequestParam(required = false) String status,
+                                                             @RequestParam(required = false) String triggerType,
+                                                             @RequestParam(required = false) String startedAtFrom,
+                                                             @RequestParam(required = false) String startedAtTo,
+                                                             @RequestParam(required = false) String finishedAtFrom,
+                                                             @RequestParam(required = false) String finishedAtTo,
                                                              @RequestParam(defaultValue = "1") int page,
                                                              @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.ok(executionService.listExecutions(projectId, status, page, pageSize));
+        return ApiResponse.ok(executionService.listExecutions(projectId, planName, environmentId,
+                status, triggerType, startedAtFrom, startedAtTo, finishedAtFrom, finishedAtTo, page, pageSize));
     }
 
     /**

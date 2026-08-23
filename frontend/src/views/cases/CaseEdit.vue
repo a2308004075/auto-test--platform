@@ -9,7 +9,7 @@
  * Tab 布局：基础信息 / 步骤编排器 / 参数化
  * 对齐原型 case-edit.html
  */
-import { reactive, ref, onMounted, computed, watch } from 'vue'
+import { reactive, ref, onMounted, computed, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getCase, createCase, updateCase } from '@/api/case'
@@ -17,6 +17,7 @@ import { getKeywords } from '@/api/keyword'
 import { getActions } from '@/api/action'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
+import PageHeader from '@/components/PageHeader/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -130,7 +131,31 @@ const logicTypes = [
   { type: 'wait', icon: '&#9201;', color: '#f5222d', name: '等待', desc: '固定等待指定时长' },
 ]
 
-function openPicker(type: 'setup' | 'teardown') {
+// ===== 步骤标签配置（对齐原型 step tag 渲染） =====
+const keywordConfig: Record<string, { icon: string; color: string; tagType: any; label: string }> = {
+  api: { icon: 'A', color: '#1890ff', tagType: 'primary', label: 'API' },
+  tool: { icon: 'T', color: '#fa8c16', tagType: 'warning', label: 'TOOL' },
+  action: { icon: 'A', color: '#1890ff', tagType: 'primary', label: 'Action关键字' },
+}
+const logicConfig: Record<string, { icon: string; color: string; tagType: any; label: string }> = {
+  serial: { icon: '&#9654;', color: '#52c41a', tagType: 'success', label: '串行执行' },
+  parallel: { icon: '&#10744;', color: '#fa8c16', tagType: 'warning', label: '并行执行' },
+  condition: { icon: '?', color: '#722ed1', tagType: 'info', label: '条件判断' },
+  wait: { icon: '&#9201;', color: '#f5222d', tagType: 'danger', label: '等待' },
+}
+
+const pickerTabs = [
+  { key: 'api' as const, label: '接口关键字' },
+  { key: 'tool' as const, label: '工具方法' },
+  { key: 'action' as const, label: 'Action关键字' },
+  { key: 'logic' as const, label: '逻辑控制' },
+]
+
+function togglePicker(type: 'setup' | 'teardown') {
+  if (pickerState.visible && pickerState.type === type) {
+    pickerState.visible = false
+    return
+  }
   pickerState.visible = true
   pickerState.type = type
   pickerState.tab = 'action'
@@ -140,6 +165,16 @@ function openPicker(type: 'setup' | 'teardown') {
 function closePicker() {
   pickerState.visible = false
 }
+
+function switchPickerTab(tab: 'api' | 'tool' | 'action' | 'logic') {
+  pickerState.tab = tab
+  pickerState.keyword = ''
+}
+
+const pickerSearchPlaceholder = computed(() => {
+  const labels: Record<string, string> = { api: '搜索接口...', tool: '搜索工具方法...', action: '搜索 Action关键字...' }
+  return labels[pickerState.tab] || '搜索关键字...'
+})
 
 const filteredPickerKeywords = computed(() => {
   const tab = pickerState.tab
@@ -156,6 +191,19 @@ const filteredPickerKeywords = computed(() => {
     if (kw && !k.name.toLowerCase().includes(kw) && !(k.description || '').toLowerCase().includes(kw)) return false
     return true
   })
+})
+
+// 按分组归类关键字（对齐原型 st-picker 分组展示）
+const groupedPickerKeywords = computed(() => {
+  const kws = filteredPickerKeywords.value
+  const groupMap: Record<string, any[]> = {}
+  const groupOrder: string[] = []
+  for (const kw of kws) {
+    const g = kw.group || kw.category || '未分组'
+    if (!groupMap[g]) { groupMap[g] = []; groupOrder.push(g) }
+    groupMap[g].push(kw)
+  }
+  return groupOrder.map(g => ({ name: g, items: groupMap[g] }))
 })
 
 function addKeywordStep(keywordType: string, keywordId: number, name: string) {
@@ -181,6 +229,14 @@ function removeSTStep(type: 'setup' | 'teardown', index: number) {
   const steps = type === 'setup' ? setupSteps.value : teardownSteps.value
   steps.splice(index, 1)
   syncSetupTeardown()
+}
+
+// 点击外部关闭内联选择器
+function onDocClick(e: MouseEvent) {
+  const target = e.target as HTMLElement
+  if (!target.closest('.st-add-wrapper')) {
+    closePicker()
+  }
 }
 
 // ===== 步骤编排器（主画布）=====
@@ -209,6 +265,39 @@ function removeCanvasStep(index: number) {
 
 function selectCanvasStep(index: number) {
   selectedStepIndex.value = index
+  syncStepParamRows()
+}
+
+// ===== 属性面板 args 参数映射（键值表格式，对齐原型） =====
+const stepParamRows = ref<{ key: string; value: string }[]>([])
+
+function syncStepParamRows() {
+  const step = stepsArray.value[selectedStepIndex.value]
+  if (!step || !step.params || typeof step.params !== 'object' || Array.isArray(step.params)) {
+    stepParamRows.value = []
+    return
+  }
+  stepParamRows.value = Object.entries(step.params).map(([key, value]) => ({ key, value: String(value) }))
+}
+
+function commitStepParamRows() {
+  const step = stepsArray.value[selectedStepIndex.value]
+  if (!step) return
+  const newParams: Record<string, string> = {}
+  for (const row of stepParamRows.value) {
+    if (row.key.trim()) newParams[row.key.trim()] = row.value
+  }
+  step.params = newParams
+  syncStepsToJson()
+}
+
+function addStepParamRow() {
+  stepParamRows.value.push({ key: '', value: '' })
+}
+
+function removeStepParamRow(index: number) {
+  stepParamRows.value.splice(index, 1)
+  commitStepParamRows()
 }
 
 // ===== 参数化 =====
@@ -330,6 +419,11 @@ onMounted(() => {
   if (['basic', 'orchestrator', 'params'].includes(hash)) {
     activeTab.value = hash
   }
+  document.addEventListener('click', onDocClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
 })
 
 watch(activeTab, (v) => {
@@ -339,13 +433,10 @@ watch(activeTab, (v) => {
 
 <template>
   <div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h2 style="margin:0">{{ isEdit ? '编辑用例' : '新建用例' }}</h2>
-      <div style="display:flex;gap:8px">
-        <el-button @click="router.back()">返回</el-button>
-        <el-button v-if="hasPermission('project:case:edit')" type="primary" @click="handleSave">保存</el-button>
-      </div>
-    </div>
+    <PageHeader :title="isEdit ? '编辑用例' : '新建用例'">
+      <el-button @click="router.back()">返回</el-button>
+      <el-button v-if="hasPermission('project:case:edit')" type="primary" @click="handleSave">{{ isEdit ? '保存' : '创建' }}</el-button>
+    </PageHeader>
 
     <el-tabs v-model="activeTab" type="card">
       <!-- ====== Tab: 基础信息 ====== -->
@@ -411,20 +502,61 @@ watch(activeTab, (v) => {
               <span>
                 <span style="color:#52c41a;margin-right:4px">&#9654;</span>
                 Test Setup
-                <span style="font-size:12px;color:#909399;font-weight:400;margin-left:8px">用例执行前调用的关键字序列</span>
+                <span style="font-size:12px;color:#909399;font-weight:400;margin-left:8px">用例执行前调用的关键字与逻辑控制序列</span>
               </span>
               <span class="st-arrow" :style="{ transform: setupOpen ? 'rotate(90deg)' : '' }">&#9654;</span>
             </div>
             <div v-show="setupOpen" class="st-section-body">
               <div class="st-tags-row">
                 <span v-for="(step, idx) in setupSteps" :key="idx" class="st-step-tag">
-                  <span v-if="step.stepType === 'keyword'" style="color:#1890ff;font-weight:600">K</span>
-                  <span v-else style="font-weight:600">L</span>
-                  {{ step.name }}
+                  <template v-if="step.stepType === 'keyword'">
+                    <span :style="{ color: keywordConfig[step.keywordType]?.color, fontWeight: 600 }">{{ keywordConfig[step.keywordType]?.icon }}</span>
+                    {{ step.name }}
+                    <el-tag :type="keywordConfig[step.keywordType]?.tagType" size="small" style="font-size:9px;margin:0;">{{ keywordConfig[step.keywordType]?.label }}</el-tag>
+                  </template>
+                  <template v-else>
+                    <span :style="{ color: logicConfig[step.stepType]?.color, fontWeight: 600 }" v-html="logicConfig[step.stepType]?.icon"></span>
+                    {{ step.name }}
+                    <el-tag :type="logicConfig[step.stepType]?.tagType" size="small" style="font-size:9px;margin:0;">{{ logicConfig[step.stepType]?.label }}</el-tag>
+                  </template>
                   <span class="st-remove" @click="removeSTStep('setup', idx)">&#10005;</span>
                 </span>
-                <span v-if="setupSteps.length === 0" class="st-empty">暂无 Setup 步骤</span>
-                <el-button size="small" type="primary" link @click="openPicker('setup')">+ 添加步骤</el-button>
+                <span v-if="setupSteps.length === 0" class="st-empty">暂无 Setup 步骤，请点击下方按钮添加关键字或逻辑控制</span>
+                <!-- 内联选择器 -->
+                <div class="st-add-wrapper">
+                  <button class="st-add-btn" @click="togglePicker('setup')">+ 添加步骤</button>
+                  <div v-show="pickerState.visible && pickerState.type === 'setup'" class="st-picker">
+                    <div class="st-picker-tabs">
+                      <div v-for="tab in pickerTabs" :key="tab.key"
+                           :class="['st-picker-tab', { active: pickerState.tab === tab.key }]"
+                           @click="switchPickerTab(tab.key)">{{ tab.label }}</div>
+                    </div>
+                    <div v-if="pickerState.tab !== 'logic'" class="st-picker-search">
+                      <el-input v-model="pickerState.keyword" size="small" :placeholder="pickerSearchPlaceholder" clearable />
+                    </div>
+                    <div class="st-picker-body">
+                      <template v-if="pickerState.tab !== 'logic'">
+                        <div v-if="groupedPickerKeywords.length === 0" class="st-picker-empty">无匹配的关键字</div>
+                        <template v-for="group in groupedPickerKeywords" :key="group.name">
+                          <div class="st-picker-group">{{ group.name }}</div>
+                          <div v-for="kw in group.items" :key="kw.id" class="st-picker-item"
+                               @click="addKeywordStep(pickerState.tab, kw.id, kw.name)">
+                            <span class="pi-icon">{{ pickerState.tab === 'api' ? 'A' : pickerState.tab === 'tool' ? 'T' : 'A' }}</span>
+                            <span class="pi-name">{{ kw.name }}</span>
+                            <span class="pi-desc">{{ kw.description || '' }}</span>
+                          </div>
+                        </template>
+                      </template>
+                      <template v-else>
+                        <div v-for="lt in logicTypes" :key="lt.type" class="st-picker-item" @click="addLogicStep(lt.type)">
+                          <span class="pi-icon" :style="{ background: lt.color + '15', color: lt.color }" v-html="lt.icon"></span>
+                          <span class="pi-name">{{ lt.name }}</span>
+                          <span class="pi-desc">{{ lt.desc }}</span>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -483,12 +615,15 @@ watch(activeTab, (v) => {
                       <el-option v-for="kw in [...apiKeywords, ...toolKeywords, ...actionKeywords]" :key="kw.id" :value="kw.id" :label="kw.name" />
                     </el-select>
                   </el-form-item>
-                  <el-form-item label="参数 (JSON)">
-                    <el-input
-                      :model-value="typeof stepsArray[selectedStepIndex].params === 'string' ? stepsArray[selectedStepIndex].params : JSON.stringify(stepsArray[selectedStepIndex].params || {}, null, 2)"
-                      type="textarea" :rows="4" style="font-family:monospace;font-size:12px"
-                      @input="(v: string) => { try { stepsArray[selectedStepIndex].params = JSON.parse(v); syncStepsToJson() } catch {} }"
-                    />
+                  <el-form-item label="args 参数映射">
+                    <div class="param-mapping">
+                      <div v-for="(row, ri) in stepParamRows" :key="ri" class="param-mapping-row">
+                        <el-input v-model="row.key" size="small" placeholder="参数名" style="width:80px;font-size:11px;" @input="commitStepParamRows" />
+                        <el-input v-model="row.value" size="small" placeholder="参数值" style="flex:1;font-size:11px;" @input="commitStepParamRows" />
+                        <el-button type="danger" link size="small" @click="removeStepParamRow(ri)">删除</el-button>
+                      </div>
+                      <el-button size="small" link @click="addStepParamRow">+ 添加参数</el-button>
+                    </div>
                   </el-form-item>
                   <el-form-item label="save_as">
                     <el-input v-model="stepsArray[selectedStepIndex].saveAs" placeholder="变量名" @input="syncStepsToJson" />
@@ -523,20 +658,60 @@ watch(activeTab, (v) => {
               <span>
                 <span style="color:#f5222d;margin-right:4px">&#9632;</span>
                 Test Teardown
-                <span style="font-size:12px;color:#909399;font-weight:400;margin-left:8px">用例执行后调用的清理关键字序列</span>
+                <span style="font-size:12px;color:#909399;font-weight:400;margin-left:8px">用例执行后调用的关键字与逻辑控制序列</span>
               </span>
               <span class="st-arrow" :style="{ transform: teardownOpen ? 'rotate(90deg)' : '' }">&#9654;</span>
             </div>
             <div v-show="teardownOpen" class="st-section-body">
               <div class="st-tags-row">
                 <span v-for="(step, idx) in teardownSteps" :key="idx" class="st-step-tag">
-                  <span v-if="step.stepType === 'keyword'" style="color:#1890ff;font-weight:600">K</span>
-                  <span v-else style="font-weight:600">L</span>
-                  {{ step.name }}
+                  <template v-if="step.stepType === 'keyword'">
+                    <span :style="{ color: keywordConfig[step.keywordType]?.color, fontWeight: 600 }">{{ keywordConfig[step.keywordType]?.icon }}</span>
+                    {{ step.name }}
+                    <el-tag :type="keywordConfig[step.keywordType]?.tagType" size="small" style="font-size:9px;margin:0;">{{ keywordConfig[step.keywordType]?.label }}</el-tag>
+                  </template>
+                  <template v-else>
+                    <span :style="{ color: logicConfig[step.stepType]?.color, fontWeight: 600 }" v-html="logicConfig[step.stepType]?.icon"></span>
+                    {{ step.name }}
+                    <el-tag :type="logicConfig[step.stepType]?.tagType" size="small" style="font-size:9px;margin:0;">{{ logicConfig[step.stepType]?.label }}</el-tag>
+                  </template>
                   <span class="st-remove" @click="removeSTStep('teardown', idx)">&#10005;</span>
                 </span>
-                <span v-if="teardownSteps.length === 0" class="st-empty">暂无 Teardown 步骤</span>
-                <el-button size="small" type="primary" link @click="openPicker('teardown')">+ 添加步骤</el-button>
+                <span v-if="teardownSteps.length === 0" class="st-empty">暂无 Teardown 步骤，请点击下方按钮添加关键字或逻辑控制</span>
+                <div class="st-add-wrapper">
+                  <button class="st-add-btn" @click="togglePicker('teardown')">+ 添加步骤</button>
+                  <div v-show="pickerState.visible && pickerState.type === 'teardown'" class="st-picker">
+                    <div class="st-picker-tabs">
+                      <div v-for="tab in pickerTabs" :key="tab.key"
+                           :class="['st-picker-tab', { active: pickerState.tab === tab.key }]"
+                           @click="switchPickerTab(tab.key)">{{ tab.label }}</div>
+                    </div>
+                    <div v-if="pickerState.tab !== 'logic'" class="st-picker-search">
+                      <el-input v-model="pickerState.keyword" size="small" :placeholder="pickerSearchPlaceholder" clearable />
+                    </div>
+                    <div class="st-picker-body">
+                      <template v-if="pickerState.tab !== 'logic'">
+                        <div v-if="groupedPickerKeywords.length === 0" class="st-picker-empty">无匹配的关键字</div>
+                        <template v-for="group in groupedPickerKeywords" :key="group.name">
+                          <div class="st-picker-group">{{ group.name }}</div>
+                          <div v-for="kw in group.items" :key="kw.id" class="st-picker-item"
+                               @click="addKeywordStep(pickerState.tab, kw.id, kw.name)">
+                            <span class="pi-icon">{{ pickerState.tab === 'api' ? 'A' : pickerState.tab === 'tool' ? 'T' : 'A' }}</span>
+                            <span class="pi-name">{{ kw.name }}</span>
+                            <span class="pi-desc">{{ kw.description || '' }}</span>
+                          </div>
+                        </template>
+                      </template>
+                      <template v-else>
+                        <div v-for="lt in logicTypes" :key="lt.type" class="st-picker-item" @click="addLogicStep(lt.type)">
+                          <span class="pi-icon" :style="{ background: lt.color + '15', color: lt.color }" v-html="lt.icon"></span>
+                          <span class="pi-name">{{ lt.name }}</span>
+                          <span class="pi-desc">{{ lt.desc }}</span>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -587,54 +762,6 @@ watch(activeTab, (v) => {
         </el-card>
       </el-tab-pane>
     </el-tabs>
-
-    <!-- 关键字选择器弹窗 -->
-    <Teleport to="body">
-      <div v-if="pickerState.visible" class="picker-overlay" @click.self="closePicker">
-        <div class="picker-dialog">
-          <div class="picker-tabs">
-            <div
-              v-for="tab in [
-                { key: 'api', label: '接口关键字' },
-                { key: 'tool', label: '工具方法' },
-                { key: 'action', label: 'Action关键字' },
-                { key: 'logic', label: '逻辑控制' },
-              ]" :key="tab.key"
-              :class="['picker-tab', { active: pickerState.tab === tab.key }]"
-              @click="pickerState.tab = tab.key as any; pickerState.keyword = ''"
-            >{{ tab.label }}</div>
-          </div>
-          <div v-if="pickerState.tab !== 'logic'" class="picker-search">
-            <el-input v-model="pickerState.keyword" size="small" placeholder="搜索关键字..." clearable />
-          </div>
-          <div class="picker-body">
-            <template v-if="pickerState.tab !== 'logic'">
-              <div v-if="filteredPickerKeywords.length === 0" class="picker-empty">无匹配的关键字</div>
-              <div
-                v-for="kw in filteredPickerKeywords" :key="kw.id"
-                class="picker-item"
-                @click="addKeywordStep(pickerState.tab, kw.id, kw.name)"
-              >
-                <span class="pi-icon">{{ pickerState.tab === 'api' ? 'A' : pickerState.tab === 'tool' ? 'T' : 'A' }}</span>
-                <span class="pi-name">{{ kw.name }}</span>
-                <span class="pi-desc">{{ kw.description || '' }}</span>
-              </div>
-            </template>
-            <template v-else>
-              <div
-                v-for="lt in logicTypes" :key="lt.type"
-                class="picker-item"
-                @click="addLogicStep(lt.type)"
-              >
-                <span class="pi-icon" :style="{ background: lt.color + '15', color: lt.color }" v-html="lt.icon"></span>
-                <span class="pi-name">{{ lt.name }}</span>
-                <span class="pi-desc">{{ lt.desc }}</span>
-              </div>
-            </template>
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -770,64 +897,51 @@ watch(activeTab, (v) => {
 .prop-panel :deep(.el-form-item) { margin-bottom: 8px; }
 .prop-panel :deep(.el-form-item__label) { font-size: 11px; margin-bottom: 2px; }
 
-/* 关键字选择器弹窗 */
-.picker-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* 内联关键字选择器（对齐原型 st-picker） */
+.st-add-wrapper { position: relative; display: inline-flex; }
+.st-add-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; background: #fff;
+  border: 1px dashed #409eff; border-radius: 3px;
+  font-size: 12px; color: #409eff; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
 }
-.picker-dialog {
-  width: 380px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
+.st-add-btn:hover { background: #ecf5ff; }
+.st-picker {
+  position: absolute; top: calc(100% + 4px); left: 0;
+  width: 280px; background: #fff;
+  border: 1px solid #dcdfe6; border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  z-index: 200; overflow: hidden;
 }
-.picker-tabs {
-  display: flex;
-  border-bottom: 1px solid #ebeef5;
+.st-picker-tabs { display: flex; border-bottom: 1px solid #ebeef5; }
+.st-picker-tab {
+  padding: 6px 12px; font-size: 11px; color: #909399;
+  cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all 0.15s; white-space: nowrap;
 }
-.picker-tab {
-  padding: 8px 14px;
-  font-size: 12px;
-  color: #909399;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-.picker-tab:hover { color: #303133; }
-.picker-tab.active { color: #409eff; border-bottom-color: #409eff; font-weight: 500; }
-.picker-search { padding: 8px; border-bottom: 1px solid #ebeef5; }
-.picker-body { max-height: 280px; overflow-y: auto; }
-.picker-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  font-size: 12px;
-  cursor: pointer;
+.st-picker-tab:hover { color: #303133; }
+.st-picker-tab.active { color: #409eff; border-bottom-color: #409eff; font-weight: 500; }
+.st-picker-search { padding: 8px; border-bottom: 1px solid #ebeef5; }
+.st-picker-body { max-height: 220px; overflow-y: auto; }
+.st-picker-group { padding: 4px 8px 2px; font-size: 10px; color: #909399; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.st-picker-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; font-size: 12px; cursor: pointer;
   transition: background 0.1s;
 }
-.picker-item:hover { background: #ecf5ff; }
+.st-picker-item:hover { background: #ecf5ff; }
+.st-picker-empty { padding: 16px; text-align: center; font-size: 12px; color: #c0c4cc; }
 .pi-icon {
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  background: #ecf5ff;
-  color: #409eff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
-  flex-shrink: 0;
+  width: 18px; height: 18px; border-radius: 3px;
+  background: #ecf5ff; color: #409eff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; flex-shrink: 0;
 }
 .pi-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pi-desc { font-size: 11px; color: #c0c4cc; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.picker-empty { padding: 24px; text-align: center; font-size: 12px; color: #c0c4cc; }
+.pi-desc { font-size: 10px; color: #c0c4cc; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* args 参数映射表 */
+.param-mapping { display: flex; flex-direction: column; gap: 4px; }
+.param-mapping-row { display: flex; gap: 4px; align-items: center; }
 </style>

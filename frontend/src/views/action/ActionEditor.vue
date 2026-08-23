@@ -11,9 +11,9 @@
  * 使用 @antv/x6 实现流程图画布
  * 对齐原型 action-editor.html
  */
-import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAction, updateAction } from '@/api/action'
 import { getKeywords } from '@/api/keyword'
 import { getTools } from '@/api/tool'
@@ -75,6 +75,22 @@ const zoomPercent = ref(100)
 
 // 全屏状态
 const isFullscreen = ref(false)
+
+// 画布尺寸设置
+const canvasSizeVisible = ref(false)
+const canvasWidth = ref(1200)
+const canvasHeight = ref(800)
+const canvasPresets = [
+  { label: '800 × 600', width: 800, height: 600 },
+  { label: '1200 × 800', width: 1200, height: 800 },
+  { label: '1600 × 1000', width: 1600, height: 1000 },
+  { label: '2000 × 1200', width: 2000, height: 1200 },
+]
+
+// 右键插入元素菜单
+const insertMenuVisible = ref(false)
+const insertMenuPos = reactive({ x: 0, y: 0 })
+const insertSearch = ref('')
 
 // ===== 元素面板数据 =====
 interface ElementCategory {
@@ -351,6 +367,58 @@ async function initGraph() {
 
   graph.on('blank:click', () => {
     graph.cleanSelection()
+    insertMenuVisible.value = false
+  })
+
+  // 画布右键 → 插入元素菜单
+  graph.on('blank:contextmenu', (e: any) => {
+    e.preventDefault()
+    e.stopPropagation()
+    insertMenuPos.x = e.clientX || e.e?.clientX || 0
+    insertMenuPos.y = e.clientY || e.e?.clientY || 0
+    insertSearch.value = ''
+    insertMenuVisible.value = true
+  })
+
+  // 连线双击 → 编辑标签
+  graph.on('edge:dblclick', (e: any) => {
+    const edge = e.cell || (e.edge)
+    if (!edge) return
+    const currentLabel = edge.getLabelAt(0)?.attrs?.label?.text || ''
+    ElMessageBox.prompt('设置连线标签（如：是、否）', '编辑连线标签', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      inputValue: currentLabel,
+      inputPlaceholder: '如：是',
+    }).then(({ value }) => {
+      if (value) {
+        edge.setLabels([{
+          position: { distance: 0.5 },
+          attrs: {
+            label: {
+              text: value,
+              fill: '#606266',
+              fontSize: 11,
+              textAnchor: 'middle',
+              textVerticalAnchor: 'middle',
+            },
+            rect: {
+              fill: '#fff',
+              stroke: '#dcdfe6',
+              strokeWidth: 1,
+              rx: 3,
+              ry: 3,
+              refWidth: 1,
+              refHeight: 1,
+              refX: -0.5,
+              refY: -0.5,
+            },
+          },
+        }])
+      } else {
+        edge.setLabels([])
+      }
+    }).catch(() => {})
   })
 
   // 缩放跟踪
@@ -418,10 +486,42 @@ function setNodeLabel(node: any, text: string) {
         if (labelEl) {
           labelEl.textContent = displayText
           labelEl.title = text
+          // 节点宽度自适应：根据 label 内容计算所需宽度
+          autoResizeNode(node, labelEl)
         }
       }
     } catch { /* ignore */ }
   }, 100)
+}
+
+// 节点宽度自适应
+function autoResizeNode(node: any, labelEl: HTMLElement) {
+  if (!node || !labelEl) return
+  try {
+    const minWidth = 120
+    const maxWidth = 320
+    const padding = 64 // icon + left-bar + margins
+    // 测量 label 文本宽度（创建临时元素）
+    const measureEl = document.createElement('span')
+    measureEl.style.cssText = 'visibility:hidden;position:absolute;font-size:13px;font-weight:600;white-space:nowrap;'
+    measureEl.textContent = labelEl.textContent || ''
+    document.body.appendChild(measureEl)
+    const textWidth = measureEl.getBoundingClientRect().width
+    measureEl.remove()
+    const targetWidth = Math.min(maxWidth, Math.max(minWidth, Math.ceil(textWidth + padding)))
+    const currentSize = node.size()
+    if (currentSize.width !== targetWidth) {
+      node.resize(targetWidth, currentSize.height)
+      // 同步 foreignObject 宽度
+      const foEl = graph.findViewByCell(node)?.el?.querySelector('foreignObject')
+      if (foEl) foEl.setAttribute('width', String(targetWidth))
+      const rootEl = graph.findViewByCell(node)?.el?.querySelector('[data-node-root]')
+      if (rootEl) {
+        rootEl.setAttribute('width', String(targetWidth))
+        ;(rootEl as HTMLElement).style.width = '100%'
+      }
+    }
+  } catch { /* ignore */ }
 }
 
 function renderExistingNodes() {
@@ -639,6 +739,56 @@ function toggleFullscreen() {
   setTimeout(() => { if (graph) graph.resize() }, 60)
 }
 
+// ===== 画布尺寸设置 =====
+function applyCanvasSize() {
+  if (!graph || !containerRef.value) return
+  const w = Math.max(400, canvasWidth.value)
+  const h = Math.max(300, canvasHeight.value)
+  graph.resize(w, h)
+  containerRef.value.style.width = w + 'px'
+  containerRef.value.style.height = h + 'px'
+  canvasSizeVisible.value = false
+  ElMessage.success(`画布尺寸已设置为 ${w} × ${h}`)
+}
+
+function applyPreset(preset: { width: number; height: number }) {
+  canvasWidth.value = preset.width
+  canvasHeight.value = preset.height
+}
+
+// ===== 右键插入元素 =====
+const insertFilteredItems = computed(() => {
+  const kw = insertSearch.value.toLowerCase()
+  const results: { name: string; type: string; shape: string; category: string }[] = []
+  for (const cat of elementCategories.value) {
+    for (const item of cat.items) {
+      if (!kw || item.name.toLowerCase().includes(kw)) {
+        results.push({ ...item, category: cat.title })
+      }
+    }
+  }
+  return results
+})
+
+function insertNodeFromMenu(item: { name: string; type: string; shape: string }) {
+  if (!graph) return
+  insertMenuVisible.value = false
+  // 将右键位置转换为画布坐标
+  const local = graph.clientToLocal(insertMenuPos.x, insertMenuPos.y)
+  const node = graph.addNode({
+    shape: item.shape,
+    x: snap(local.x - 100),
+    y: snap(local.y - 27),
+    data: { nodeType: item.type, label: item.name },
+  })
+  setNodeLabel(node, item.name)
+  ElMessage.success(`已添加节点：${item.name}`)
+}
+
+function closeInsertMenu() {
+  insertMenuVisible.value = false
+}
+
 // ===== 属性面板保存 =====
 function saveNodeConfig() {
   if (!graph || !selectedNode.value) return
@@ -734,12 +884,19 @@ async function onTabChange(name: string) {
   }
 }
 
+// document click 关闭右键插入菜单
+function onDocClickCloseInsert() {
+  insertMenuVisible.value = false
+}
+
 onMounted(() => {
   fetchAction()
   fetchElementData()
+  document.addEventListener('click', onDocClickCloseInsert)
 })
 
 onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClickCloseInsert)
   if (graph) {
     graph.dispose()
     graph = null
@@ -1000,6 +1157,8 @@ onBeforeUnmount(() => {
               >
                 ⛶
               </button>
+              <div class="tb-sep"></div>
+              <button class="tb-btn" title="画布尺寸" @click="canvasSizeVisible = true">⤢</button>
             </div>
             <div ref="containerRef" class="flow-graph"></div>
           </div>
@@ -1148,6 +1307,88 @@ onBeforeUnmount(() => {
         </div>
       </el-tab-pane>
     </el-tabs>
+
+    <!-- 画布尺寸设置弹窗 -->
+    <el-dialog
+      v-model="canvasSizeVisible"
+      title="画布尺寸设置"
+      width="420px"
+      append-to-body
+    >
+      <el-form label-width="80px" size="small">
+        <el-form-item label="宽度">
+          <el-input-number v-model="canvasWidth" :min="400" :max="5000" :step="50" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="高度">
+          <el-input-number v-model="canvasHeight" :min="300" :max="5000" :step="50" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="预设">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <el-button
+              v-for="preset in canvasPresets"
+              :key="preset.label"
+              size="small"
+              @click="applyPreset(preset)"
+            >
+              {{ preset.label }}
+            </el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="canvasSizeVisible = false">取消</el-button>
+        <el-button type="primary" @click="applyCanvasSize">应用</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 右键插入元素菜单 -->
+    <Teleport to="body">
+      <div
+        v-if="insertMenuVisible"
+        class="insert-context-menu"
+        :style="{ left: insertMenuPos.x + 'px', top: insertMenuPos.y + 'px' }"
+        @click.stop
+        @contextmenu.prevent
+      >
+        <div class="insert-search-bar">
+          <input
+            v-model="insertSearch"
+            class="insert-search-input"
+            type="text"
+            placeholder="搜索可插入元素…"
+            autofocus
+          />
+        </div>
+        <div class="insert-items-list">
+          <div
+            v-for="(item, idx) in insertFilteredItems"
+            :key="idx"
+            class="insert-item"
+            @click="insertNodeFromMenu(item)"
+          >
+            <div
+              class="insert-item-icon"
+              :style="{
+                background: nodeTypeConfig[item.type]?.iconBg,
+                color: nodeTypeConfig[item.type]?.color,
+              }"
+            >
+              {{ nodeTypeConfig[item.type]?.icon }}
+            </div>
+            <div class="insert-item-text">
+              <span class="insert-item-name">{{ item.name }}</span>
+              <span class="insert-item-cat">{{ item.category }}</span>
+            </div>
+          </div>
+          <div
+            v-if="insertFilteredItems.length === 0"
+            class="insert-empty"
+          >
+            无匹配元素
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -1400,5 +1641,91 @@ onBeforeUnmount(() => {
   font-size: 28px;
   margin-bottom: 8px;
   opacity: 0.4;
+}
+</style>
+
+<!-- 右键插入菜单样式（Teleport 到 body，需非 scoped） -->
+<style>
+.insert-context-menu {
+  position: fixed;
+  z-index: 10000;
+  width: 260px;
+  max-height: 360px;
+  background: #fff;
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.insert-search-bar {
+  padding: 8px;
+  border-bottom: 1px solid #ebeef5;
+}
+.insert-search-input {
+  width: 100%;
+  height: 30px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  padding: 0 8px;
+  font-size: 12px;
+  outline: none;
+  box-sizing: border-box;
+  background: #fff;
+}
+.insert-search-input:focus {
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+}
+.insert-items-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px;
+}
+.insert-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.insert-item:hover {
+  background: #f5f7fa;
+}
+.insert-item-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.insert-item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.insert-item-name {
+  font-size: 12px;
+  color: #303133;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.insert-item-cat {
+  font-size: 10px;
+  color: #c0c4cc;
+}
+.insert-empty {
+  text-align: center;
+  padding: 24px 8px;
+  font-size: 12px;
+  color: #c0c4cc;
 }
 </style>

@@ -12,6 +12,11 @@ import request from './request'
 export function getPlans(projectId: number, params?: {
   keyword?: string
   groupId?: number | null
+  triggerType?: string
+  environmentId?: number | null
+  status?: number
+  updateBegin?: string
+  updateEnd?: string
   page?: number
   pageSize?: number
 }) {

@@ -306,6 +306,36 @@ const debugAssertions = computed(() => {
   })
 })
 
+// ===== 调试结果：环境名称 =====
+const debugEnvName = computed(() => {
+  if (!debugEnvId.value) return ''
+  const env = debugEnvironments.value.find((e: any) => e.id === debugEnvId.value)
+  return env?.name || ''
+})
+
+// ===== 调试结果：JSON 语法高亮 =====
+function syntaxHighlightJSON(json: string): string {
+  return json
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, (match) => {
+      let cls = 'json-num'
+      if (/^"/.test(match)) {
+        cls = /:$/.test(match) ? 'json-key' : 'json-str'
+      } else if (/true|false/.test(match)) {
+        cls = 'json-bool'
+      } else if (/null/.test(match)) {
+        cls = 'json-null'
+      }
+      return `<span class="${cls}">${match}</span>`
+    })
+}
+const highlightedDebugResponse = computed(() => {
+  if (!debugResult.value) return ''
+  return syntaxHighlightJSON(JSON.stringify(debugResult.value.response, null, 2))
+})
+
 onMounted(() => { fetchModules(); fetchList() })
 </script>
 
@@ -505,7 +535,9 @@ onMounted(() => { fetchModules(); fetchList() })
         <el-select v-model="debugEnvId" placeholder="选择环境" style="width: 160px" size="small">
           <el-option v-for="env in debugEnvironments" :key="env.id" :value="env.id" :label="env.name" />
         </el-select>
-        <el-button type="primary" :loading="debugLoading" @click="executeDebug" style="margin-left: auto">发送请求</el-button>
+        <el-button type="primary" :loading="debugLoading" @click="executeDebug" style="margin-left: auto">
+          {{ debugLoading ? '请求中...' : (debugResult ? '重新发送' : '发送请求') }}
+        </el-button>
       </div>
       <!-- 请求参数 -->
       <div class="debug-section-title">请求参数</div>
@@ -521,36 +553,45 @@ onMounted(() => { fetchModules(); fetchList() })
         </el-table-column>
       </el-table>
       <!-- 响应结果 -->
-      <div v-if="debugResult" class="debug-result-section">
-        <div :class="['debug-result-header', debugResult.success ? 'success' : 'fail']">
-          <span style="font-weight: 600">{{ debugResult.success ? '✓' : '✗' }} {{ debugResult.statusCode }}</span>
-          <span>{{ debugResult.success ? '请求成功' : '请求失败' }}</span>
-          <span style="margin-left: auto; color: #909399">耗时 {{ debugResult.duration }}ms</span>
+      <div v-if="debugLoading || debugResult" class="debug-result-section">
+        <!-- 加载中状态 -->
+        <div v-if="debugLoading && !debugResult" class="debug-result-header loading">
+          <span class="debug-spin-icon">&#8635;</span>
+          <span>正在发送请求...</span>
         </div>
-        <div class="debug-section-title" style="margin-top: 10px">响应体</div>
-        <pre class="debug-response-box">{{ JSON.stringify(debugResult.response, null, 2) }}</pre>
-        <!-- 断言结果 -->
-        <div v-if="debugAssertions.length" class="debug-assertions">
-          <div class="debug-section-title" style="margin-top: 12px">断言结果</div>
-          <el-table :data="debugAssertions" size="small" border>
-            <el-table-column label="断言字段" width="200">
-              <template #default="{ row }"><code>{{ row.path }}</code></template>
-            </el-table-column>
-            <el-table-column label="预期值" width="120">
-              <template #default="{ row }">{{ row.expected || '非空即可' }}</template>
-            </el-table-column>
-            <el-table-column label="实际值">
-              <template #default="{ row }">{{ row.actual }}</template>
-            </el-table-column>
-            <el-table-column label="结果" width="80">
-              <template #default="{ row }">
-                <span :style="{ color: row.pass ? '#67c23a' : '#f56c6c', fontWeight: 500 }">
-                  {{ row.pass ? '✓ 通过' : '✗ 失败' }}
-                </span>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
+        <!-- 结果展示 -->
+        <template v-else-if="debugResult">
+          <div :class="['debug-result-header', debugResult.success ? 'success' : 'fail']">
+            <span style="font-weight: 600">{{ debugResult.success ? '&#10003;' : '&#10007;' }} {{ debugResult.statusCode }}</span>
+            <span>{{ debugResult.success ? '请求成功' : '请求失败' }}</span>
+            <span style="margin-left: auto; color: #909399">耗时 {{ debugResult.duration }}ms</span>
+            <span style="color: #909399">环境：{{ debugEnvName }}</span>
+          </div>
+          <div class="debug-section-title" style="margin-top: 10px">响应体</div>
+          <pre class="debug-response-box" v-html="highlightedDebugResponse"></pre>
+          <!-- 断言结果 -->
+          <div v-if="debugAssertions.length" class="debug-assertions">
+            <div class="debug-section-title" style="margin-top: 12px">断言结果</div>
+            <el-table :data="debugAssertions" size="small" border>
+              <el-table-column label="断言字段" width="200">
+                <template #default="{ row }"><code>{{ row.path }}</code></template>
+              </el-table-column>
+              <el-table-column label="预期值" width="120">
+                <template #default="{ row }">{{ row.expected || '非空即可' }}</template>
+              </el-table-column>
+              <el-table-column label="实际值">
+                <template #default="{ row }">{{ row.actual }}</template>
+              </el-table-column>
+              <el-table-column label="结果" width="80">
+                <template #default="{ row }">
+                  <span :style="{ color: row.pass ? '#67c23a' : '#f56c6c', fontWeight: 500 }">
+                    {{ row.pass ? '&#10003; 通过' : '&#10007; 失败' }}
+                  </span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </template>
       </div>
       <template #footer>
         <el-button @click="debugVisible = false">关闭</el-button>
@@ -694,4 +735,25 @@ onMounted(() => { fetchModules(); fetchList() })
 .debug-assertions {
   margin-top: 10px;
 }
+/* 调试加载状态 */
+.debug-result-header.loading {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #2563eb;
+}
+.debug-spin-icon {
+  display: inline-block;
+  animation: debug-spin 0.8s linear infinite;
+  font-size: 14px;
+}
+@keyframes debug-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+/* JSON 语法高亮 */
+.debug-response-box :deep(.json-key) { color: #89b4fa; }
+.debug-response-box :deep(.json-str) { color: #a6e3a1; }
+.debug-response-box :deep(.json-num) { color: #fab387; }
+.debug-response-box :deep(.json-bool) { color: #cba6f7; }
+.debug-response-box :deep(.json-null) { color: #9399b2; }
 </style>

@@ -8,6 +8,8 @@ package com.platform.project.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.platform.action.entity.Action;
+import com.platform.action.entity.ActionGroup;
+import com.platform.action.mapper.ActionGroupMapper;
 import com.platform.action.mapper.ActionMapper;
 import com.platform.apidoc.entity.Api;
 import com.platform.apidoc.mapper.ApiMapper;
@@ -56,6 +58,7 @@ public class ProjectService {
     private final ApiMapper apiMapper;
     private final KeywordMapper keywordMapper;
     private final ActionMapper actionMapper;
+    private final ActionGroupMapper actionGroupMapper;
     private final TestSuiteMapper testSuiteMapper;
     private final TestCaseMapper testCaseMapper;
     private final TestPlanMapper testPlanMapper;
@@ -156,6 +159,9 @@ public class ProjectService {
 
         createSystemModule(project.getId(), "全部", null, "系统默认分组，包含所有接口");
         createSystemModule(project.getId(), "未分组", null, "未分组的接口");
+
+        createSystemActionGroup(project.getId(), "全部", null, "系统默认分组，包含所有 Action");
+        createSystemActionGroup(project.getId(), "未分组", null, "未分组的 Action");
 
         return toResponse(project);
     }
@@ -318,6 +324,11 @@ public class ProjectService {
         int healthScore = (int) (passRateScore * 0.35 + coverageScore * 0.25 + stabilityScore * 0.25 + efficiencyScore * 0.15);
         stats.setHealthScore(healthScore);
 
+        // ── KPI 环比差值 ──
+        stats.setPassRateWeekDelta(calculatePassRateWeekDelta(allExecutions));
+        stats.setWeeklyExecDelta(calculateWeeklyExecDelta(allExecutions));
+        // 缺陷密度/修复时效/逃逸率暂无独立数据源，保持 null（前端不显示趋势箭头）
+
         // ── 趋势数据 ──
         trend.setDataUpdateTime(LocalDateTime.now());
 
@@ -339,6 +350,9 @@ public class ProjectService {
         // 质量风险 Top 5
         trend.setQualityRiskTop5(buildQualityRiskTop5(projectId, suiteIds));
         trend.setContinuousFailCount(0);
+
+        // 缺陷趋势（近 4 周）
+        trend.setDefectTrend(buildDefectTrend(projectId, planIds));
 
         // 最近执行记录
         List<RecentExecution> recentExecutions = new ArrayList<>();
@@ -406,6 +420,16 @@ public class ProjectService {
         module.setSourceType("MANUAL");
         module.setIsSystem(1);
         apiModuleMapper.insert(module);
+    }
+
+    private void createSystemActionGroup(Long projectId, String name, Long parentId, String description) {
+        ActionGroup group = new ActionGroup();
+        group.setProjectId(projectId);
+        group.setParentId(parentId);
+        group.setName(name);
+        group.setDescription(description);
+        group.setIsSystem(1);
+        actionGroupMapper.insert(group);
     }
 
     private ProjectResponse toResponse(Project project) {
@@ -558,5 +582,165 @@ public class ProjectService {
         }
 
         return risks;
+    }
+
+    /**
+     * 构建缺陷趋势（近 4 周，按周聚合新增/已修复缺陷数）
+     *
+     * <p>新增缺陷：该周首次失败的用例数；已修复：之前失败但本周通过的用例数
+     */
+    private List<DashboardTrendResponse.DefectTrendItem> buildDefectTrend(
+            Long projectId, List<Long> planIds) {
+        List<DashboardTrendResponse.DefectTrendItem> trends = new ArrayList<>();
+        if (planIds.isEmpty()) return trends;
+
+        LocalDate today = LocalDate.now();
+        LocalDateTime fourWeeksAgo = today.minusWeeks(4).atStartOfDay();
+
+        // 查询近 4 周执行记录
+        LambdaQueryWrapper<TestExecution> execWrapper = new LambdaQueryWrapper<>();
+        execWrapper.in(TestExecution::getPlanId, planIds)
+                .ge(TestExecution::getCreatedAt, fourWeeksAgo);
+        List<TestExecution> recentExecs = testExecutionMapper.selectList(execWrapper);
+
+        if (recentExecs.isEmpty()) {
+            // 无数据时返回 4 周空占位
+            for (int i = 3; i >= 0; i--) {
+                trends.add(new DashboardTrendResponse.DefectTrendItem("第" + (4 - i) + "周", 0, 0));
+            }
+            return trends;
+        }
+
+        List<Long> execIds = recentExecs.stream().map(TestExecution::getId).collect(Collectors.toList());
+
+        // 查询所有相关测试结果
+        LambdaQueryWrapper<TestResult> resultWrapper = new LambdaQueryWrapper<>();
+        resultWrapper.in(TestResult::getExecutionId, execIds);
+        List<TestResult> allResults = testResultMapper.selectList(resultWrapper);
+
+        // 构建 executionId -> createdAt 映射
+        Map<Long, LocalDateTime> execTimeMap = new HashMap<>();
+        for (TestExecution exec : recentExecs) {
+            execTimeMap.put(exec.getId(), exec.getCreatedAt());
+        }
+
+        // 按周分组统计
+        for (int i = 3; i >= 0; i--) {
+            LocalDate weekStart = today.minusWeeks(i).with(DayOfWeek.MONDAY).atStartOfDay().toLocalDate();
+            LocalDateTime ws = weekStart.atStartOfDay();
+            LocalDateTime we = weekStart.plusDays(7).atStartOfDay();
+
+            // 本周执行的 ID 集合
+            Set<Long> weekExecIds = new HashSet<>();
+            for (TestExecution exec : recentExecs) {
+                if (exec.getCreatedAt() != null
+                        && !exec.getCreatedAt().isBefore(ws)
+                        && exec.getCreatedAt().isBefore(we)) {
+                    weekExecIds.add(exec.getId());
+                }
+            }
+
+            // 本周新增缺陷：首次失败的用例
+            Set<Long> weekFailedCases = new HashSet<>();
+            for (TestResult r : allResults) {
+                if (weekExecIds.contains(r.getExecutionId())
+                        && ("FAILED".equals(r.getStatus()) || "ERROR".equals(r.getStatus()))) {
+                    weekFailedCases.add(r.getCaseId());
+                }
+            }
+
+            // 统计本周之前失败的用例
+            Set<Long> prevFailedCases = new HashSet<>();
+            for (TestResult r : allResults) {
+                LocalDateTime execTime = execTimeMap.get(r.getExecutionId());
+                if (execTime != null && execTime.isBefore(ws)
+                        && ("FAILED".equals(r.getStatus()) || "ERROR".equals(r.getStatus()))) {
+                    prevFailedCases.add(r.getCaseId());
+                }
+            }
+
+            // 本周通过的用例
+            Set<Long> weekPassedCases = new HashSet<>();
+            for (TestResult r : allResults) {
+                if (weekExecIds.contains(r.getExecutionId()) && "PASSED".equals(r.getStatus())) {
+                    weekPassedCases.add(r.getCaseId());
+                }
+            }
+
+            // 已修复 = 之前失败但本周通过的用例
+            int fixedCount = 0;
+            for (Long caseId : weekPassedCases) {
+                if (prevFailedCases.contains(caseId) && !weekFailedCases.contains(caseId)) {
+                    fixedCount++;
+                }
+            }
+
+            // 新增缺陷 = 本周新失败的用例（排除之前已失败的，取首次出现）
+            int newCount = 0;
+            for (Long caseId : weekFailedCases) {
+                if (!prevFailedCases.contains(caseId)) {
+                    newCount++;
+                }
+            }
+
+            trends.add(new DashboardTrendResponse.DefectTrendItem(
+                    "第" + (4 - i) + "周", newCount, fixedCount));
+        }
+
+        return trends;
+    }
+
+    /**
+     * 计算通过率周环比（近 7 天均值 vs 前 7 天均值）
+     *
+     * @return 差值（百分点），null 表示数据不足无法计算
+     */
+    private Double calculatePassRateWeekDelta(List<TestExecution> executions) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime thisWeekStart = today.minusDays(7).atStartOfDay();
+        LocalDateTime prevWeekStart = today.minusDays(14).atStartOfDay();
+
+        long thisPassed = 0, thisFailed = 0, prevPassed = 0, prevFailed = 0;
+        for (TestExecution e : executions) {
+            if (e.getCreatedAt() == null) continue;
+            if (!e.getCreatedAt().isBefore(thisWeekStart)) {
+                if (e.getPassedCases() != null) thisPassed += e.getPassedCases();
+                if (e.getFailedCases() != null) thisFailed += e.getFailedCases();
+            } else if (!e.getCreatedAt().isBefore(prevWeekStart)) {
+                if (e.getPassedCases() != null) prevPassed += e.getPassedCases();
+                if (e.getFailedCases() != null) prevFailed += e.getFailedCases();
+            }
+        }
+
+        long thisTotal = thisPassed + thisFailed;
+        long prevTotal = prevPassed + prevFailed;
+        if (thisTotal == 0 || prevTotal == 0) return null;
+
+        double thisRate = Math.round(thisPassed * 1000.0 / thisTotal) / 10.0;
+        double prevRate = Math.round(prevPassed * 1000.0 / prevTotal) / 10.0;
+        return Math.round((thisRate - prevRate) * 10.0) / 10.0;
+    }
+
+    /**
+     * 计算本周执行次数环比（本周 vs 上周）
+     *
+     * @return 差值（次数），null 表示无上周数据
+     */
+    private Long calculateWeeklyExecDelta(List<TestExecution> executions) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime thisWeekStart = today.with(DayOfWeek.MONDAY).atStartOfDay();
+        LocalDateTime lastWeekStart = thisWeekStart.minusDays(7);
+
+        long thisCount = 0, lastCount = 0;
+        for (TestExecution e : executions) {
+            if (e.getCreatedAt() == null) continue;
+            if (!e.getCreatedAt().isBefore(thisWeekStart)) {
+                thisCount++;
+            } else if (!e.getCreatedAt().isBefore(lastWeekStart)) {
+                lastCount++;
+            }
+        }
+
+        return lastCount > 0 ? thisCount - lastCount : null;
     }
 }

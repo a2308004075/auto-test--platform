@@ -35,6 +35,8 @@ public class SuiteGroupService {
 
     /**
      * 查询项目下所有分组（平铺列表，前端根据 parentId 构建树）
+     *
+     * <p>每个分组的 suiteCount 递归统计自身及所有后代分组下的套件总数。
      */
     public List<SuiteGroupDTO> listGroups(Long projectId) {
         LambdaQueryWrapper<SuiteGroup> wrapper = new LambdaQueryWrapper<>();
@@ -46,17 +48,39 @@ public class SuiteGroupService {
             return Collections.emptyList();
         }
 
+        // 构建 parentId -> children 映射，用于递归计算套件数
+        java.util.Map<Long, List<SuiteGroup>> childrenMap = new java.util.HashMap<>();
+        for (SuiteGroup g : groups) {
+            if (g.getParentId() != null) {
+                childrenMap.computeIfAbsent(g.getParentId(), k -> new ArrayList<>()).add(g);
+            }
+        }
+
         List<SuiteGroupDTO> result = new ArrayList<>(groups.size());
         for (SuiteGroup g : groups) {
             SuiteGroupDTO dto = new SuiteGroupDTO();
             BeanUtils.copyProperties(g, dto);
-            // 统计该分组下的套件数量（仅直接子级）
-            LambdaQueryWrapper<TestSuite> countWrapper = new LambdaQueryWrapper<>();
-            countWrapper.eq(TestSuite::getGroupId, g.getId());
-            dto.setSuiteCount(testSuiteMapper.selectCount(countWrapper));
+            dto.setSuiteCount(countSuitesRecursive(g.getId(), childrenMap));
             result.add(dto);
         }
         return result;
+    }
+
+    /**
+     * 递归统计分组下（含所有后代分组）的套件总数
+     */
+    private long countSuitesRecursive(Long groupId, java.util.Map<Long, List<SuiteGroup>> childrenMap) {
+        LambdaQueryWrapper<TestSuite> countWrapper = new LambdaQueryWrapper<>();
+        countWrapper.eq(TestSuite::getGroupId, groupId);
+        long count = testSuiteMapper.selectCount(countWrapper);
+
+        List<SuiteGroup> children = childrenMap.get(groupId);
+        if (children != null) {
+            for (SuiteGroup child : children) {
+                count += countSuitesRecursive(child.getId(), childrenMap);
+            }
+        }
+        return count;
     }
 
     /**
@@ -123,9 +147,16 @@ public class SuiteGroupService {
 
         SuiteGroupDTO dto = new SuiteGroupDTO();
         BeanUtils.copyProperties(group, dto);
-        LambdaQueryWrapper<TestSuite> countWrapper = new LambdaQueryWrapper<>();
-        countWrapper.eq(TestSuite::getGroupId, group.getId());
-        dto.setSuiteCount(testSuiteMapper.selectCount(countWrapper));
+        // 构建 childrenMap 用于递归统计
+        java.util.Map<Long, List<SuiteGroup>> childrenMap = new java.util.HashMap<>();
+        LambdaQueryWrapper<SuiteGroup> allWrapper = new LambdaQueryWrapper<>();
+        allWrapper.eq(SuiteGroup::getProjectId, projectId);
+        for (SuiteGroup g : suiteGroupMapper.selectList(allWrapper)) {
+            if (g.getParentId() != null) {
+                childrenMap.computeIfAbsent(g.getParentId(), k -> new ArrayList<>()).add(g);
+            }
+        }
+        dto.setSuiteCount(countSuitesRecursive(group.getId(), childrenMap));
         return dto;
     }
 

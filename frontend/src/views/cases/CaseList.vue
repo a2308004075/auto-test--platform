@@ -9,7 +9,7 @@
  * 左侧分组树 + 右侧高级搜索 + 批量操作 + 分页表格
  * 对齐原型 case-list.html
  */
-import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getCases, deleteCase, toggleCaseStatus, getCaseGroups, createCaseGroup, updateCaseGroup, deleteCaseGroup } from '@/api/case'
@@ -60,11 +60,13 @@ const groupTree = computed(() => {
       .map((g) => ({ ...g, children: buildTree(g.id) }))
   const systemGroups = groups.value
     .filter((g) => g.isSystem === 1 && g.name !== '全部')
-    .map((g) => ({ ...g, children: [] }))
+    .map((g) => ({ ...g, children: [], icon: '📁' }))
+  const userTree = buildTree(null)
+  if (userTree.length > 0) (userTree[0] as any)._isFirstUserGroup = true
   return [
-    { id: 0, name: '全部', isSystem: 1, caseCount: pagination.total, children: [] },
+    { id: 0, name: '全部', isSystem: 1, caseCount: pagination.total, children: [], icon: '📂' },
     ...systemGroups,
-    ...buildTree(null),
+    ...userTree,
   ]
 })
 // 根据搜索关键字过滤分组树
@@ -76,7 +78,17 @@ const filteredGroupTree = computed(() => {
     for (const node of nodes) {
       const childMatches = matchRecursive(node.children || [])
       if (node.name.toLowerCase().includes(kw) || childMatches.length > 0) {
-        result.push({ ...node, children: childMatches.length > 0 ? childMatches : node.children })
+        result.push({ ...node, children: childMatches.length > 0 ? childMatches : node.children, _isFirstUserGroup: false })
+      }
+    }
+    // 标记过滤结果中第一个用户分组
+    let foundFirst = false
+    for (const node of result) {
+      if (node.isSystem !== 1 && !foundFirst) {
+        node._isFirstUserGroup = true
+        foundFirst = true
+      } else if (node.isSystem !== 1) {
+        node._isFirstUserGroup = false
       }
     }
     return result
@@ -315,6 +327,7 @@ const priorityTypeMap: Record<string, string> = { P0: 'danger', P1: 'warning', P
 
 // ===== 视图切换 =====
 const viewMode = ref<'list' | 'card'>('list')
+watch(viewMode, () => { clearSelection() })
 
 // ===== 生命周期 =====
 const treeRef = ref()
@@ -357,9 +370,10 @@ onBeforeUnmount(() => {
           >
             <template #default="{ data }">
               <div
-                :class="['group-tree-node', { active: activeGroupId === data.id }]"
+                :class="['group-tree-node', { active: activeGroupId === data.id, 'tree-divider-top': data._isFirstUserGroup }]"
                 @contextmenu.stop="handleNodeContextmenu($event, data)"
               >
+                <span class="group-icon">{{ data.icon || '📁' }}</span>
                 <span class="group-name">{{ data.name }}</span>
                 <span class="group-count">{{ data.caseCount ?? 0 }}</span>
                 <span v-if="data.isSystem === 1" class="group-lock" title="系统默认分组">&#x1F512;</span>
@@ -409,6 +423,7 @@ onBeforeUnmount(() => {
         </div>
 
         <BatchBar
+          v-if="viewMode === 'list'"
           :selected-count="selectedIds.length"
           :actions="[
             { key: 'enable', label: '批量启用' },
@@ -420,7 +435,8 @@ onBeforeUnmount(() => {
           @clear="clearSelection"
         />
 
-        <el-table :data="list" v-loading="loading" border stripe style="width: 100%" @selection-change="handleSelectionChange">
+        <!-- 列表视图 -->
+        <el-table v-if="viewMode === 'list'" :data="list" v-loading="loading" border stripe style="width: 100%" @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="45" />
           <el-table-column prop="name" label="用例名称" min-width="180" show-overflow-tooltip>
             <template #default="{ row }">
@@ -459,7 +475,46 @@ onBeforeUnmount(() => {
               <el-button v-if="hasPermission('project:case:delete')" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
             </template>
           </el-table-column>
+          <template #empty>
+            <div style="padding:48px 20px;text-align:center;color:#909399">
+              <div style="font-size:32px;margin-bottom:8px;opacity:.4">📋</div>
+              <div>暂无匹配的用例数据</div>
+            </div>
+          </template>
         </el-table>
+
+        <!-- 卡片视图 -->
+        <div v-else v-loading="loading" class="case-card-grid">
+          <div v-if="list.length === 0" class="card-empty">
+            <div style="font-size:32px;margin-bottom:8px;opacity:.4">📋</div>
+            <div>暂无匹配的用例数据</div>
+          </div>
+          <div v-for="item in list" :key="item.id" class="case-card" @click="handleEdit(item)">
+            <div class="case-card-header">
+              <span class="case-card-name">{{ item.name }}</span>
+              <el-tag :type="(priorityTypeMap[item.priority] || 'info') as any" size="small">{{ item.priority }}</el-tag>
+            </div>
+            <div class="case-card-body">
+              <div class="case-card-info">
+                <span class="info-label">套件</span>
+                <span class="info-value">{{ suites.find((s: any) => s.id === item.suiteId)?.name || '--' }}</span>
+              </div>
+              <div class="case-card-info">
+                <span class="info-label">状态</span>
+                <el-tag :type="item.isActive === 1 ? 'success' : 'info'" size="small">{{ item.isActive === 1 ? '启用' : '禁用' }}</el-tag>
+              </div>
+              <div v-if="parseTags(item.tags).length" class="case-card-tags">
+                <el-tag v-for="(tag, i) in parseTags(item.tags)" :key="i" size="small" style="margin-right:4px">{{ tag }}</el-tag>
+              </div>
+            </div>
+            <div class="case-card-footer">
+              <el-button v-if="hasPermission('project:case:edit')" type="primary" link size="small" @click.stop="handleEdit(item)">编辑</el-button>
+              <el-button type="primary" link size="small" @click.stop="handleDebug(item)">调试</el-button>
+              <el-button v-if="hasPermission('project:case:toggle')" type="primary" link size="small" @click.stop="handleToggleStatus(item)">{{ item.isActive === 1 ? '禁用' : '启用' }}</el-button>
+              <el-button v-if="hasPermission('project:case:delete')" type="danger" link size="small" @click.stop="handleDelete(item)">删除</el-button>
+            </div>
+          </div>
+        </div>
 
         <ProPagination
           v-model:current-page="pagination.current"
@@ -649,5 +704,94 @@ onBeforeUnmount(() => {
   height: 1px;
   background: #ebeef5;
   margin: 4px 0;
+}
+
+/* 分组树图标和分隔线 */
+.group-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.group-tree-node.tree-divider-top {
+  border-top: 1px solid #ebeef5;
+  padding-top: 6px;
+  margin-top: 4px;
+}
+
+/* 卡片视图 */
+.case-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+  min-height: 200px;
+}
+.card-empty {
+  grid-column: 1 / -1;
+  padding: 48px 20px;
+  text-align: center;
+  color: #909399;
+}
+.case-card {
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.case-card:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.12);
+}
+.case-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.case-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  margin-right: 8px;
+}
+.case-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.case-card-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.info-label {
+  color: #909399;
+  min-width: 32px;
+}
+.info-value {
+  color: #606266;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.case-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.case-card-footer {
+  display: flex;
+  gap: 4px;
+  margin-top: 10px;
+  border-top: 1px solid #f5f7fa;
+  padding-top: 8px;
 }
 </style>

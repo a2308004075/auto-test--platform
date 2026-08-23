@@ -193,7 +193,7 @@ onMounted(loadData)
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <div style="display:flex;align-items:center;gap:12px">
         <h2 style="margin:0">
-          {{ liveExecution.planName || '执行详情' }}{{ liveExecution.executionNumber ? ` #${liveExecution.executionNumber}` : '' }}
+          {{ liveExecution.planName || '执行详情' }}<template v-if="liveExecution.id"> #{{ liveExecution.id }}</template>
         </h2>
         <el-tag v-if="liveExecution.status" :type="(statusTypeMap[liveExecution.status] || 'info') as any">
           {{ statusLabels[liveExecution.status] || liveExecution.status }}

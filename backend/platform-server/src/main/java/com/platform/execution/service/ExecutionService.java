@@ -36,8 +36,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -62,14 +65,20 @@ public class ExecutionService {
     private final ExecutionProducer executionProducer;
 
     /**
-     * 分页查询项目下的执行记录
+     * 分页查询项目下的执行记录（支持多条件过滤）
      */
-    public PageResponse<ExecutionResponse> listExecutions(Long projectId, String status,
-                                                          int page, int pageSize) {
+    public PageResponse<ExecutionResponse> listExecutions(Long projectId, String planName,
+                                                          Long environmentId, String status,
+                                                          String triggerType, String startedAtFrom,
+                                                          String startedAtTo, String finishedAtFrom,
+                                                          String finishedAtTo, int page, int pageSize) {
         // 先查项目下的 planIds
         LambdaQueryWrapper<TestPlan> planWrapper = new LambdaQueryWrapper<>();
         planWrapper.eq(TestPlan::getProjectId, projectId)
                 .select(TestPlan::getId);
+        if (StringUtils.hasText(planName)) {
+            planWrapper.like(TestPlan::getName, planName);
+        }
         List<TestPlan> plans = testPlanMapper.selectList(planWrapper);
         List<Long> planIds = plans.stream().map(TestPlan::getId).collect(Collectors.toList());
 
@@ -79,8 +88,26 @@ public class ExecutionService {
 
         LambdaQueryWrapper<TestExecution> wrapper = new LambdaQueryWrapper<>();
         wrapper.in(TestExecution::getPlanId, planIds);
+        if (environmentId != null) {
+            wrapper.eq(TestExecution::getEnvironmentId, environmentId);
+        }
         if (StringUtils.hasText(status)) {
             wrapper.eq(TestExecution::getStatus, status);
+        }
+        if (StringUtils.hasText(triggerType)) {
+            wrapper.eq(TestExecution::getTriggerType, triggerType);
+        }
+        if (StringUtils.hasText(startedAtFrom)) {
+            wrapper.ge(TestExecution::getStartedAt, LocalDate.parse(startedAtFrom).atStartOfDay());
+        }
+        if (StringUtils.hasText(startedAtTo)) {
+            wrapper.le(TestExecution::getStartedAt, LocalDate.parse(startedAtTo).atTime(LocalTime.MAX));
+        }
+        if (StringUtils.hasText(finishedAtFrom)) {
+            wrapper.ge(TestExecution::getFinishedAt, LocalDate.parse(finishedAtFrom).atStartOfDay());
+        }
+        if (StringUtils.hasText(finishedAtTo)) {
+            wrapper.le(TestExecution::getFinishedAt, LocalDate.parse(finishedAtTo).atTime(LocalTime.MAX));
         }
         wrapper.orderByDesc(TestExecution::getCreatedAt);
 
@@ -266,6 +293,20 @@ public class ExecutionService {
             if (env != null) {
                 resp.setEnvironmentName(env.getName());
             }
+        }
+
+        // 计算通过率和进度百分比
+        int total = execution.getTotalCases() != null ? execution.getTotalCases() : 0;
+        int passed = execution.getPassedCases() != null ? execution.getPassedCases() : 0;
+        int failed = execution.getFailedCases() != null ? execution.getFailedCases() : 0;
+        int skipped = execution.getSkippedCases() != null ? execution.getSkippedCases() : 0;
+
+        if (total > 0) {
+            resp.setPassRate(Math.round(passed * 1000.0 / total) / 10.0);
+        }
+        int completed = passed + failed + skipped;
+        if (total > 0) {
+            resp.setProgressPercent((int) Math.round(completed * 100.0 / total));
         }
 
         return resp;

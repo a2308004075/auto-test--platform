@@ -19,6 +19,8 @@ public class ActionUpdateRequest {
     @Size(max = 500, message = "描述长度不能超过 500")
     private String description;
 
+    private Long groupId;
+
     private List<ActionNodeDTO> nodes;
 
     private String inputParams;

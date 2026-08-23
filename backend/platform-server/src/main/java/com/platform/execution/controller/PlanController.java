@@ -34,9 +34,15 @@ public class PlanController {
     public ApiResponse<PageResponse<PlanResponse>> list(@PathVariable Long projectId,
                                                          @RequestParam(required = false) String keyword,
                                                          @RequestParam(required = false) Long groupId,
+                                                         @RequestParam(required = false) String triggerType,
+                                                         @RequestParam(required = false) Long environmentId,
+                                                         @RequestParam(required = false) Integer status,
+                                                         @RequestParam(required = false) String updateBegin,
+                                                         @RequestParam(required = false) String updateEnd,
                                                          @RequestParam(defaultValue = "1") int page,
                                                          @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.ok(planService.listPlans(projectId, keyword, groupId, page, pageSize));
+        return ApiResponse.ok(planService.listPlans(projectId, keyword, groupId,
+                triggerType, environmentId, status, updateBegin, updateEnd, page, pageSize));
     }
 
     /**

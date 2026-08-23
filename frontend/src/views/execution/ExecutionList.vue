@@ -47,6 +47,7 @@ const { options: triggerOptions } = useDict('trigger_type')
 
 const statusTypeMap: Record<string, string> = {
   PENDING: 'info',
+  QUEUED: 'info',
   RUNNING: '',
   COMPLETED: 'success',
   FAILED: 'danger',
@@ -179,7 +180,7 @@ onMounted(() => { loadEnvironments(); fetchList() })
       <el-table-column label="测试计划" width="180">
         <template #default="{ row }">
           <el-link type="primary" :underline="false" @click="viewDetail(row)">
-            {{ row.planName }}{{ row.executionNumber ? ` #${row.executionNumber}` : '' }}
+            {{ row.planName || '-' }} #{{ row.id }}
           </el-link>
         </template>
       </el-table-column>
@@ -251,9 +252,9 @@ onMounted(() => { loadEnvironments(); fetchList() })
       <el-table-column label="操作" width="140" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="viewDetail(row)">详情</el-button>
-          <el-button v-if="(row.status === 'RUNNING' || row.status === 'PENDING') && hasPermission('project:execution:cancel')"
+          <el-button v-if="(row.status === 'RUNNING' || row.status === 'PENDING' || row.status === 'QUEUED') && hasPermission('project:execution:cancel')"
             type="danger" link size="small" @click="handleCancel(row)">取消执行</el-button>
-          <el-button v-if="row.status !== 'RUNNING' && row.status !== 'PENDING'"
+          <el-button v-if="row.status !== 'RUNNING' && row.status !== 'PENDING' && row.status !== 'QUEUED'"
             type="primary" link size="small" @click="handleReRun(row)">重新执行</el-button>
         </template>
       </el-table-column>

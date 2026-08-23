@@ -50,6 +50,19 @@ public class DashboardStats {
     private Double defectFixTime = 0.0;
     private Double defectEscapeRate = 0.0;
 
+    // ── KPI 环比差值（用于前端趋势箭头显示） ──
+
+    /** 用例通过率 vs 上周差值（百分点），null 表示无对比数据 */
+    private Double passRateWeekDelta;
+    /** 本周执行次数 vs 上周差值（次数），null 表示无对比数据 */
+    private Long weeklyExecDelta;
+    /** 缺陷密度 vs 上月差值，null 表示无对比数据 */
+    private Double defectDensityMonthDelta;
+    /** 缺陷修复时效 vs 上月差值（天），null 表示无对比数据 */
+    private Double defectFixTimeMonthDelta;
+    /** 缺陷逃逸率 vs 上月差值（百分点），null 表示无对比数据 */
+    private Double defectEscapeRateMonthDelta;
+
     // ── 质量健康度 ──
 
     /** 综合评分（0-100） */

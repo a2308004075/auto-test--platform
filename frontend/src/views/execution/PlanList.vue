@@ -262,6 +262,16 @@ async function fetchList() {
       params.groupId = activeGroupId.value
     }
 
+    // 触发方式
+    if (searchForm.triggerType) params.triggerType = searchForm.triggerType
+    // 环境
+    if (searchForm.environmentId) params.environmentId = searchForm.environmentId
+    // 状态
+    if (searchForm.status) params.status = searchForm.status === '1' ? 1 : 0
+    // 更新日期范围
+    if (searchForm.updateBegin) params.updateBegin = searchForm.updateBegin
+    if (searchForm.updateEnd) params.updateEnd = searchForm.updateEnd
+
     const res: any = await getPlans(projectId.value, params)
     list.value = res.data?.items || []
     pagination.total = res.data?.total || 0
@@ -322,24 +332,6 @@ function getPassRateColor(rate: number | null) {
   if (rate >= 70) return '#e6a23c'
   return '#f56c6c'
 }
-
-// ===== 前端补充过滤（后端 keyword 仅支持 name/description，其他条件前端过滤） =====
-const filteredList = computed(() => {
-  return list.value.filter((row: any) => {
-    if (searchForm.triggerType && row.triggerType !== searchForm.triggerType) return false
-    if (searchForm.environmentId && row.environmentId !== searchForm.environmentId) return false
-    if (searchForm.status) {
-      const expected = searchForm.status === '1' ? 1 : 0
-      if (row.isActive !== expected) return false
-    }
-    if (searchForm.suiteKeyword) {
-      const kw = searchForm.suiteKeyword.toLowerCase()
-      const names = (row.suiteNames || []) as string[]
-      if (!names.some(n => n.toLowerCase().includes(kw))) return false
-    }
-    return true
-  })
-})
 
 // ===== 初始化 =====
 onMounted(() => {
@@ -465,7 +457,7 @@ onMounted(() => {
         </div>
 
         <!-- 表格 -->
-        <el-table v-loading="loading" :data="filteredList" row-key="id" border style="width:100%">
+        <el-table v-loading="loading" :data="list" row-key="id" border style="width:100%">
           <el-table-column prop="name" label="计划名称" min-width="160" show-overflow-tooltip>
             <template #default="{ row }">
               <a style="font-weight:500;color:var(--color-primary);cursor:pointer" @click="handleEdit(row)">{{ row.name }}</a>

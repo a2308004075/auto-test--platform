@@ -29,6 +29,9 @@ public class DashboardTrendResponse {
     /** 质量风险 Top 5 */
     private List<QualityRisk> qualityRiskTop5 = new ArrayList<>();
 
+    /** 缺陷趋势（近 4 周） */
+    private List<DefectTrendItem> defectTrend = new ArrayList<>();
+
     /** 持续失败用例数 */
     private Integer continuousFailCount = 0;
 
@@ -111,6 +114,24 @@ public class DashboardTrendResponse {
             this.suiteName = suiteName;
             this.failCount = failCount;
             this.failRate = failRate;
+        }
+    }
+
+    /**
+     * 缺陷趋势项（按周聚合）
+     */
+    @Data
+    public static class DefectTrendItem {
+        private String week;
+        private Integer newCount;
+        private Integer fixedCount;
+
+        public DefectTrendItem() {}
+
+        public DefectTrendItem(String week, Integer newCount, Integer fixedCount) {
+            this.week = week;
+            this.newCount = newCount;
+            this.fixedCount = fixedCount;
         }
     }
 }

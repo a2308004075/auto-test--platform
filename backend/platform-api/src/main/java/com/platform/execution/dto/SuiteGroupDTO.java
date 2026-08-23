@@ -33,7 +33,7 @@ public class SuiteGroupDTO implements Serializable {
     private LocalDateTime updatedAt;
 
     /**
-     * 该分组下的套件数量（附加统计）
+     * 该分组下的套件数量（递归统计，含所有后代分组）
      */
     private Long suiteCount;
 }

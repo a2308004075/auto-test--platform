@@ -12,7 +12,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getTool, createTool, updateTool, testTool } from '@/api/tool'
+import { getTool, createTool, updateTool, testTool, getTools } from '@/api/tool'
 import CodeEditor from '@/components/CodeEditor/index.vue'
 import { usePermission } from '@/composables/usePermission'
 
@@ -26,6 +26,22 @@ const toolId = ref(0)
 const isEdit = computed(() => toolId.value > 0)
 const loading = ref(false)
 const activeTab = ref('basic')
+
+// ===== 已有分组列表（从已有工具方法中提取） =====
+const categoryOptions = ref<string[]>([])
+async function fetchCategoryOptions() {
+  try {
+    const res: any = await getTools(projectId.value, { page: 1, pageSize: 10000 })
+    const items = res.data?.items || []
+    const categories = new Set<string>()
+    items.forEach((t: any) => {
+      if (t.category && t.category !== 'CUSTOM' && t.category !== 'BUILTIN') {
+        categories.add(t.category)
+      }
+    })
+    categoryOptions.value = Array.from(categories)
+  } catch { categoryOptions.value = [] }
+}
 
 // ===== 表单 =====
 const DEFAULT_CODE = '// 在此编写 Groovy 代码\n// 可使用 request, response, context, vars 等内置变量\n\ndef execute() {\n    return "Hello"\n}'
@@ -178,6 +194,22 @@ async function runTest() {
   } finally { testLoading.value = false }
 }
 
+// ===== 保存成功弹窗（新建模式） =====
+const saveModalVisible = ref(false)
+const saveModalName = ref('')
+function closeSaveModal() {
+  saveModalVisible.value = false
+}
+function continueCreate() {
+  saveModalVisible.value = false
+  form.name = ''
+  form.description = ''
+  form.code = DEFAULT_CODE
+  toolId.value = 0
+  activeTab.value = 'basic'
+  fetchCategoryOptions()
+}
+
 // ===== 保存 =====
 async function handleSubmit() {
   if (!form.name) { ElMessage.warning('请填写工具方法名称'); activeTab.value = 'basic'; return }
@@ -191,11 +223,12 @@ async function handleSubmit() {
     if (toolId.value) {
       await updateTool(projectId.value, toolId.value, payload)
       ElMessage.success('更新成功')
+      router.push(`/project/${projectId.value}/tools`)
     } else {
       await createTool(projectId.value, payload)
-      ElMessage.success('创建成功')
+      saveModalName.value = form.name
+      saveModalVisible.value = true
     }
-    router.push(`/project/${projectId.value}/tools`)
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '操作失败')
   }
@@ -220,6 +253,7 @@ async function fetchTool() {
 }
 
 onMounted(() => {
+  fetchCategoryOptions()
   const id = Number(route.params.toolId)
   if (id) {
     toolId.value = id
@@ -261,7 +295,16 @@ onMounted(() => {
             </el-col>
             <el-col :span="12">
               <el-form-item label="分组" required>
-                <el-input v-model="form.category" placeholder="如：加密工具、时间工具" maxlength="50" />
+                <el-select
+                  v-model="form.category"
+                  placeholder="请选择或输入分组名称"
+                  filterable
+                  allow-create
+                  default-first-option
+                  style="width: 100%"
+                >
+                  <el-option v-for="cat in categoryOptions" :key="cat" :value="cat" :label="cat" />
+                </el-select>
               </el-form-item>
             </el-col>
           </el-row>
@@ -299,6 +342,17 @@ onMounted(() => {
         </div>
       </el-tab-pane>
     </el-tabs>
+
+    <!-- 保存成功弹窗（新建模式） -->
+    <el-dialog v-model="saveModalVisible" title="保存工具方法" width="380px" :close-on-click-modal="false">
+      <p style="font-size: 14px; color: var(--el-text-color-secondary, #606266); line-height: 1.6;">
+        工具方法 <strong style="color: var(--el-color-primary, #409eff);">{{ saveModalName }}</strong> 保存成功！
+      </p>
+      <template #footer>
+        <el-button @click="router.push(`/project/${projectId}/tools`)">返回列表</el-button>
+        <el-button type="primary" @click="continueCreate">继续新建</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 在线测试弹窗 -->
     <el-dialog v-model="testVisible" title="在线测试" width="600px">

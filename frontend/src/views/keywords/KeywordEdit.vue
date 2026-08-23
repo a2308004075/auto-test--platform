@@ -26,11 +26,16 @@ const isEdit = computed(() => !!keywordId.value)
 
 const methodColors: Record<string, string> = { GET: '', POST: 'success', PUT: 'warning', DELETE: 'danger', PATCH: 'info' }
 const { options: paramTypeOptions } = useDict('param_type')
+const { options: categoryOptions } = useDict('keyword_category')
 
 const activeTab = ref('basic')
 const loading = ref(false)
 const apis = ref<any[]>([])
 const modules = ref<any[]>([])
+
+// ===== 保存成功弹窗（创建模式） =====
+const saveSuccessVisible = ref(false)
+const savedKeywordName = ref('')
 
 const form = reactive({
   name: '', apiId: null as number | null, description: '',
@@ -126,19 +131,58 @@ const currentModule = computed(() => {
 // ===== 保存 =====
 async function handleSubmit() {
   if (!form.name) { ElMessage.warning('请填写关键字名称'); activeTab.value = 'basic'; return }
+  if (!form.category) { ElMessage.warning('请选择分类'); activeTab.value = 'basic'; return }
   if (!form.apiId) { ElMessage.warning('请选择关联接口'); activeTab.value = 'api'; return }
   try {
     const payload = { ...form, projectId: projectId.value }
     if (isEdit.value) {
       await updateKeyword(projectId.value, keywordId.value, payload)
       ElMessage.success('更新成功')
+      router.push(`/project/${projectId.value}/keywords`)
     } else {
       await createKeyword(projectId.value, payload)
-      ElMessage.success('创建成功')
+      savedKeywordName.value = form.name
+      saveSuccessVisible.value = true
     }
-    router.push(`/project/${projectId.value}/keywords`)
   } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
 }
+
+// ===== 保存成功弹窗操作 =====
+function handleSaveSuccessBack() {
+  saveSuccessVisible.value = false
+  router.push(`/project/${projectId.value}/keywords`)
+}
+function handleSaveSuccessContinue() {
+  saveSuccessVisible.value = false
+  // 重置表单
+  Object.assign(form, {
+    name: '', apiId: null, description: '',
+    category: '', tags: '[]',
+    testData: '[]', responseAssertion: '{}',
+  })
+  testDataRows.value = []
+  assertionFields.value = []
+  expectedStatusCode.value = ''
+  tags.value = []
+  tagInput.value = ''
+  activeTab.value = 'basic'
+  router.replace({ hash: '' })
+}
+
+// ===== Hash 锚点自动切换 Tab =====
+const validTabs = ['basic', 'api', 'testdata', 'response', 'refs']
+watch(() => route.hash, (hash) => {
+  const tab = hash.replace('#', '')
+  if (tab && validTabs.includes(tab)) {
+    activeTab.value = tab
+  }
+}, { immediate: true })
+watch(activeTab, (tab) => {
+  const targetHash = `#${tab}`
+  if (route.hash !== targetHash) {
+    router.replace({ hash: targetHash })
+  }
+})
 
 onMounted(() => {
   fetchApis()
@@ -176,8 +220,10 @@ onMounted(() => {
           </el-form-item>
           <el-row :gutter="16">
             <el-col :span="12">
-              <el-form-item label="分类">
-                <el-input v-model="form.category" placeholder="如：用户管理" />
+              <el-form-item label="分类" required>
+                <el-select v-model="form.category" placeholder="请选择分类" filterable allow-create default-first-option style="width: 100%">
+                  <el-option v-for="opt in categoryOptions" :key="opt.value" :value="opt.value" :label="opt.label" />
+                </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -205,12 +251,11 @@ onMounted(() => {
           <el-button link type="primary" style="margin-left: auto" @click="router.push(`/project/${projectId}/apis/${currentApi.id}/edit`)">查看接口 →</el-button>
         </div>
         <el-form label-position="top" style="max-width: 800px; margin-top: 16px">
-          <el-form-item label="关联接口" required>
-            <el-select v-model="form.apiId" placeholder="选择关联接口" filterable :disabled="isEdit" style="width: 100%">
+          <el-form-item :label="isEdit ? '切换关联接口' : '关联接口'" required>
+            <el-select v-model="form.apiId" placeholder="选择关联接口" filterable style="width: 100%">
               <el-option v-for="api in apis" :key="api.id" :value="api.id" :label="`[${api.httpMethod}] ${api.path} - ${api.name}`" />
             </el-select>
           </el-form-item>
-          <p v-if="isEdit" class="empty-hint">关联接口在创建后不可更改</p>
         </el-form>
       </el-tab-pane>
 
@@ -289,6 +334,17 @@ onMounted(() => {
         </div>
       </el-tab-pane>
     </el-tabs>
+
+    <!-- 保存成功弹窗（创建模式） -->
+    <el-dialog v-model="saveSuccessVisible" title="保存接口关键字" width="380px" :close-on-click-modal="false">
+      <p style="font-size: 14px; color: #606266; line-height: 1.6; text-align: center;">
+        接口关键字 <strong>{{ savedKeywordName }}</strong> 保存成功！
+      </p>
+      <template #footer>
+        <el-button @click="handleSaveSuccessBack">返回列表</el-button>
+        <el-button type="primary" @click="handleSaveSuccessContinue">继续新建</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 

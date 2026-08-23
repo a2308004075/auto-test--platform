@@ -1,12 +1,17 @@
 #!/bin/sh
 # ============================================================
-# Git pre-commit hook: 检测 Flyway 迁移文件的修改
-# 防止意外修改已应用的迁移导致 checksum 不匹配
+# Git pre-commit hook: 数据库迁移一致性检查
+#
+# 1. 检测已存在的 Flyway 迁移文件被修改（阻断）
+# 2. 检测后端实体类修改但缺少新迁移文件（提醒）
+# 3. 提示新增迁移文件（信息）
 # ============================================================
 
 MIGRATION_DIR="backend/platform-server/src/main/resources/db/migration"
+ENTITY_DIR="backend/platform-data/src/main/java/com/platform"
 
-# 获取暂存区中修改的迁移文件
+# ---- 1. 检测已存在迁移文件被修改（阻断） ----
+
 MODIFIED_MIGRATIONS=$(git diff --cached --name-only --diff-filter=M -- "$MIGRATION_DIR")
 
 if [ -n "$MODIFIED_MIGRATIONS" ]; then
@@ -35,7 +40,6 @@ if [ -n "$MODIFIED_MIGRATIONS" ]; then
     HAS_REMOTE_CHANGES=false
     echo "$MODIFIED_MIGRATIONS" | while read -r file; do
         if git ls-remote --exit-code origin HEAD -- "$file" >/dev/null 2>&1; then
-            # 文件存在于远程，尝试比较
             REMOTE_BRANCH=$(git rev-parse --abbrev-ref @{upstream} 2>/dev/null)
             if [ -n "$REMOTE_BRANCH" ]; then
                 if git show "$REMOTE_BRANCH:$file" >/dev/null 2>&1; then
@@ -57,8 +61,48 @@ if [ -n "$MODIFIED_MIGRATIONS" ]; then
     echo ""
 fi
 
-# 检测新增的迁移文件（仅提示，不阻断）
+# ---- 2. 检测实体类变更但无新迁移文件（提醒） ----
+
+# 获取新增的迁移文件（提前计算，供后续逻辑使用）
 NEW_MIGRATIONS=$(git diff --cached --name-only --diff-filter=A -- "$MIGRATION_DIR")
+
+# 获取被修改/新增/删除/重命名的实体类文件
+ENTITY_CHANGES=$(git diff --cached --name-only --diff-filter=ACMR -- "$ENTITY_DIR" | grep '/entity/')
+
+if [ -n "$ENTITY_CHANGES" ] && [ -z "$NEW_MIGRATIONS" ]; then
+    echo ""
+    echo "============================================================"
+    echo "  [WARNING] 检测到后端实体类被修改，但未新增 Flyway 迁移文件！"
+    echo "============================================================"
+    echo ""
+    echo "  以下实体类文件被修改："
+    echo "$ENTITY_CHANGES" | while read -r file; do
+        echo "    - $file"
+    done
+    echo ""
+    echo "  如果这些变更涉及数据库表结构变化（新增/删除字段、修改列类型等），"
+    echo "  必须创建对应的 Flyway 迁移文件（V{n}__xxx.sql）。"
+    echo ""
+    echo "  示例：在 backend/platform-server/src/main/resources/db/migration/ 下"
+    echo "  创建 V{下一个版本号}__add_xxx_column.sql"
+    echo ""
+    echo "  如果变更不涉及数据库结构（如添加 @TableField(exist=false) 字段、"
+    echo "  修改 Java 属性名但不改列名、添加 transient 字段等），可以跳过。"
+    echo ""
+    echo "  详见：.qoder/rules/flyway-migration.md"
+    echo ""
+    read -p "  是否已确认无需新增迁移文件？(y/N) " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "  提交已取消，请创建迁移文件后再提交。"
+        exit 1
+    fi
+    echo "  继续提交。"
+    echo ""
+fi
+
+# ---- 3. 提示新增迁移文件（信息） ----
+
 if [ -n "$NEW_MIGRATIONS" ]; then
     echo ""
     echo "  [INFO] 新增迁移文件："

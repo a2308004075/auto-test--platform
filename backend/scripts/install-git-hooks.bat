@@ -22,6 +22,9 @@ if exist "%HOOKS_SRC%\pre-commit" (
 
 echo.
 echo  Git hooks 安装完成！
-echo  此后每次 git commit 都会自动检查 Flyway 迁移文件的修改。
+echo  此后每次 git commit 都会自动检查：
+echo    1. 已存在迁移文件是否被修改（阻断）
+echo    2. 实体类变更是否缺少迁移文件（提醒）
+echo    3. 新增迁移文件提示（信息）
 echo.
 pause

@@ -87,13 +87,41 @@ WHERE `config_key` = 'notification.smtp.encryption';
 2. 执行 `mvn clean install -DskipTests`（清理并重建所有模块）
 3. 输出操作结果
 
-## 6. FlywayRepairPostProcessor
+## 6. Pre-commit Hook 自动检查
+
+项目已配置 Git pre-commit hook（`backend/scripts/hooks/pre-commit`），团队成员 clone 后运行 `backend/scripts/install-git-hooks.bat` 安装。Hook 提供三层检查：
+
+### 6.1 迁移文件修改检测（阻断）
+
+检测暂存区中是否有已存在的迁移文件被修改（`--diff-filter=M`）。如果发现修改，会显示警告并要求确认。如果文件已存在于远程分支，会额外提示风险。
+
+### 6.2 实体类变更缺迁移检测（提醒）
+
+检测 `platform-data` 模块中的实体类（`*/entity/*.java`）是否被修改/新增/删除，但暂存区中没有新增的迁移文件（`V*__*.sql`）。如果触发，会提示开发者确认是否需要创建迁移文件。
+
+**需要迁移的场景**：
+- 实体类新增/删除字段 → 对应 `ADD COLUMN` / `DROP COLUMN`
+- 修改字段类型 → 对应 `MODIFY COLUMN`
+- 新建实体类（映射新表）→ 对应 `CREATE TABLE`
+- 新增表注解、索引等
+
+**不需要迁移的场景**：
+- 添加 `@TableField(exist = false)` 非数据库字段
+- 修改 Java 属性名但不改 `@TableField` 列名
+- 添加 transient 字段
+- 纯逻辑方法变更
+
+### 6.3 新增迁移提示（信息）
+
+当检测到新增迁移文件时，显示文件列表供开发者确认。
+
+## 7. FlywayRepairPostProcessor
 
 项目已配置 `FlywayRepairPostProcessor`（仅 dev 环境生效），它会在启动时自动执行 `flyway.repair()` 同步 checksum。
 
 **注意**：此机制仅作为安全网，不应依赖它来绕过迁移不可变规则。如果频繁触发 repair，说明流程存在问题。
 
-## 7. 发布前冻结
+## 8. 发布前冻结
 
 发布新版本前：
 

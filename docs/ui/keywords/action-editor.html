@@ -116,7 +116,7 @@
         <div class="menu-group-items">
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
-            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法</a></li>
             <li class="menu-item active"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
@@ -210,11 +210,11 @@
             <div class="el-section">
               <div class="el-header" onclick="toggleSection(this)">
                 <span class="el-arrow">▸</span>
-                <span>工具方法关键字</span>
+                <span>工具方法</span>
                 <span class="el-badge">3</span>
               </div>
               <div class="el-body">
-                <input class="el-search" type="text" placeholder="搜索工具方法关键字…" oninput="filterElItems(this)" aria-label="搜索工具方法关键字…">
+                <input class="el-search" type="text" placeholder="搜索工具方法…" oninput="filterElItems(this)" aria-label="搜索工具方法…">
                 <div class="el-items">
                   <div class="node-drag" data-node-shape="node-tool" data-node-type="tool" data-node-name="格式化电池编号"><div class="nd-icon" style="background:#f6ffed;color:#52c41a;">T</div>格式化电池编号</div>
                   <div class="node-drag" data-node-shape="node-tool" data-node-type="tool" data-node-name="MD5加密"><div class="nd-icon" style="background:#f6ffed;color:#52c41a;">T</div>MD5加密</div>
@@ -453,7 +453,7 @@
         ];
       }
 
-      /* -- 方形节点注册：Action关键字/接口/工具方法关键字 -- */
+      /* -- 方形节点注册：Action关键字/接口/工具方法 -- */
       function registerKeywordNode(name, color, icon, iconBg) {
         Graph.registerNode(name, {
           inherit: 'rect',
@@ -809,8 +809,8 @@
               '<div class="form-group" style="margin-top:12px;"><label class="form-label">save_as 变量名</label><input class="input" id="propSaveAs" value="' + escAttr(data.save_as || 'api_result') + '" style="font-size:12px;"></div>';
             break;
           case 'tool':
-            html = '<h4>节点属性：工具方法关键字</h4>' +
-              '<div class="form-group"><label class="form-label">工具方法关键字</label>' +
+            html = '<h4>节点属性：工具方法</h4>' +
+              '<div class="form-group"><label class="form-label">工具方法</label>' +
               '<select class="select" id="propKeyword"><option>格式化电池编号</option><option>MD5加密</option><option>时间戳转换</option></select></div>' +
               '<h4 style="font-size:12px;margin-top:12px;">参数映射</h4>' +
               '<table style="font-size:12px;margin-top:6px;"><tr><td style="padding:4px;"><code>raw_sn</code></td><td><input class="input" id="propArg0" value="' + escAttr(data.args && data.args[0] || '${battery_sn}') + '" style="width:120px;height:24px;font-size:12px;"></td></tr></table>' +
@@ -1443,7 +1443,7 @@
 
       var ctxCategories = [
         { title: '接口关键字',     items: ['查询仓位状态','创建用户','获取Token'],       shape: 'node-api',    type: 'api',    icon: 'K', iconBg: '#e6f7ff', color: '#1890ff' },
-        { title: '工具方法关键字', items: ['格式化电池编号','MD5加密','时间戳转换'],     shape: 'node-tool',   type: 'tool',   icon: 'T', iconBg: '#f6ffed', color: '#52c41a' },
+        { title: '工具方法', items: ['格式化电池编号','MD5加密','时间戳转换'],     shape: 'node-tool',   type: 'tool',   icon: 'T', iconBg: '#f6ffed', color: '#52c41a' },
         { title: 'Action关键字',  items: ['电池入仓操作','用户登录流程','订单处理流程'], shape: 'node-action', type: 'action', icon: 'A', iconBg: '#fff7e6', color: '#fa8c16' },
         { title: '监听器',         items: ['执行前监听','执行后监听'],                  shape: 'node-listener', type: 'listener', icon: '♪', iconBg: '#f5f5f5', color: '#999' },
         { title: '断言',           items: ['状态码等于200','响应包含字段','响应时间校验'], shape: 'node-assert',   type: 'assert',   icon: '断', iconBg: '#fff1f0', color: '#f5222d' },

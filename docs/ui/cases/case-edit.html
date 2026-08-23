@@ -90,7 +90,7 @@
         <div class="menu-group-items">
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
-            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法</a></li>
             <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
@@ -365,7 +365,7 @@
       var curTab = getTab(type);
       var tabDefs = [
         { key: 'api',    label: '接口关键字' },
-        { key: 'tool',   label: '工具方法关键字' },
+        { key: 'tool',   label: '工具方法' },
         { key: 'action', label: 'Action关键字' },
         { key: 'logic',  label: '逻辑控制' }
       ];
@@ -373,7 +373,7 @@
       for (var t = 0; t < tabDefs.length; t++) {
         tabsHtml += '<div class="st-picker-tab' + (curTab === tabDefs[t].key ? ' active' : '') + '" onclick="switchPickerTab(\'' + type + '\',\'' + tabDefs[t].key + '\')">' + tabDefs[t].label + '</div>';
       }
-      var placeholder = curTab === 'logic' ? '' : '搜索 ' + ({api:'接口',tool:'工具方法关键字',action:'Action关键字'}[curTab] || 'Action关键字') + '...';
+      var placeholder = curTab === 'logic' ? '' : '搜索 ' + ({api:'接口',tool:'工具方法',action:'Action关键字'}[curTab] || 'Action关键字') + '...';
       html += '<div class="st-add-wrapper" id="' + type + 'AddWrapper">' +
         '<button class="st-add-btn" onclick="togglePicker(\'' + type + '\')">+ 添加步骤</button>' +
         '<div class="st-picker" id="' + type + 'Picker">' +
@@ -414,7 +414,7 @@
         if (kw && a.name.toLowerCase().indexOf(kw) === -1 && a.desc.toLowerCase().indexOf(kw) === -1) return false;
         return true;
       });
-      var labels = { api: '接口关键字', tool: '工具方法关键字', action: 'Action关键字' };
+      var labels = { api: '接口关键字', tool: '工具方法', action: 'Action关键字' };
       if (filtered.length === 0) {
         body.innerHTML = '<div class="st-picker-empty">无匹配的' + (labels[kwType] || '关键字') + '</div>';
         return;

@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>工具方法关键字 - Postman Platform</title>
+  <title>工具方法 - Postman Platform</title>
   <link rel="stylesheet" href="../common/shared-styles.css">
   <style>
     .kw-layout { display: flex; background: #fff; border-radius: var(--border-radius-lg); border: 1px solid var(--border-color-secondary); overflow: hidden; min-height: calc(100vh - 180px); }
@@ -83,7 +83,7 @@
     <div class="header-breadcrumb">
       <span>关键字管理</span>
       <span class="sep">&#8250;</span>
-      <span class="current">工具方法关键字</span>
+      <span class="current">工具方法</span>
     </div>
     <div class="header-right">
       <div class="header-user">
@@ -109,7 +109,7 @@
         <div class="menu-group-items">
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
-            <li class="menu-item active"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
+            <li class="menu-item active"><a href="../keywords/tool-list.html">工具方法</a></li>
             <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
@@ -130,8 +130,8 @@
 
   <main class="layout-main">
     <div class="page-header">
-      <h1>工具方法关键字</h1>
-      <button class="btn btn-primary" onclick="window.location.href='tool-create.html'">+ 新建工具方法关键字</button>
+      <h1>工具方法</h1>
+      <button class="btn btn-primary" onclick="window.location.href='tool-create.html'">+ 新建工具方法</button>
     </div>
 
     <div class="kw-layout">
@@ -149,8 +149,8 @@
           <div class="search-form">
             <div class="search-row">
               <div class="search-item">
-                <label class="filter-label" for="searchToolKeyword">工具方法关键字</label>
-                <input type="text" class="input input-search" id="searchToolKeyword" placeholder="输入工具方法关键字">
+                <label class="filter-label" for="searchToolKeyword">工具方法</label>
+                <input type="text" class="input input-search" id="searchToolKeyword" placeholder="输入工具方法">
               </div>
               <div class="search-item">
                 <label class="filter-label" for="searchToolParam">参数</label>
@@ -317,12 +317,12 @@
   <div class="modal-overlay" id="batchDeleteModal" style="display: none;">
     <div class="modal" style="width: 400px;">
       <div class="modal-header">
-        <h3>批量删除工具方法关键字</h3>
+        <h3>批量删除工具方法</h3>
         <button class="modal-close" onclick="closeBatchDeleteModal()">&#10005;</button>
       </div>
       <div class="modal-body">
         <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
-          确定删除已选中的 <strong id="batchDeleteCount" style="color: var(--error);">0</strong> 条工具方法关键字吗？<br>
+          确定删除已选中的 <strong id="batchDeleteCount" style="color: var(--error);">0</strong> 条工具方法吗？<br>
           <span style="color: var(--text-tertiary);">删除后将无法恢复，请谨慎操作。</span>
         </p>
         <div id="batchDeletePreview" style="margin-top: 12px; padding: 12px; background: var(--bg-body); border-radius: var(--border-radius); font-size: 13px; max-height: 160px; overflow-y: auto;"></div>
@@ -338,12 +338,12 @@
   <div class="modal-overlay" id="deleteToolModal" style="display: none;">
     <div class="modal" style="width: 360px;">
       <div class="modal-header">
-        <h3>删除工具方法关键字</h3>
+        <h3>删除工具方法</h3>
         <button class="modal-close" onclick="closeDeleteToolModal()">&#10005;</button>
       </div>
       <div class="modal-body">
         <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
-          确定删除工具方法关键字 <strong id="deleteToolName"></strong> 吗？<br>
+          确定删除工具方法 <strong id="deleteToolName"></strong> 吗？<br>
           <span style="color: var(--text-tertiary);">删除后将无法恢复。</span>
         </p>
       </div>
@@ -362,7 +362,7 @@
         <button class="modal-close" onclick="closeBatchGroupModal()">&#10005;</button>
       </div>
       <div class="modal-body">
-        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">将已选中的 <b id="batchModalCount" style="color: var(--primary);">0</b> 条工具方法关键字的分组修改为：</p>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">将已选中的 <b id="batchModalCount" style="color: var(--primary);">0</b> 条工具方法的分组修改为：</p>
         <div class="form-group">
           <label class="form-label" for="目标分组">目标分组 <span class="required">*</span></label>
           <div class="search-select" id="batchGroupSelect" style="width:100%;">
@@ -377,7 +377,7 @@
           </div>
         </div>
         <div id="batchPreview" style="display:none;margin-top:12px;padding:12px;background:var(--bg-body);border-radius:var(--border-radius);font-size:13px;">
-          <div style="color:var(--text-tertiary);margin-bottom:6px;">以下工具方法关键字的分组将被修改：</div>
+          <div style="color:var(--text-tertiary);margin-bottom:6px;">以下工具方法的分组将被修改：</div>
           <div id="batchPreviewList" style="color:var(--text-primary);max-height:120px;overflow-y:auto;"></div>
         </div>
       </div>
@@ -423,7 +423,7 @@
     /* ===== 表字段列配置 ===== */
     var columnConfig = [
       { key: 'id',         label: 'ID',             locked: true,  defaultVisible: true },
-      { key: 'keyword',    label: '工具方法关键字',   locked: true,  defaultVisible: true },
+      { key: 'keyword',    label: '工具方法',   locked: true,  defaultVisible: true },
       { key: 'params',     label: '参数',            locked: false, defaultVisible: false },
       { key: 'returnType', label: '返回',            locked: false, defaultVisible: false },
       { key: 'group',      label: '分组',            locked: false, defaultVisible: false },
@@ -435,7 +435,7 @@
     var columnDefaults = {};
     columnConfig.forEach(function(c) { columnDefaults[c.key] = c.defaultVisible; });
 
-    /* ===== 工具方法关键字数据 ===== */
+    /* ===== 工具方法数据 ===== */
     var toolData = [
       { id: 'KT-1',  keyword: 'MD5加密',      params: 'text: str',                  returnType: 'str',  groupId: '1', group: '加密工具',  desc: 'MD5 哈希',              refCount: 8,  createTime: '2024-01-10' },
       { id: 'KT-2',  keyword: 'Base64编码',    params: 'text: str',                  returnType: 'str',  groupId: '5', group: '编码工具',  desc: 'Base64 编码',           refCount: 12, createTime: '2024-01-09' },
@@ -530,7 +530,7 @@
       var html = '<th style="width:40px;padding-right:4px;text-align:center;">' +
         '<input type="checkbox" class="checkbox-input" id="selectAllCheckbox" onchange="toggleSelectAll(this)"></th>';
       if (isColVisible('id'))         html += '<th style="width:70px;">ID</th>';
-      if (isColVisible('keyword'))    html += '<th style="width:180px;">工具方法关键字</th>';
+      if (isColVisible('keyword'))    html += '<th style="width:180px;">工具方法</th>';
       if (isColVisible('params'))     html += '<th>参数</th>';
       if (isColVisible('returnType')) html += '<th style="width:80px;">返回</th>';
       if (isColVisible('group'))      html += '<th style="width:100px;">分组</th>';
@@ -550,7 +550,7 @@
       if (pageItems.length === 0) {
         html = '<tr><td colspan="' + colCount + '" style="text-align:center;padding:48px 20px;color:var(--text-tertiary);">' +
           '<div style="font-size:32px;margin-bottom:8px;opacity:.4;">🔧</div>' +
-          '<div>暂无匹配的工具方法关键字数据</div></td></tr>';
+          '<div>暂无匹配的工具方法数据</div></td></tr>';
       }
       pageItems.forEach(function(t) {
         html += '<tr data-id="' + t.id + '">';
@@ -1069,7 +1069,7 @@
       renderToolRows();
       toolRenderPagination();
       closeDeleteToolModal();
-      showToast('已删除 1 条工具方法关键字', 'success');
+      showToast('已删除 1 条工具方法', 'success');
     }
 
     /* ===== 批量修改分组 ===== */
@@ -1212,7 +1212,7 @@
       renderToolRows();
       toolRenderPagination();
       closeBatchGroupModal();
-      showToast('已成功将 ' + count + ' 条工具方法关键字的分组修改为「' + escapeHtml(targetGroup.name) + '」', 'success');
+      showToast('已成功将 ' + count + ' 条工具方法的分组修改为「' + escapeHtml(targetGroup.name) + '」', 'success');
     }
 
     function openBatchGroupFromDropdown() {
@@ -1331,7 +1331,7 @@
       var rows = getCheckedRows();
       if (rows.length === 0) return;
       document.getElementById('batchDeleteCount').textContent = rows.length;
-      var html = '<div style="color:var(--text-tertiary);margin-bottom:6px;">以下工具方法关键字将被删除：</div>';
+      var html = '<div style="color:var(--text-tertiary);margin-bottom:6px;">以下工具方法将被删除：</div>';
       rows.forEach(function(row) {
         var id = row.getAttribute('data-id');
         var item = toolData.find(function(t) { return t.id === id; });
@@ -1362,7 +1362,7 @@
       renderToolRows();
       toolRenderPagination();
       closeBatchDeleteModal();
-      showToast('已删除 ' + count + ' 条工具方法关键字', 'success');
+      showToast('已删除 ' + count + ' 条工具方法', 'success');
     }
 
     window.toggleSelectAll = toggleSelectAll;

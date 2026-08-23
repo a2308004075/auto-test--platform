@@ -14,7 +14,7 @@ import lombok.EqualsAndHashCode;
  * 测试套件实体
  *
  * <p>对应数据库 test_suite 表。步骤树（Setup/Teardown/Steps）以 JSON 字符串存储，
- * 由 Service 层通过 JsonUtils 序列化/反序列化。
+ * 由 Service 层通过 ObjectMapper 序列化/反序列化。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

@@ -20,7 +20,7 @@ package com.platform.common.exception;
  *   <li>1700-1799: M7 Action</li>
  *   <li>1800-1899: M8 测试用例</li>
  *   <li>1900-1999: M9 测试执行</li>
- *   <li>2000-2099: M10 报告分析</li>
+ *   <li>2100-2199: 系统管理</li>
  * </ul>
  *
  * <p>使用示例：
@@ -63,14 +63,11 @@ public final class ErrorCode {
     // ===== M2 项目管理 (1200-1299) =====
     public static final int PROJECT_NOT_FOUND = 1200;
     public static final int PROJECT_NAME_DUPLICATE = 1201;
-    public static final int PROJECT_INACTIVE = 1202;
 
     // ===== M3 环境配置 (1300-1399) =====
     public static final int ENV_NOT_FOUND = 1300;
     public static final int ENV_NAME_DUPLICATE = 1301;
-    public static final int ENV_JSON_INVALID = 1302;
     public static final int ENV_CONNECTION_FAILED = 1303;
-    public static final int ENV_ACTIVE_DELETE = 1304;
 
     // ===== M4 接口文档 (1400-1499) =====
     public static final int API_NOT_FOUND = 1400;
@@ -114,10 +111,6 @@ public final class ErrorCode {
     public static final int PLAN_NOT_FOUND = 1902;
     public static final int PLAN_NAME_DUPLICATE = 1903;
     public static final int EXECUTION_NOT_FOUND = 1904;
-
-    // ===== M10 报告分析 (2000-2099) =====
-    public static final int REPORT_GENERATE_FAILED = 2000;
-    public static final int REPORT_EXPORT_TIMEOUT = 2001;
 
     // ===== 系统管理 (2100-2199) =====
     public static final int MENU_NOT_FOUND = 2100;

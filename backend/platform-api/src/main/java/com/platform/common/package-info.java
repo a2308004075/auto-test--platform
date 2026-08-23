@@ -16,7 +16,7 @@
  *   <li>entity - BaseEntity（数据库实体基类）</li>
  *   <li>exception - BusinessException, DependencyException, NotFoundException, ErrorCode, GlobalExceptionHandler</li>
  *   <li>response - ApiResponse, PageResponse</li>
- *   <li>util - JsonUtils</li>
+ *   <li>util - SpringContextHolder</li>
  * </ul>
  */
 package com.platform.common;

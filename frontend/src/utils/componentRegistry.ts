@@ -32,6 +32,7 @@ export const componentMap: Record<string, () => Promise<any>> = {
 
   // ===== 工具模块 =====
   'tool/ToolList': () => import('@/views/tool/ToolList.vue'),
+  'tool/ToolEdit': () => import('@/views/tool/ToolEdit.vue'),
 
   // ===== Action 模块 =====
   'action/ActionList': () => import('@/views/action/ActionList.vue'),

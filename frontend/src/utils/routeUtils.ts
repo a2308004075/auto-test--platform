@@ -115,6 +115,10 @@ export function addSupplementaryRoutes(router: Router, layoutName: string): void
     { path: 'project/:id/keywords/new',               component: 'keywords/KeywordEdit',  title: '新建关键字' },
     { path: 'project/:id/keywords/:keywordId/edit',   component: 'keywords/KeywordEdit',  title: '编辑关键字' },
 
+    // ===== 工具模块 =====
+    { path: 'project/:id/tools/new',              component: 'tool/ToolEdit',  title: '新建工具方法' },
+    { path: 'project/:id/tools/:toolId/edit',     component: 'tool/ToolEdit',  title: '编辑工具方法' },
+
     // ===== Action 模块 =====
     { path: 'project/:id/actions/:actionId/edit',  component: 'action/ActionEditor',  title: '编辑Action' },
     { path: 'project/:id/actions/:actionId/debug', component: 'action/ActionDebug',   title: '调试Action' },

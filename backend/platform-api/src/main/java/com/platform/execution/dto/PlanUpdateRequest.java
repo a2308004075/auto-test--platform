@@ -19,11 +19,21 @@ public class PlanUpdateRequest {
 
     private String description;
 
+    /**
+     * 所属分组 ID
+     */
+    private Long groupId;
+
     private List<Long> suiteIds;
 
     private Long environmentId;
 
     private String scheduleCron;
+
+    /**
+     * 触发方式：MANUAL / SCHEDULED / CI
+     */
+    private String triggerType;
 
     private Integer isActive;
 }

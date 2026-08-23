@@ -20,6 +20,7 @@ public class CaseResponse implements Serializable {
 
     private Long id;
     private Long suiteId;
+    private Long groupId;
     private String name;
     private String description;
     private String preconditions;
@@ -27,6 +28,7 @@ public class CaseResponse implements Serializable {
     private String teardownSteps;
     private String steps;
     private String priority;
+    private String tags;
     private Integer timeout;
     private Integer isActive;
     private Long createdBy;

@@ -37,6 +37,7 @@ const form = reactive({
   category: '', tags: '[]',
   testData: '[]', responseAssertion: '{}',
 })
+const referenceCount = ref(0)
 
 // ===== 测试数据可视化编辑（序列化为 JSON 存入 form.testData） =====
 function parseArr(raw?: string): any[] {
@@ -110,6 +111,7 @@ async function fetchKeyword() {
       assertionFields.value = []
     }
     tags.value = parseArr(form.tags)
+    referenceCount.value = data.referenceCount ?? 0
   } catch { ElMessage.error('加载关键字失败') } finally { loading.value = false }
 }
 
@@ -150,7 +152,7 @@ onMounted(() => {
     <div class="edit-header">
       <div class="edit-title">
         <el-button type="primary" link @click="router.back()">← 返回</el-button>
-        <h2 style="margin: 0">{{ isEdit ? '编辑关键字' : '新建关键字' }}</h2>
+        <h2 style="margin: 0">{{ isEdit ? '编辑接口关键字' : '创建接口关键字' }}</h2>
       </div>
       <div class="edit-actions">
         <el-button v-if="hasPermission('project:keyword:edit')" type="primary" @click="handleSubmit">保存</el-button>
@@ -194,7 +196,7 @@ onMounted(() => {
       </el-tab-pane>
 
       <!-- Tab: 关联接口 -->
-      <el-tab-pane label="关联接口" name="api">
+      <el-tab-pane :label="isEdit ? '关联接口' : '选择接口'" name="api">
         <div v-if="currentApi" class="api-info-bar">
           <el-tag :type="methodColors[currentApi.httpMethod] || 'info'" size="small">{{ currentApi.httpMethod }}</el-tag>
           <code style="font-size: 13px">{{ currentApi.path }}</code>
@@ -274,10 +276,16 @@ onMounted(() => {
 
       <!-- Tab: 引用关系 -->
       <el-tab-pane label="引用关系" name="refs" :disabled="!isEdit">
+        <div class="refs-header">
+          <h4 style="margin: 0; font-size: 14px; font-weight: 600">Action关键字 引用</h4>
+          <el-tag type="primary" size="small">{{ referenceCount }} 个引用</el-tag>
+        </div>
         <div class="empty-state">
           <div class="empty-icon">📋</div>
           <div>引用关系详情需后端补充端点支持</div>
-          <div style="font-size: 12px; color: #c0c4cc; margin-top: 4px">当前引用次数可在列表页"引用"列查看</div>
+          <div style="font-size: 12px; color: #c0c4cc; margin-top: 4px">
+            当前关键字被 {{ referenceCount }} 个 Action 关键字引用，详细引用列表需后端补充查询接口
+          </div>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -349,5 +357,11 @@ onMounted(() => {
   font-size: 36px;
   margin-bottom: 8px;
   opacity: 0.4;
+}
+.refs-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 </style>

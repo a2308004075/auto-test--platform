@@ -5,9 +5,11 @@
  */
 package com.platform.keyword.controller;
 
+import com.platform.apidoc.dto.ApiDebugResponse;
 import com.platform.common.response.ApiResponse;
 import com.platform.common.response.PageResponse;
 import com.platform.keyword.dto.ApiKeywordCreateRequest;
+import com.platform.keyword.dto.ApiKeywordDebugRequest;
 import com.platform.keyword.dto.ApiKeywordResponse;
 import com.platform.keyword.dto.ApiKeywordUpdateRequest;
 import com.platform.keyword.service.ApiKeywordService;
@@ -86,5 +88,15 @@ public class ApiKeywordController {
     public ApiResponse<ApiKeywordResponse> generate(@PathVariable Long projectId,
                                                      @RequestParam Long apiId) {
         return ApiResponse.ok(apiKeywordService.generateFromApi(projectId, apiId));
+    }
+
+    /**
+     * 接口关键字在线调试
+     */
+    @PostMapping("/{keywordId}/debug")
+    public ApiResponse<ApiDebugResponse> debug(@PathVariable Long projectId,
+                                                @PathVariable Long keywordId,
+                                                @Valid @RequestBody ApiKeywordDebugRequest request) {
+        return ApiResponse.ok(apiKeywordService.debug(keywordId, request));
     }
 }

@@ -9,7 +9,7 @@
  * 左侧分组面板 + 右侧高级搜索 + 批量操作 + 表字段调整 + 分页表格
  * 对齐原型 api-list.html（分组树形多层已支持，后端 ApiModule 含 parentId）
  */
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -45,6 +45,7 @@ const search = reactive({ name: '', path: '', method: '', source: '' })
 // ===== 分组 =====
 const modules = ref<any[]>([])
 const activeModuleId = ref<number>(0) // 0 = 全部
+const filterText = ref('')
 const moduleMap = computed<Record<number, any>>(() => {
   const m: Record<number, any> = {}
   modules.value.forEach((mod) => { m[mod.id] = mod })
@@ -63,7 +64,6 @@ const moduleTree = computed(() => {
     userGroups
       .filter((m) => (m.parentId ?? null) === parentId)
       .map((m) => ({ ...m, children: buildTree(m.id) }))
-  // 系统分组（排除"全部"，用虚拟节点代替）
   const systemGroups = modules.value
     .filter((m) => m.isSystem === 1 && m.name !== '全部')
     .map((m) => ({ ...m, children: [] }))
@@ -73,6 +73,28 @@ const moduleTree = computed(() => {
     ...buildTree(null),
   ]
 })
+// 根据搜索关键字过滤分组树
+const filteredModuleTree = computed(() => {
+  const kw = filterText.value.trim().toLowerCase()
+  if (!kw) return moduleTree.value
+  const matchRecursive = (nodes: any[]): any[] => {
+    const result: any[] = []
+    for (const node of nodes) {
+      const childMatches = matchRecursive(node.children || [])
+      if (node.name.toLowerCase().includes(kw) || childMatches.length > 0) {
+        result.push({ ...node, children: childMatches.length > 0 ? childMatches : node.children })
+      }
+    }
+    return result
+  }
+  return matchRecursive(moduleTree.value)
+})
+// 树形组件过滤回调
+function filterNode(value: string, data: any) {
+  if (!value) return true
+  return data.name.toLowerCase().includes(value.toLowerCase())
+}
+
 function onModuleNodeClick(data: any) {
   selectModule(data.id)
 }
@@ -110,6 +132,58 @@ function handleSearch() { pagination.current = 1; fetchList() }
 function handleReset() {
   Object.assign(search, { name: '', path: '', method: '', source: '' })
   handleSearch()
+}
+
+// ===== 右键菜单 =====
+const contextMenuVisible = ref(false)
+const contextMenuPos = reactive({ x: 0, y: 0 })
+const contextModule = ref<any>(null)
+
+function handleNodeContextmenu(e: MouseEvent, data: any) {
+  e.preventDefault()
+  e.stopPropagation()
+  if (data.isSystem === 1) return
+  contextModule.value = data
+  contextMenuPos.x = e.clientX
+  contextMenuPos.y = e.clientY
+  contextMenuVisible.value = true
+}
+
+function handleBlankContextmenu(e: MouseEvent) {
+  e.preventDefault()
+  contextModule.value = null
+  contextMenuPos.x = e.clientX
+  contextMenuPos.y = e.clientY
+  contextMenuVisible.value = true
+}
+
+function closeContextMenu() {
+  contextMenuVisible.value = false
+  contextModule.value = null
+}
+
+function contextCreateGroup() {
+  if (contextModule.value) {
+    openCreateGroup(contextModule.value.id)
+  } else {
+    openCreateGroup()
+  }
+  closeContextMenu()
+}
+
+function contextCreateChild() {
+  if (contextModule.value) openCreateGroup(contextModule.value.id)
+  closeContextMenu()
+}
+
+function contextEdit() {
+  if (contextModule.value) openEditGroup(contextModule.value)
+  closeContextMenu()
+}
+
+function contextDelete() {
+  if (contextModule.value) handleDeleteGroup(contextModule.value)
+  closeContextMenu()
 }
 
 // ===== 批量操作 =====
@@ -238,7 +312,16 @@ function openDebug(id: number) {
   debugVisible.value = true
 }
 
-onMounted(() => { fetchModules(); fetchList() })
+// ===== 生命周期 =====
+const treeRef = ref()
+function onDocClick() { closeContextMenu() }
+onMounted(() => {
+  fetchModules(); fetchList()
+  document.addEventListener('click', onDocClick)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
+})
 </script>
 
 <template>
@@ -250,32 +333,36 @@ onMounted(() => { fetchModules(); fetchList() })
 
     <div class="api-layout">
       <!-- 左侧分组 -->
-      <div class="module-panel">
+      <div class="module-panel" @contextmenu="handleBlankContextmenu">
         <div class="module-head">
           <span class="module-title">分组</span>
           <el-button v-if="hasPermission('project:api:group')" size="small" type="primary" link @click="openCreateGroup()">+ 新建</el-button>
         </div>
+        <div class="tree-search">
+          <el-input v-model="filterText" size="small" placeholder="搜索分组..." clearable @input="(v: string) => treeRef?.filter(v)" />
+        </div>
         <div class="module-tree">
           <el-tree
-            :data="moduleTree"
+            ref="treeRef"
+            :data="filteredModuleTree"
             node-key="id"
             :props="{ label: 'name', children: 'children' }"
             :default-expand-all="true"
             :expand-on-click-node="false"
+            :filter-node-method="filterNode"
             @node-click="onModuleNodeClick"
           >
             <template #default="{ data }">
-              <div :class="['module-tree-node', { active: activeModuleId === data.id }]">
+              <div
+                :class="['module-tree-node', { active: activeModuleId === data.id }]"
+                @contextmenu.stop="handleNodeContextmenu($event, data)"
+              >
                 <span class="module-name">
                   {{ data.name }}
                   <span v-if="data.servicePrefix" class="module-prefix">{{ data.servicePrefix }}</span>
                 </span>
                 <span class="module-count">{{ data.apiCount ?? 0 }}</span>
-                <span v-if="data.isSystem !== 1 && hasPermission('project:api:group')" class="module-ops" @click.stop>
-                  <el-button link size="small" @click="openCreateGroup(data.id)">+ 子级</el-button>
-                  <el-button link size="small" @click="openEditGroup(data)">编辑</el-button>
-                  <el-button link size="small" type="danger" @click="handleDeleteGroup(data)">删除</el-button>
-                </span>
+                <span v-if="data.isSystem === 1" class="module-lock" title="系统默认分组">🔒</span>
               </div>
             </template>
           </el-tree>
@@ -415,6 +502,28 @@ onMounted(() => { fetchModules(); fetchList() })
 
     <!-- 调试弹窗 -->
     <ApiDebugModal v-model="debugVisible" :project-id="projectId" :api-id="debugApiId" />
+
+    <!-- 右键上下文菜单 -->
+    <Teleport to="body">
+      <div
+        v-if="contextMenuVisible"
+        class="context-menu"
+        :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
+        @click.stop
+      >
+        <!-- 空白区域右键：仅显示"新建分组" -->
+        <template v-if="!contextModule">
+          <div class="context-menu-item" @click="contextCreateGroup">新建分组</div>
+        </template>
+        <!-- 用户分组右键 -->
+        <template v-else>
+          <div class="context-menu-item" @click="contextCreateChild">新建子分组</div>
+          <div class="context-menu-divider" />
+          <div class="context-menu-item" @click="contextEdit">编辑</div>
+          <div class="context-menu-item danger" @click="contextDelete">删除</div>
+        </template>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -441,6 +550,13 @@ onMounted(() => { fetchModules(); fetchList() })
   font-weight: 600;
   font-size: 14px;
   color: #303133;
+}
+.tree-search {
+  margin: 8px 0;
+}
+.tree-search :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+  border-radius: 4px;
 }
 .module-tree {
   max-height: 560px;
@@ -485,12 +601,11 @@ onMounted(() => { fetchModules(); fetchList() })
   color: #909399;
   flex-shrink: 0;
 }
-.module-ops {
-  display: none;
-  gap: 0;
-}
-.module-tree-node:hover .module-ops {
-  display: flex;
+.module-lock {
+  font-size: 10px;
+  color: #c0c4cc;
+  flex-shrink: 0;
+  margin-left: 2px;
 }
 .api-content {
   flex: 1;
@@ -500,5 +615,41 @@ onMounted(() => { fetchModules(); fetchList() })
   display: flex;
   justify-content: flex-end;
   margin-bottom: 8px;
+}
+
+/* 右键上下文菜单 */
+.context-menu {
+  position: fixed;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px 0;
+  min-width: 130px;
+  z-index: 9999;
+}
+.context-menu-item {
+  padding: 7px 14px;
+  font-size: 13px;
+  color: #303133;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+}
+.context-menu-item:hover {
+  background: #f5f7fa;
+}
+.context-menu-item.danger {
+  color: #f56c6c;
+}
+.context-menu-item.danger:hover {
+  background: #fef0f0;
+}
+.context-menu-divider {
+  height: 1px;
+  background: #ebeef5;
+  margin: 4px 0;
 }
 </style>

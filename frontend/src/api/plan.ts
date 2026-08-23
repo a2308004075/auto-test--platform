@@ -9,7 +9,12 @@ import request from './request'
  * 测试计划模块 API（M9）
  */
 
-export function getPlans(projectId: number, params?: { keyword?: string; page?: number; pageSize?: number }) {
+export function getPlans(projectId: number, params?: {
+  keyword?: string
+  groupId?: number | null
+  page?: number
+  pageSize?: number
+}) {
   return request.get(`/v1/projects/${projectId}/plans`, { params })
 }
 
@@ -27,4 +32,22 @@ export function updatePlan(planId: number, data: any) {
 
 export function deletePlan(planId: number) {
   return request.post(`/v1/plans/${planId}/delete`)
+}
+
+// ===== 计划分组 API =====
+
+export function getPlanGroups(projectId: number) {
+  return request.get(`/v1/projects/${projectId}/plan-groups`)
+}
+
+export function createPlanGroup(projectId: number, data: { name: string; description?: string; parentId?: number | null }) {
+  return request.post(`/v1/projects/${projectId}/plan-groups`, data)
+}
+
+export function updatePlanGroup(groupId: number, data: { name: string; description?: string; parentId?: number | null }) {
+  return request.post(`/v1/plan-groups/${groupId}`, data)
+}
+
+export function deletePlanGroup(groupId: number) {
+  return request.post(`/v1/plan-groups/${groupId}/delete`)
 }

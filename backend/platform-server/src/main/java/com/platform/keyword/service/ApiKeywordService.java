@@ -7,16 +7,22 @@ package com.platform.keyword.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.platform.action.entity.ActionNode;
 import com.platform.action.mapper.ActionNodeMapper;
+import com.platform.apidoc.dto.ApiDebugRequest;
+import com.platform.apidoc.dto.ApiDebugResponse;
 import com.platform.apidoc.entity.Api;
 import com.platform.apidoc.mapper.ApiMapper;
+import com.platform.apidoc.service.ApiService;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
 import com.platform.common.response.PageResponse;
 import com.platform.execution.entity.TestCase;
 import com.platform.execution.mapper.TestCaseMapper;
 import com.platform.keyword.dto.ApiKeywordCreateRequest;
+import com.platform.keyword.dto.ApiKeywordDebugRequest;
 import com.platform.keyword.dto.ApiKeywordResponse;
 import com.platform.keyword.dto.ApiKeywordUpdateRequest;
 import com.platform.keyword.entity.ApiKeyword;
@@ -27,12 +33,15 @@ import com.platform.project.entity.ApiModule;
 import com.platform.project.mapper.ApiModuleMapper;
 import com.platform.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -40,6 +49,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ApiKeywordService {
 
     private final KeywordMapper keywordMapper;
@@ -49,6 +59,8 @@ public class ApiKeywordService {
     private final ActionNodeMapper actionNodeMapper;
     private final TestCaseMapper testCaseMapper;
     private final ProjectService projectService;
+    private final ObjectMapper objectMapper;
+    private final ApiService apiService;
 
     /**
      * 分页查询接口关键字列表
@@ -255,6 +267,61 @@ public class ApiKeywordService {
         return buildResponse(kw);
     }
 
+    /**
+     * 接口关键字在线调试
+     * <p>按关键字保存的 testData 作为请求参数，调用关联接口的真实请求。</p>
+     */
+    public ApiDebugResponse debug(Long keywordId, ApiKeywordDebugRequest request) {
+        findKeywordById(keywordId);
+        ApiKeyword apiKeyword = findApiKeywordByKeywordId(keywordId);
+        if (apiKeyword == null) {
+            return ApiDebugResponse.error("关键字未绑定接口");
+        }
+
+        Api api = apiMapper.selectById(apiKeyword.getApiId());
+        if (api == null) {
+            return ApiDebugResponse.error("关联接口不存在");
+        }
+
+        // 解析关键字保存的测试数据
+        Map<String, String> testDataMap = parseTestData(apiKeyword.getTestData());
+
+        // 提取路径参数：路径中 {xxx} 占位符对应的参数从 testData 中剔除
+        Map<String, String> pathParams = new LinkedHashMap<>();
+        Map<String, String> remainingParams = new LinkedHashMap<>(testDataMap);
+        if (api.getPath() != null) {
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\{(\\w+)\\}");
+            java.util.regex.Matcher matcher = pattern.matcher(api.getPath());
+            while (matcher.find()) {
+                String key = matcher.group(1);
+                String value = testDataMap.get(key);
+                if (value != null) {
+                    pathParams.put(key, value);
+                    remainingParams.remove(key);
+                }
+            }
+        }
+
+        ApiDebugRequest debugRequest = new ApiDebugRequest();
+        debugRequest.setEnvironmentId(request.getEnvironmentId());
+        debugRequest.setPathParams(pathParams);
+
+        String method = api.getHttpMethod() == null ? "GET" : api.getHttpMethod().toUpperCase();
+        if ("GET".equals(method) || "DELETE".equals(method)) {
+            debugRequest.setQueryParams(remainingParams);
+        } else {
+            // POST / PUT / PATCH 使用 JSON body
+            try {
+                debugRequest.setBody(objectMapper.writeValueAsString(remainingParams));
+            } catch (Exception e) {
+                log.warn("关键字测试数据序列化为 JSON 失败: {}", e.getMessage());
+                debugRequest.setBody("");
+            }
+        }
+
+        return apiService.debug(api.getId(), debugRequest);
+    }
+
     // ───────────────────── 私有方法 ─────────────────────
 
     private Keyword findKeywordById(Long keywordId) {
@@ -263,6 +330,31 @@ public class ApiKeywordService {
             throw new BusinessException(ErrorCode.KEYWORD_NOT_FOUND, "关键字不存在：" + keywordId);
         }
         return kw;
+    }
+
+    /**
+     * 解析关键字测试数据（JSON 数组）为键值对
+     */
+    private Map<String, String> parseTestData(String testData) {
+        Map<String, String> result = new LinkedHashMap<>();
+        if (!StringUtils.hasText(testData)) {
+            return result;
+        }
+        try {
+            JsonNode array = objectMapper.readTree(testData);
+            if (array.isArray()) {
+                for (JsonNode node : array) {
+                    String name = node.has("name") ? node.get("name").asText() : null;
+                    String value = node.has("value") ? node.get("value").asText() : null;
+                    if (StringUtils.hasText(name)) {
+                        result.put(name, value == null ? "" : value);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("解析关键字测试数据失败: {}", e.getMessage());
+        }
+        return result;
     }
 
     private ApiKeyword findApiKeywordByKeywordId(Long keywordId) {

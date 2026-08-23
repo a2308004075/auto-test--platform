@@ -140,6 +140,19 @@ function onTabChange(tab: string) {
   if (tab === 'refs') fetchReferences()
 }
 
+// ===== 调试响应辅助 =====
+const debugRespTab = ref('body')
+const debugHeaderEntries = computed(() => {
+  const h = debugResult.value?.responseHeaders
+  if (!h || typeof h !== 'object') return []
+  return Object.entries(h).map(([key, value]) => ({ key, value: String(value) }))
+})
+function formatDebugBody(result: any): string {
+  const body = result?.responseBody ?? result?.output ?? result?.error ?? ''
+  if (typeof body === 'string') return body
+  return JSON.stringify(body, null, 2)
+}
+
 // ===== 保存 =====
 async function handleSubmit() {
   syncToForm()
@@ -179,58 +192,53 @@ onMounted(() => {
     <el-tabs v-model="activeTab" @tab-change="(t: string) => onTabChange(t)">
       <!-- Tab: 基础信息 -->
       <el-tab-pane label="基础信息" name="basic">
-        <el-form label-position="top" style="max-width: 800px">
-          <el-row :gutter="16">
-            <el-col :span="8">
-              <el-form-item label="接口 ID" v-if="isEdit">
-                <el-input :model-value="apiId" disabled />
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="来源">
-                <el-input :model-value="form.sourceType === 'SWAGGER_IMPORT' ? 'Swagger 导入' : '手动创建'" disabled />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="16">
-            <el-col :span="16">
-              <el-form-item label="接口名称" required>
-                <el-input v-model="form.name" placeholder="请输入接口名称" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="HTTP 方法">
-                <el-select v-model="form.httpMethod" style="width: 100%">
-                  <el-option v-for="m in httpMethodOptions" :key="m.value" :value="m.value" :label="m.label" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="16">
-            <el-col :span="16">
-              <el-form-item label="接口路径" required>
-                <el-input v-model="form.path" placeholder="/api/v1/example" style="font-family: monospace" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="所属分组">
-                <el-select v-model="form.moduleId" placeholder="选择分组" style="width: 100%">
-                  <el-option v-for="m in modules" :key="m.id" :value="m.id" :label="m.name" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="16">
-            <el-col :span="12">
-              <el-form-item label="服务名">
-                <el-input v-model="form.service" placeholder="服务名（可选）" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-form-item label="描述">
-            <el-input v-model="form.description" type="textarea" :rows="2" />
-          </el-form-item>
-        </el-form>
+        <el-card shadow="never" style="max-width: 800px">
+          <el-form label-position="top">
+            <el-row :gutter="16" v-if="isEdit">
+              <el-col :span="12">
+                <el-form-item label="接口 ID">
+                  <el-input :model-value="apiId" disabled />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="来源">
+                  <el-input :model-value="form.sourceType === 'SWAGGER_IMPORT' ? 'Swagger 导入' : '手动创建'" disabled />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="16">
+              <el-col :span="12">
+                <el-form-item label="接口名称" required>
+                  <el-input v-model="form.name" placeholder="请输入接口名称" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="HTTP 方法">
+                  <el-select v-model="form.httpMethod" style="width: 100%">
+                    <el-option v-for="m in httpMethodOptions" :key="m.value" :value="m.value" :label="m.label" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="16">
+              <el-col :span="12">
+                <el-form-item label="接口路径" required>
+                  <el-input v-model="form.path" placeholder="/api/v1/example" style="font-family: monospace" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="所属分组">
+                  <el-select v-model="form.moduleId" placeholder="选择分组" style="width: 100%">
+                    <el-option v-for="m in modules" :key="m.id" :value="m.id" :label="m.name" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-form-item label="描述">
+              <el-input v-model="form.description" type="textarea" :rows="2" placeholder="接口描述（可选）" />
+            </el-form-item>
+          </el-form>
+        </el-card>
       </el-tab-pane>
 
       <!-- Tab: 请求参数 -->
@@ -348,9 +356,9 @@ onMounted(() => {
 
       <!-- Tab: 调试 -->
       <el-tab-pane label="调试" name="debug" :disabled="!isEdit">
-        <div class="debug-section">
+        <el-card shadow="never" style="max-width: 900px">
           <div class="debug-env-row">
-            <span class="debug-label">执行环境：</span>
+            <span class="debug-label">选择环境：</span>
             <el-select v-model="debugEnvId" placeholder="选择环境" style="width: 180px">
               <el-option v-for="env in environments" :key="env.id" :value="env.id" :label="env.name" />
             </el-select>
@@ -359,7 +367,11 @@ onMounted(() => {
           <div class="debug-params">
             <h4>Query 参数</h4>
             <el-table v-if="queryParams.length" :data="queryParams" size="small" border style="max-width: 600px">
-              <el-table-column prop="name" label="参数名" width="160" />
+              <el-table-column label="参数名" width="180">
+                <template #default="{ row }">
+                  <span style="font-family: monospace">{{ row.name }}</span>
+                </template>
+              </el-table-column>
               <el-table-column label="值">
                 <template #default="{ row }">
                   <el-input v-model="debugParamValues[row.name]" size="small" placeholder="值" />
@@ -371,16 +383,41 @@ onMounted(() => {
           <div v-if="debugResult" class="debug-response">
             <div class="resp-status">
               <span :class="['resp-code', debugResult.success === 1 ? 'ok' : 'err']">
-                {{ debugResult.success === 1 ? '成功' : '失败' }}
+                {{ debugResult.statusCode || (debugResult.success === 1 ? '200 OK' : 'ERROR') }}
               </span>
               <span v-if="debugResult.responseTimeMs" class="resp-meta">耗时: {{ debugResult.responseTimeMs }}ms</span>
+              <span v-if="debugResult.responseSize" class="resp-meta">大小: {{ debugResult.responseSize }}</span>
             </div>
-            <el-input
-              :model-value="JSON.stringify(debugResult.responseBody ?? debugResult, null, 2)"
-              type="textarea" :rows="10" readonly style="font-family: monospace"
-            />
+            <el-tabs v-model="debugRespTab">
+              <el-tab-pane label="响应体" name="body">
+                <pre class="resp-body-code">{{ formatDebugBody(debugResult) }}</pre>
+              </el-tab-pane>
+              <el-tab-pane label="响应头" name="headers">
+                <el-table v-if="debugHeaderEntries.length" :data="debugHeaderEntries" size="small" border>
+                  <el-table-column prop="key" label="Header" width="200">
+                    <template #default="{ row }">
+                      <span style="font-family: monospace; font-weight: 500">{{ row.key }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="value" label="Value">
+                    <template #default="{ row }">
+                      <span style="font-family: monospace; word-break: break-all">{{ row.value }}</span>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <p v-else class="empty-hint" style="padding: 20px; text-align: center">无响应头信息</p>
+              </el-tab-pane>
+              <el-tab-pane label="状态信息" name="status">
+                <el-descriptions :column="1" border size="small" style="max-width: 400px">
+                  <el-descriptions-item label="状态码">{{ debugResult.statusCode ?? (debugResult.success === 1 ? '200 OK' : '-') }}</el-descriptions-item>
+                  <el-descriptions-item label="响应时间">{{ debugResult.responseTimeMs ?? '-' }} ms</el-descriptions-item>
+                  <el-descriptions-item label="响应大小">{{ debugResult.responseSize ?? '-' }}</el-descriptions-item>
+                  <el-descriptions-item label="协议">{{ debugResult.protocol ?? 'HTTP/1.1' }}</el-descriptions-item>
+                </el-descriptions>
+              </el-tab-pane>
+            </el-tabs>
           </div>
-        </div>
+        </el-card>
       </el-tab-pane>
 
       <!-- Tab: 引用关系 -->
@@ -488,5 +525,17 @@ onMounted(() => {
 .resp-meta {
   font-size: 12px;
   color: #909399;
+}
+.resp-body-code {
+  background: #f5f7fa;
+  padding: 12px;
+  border-radius: 4px;
+  max-height: 360px;
+  overflow: auto;
+  font-size: 12px;
+  font-family: monospace;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 </style>

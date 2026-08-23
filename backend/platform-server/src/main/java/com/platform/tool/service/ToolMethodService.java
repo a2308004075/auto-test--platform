@@ -105,6 +105,9 @@ public class ToolMethodService {
             }
             tm.setName(request.getName());
         }
+        if (request.getCategory() != null) {
+            tm.setCategory(request.getCategory());
+        }
         if (request.getDescription() != null) {
             tm.setDescription(request.getDescription());
         }

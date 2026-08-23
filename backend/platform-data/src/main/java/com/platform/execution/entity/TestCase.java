@@ -26,6 +26,11 @@ public class TestCase extends BaseEntity {
     private Long suiteId;
 
     /**
+     * 所属分组 ID
+     */
+    private Long groupId;
+
+    /**
      * 用例名称
      */
     private String name;
@@ -59,6 +64,11 @@ public class TestCase extends BaseEntity {
      * 优先级 P0/P1/P2/P3
      */
     private String priority;
+
+    /**
+     * 标签列表（JSON）
+     */
+    private String tags;
 
     /**
      * 超时秒数

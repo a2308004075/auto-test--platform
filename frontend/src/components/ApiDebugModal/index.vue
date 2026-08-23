@@ -9,7 +9,7 @@
  * 双列布局：左侧请求参数输入，右侧响应结果
  * 对齐原型 api-list.html 的 debugModal
  */
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getApi, debugApi } from '@/api/apidoc'
 import { getEnvironments } from '@/api/environment'
@@ -94,7 +94,7 @@ async function sendDebug() {
   try {
     const res: any = await debugApi(props.projectId, props.apiId, {
       environmentId: debugEnvId.value || undefined,
-      params: paramValues.value,
+      params: getAllParamValues(),
       headers: headerValues.value,
     })
     debugResult.value = res.data
@@ -103,7 +103,37 @@ async function sendDebug() {
   } finally { debugLoading.value = false }
 }
 
+function formatResponseBody(result: any): string {
+  const body = result?.responseBody ?? result?.output ?? result?.error ?? ''
+  if (typeof body === 'string') return body
+  return JSON.stringify(body, null, 2)
+}
+
+const headerEntries = computed(() => {
+  const h = debugResult.value?.responseHeaders
+  if (!h || typeof h !== 'object') return []
+  return Object.entries(h).map(([key, value]) => ({ key, value: String(value) }))
+})
+
 const respTabs = ref('body')
+
+// 自定义参数（手动添加）
+const customParams = ref<{ name: string; type: string; value: string }[]>([])
+function addCustomParam() {
+  customParams.value.push({ name: '', type: 'string', value: '' })
+}
+function removeCustomParam(idx: number) {
+  customParams.value.splice(idx, 1)
+}
+
+// 合并所有参数值（query + custom + header）
+function getAllParamValues() {
+  const merged: Record<string, string> = { ...paramValues.value }
+  customParams.value.forEach((p) => {
+    if (p.name) merged[p.name] = p.value
+  })
+  return merged
+}
 </script>
 
 <template>
@@ -111,9 +141,14 @@ const respTabs = ref('body')
     <div v-loading="loading" class="debug-modal-body">
       <!-- 接口信息 -->
       <div v-if="apiInfo" class="debug-info">
-        <span class="api-name">{{ apiInfo.name }}</span>
-        <el-tag :type="methodColors[apiInfo.httpMethod] || 'info'" size="small">{{ apiInfo.httpMethod }}</el-tag>
-        <code class="api-path">{{ apiInfo.path }}</code>
+        <div class="debug-info-title">
+          <span class="api-name">{{ apiInfo.name }}</span>
+          <span v-if="apiInfo.description" class="api-desc">{{ apiInfo.description }}</span>
+        </div>
+        <div class="debug-info-url">
+          <el-tag :type="methodColors[apiInfo.httpMethod] || 'info'" size="small">{{ apiInfo.httpMethod }}</el-tag>
+          <code class="api-path">{{ apiInfo.path }}</code>
+        </div>
       </div>
 
       <!-- 环境选择 -->
@@ -122,7 +157,6 @@ const respTabs = ref('body')
         <el-select v-model="debugEnvId" placeholder="选择环境" style="width: 180px" size="small">
           <el-option v-for="env in environments" :key="env.id" :value="env.id" :label="env.name" />
         </el-select>
-        <el-button type="primary" size="small" :loading="debugLoading" @click="sendDebug">发送请求</el-button>
       </div>
 
       <!-- 双列：左请求 / 右响应 -->
@@ -141,21 +175,63 @@ const respTabs = ref('body')
             </el-table>
           </div>
           <div class="param-section">
-            <div class="param-section-title">Query 参数</div>
+            <div class="param-section-head">
+              <span class="param-section-title">Query 参数</span>
+              <el-button size="small" text type="primary" @click="addCustomParam" style="font-size: 12px;">+ 添加参数</el-button>
+            </div>
             <el-table v-if="queryParams.length" :data="queryParams" size="small" border>
-              <el-table-column prop="name" label="参数名" width="140" />
+              <el-table-column prop="name" label="参数名" width="140">
+                <template #default="{ row }">
+                  <span style="font-family: monospace">{{ row.name }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="类型" width="80">
+                <template #default="{ row }">
+                  <el-tag size="small" type="info" style="font-family: monospace">{{ row.type || 'string' }}</el-tag>
+                </template>
+              </el-table-column>
               <el-table-column label="值">
                 <template #default="{ row }">
-                  <el-input v-model="paramValues[row.name]" size="small" placeholder="值" />
+                  <el-input v-model="paramValues[row.name]" size="small" placeholder="输入值" />
                 </template>
               </el-table-column>
             </el-table>
-            <p v-else class="empty-hint">无 Query 参数</p>
+            <p v-else-if="!customParams.length" class="empty-hint">该接口无 Query 参数</p>
+            <!-- 手动添加的自定义参数 -->
+            <el-table v-if="customParams.length" :data="customParams" size="small" border style="margin-top: 4px">
+              <el-table-column label="参数名" width="140">
+                <template #default="{ row }">
+                  <el-input v-model="row.name" size="small" placeholder="参数名" style="font-family: monospace" />
+                </template>
+              </el-table-column>
+              <el-table-column label="类型" width="80">
+                <template #default="{ row }">
+                  <el-select v-model="row.type" size="small" style="width: 100%">
+                    <el-option value="string" label="string" />
+                    <el-option value="integer" label="integer" />
+                    <el-option value="number" label="number" />
+                    <el-option value="boolean" label="boolean" />
+                  </el-select>
+                </template>
+              </el-table-column>
+              <el-table-column label="值">
+                <template #default="{ $index, row }">
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <el-input v-model="row.value" size="small" placeholder="输入值" />
+                    <el-button link size="small" type="danger" @click="removeCustomParam($index)">✕</el-button>
+                  </div>
+                </template>
+              </el-table-column>
+            </el-table>
           </div>
           <div v-if="headerParams.length" class="param-section">
             <div class="param-section-title">Header</div>
             <el-table :data="headerParams" size="small" border>
-              <el-table-column prop="name" label="参数名" width="160" />
+              <el-table-column prop="name" label="参数名" width="160">
+                <template #default="{ row }">
+                  <span style="font-family: monospace">{{ row.name }}</span>
+                </template>
+              </el-table-column>
               <el-table-column label="值">
                 <template #default="{ row }">
                   <el-input v-model="headerValues[row.name]" size="small" placeholder="值" />
@@ -174,7 +250,7 @@ const respTabs = ref('body')
           <div v-else class="response-result">
             <div class="resp-status-bar">
               <span :class="['resp-code', debugResult.success === 1 ? 'ok' : 'err']">
-                {{ debugResult.success === 1 ? '成功' : '失败' }}
+                {{ debugResult.statusCode || (debugResult.success === 1 ? '200 OK' : 'ERROR') }}
               </span>
               <span v-if="debugResult.responseTimeMs" class="resp-meta">耗时: {{ debugResult.responseTimeMs }}ms</span>
               <span v-if="debugResult.responseSize" class="resp-meta">大小: {{ debugResult.responseSize }}</span>
@@ -182,15 +258,31 @@ const respTabs = ref('body')
             <el-tabs v-model="respTabs" class="resp-tabs">
               <el-tab-pane label="响应体" name="body">
                 <el-input
-                  :model-value="JSON.stringify(debugResult.responseBody ?? debugResult.output ?? debugResult.error ?? '', null, 2)"
+                  :model-value="formatResponseBody(debugResult)"
                   type="textarea" :rows="12" readonly style="font-family: monospace; font-size: 12px"
                 />
               </el-tab-pane>
+              <el-tab-pane label="响应头" name="headers">
+                <el-table v-if="debugResult.responseHeaders" :data="headerEntries" size="small" border style="max-height: 300px; overflow: auto">
+                  <el-table-column prop="key" label="Header" width="180">
+                    <template #default="{ row }">
+                      <span style="font-family: monospace; font-weight: 500">{{ row.key }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="value" label="Value">
+                    <template #default="{ row }">
+                      <span style="font-family: monospace; word-break: break-all">{{ row.value }}</span>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <p v-else class="empty-hint" style="padding: 20px; text-align: center">无响应头信息</p>
+              </el-tab-pane>
               <el-tab-pane label="状态信息" name="status">
                 <el-descriptions :column="1" border size="small">
-                  <el-descriptions-item label="状态码">{{ debugResult.statusCode ?? (debugResult.success === 1 ? '200' : '-') }}</el-descriptions-item>
+                  <el-descriptions-item label="状态码">{{ debugResult.statusCode ?? (debugResult.success === 1 ? '200 OK' : '-') }}</el-descriptions-item>
                   <el-descriptions-item label="响应时间">{{ debugResult.responseTimeMs ?? '-' }} ms</el-descriptions-item>
-                  <el-descriptions-item label="错误信息">{{ debugResult.error || '-' }}</el-descriptions-item>
+                  <el-descriptions-item label="响应大小">{{ debugResult.responseSize ?? '-' }}</el-descriptions-item>
+                  <el-descriptions-item label="协议">{{ debugResult.protocol ?? 'HTTP/1.1' }}</el-descriptions-item>
                 </el-descriptions>
               </el-tab-pane>
             </el-tabs>
@@ -198,6 +290,10 @@ const respTabs = ref('body')
         </div>
       </div>
     </div>
+    <template #footer>
+      <el-button @click="visible = false">关闭</el-button>
+      <el-button type="primary" :loading="debugLoading" @click="sendDebug">发送请求</el-button>
+    </template>
   </el-dialog>
 </template>
 
@@ -206,14 +302,26 @@ const respTabs = ref('body')
   min-height: 400px;
 }
 .debug-info {
+  margin-bottom: 12px;
+}
+.debug-info-title {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
+}
+.debug-info-url {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .api-name {
   font-size: 15px;
   font-weight: 600;
+}
+.api-desc {
+  color: #909399;
+  font-size: 13px;
 }
 .api-path {
   font-size: 13px;
@@ -255,10 +363,15 @@ const respTabs = ref('body')
 .param-section {
   margin-bottom: 16px;
 }
+.param-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
 .param-section-title {
   font-size: 13px;
   font-weight: 600;
-  margin-bottom: 8px;
   color: #606266;
 }
 .empty-hint {
@@ -283,6 +396,7 @@ const respTabs = ref('body')
 }
 .resp-code {
   font-weight: 700;
+  font-size: 15px;
 }
 .resp-code.ok {
   color: #67c23a;

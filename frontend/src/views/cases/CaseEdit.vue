@@ -1,18 +1,20 @@
 <!--
  @author HXN
- @date 2026-08-20 15:34
+ @date 2026-08-23
  @description 测试用例编辑视图
 -->
 <script setup lang="ts">
 /**
  * 测试用例编辑 - M8
- * 基本信息 + 步骤树（JSON）+ Setup/Teardown
+ * Tab 布局：基础信息 / 步骤编排器 / 参数化
+ * 对齐原型 case-edit.html
  */
-import { reactive, ref, onMounted, computed } from 'vue'
+import { reactive, ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getCase, createCase, updateCase } from '@/api/case'
 import { getKeywords } from '@/api/keyword'
+import { getActions } from '@/api/action'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
 
@@ -25,10 +27,25 @@ const querySuiteId = computed(() => Number(route.query.suiteId) || 0)
 const isEdit = computed(() => !!caseId.value)
 const { options: priorityOptions } = useDict('priority')
 
-const keywords = ref<any[]>([])
-const stepMode = ref<'basic' | 'advanced'>('basic')
-const stepsArray = ref<any[]>([])
+// ===== 关键字数据源 =====
+const apiKeywords = ref<any[]>([])
+const toolKeywords = ref<any[]>([])
+const actionKeywords = ref<any[]>([])
 
+async function loadKeywords() {
+  try {
+    const [kwRes, actRes]: any[] = await Promise.all([
+      getKeywords(projectId.value, { pageSize: 1000 }),
+      getActions(projectId.value, { pageSize: 1000 }),
+    ])
+    const allKw = (kwRes.data?.records || kwRes.data || []) as any[]
+    apiKeywords.value = allKw.filter((k: any) => k.type === 'API')
+    toolKeywords.value = allKw.filter((k: any) => k.type === 'TOOL')
+    actionKeywords.value = (actRes.data?.records || actRes.data || []) as any[]
+  } catch { /* ignore */ }
+}
+
+// ===== 表单 =====
 const form = reactive({
   name: '',
   description: '',
@@ -36,63 +53,187 @@ const form = reactive({
   setupSteps: '[]',
   teardownSteps: '[]',
   steps: '[]',
-  priority: 'P2',
+  priority: 'P1',
   timeout: 30,
   suiteId: null as number | null,
+  groupId: null as number | null,
+  tags: '[]',
 })
 
-async function loadKeywords() {
-  try {
-    const res: any = await getKeywords(projectId.value, { pageSize: 1000 })
-    keywords.value = (res.data?.records || res.data || []) as any[]
-  } catch { /* ignore */ }
+// ===== 标签管理 =====
+const tagsList = ref<string[]>([])
+const tagInputVisible = ref(false)
+const tagInputValue = ref('')
+
+function removeTag(index: number) {
+  tagsList.value.splice(index, 1)
+  syncTagsToJson()
 }
 
-function parseStepsToArray() {
-  try {
-    stepsArray.value = JSON.parse(form.steps || '[]')
-  } catch {
-    stepsArray.value = []
+function addTag() {
+  const val = tagInputValue.value.trim()
+  if (val && !tagsList.value.includes(val)) {
+    tagsList.value.push(val)
+    syncTagsToJson()
   }
+  tagInputVisible.value = false
+  tagInputValue.value = ''
+}
+
+function syncTagsToJson() {
+  form.tags = JSON.stringify(tagsList.value)
+}
+
+function parseTagsFromJson() {
+  try {
+    const arr = JSON.parse(form.tags || '[]')
+    tagsList.value = Array.isArray(arr) ? arr : []
+  } catch { tagsList.value = [] }
+}
+
+// ===== Tab 管理 =====
+const activeTab = ref('basic')
+
+// ===== Setup/Teardown 步骤数据 =====
+interface StepItem {
+  stepType: string
+  keywordType?: string
+  keywordId?: number
+  name: string
+}
+
+const setupSteps = ref<StepItem[]>([])
+const teardownSteps = ref<StepItem[]>([])
+
+function parseSetupTeardown() {
+  try { setupSteps.value = JSON.parse(form.setupSteps || '[]') } catch { setupSteps.value = [] }
+  try { teardownSteps.value = JSON.parse(form.teardownSteps || '[]') } catch { teardownSteps.value = [] }
+}
+
+function syncSetupTeardown() {
+  form.setupSteps = JSON.stringify(setupSteps.value)
+  form.teardownSteps = JSON.stringify(teardownSteps.value)
+}
+
+// ===== Setup/Teardown 关键字选择器 =====
+const pickerState = reactive({
+  visible: false,
+  type: '' as 'setup' | 'teardown',
+  tab: 'action' as 'api' | 'tool' | 'action' | 'logic',
+  keyword: '',
+})
+
+const logicTypes = [
+  { type: 'serial', icon: '&#9654;', color: '#52c41a', name: '串行执行', desc: '子节点按顺序依次执行' },
+  { type: 'parallel', icon: '&#10744;', color: '#fa8c16', name: '并行执行', desc: '子节点同时执行' },
+  { type: 'condition', icon: '?', color: '#722ed1', name: '条件判断', desc: '根据表达式判断分支' },
+  { type: 'wait', icon: '&#9201;', color: '#f5222d', name: '等待', desc: '固定等待指定时长' },
+]
+
+function openPicker(type: 'setup' | 'teardown') {
+  pickerState.visible = true
+  pickerState.type = type
+  pickerState.tab = 'action'
+  pickerState.keyword = ''
+}
+
+function closePicker() {
+  pickerState.visible = false
+}
+
+const filteredPickerKeywords = computed(() => {
+  const tab = pickerState.tab
+  const kw = pickerState.keyword.toLowerCase()
+  let source: any[] = []
+  if (tab === 'api') source = apiKeywords.value
+  else if (tab === 'tool') source = toolKeywords.value
+  else if (tab === 'action') source = actionKeywords.value
+  else return []
+  const steps = pickerState.type === 'setup' ? setupSteps.value : teardownSteps.value
+  const usedIds = steps.filter((s) => s.stepType === 'keyword' && s.keywordType === tab).map((s) => s.keywordId)
+  return source.filter((k: any) => {
+    if (usedIds.includes(k.id)) return false
+    if (kw && !k.name.toLowerCase().includes(kw) && !(k.description || '').toLowerCase().includes(kw)) return false
+    return true
+  })
+})
+
+function addKeywordStep(keywordType: string, keywordId: number, name: string) {
+  const steps = pickerState.type === 'setup' ? setupSteps.value : teardownSteps.value
+  steps.push({ stepType: 'keyword', keywordType, keywordId, name })
+  syncSetupTeardown()
+  closePicker()
+}
+
+function addLogicStep(logicType: string) {
+  const lt = logicTypes.find((l) => l.type === logicType)
+  if (!lt) return
+  const targetSteps = pickerState.type === 'setup' ? setupSteps.value : teardownSteps.value
+  const step: StepItem = { stepType: logicType, name: lt.name }
+  if (logicType === 'wait') step.name = '等待 2000ms'
+  if (logicType === 'condition') step.name = '条件判断'
+  targetSteps.push(step)
+  syncSetupTeardown()
+  closePicker()
+}
+
+function removeSTStep(type: 'setup' | 'teardown', index: number) {
+  const steps = type === 'setup' ? setupSteps.value : teardownSteps.value
+  steps.splice(index, 1)
+  syncSetupTeardown()
+}
+
+// ===== 步骤编排器（主画布）=====
+const stepsArray = ref<any[]>([])
+const selectedStepIndex = ref<number>(-1)
+const stepMode = ref<'basic' | 'advanced'>('basic')
+
+function parseStepsToArray() {
+  try { stepsArray.value = JSON.parse(form.steps || '[]') } catch { stepsArray.value = [] }
 }
 
 function syncStepsToJson() {
   form.steps = JSON.stringify(stepsArray.value, null, 2)
 }
 
-function addStep() {
+function addCanvasStep() {
   stepsArray.value.push({ keywordId: null, name: '', params: {}, assertions: [] })
   syncStepsToJson()
 }
 
-function removeStep(index: number) {
+function removeCanvasStep(index: number) {
   stepsArray.value.splice(index, 1)
+  if (selectedStepIndex.value === index) selectedStepIndex.value = -1
   syncStepsToJson()
 }
 
-function moveStep(index: number, direction: 'up' | 'down') {
-  if (direction === 'up' && index > 0) {
-    [stepsArray.value[index - 1], stepsArray.value[index]] = [stepsArray.value[index], stepsArray.value[index - 1]]
-  } else if (direction === 'down' && index < stepsArray.value.length - 1) {
-    [stepsArray.value[index + 1], stepsArray.value[index]] = [stepsArray.value[index], stepsArray.value[index + 1]]
-  }
-  syncStepsToJson()
+function selectCanvasStep(index: number) {
+  selectedStepIndex.value = index
 }
 
-function onStepChange() {
-  syncStepsToJson()
+// ===== 参数化 =====
+const dataDriven = ref(false)
+const paramMode = ref<'manual' | 'csv'>('manual')
+const paramHeaders = ref<string[]>(['param1', 'param2', 'param3'])
+const paramRows = ref<string[][]>([
+  ['', '', ''],
+])
+
+function addParamRow() {
+  paramRows.value.push(new Array(paramHeaders.value.length).fill(''))
 }
 
-function switchToAdvanced() {
-  syncStepsToJson()
-  stepMode.value = 'advanced'
+function removeParamRow(index: number) {
+  paramRows.value.splice(index, 1)
 }
 
-function switchToBasic() {
-  parseStepsToArray()
-  stepMode.value = 'basic'
+function addParamColumn() {
+  const name = `param${paramHeaders.value.length + 1}`
+  paramHeaders.value.push(name)
+  paramRows.value.forEach((row) => row.push(''))
 }
 
+// ===== 加载用例 =====
 async function loadCase() {
   if (!caseId.value) return
   try {
@@ -105,63 +246,94 @@ async function loadCase() {
       setupSteps: c.setupSteps || '[]',
       teardownSteps: c.teardownSteps || '[]',
       steps: c.steps || '[]',
-      priority: c.priority || 'P2',
+      priority: c.priority || 'P1',
       timeout: c.timeout || 30,
       suiteId: c.suiteId || null,
+      groupId: c.groupId || null,
+      tags: c.tags || '[]',
     })
+    parseTagsFromJson()
     parseStepsToArray()
+    parseSetupTeardown()
   } catch { ElMessage.error('加载用例失败') }
 }
 
+function initCreateMode() {
+  form.name = ''
+  form.description = ''
+  form.preconditions = ''
+  form.priority = 'P1'
+  form.timeout = 30
+  form.steps = '[]'
+  form.setupSteps = '[]'
+  form.teardownSteps = '[]'
+  form.tags = '[]'
+  tagsList.value = []
+  stepsArray.value = []
+  setupSteps.value = []
+  teardownSteps.value = []
+}
+
+// ===== 格式化 =====
 function formatJson(field: 'setupSteps' | 'teardownSteps' | 'steps') {
   try {
-    form[field] = JSON.stringify(JSON.parse(form[field] || '[]'), null, 2)
-  } catch {
-    ElMessage.warning('JSON 格式错误，无法格式化')
-  }
+    (form as any)[field] = JSON.stringify(JSON.parse((form as any)[field] || '[]'), null, 2)
+  } catch { ElMessage.warning('JSON 格式错误，无法格式化') }
 }
 
 function validateJson(): boolean {
   for (const f of ['setupSteps', 'teardownSteps', 'steps'] as const) {
-    try {
-      JSON.parse(form[f] || '[]')
-    } catch {
-      ElMessage.warning(`${f} 不是有效的 JSON`)
-      return false
-    }
+    try { JSON.parse(form[f] || '[]') } catch { ElMessage.warning(`${f} 不是有效的 JSON`); return false }
   }
   return true
 }
 
+// ===== 保存 =====
 async function handleSave() {
   if (!form.name) { ElMessage.warning('请输入用例名称'); return }
-  // 基础模式下同步步骤到 JSON
   if (stepMode.value === 'basic') syncStepsToJson()
+  syncSetupTeardown()
+  syncTagsToJson()
   if (!validateJson()) return
   try {
     if (isEdit.value) {
       await updateCase(projectId.value, caseId.value, {
         name: form.name, description: form.description, preconditions: form.preconditions,
         setupSteps: form.setupSteps, teardownSteps: form.teardownSteps, steps: form.steps,
-        priority: form.priority, timeout: form.timeout,
+        priority: form.priority, timeout: form.timeout, groupId: form.groupId, tags: form.tags,
       })
       ElMessage.success('保存成功')
     } else {
       await createCase(projectId.value, {
-        ...form,
-        suiteId: querySuiteId.value || form.suiteId,
+        ...form, suiteId: querySuiteId.value || form.suiteId,
       })
       ElMessage.success('创建成功')
       router.push(`/project/${projectId}/cases?suiteId=${querySuiteId.value}`)
     }
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || '保存失败')
-  }
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '保存失败') }
 }
 
+// ===== ST 折叠 =====
+const setupOpen = ref(true)
+const teardownOpen = ref(false)
+
+// ===== 生命周期 =====
 onMounted(() => {
   loadKeywords()
-  if (isEdit.value) loadCase()
+  if (isEdit.value) {
+    loadCase()
+  } else {
+    initCreateMode()
+  }
+  // 恢复 Tab
+  const hash = (location.hash || '').replace(/^#/, '')
+  if (['basic', 'orchestrator', 'params'].includes(hash)) {
+    activeTab.value = hash
+  }
+})
+
+watch(activeTab, (v) => {
+  if (location.hash !== '#' + v) history.replaceState(null, '', '#' + v)
 })
 </script>
 
@@ -175,110 +347,487 @@ onMounted(() => {
       </div>
     </div>
 
-    <el-row :gutter="16">
-      <el-col :span="10">
-        <el-card>
-          <template #header><span>基本信息</span></template>
-          <el-form label-position="top">
-            <el-form-item label="用例名称" required>
-              <el-input v-model="form.name" />
-            </el-form-item>
-            <el-form-item label="描述">
-              <el-input v-model="form.description" type="textarea" :rows="2" />
-            </el-form-item>
-            <el-form-item label="前置条件">
-              <el-input v-model="form.preconditions" type="textarea" :rows="3" />
-            </el-form-item>
-            <el-row :gutter="12">
-              <el-col :span="12">
-                <el-form-item label="优先级">
-                  <el-select v-model="form.priority" style="width:100%">
-                    <el-option v-for="p in priorityOptions" :key="p.value" :value="p.value" :label="p.label" />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item label="超时(秒)">
-                  <el-input-number v-model="form.timeout" :min="1" :max="3600" style="width:100%" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-          </el-form>
+    <el-tabs v-model="activeTab" type="card">
+      <!-- ====== Tab: 基础信息 ====== -->
+      <el-tab-pane label="基础信息" name="basic">
+        <el-card style="margin-bottom:12px">
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="用例名称" required>
+                <el-input v-model="form.name" placeholder="请输入用例名称" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="4">
+              <el-form-item label="优先级">
+                <el-select v-model="form.priority" style="width:100%">
+                  <el-option v-for="p in priorityOptions" :key="p.value" :value="p.value" :label="p.label" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="标签">
+                <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+                  <el-tag
+                    v-for="(tag, i) in tagsList" :key="i" closable size="default"
+                    @close="removeTag(i)"
+                  >{{ tag }}</el-tag>
+                  <el-input
+                    v-if="tagInputVisible"
+                    v-model="tagInputValue"
+                    size="small" style="width:80px"
+                    @keyup.enter="addTag" @blur="addTag"
+                  />
+                  <el-button v-else size="small" @click="tagInputVisible = true">+</el-button>
+                </div>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row>
+            <el-col :span="24">
+              <el-form-item label="前置条件">
+                <el-input v-model="form.preconditions" placeholder="可选，描述用例执行的前置条件" />
+              </el-form-item>
+            </el-col>
+          </el-row>
         </el-card>
-      </el-col>
+      </el-tab-pane>
 
-      <el-col :span="14">
-        <el-card>
+      <!-- ====== Tab: 步骤编排器 ====== -->
+      <el-tab-pane label="步骤编排器" name="orchestrator">
+        <el-card style="margin-bottom:12px">
           <template #header>
             <div style="display:flex;justify-content:space-between;align-items:center">
-              <span>步骤树</span>
-              <div style="display:flex;gap:8px">
-                <el-radio-group v-model="stepMode" size="small" @change="stepMode === 'basic' ? switchToBasic() : switchToAdvanced()">
-                  <el-radio-button value="basic">基础模式</el-radio-button>
-                  <el-radio-button value="advanced">高级模式</el-radio-button>
-                </el-radio-group>
-              </div>
+              <span>步骤编排器</span>
+              <el-radio-group v-model="stepMode" size="small" @change="stepMode === 'basic' ? parseStepsToArray() : syncStepsToJson()">
+                <el-radio-button value="basic">基础模式</el-radio-button>
+                <el-radio-button value="advanced">高级模式</el-radio-button>
+              </el-radio-group>
             </div>
           </template>
 
-          <!-- 基础模式：步骤列表 -->
-          <div v-if="stepMode === 'basic'">
-            <div v-if="stepsArray.length === 0" style="text-align:center;padding:20px;color:#909399">
-              暂无步骤，点击下方按钮添加
+          <!-- Test Setup -->
+          <div class="st-section">
+            <div class="st-section-header" @click="setupOpen = !setupOpen">
+              <span>
+                <span style="color:#52c41a;margin-right:4px">&#9654;</span>
+                Test Setup
+                <span style="font-size:12px;color:#909399;font-weight:400;margin-left:8px">用例执行前调用的关键字序列</span>
+              </span>
+              <span class="st-arrow" :style="{ transform: setupOpen ? 'rotate(90deg)' : '' }">&#9654;</span>
             </div>
-            <div v-for="(step, idx) in stepsArray" :key="idx"
-              style="border:1px solid #ebeef5;border-radius:4px;padding:12px;margin-bottom:8px">
-              <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-                <el-tag size="small" type="info">{{ idx + 1 }}</el-tag>
-                <el-select v-model="step.keywordId" placeholder="选择关键字" filterable
-                  style="width:200px" @change="onStepChange">
-                  <el-option v-for="kw in keywords" :key="kw.id" :value="kw.id" :label="kw.name" />
-                </el-select>
-                <el-input v-model="step.name" placeholder="步骤名称" style="flex:1" @input="onStepChange" />
-                <el-button-group>
-                  <el-button size="small" :disabled="idx === 0" @click="moveStep(idx, 'up')">↑</el-button>
-                  <el-button size="small" :disabled="idx === stepsArray.length - 1" @click="moveStep(idx, 'down')">↓</el-button>
-                  <el-button size="small" type="danger" @click="removeStep(idx)">删除</el-button>
-                </el-button-group>
+            <div v-show="setupOpen" class="st-section-body">
+              <div class="st-tags-row">
+                <span v-for="(step, idx) in setupSteps" :key="idx" class="st-step-tag">
+                  <span v-if="step.stepType === 'keyword'" style="color:#1890ff;font-weight:600">K</span>
+                  <span v-else style="font-weight:600">L</span>
+                  {{ step.name }}
+                  <span class="st-remove" @click="removeSTStep('setup', idx)">&#10005;</span>
+                </span>
+                <span v-if="setupSteps.length === 0" class="st-empty">暂无 Setup 步骤</span>
+                <el-button size="small" type="primary" link @click="openPicker('setup')">+ 添加步骤</el-button>
               </div>
-              <el-input v-model="step.params" placeholder='参数 JSON（可选）'
-                type="textarea" :rows="2" style="font-family:monospace;font-size:12px"
-                @input="onStepChange" />
             </div>
-            <el-button type="primary" plain style="width:100%" @click="addStep">+ 添加步骤</el-button>
+          </div>
+
+          <!-- 主编排器 -->
+          <div v-if="stepMode === 'basic'" class="orchestrator">
+            <!-- 左侧步骤类型 -->
+            <div class="node-panel">
+              <h4 style="font-size:12px;color:#909399;margin-bottom:8px">步骤类型</h4>
+              <div class="node-drag" @click="addCanvasStep()">
+                <div class="nd-icon" style="background:#e6f7ff;color:#1890ff">K</div> 关键字步骤
+              </div>
+              <div class="node-drag">
+                <div class="nd-icon" style="background:#f6ffed;color:#52c41a">&#9654;</div> 串行步骤
+              </div>
+              <div class="node-drag">
+                <div class="nd-icon" style="background:#fff7e6;color:#fa8c16">&#10744;</div> 并行步骤
+              </div>
+              <div class="node-drag">
+                <div class="nd-icon" style="background:#f9f0ff;color:#722ed1">?</div> 条件步骤
+              </div>
+              <div class="node-drag">
+                <div class="nd-icon" style="background:#fff1f0;color:#f5222d">&#9201;</div> 等待步骤
+              </div>
+            </div>
+
+            <!-- 中间画布 -->
+            <div class="canvas">
+              <div v-if="stepsArray.length === 0" style="text-align:center;color:#c0c4cc;padding:80px 20px;font-size:13px">
+                点击左侧步骤类型添加到编排画布
+              </div>
+              <div
+                v-for="(step, idx) in stepsArray" :key="idx"
+                :class="['step-node', { selected: selectedStepIndex === idx }]"
+                @click="selectCanvasStep(idx)"
+              >
+                <span style="color:#1890ff">K</span>
+                <span style="flex:1">{{ step.name || `步骤 ${idx + 1}` }}</span>
+                <el-tag size="small" type="info" style="margin-left:auto;font-size:10px">关键字</el-tag>
+                <el-button type="danger" link size="small" style="margin-left:8px" @click.stop="removeCanvasStep(idx)">删除</el-button>
+              </div>
+            </div>
+
+            <!-- 右侧属性面板 -->
+            <div class="prop-panel">
+              <template v-if="selectedStepIndex >= 0 && stepsArray[selectedStepIndex]">
+                <h4 style="font-size:12px;font-weight:600;margin-bottom:8px">
+                  步骤属性：{{ stepsArray[selectedStepIndex].name || `步骤 ${selectedStepIndex + 1}` }}
+                </h4>
+                <el-form label-position="top" size="small">
+                  <el-form-item label="步骤名称">
+                    <el-input v-model="stepsArray[selectedStepIndex].name" @input="syncStepsToJson" />
+                  </el-form-item>
+                  <el-form-item label="关键字">
+                    <el-select v-model="stepsArray[selectedStepIndex].keywordId" placeholder="选择关键字" filterable style="width:100%" @change="syncStepsToJson">
+                      <el-option v-for="kw in [...apiKeywords, ...toolKeywords, ...actionKeywords]" :key="kw.id" :value="kw.id" :label="kw.name" />
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item label="参数 (JSON)">
+                    <el-input
+                      :model-value="typeof stepsArray[selectedStepIndex].params === 'string' ? stepsArray[selectedStepIndex].params : JSON.stringify(stepsArray[selectedStepIndex].params || {}, null, 2)"
+                      type="textarea" :rows="4" style="font-family:monospace;font-size:12px"
+                      @input="(v: string) => { try { stepsArray[selectedStepIndex].params = JSON.parse(v); syncStepsToJson() } catch {} }"
+                    />
+                  </el-form-item>
+                  <el-form-item label="save_as">
+                    <el-input v-model="stepsArray[selectedStepIndex].saveAs" placeholder="变量名" @input="syncStepsToJson" />
+                  </el-form-item>
+                </el-form>
+                <el-divider style="margin:8px 0" />
+                <h4 style="font-size:12px;font-weight:600;margin-bottom:8px">校验配置</h4>
+                <el-form label-position="top" size="small">
+                  <el-form-item label="状态码断言">
+                    <el-input v-model="stepsArray[selectedStepIndex].statusCode" placeholder="如 200" @input="syncStepsToJson" />
+                  </el-form-item>
+                </el-form>
+              </template>
+              <div v-else style="text-align:center;color:#c0c4cc;padding:40px 10px;font-size:12px">
+                选中步骤后在此处配置属性
+              </div>
+            </div>
           </div>
 
           <!-- 高级模式：JSON 编辑器 -->
           <div v-else>
             <div style="color:#909399;font-size:12px;margin-bottom:6px">
-              JSON 数组，每个元素为一个关键字步骤，例如：
-              <code>{ "keywordId": "xxx", "name": "步骤名", "params": {}, "assertions": [] }</code>
+              JSON 数组格式，每个元素为一个步骤对象
             </div>
-            <el-input v-model="form.steps" type="textarea" :rows="22" style="font-family:monospace;font-size:12px" />
+            <el-input v-model="form.steps" type="textarea" :rows="20" style="font-family:monospace;font-size:12px" />
             <el-button size="small" style="margin-top:4px" @click="formatJson('steps')">格式化</el-button>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
 
-    <el-card style="margin-top:16px">
-      <template #header><span>Setup / Teardown 步骤树</span></template>
-      <el-row :gutter="16">
-        <el-col :span="12">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <span style="font-weight:600">Setup</span>
-            <el-button size="small" @click="formatJson('setupSteps')">格式化</el-button>
+          <!-- Test Teardown -->
+          <div class="st-section" style="border-top:1px solid #ebeef5">
+            <div class="st-section-header" @click="teardownOpen = !teardownOpen">
+              <span>
+                <span style="color:#f5222d;margin-right:4px">&#9632;</span>
+                Test Teardown
+                <span style="font-size:12px;color:#909399;font-weight:400;margin-left:8px">用例执行后调用的清理关键字序列</span>
+              </span>
+              <span class="st-arrow" :style="{ transform: teardownOpen ? 'rotate(90deg)' : '' }">&#9654;</span>
+            </div>
+            <div v-show="teardownOpen" class="st-section-body">
+              <div class="st-tags-row">
+                <span v-for="(step, idx) in teardownSteps" :key="idx" class="st-step-tag">
+                  <span v-if="step.stepType === 'keyword'" style="color:#1890ff;font-weight:600">K</span>
+                  <span v-else style="font-weight:600">L</span>
+                  {{ step.name }}
+                  <span class="st-remove" @click="removeSTStep('teardown', idx)">&#10005;</span>
+                </span>
+                <span v-if="teardownSteps.length === 0" class="st-empty">暂无 Teardown 步骤</span>
+                <el-button size="small" type="primary" link @click="openPicker('teardown')">+ 添加步骤</el-button>
+              </div>
+            </div>
           </div>
-          <el-input v-model="form.setupSteps" type="textarea" :rows="8" style="font-family:monospace;font-size:12px" />
-        </el-col>
-        <el-col :span="12">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <span style="font-weight:600">Teardown</span>
-            <el-button size="small" @click="formatJson('teardownSteps')">格式化</el-button>
+        </el-card>
+      </el-tab-pane>
+
+      <!-- ====== Tab: 参数化 ====== -->
+      <el-tab-pane label="参数化" name="params">
+        <el-card>
+          <template #header>
+            <div style="display:flex;align-items:center;gap:12px">
+              <span>参数化</span>
+              <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;color:#606266">
+                数据驱动：<el-switch v-model="dataDriven" size="small" />
+              </span>
+            </div>
+          </template>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <el-radio-group v-model="paramMode" size="small">
+              <el-radio-button value="manual">手动输入</el-radio-button>
+              <el-radio-button value="csv">CSV 导入</el-radio-button>
+            </el-radio-group>
           </div>
-          <el-input v-model="form.teardownSteps" type="textarea" :rows="8" style="font-family:monospace;font-size:12px" />
-        </el-col>
-      </el-row>
-    </el-card>
+          <div v-if="paramMode === 'manual'">
+            <el-table :data="paramRows" border size="small" style="width:100%">
+              <el-table-column label="#" width="50">
+                <template #default="{ $index }">{{ $index + 1 }}</template>
+              </el-table-column>
+              <el-table-column v-for="(header, ci) in paramHeaders" :key="ci" :label="header" min-width="150">
+                <template #default="{ row }">
+                  <el-input v-model="row[ci]" size="small" style="font-size:12px" />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="60">
+                <template #default="{ $index }">
+                  <el-button type="danger" link size="small" @click="removeParamRow($index)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <el-button size="small" @click="addParamRow">+ 添加数据行</el-button>
+              <el-button size="small" @click="addParamColumn">+ 添加参数列</el-button>
+            </div>
+          </div>
+          <div v-else style="text-align:center;padding:40px;color:#c0c4cc">
+            CSV 导入功能：请选择 CSV 文件（功能开发中）
+          </div>
+        </el-card>
+      </el-tab-pane>
+    </el-tabs>
+
+    <!-- 关键字选择器弹窗 -->
+    <Teleport to="body">
+      <div v-if="pickerState.visible" class="picker-overlay" @click.self="closePicker">
+        <div class="picker-dialog">
+          <div class="picker-tabs">
+            <div
+              v-for="tab in [
+                { key: 'api', label: '接口关键字' },
+                { key: 'tool', label: '工具方法' },
+                { key: 'action', label: 'Action关键字' },
+                { key: 'logic', label: '逻辑控制' },
+              ]" :key="tab.key"
+              :class="['picker-tab', { active: pickerState.tab === tab.key }]"
+              @click="pickerState.tab = tab.key as any; pickerState.keyword = ''"
+            >{{ tab.label }}</div>
+          </div>
+          <div v-if="pickerState.tab !== 'logic'" class="picker-search">
+            <el-input v-model="pickerState.keyword" size="small" placeholder="搜索关键字..." clearable />
+          </div>
+          <div class="picker-body">
+            <template v-if="pickerState.tab !== 'logic'">
+              <div v-if="filteredPickerKeywords.length === 0" class="picker-empty">无匹配的关键字</div>
+              <div
+                v-for="kw in filteredPickerKeywords" :key="kw.id"
+                class="picker-item"
+                @click="addKeywordStep(pickerState.tab, kw.id, kw.name)"
+              >
+                <span class="pi-icon">{{ pickerState.tab === 'api' ? 'A' : pickerState.tab === 'tool' ? 'T' : 'A' }}</span>
+                <span class="pi-name">{{ kw.name }}</span>
+                <span class="pi-desc">{{ kw.description || '' }}</span>
+              </div>
+            </template>
+            <template v-else>
+              <div
+                v-for="lt in logicTypes" :key="lt.type"
+                class="picker-item"
+                @click="addLogicStep(lt.type)"
+              >
+                <span class="pi-icon" :style="{ background: lt.color + '15', color: lt.color }" v-html="lt.icon"></span>
+                <span class="pi-name">{{ lt.name }}</span>
+                <span class="pi-desc">{{ lt.desc }}</span>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
+
+<style scoped>
+/* ST 折叠区域 */
+.st-section {
+  background: #fafbfc;
+  border-bottom: 1px solid #ebeef5;
+}
+.st-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #606266;
+  user-select: none;
+}
+.st-section-header:hover { background: #f5f7fa; }
+.st-arrow {
+  font-size: 10px;
+  color: #c0c4cc;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.st-section-body {
+  padding: 8px 12px 10px;
+  border-top: 1px solid #ebeef5;
+}
+.st-tags-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.st-step-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: #fff;
+  border: 1px solid #dcdfe6;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: default;
+}
+.st-step-tag .st-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  font-size: 9px;
+  color: #c0c4cc;
+  cursor: pointer;
+  margin-left: 4px;
+  transition: all 0.15s;
+}
+.st-step-tag .st-remove:hover { background: #f56c6c; color: #fff; }
+.st-empty { font-size: 12px; color: #c0c4cc; }
+
+/* 编排器三栏 */
+.orchestrator {
+  display: flex;
+  height: 400px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+.node-panel {
+  width: 170px;
+  background: #fafafa;
+  border-right: 1px solid #ebeef5;
+  padding: 10px;
+  overflow-y: auto;
+}
+.node-drag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: border-color 0.15s;
+}
+.node-drag:hover { border-color: #409eff; }
+.nd-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+.canvas {
+  flex: 1;
+  background: #fff;
+  padding: 12px;
+  overflow: auto;
+}
+.step-node {
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.step-node:hover { border-color: #409eff; background: #ecf5ff; }
+.step-node.selected { border-color: #409eff; background: #ecf5ff; }
+.prop-panel {
+  width: 260px;
+  border-left: 1px solid #ebeef5;
+  background: #fff;
+  overflow-y: auto;
+  padding: 10px;
+}
+.prop-panel h4 { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+.prop-panel :deep(.el-form-item) { margin-bottom: 8px; }
+.prop-panel :deep(.el-form-item__label) { font-size: 11px; margin-bottom: 2px; }
+
+/* 关键字选择器弹窗 */
+.picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.picker-dialog {
+  width: 380px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+.picker-tabs {
+  display: flex;
+  border-bottom: 1px solid #ebeef5;
+}
+.picker-tab {
+  padding: 8px 14px;
+  font-size: 12px;
+  color: #909399;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.picker-tab:hover { color: #303133; }
+.picker-tab.active { color: #409eff; border-bottom-color: #409eff; font-weight: 500; }
+.picker-search { padding: 8px; border-bottom: 1px solid #ebeef5; }
+.picker-body { max-height: 280px; overflow-y: auto; }
+.picker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.picker-item:hover { background: #ecf5ff; }
+.pi-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: #ecf5ff;
+  color: #409eff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.pi-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pi-desc { font-size: 11px; color: #c0c4cc; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.picker-empty { padding: 24px; text-align: center; font-size: 12px; color: #c0c4cc; }
+</style>

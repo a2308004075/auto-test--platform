@@ -30,15 +30,18 @@ public class CaseController {
     private final CaseService caseService;
 
     /**
-     * 分页查询测试用例（支持按套件筛选）
+     * 分页查询测试用例（支持按套件、分组、优先级、状态筛选）
      */
     @GetMapping
     public ApiResponse<PageResponse<CaseResponse>> list(@PathVariable Long projectId,
                                                          @RequestParam(required = false) Long suiteId,
+                                                         @RequestParam(required = false) Long groupId,
                                                          @RequestParam(required = false) String keyword,
+                                                         @RequestParam(required = false) String priority,
+                                                         @RequestParam(required = false) String status,
                                                          @RequestParam(defaultValue = "1") int page,
                                                          @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.ok(caseService.listCases(suiteId, keyword, page, pageSize));
+        return ApiResponse.ok(caseService.listCases(suiteId, groupId, keyword, priority, status, page, pageSize));
     }
 
     /**

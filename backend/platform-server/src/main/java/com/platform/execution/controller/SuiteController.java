@@ -10,6 +10,7 @@ import com.platform.common.response.PageResponse;
 import com.platform.execution.dto.SuiteCaseLifecycleDTO;
 import com.platform.execution.dto.SuiteCaseLifecycleSaveRequest;
 import com.platform.execution.dto.SuiteCreateRequest;
+import com.platform.execution.dto.SuitePassRateDTO;
 import com.platform.execution.dto.SuiteResponse;
 import com.platform.execution.dto.SuiteUpdateRequest;
 import com.platform.execution.service.SuiteCaseLifecycleService;
@@ -33,13 +34,16 @@ public class SuiteController {
 
     /**
      * 分页查询测试套件
+     *
+     * @param groupId 分组 ID（null 不过滤；-1 表示未分组）
      */
     @GetMapping
     public ApiResponse<PageResponse<SuiteResponse>> list(@PathVariable Long projectId,
                                                          @RequestParam(required = false) String keyword,
+                                                         @RequestParam(required = false) Long groupId,
                                                          @RequestParam(defaultValue = "1") int page,
                                                          @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.ok(suiteService.listSuites(projectId, keyword, page, pageSize));
+        return ApiResponse.ok(suiteService.listSuites(projectId, keyword, groupId, page, pageSize));
     }
 
     /**
@@ -81,6 +85,25 @@ public class SuiteController {
     }
 
     /**
+     * 批量查询套件通过率
+     */
+    @PostMapping("/pass-rates")
+    public ApiResponse<List<SuitePassRateDTO>> getPassRates(@PathVariable Long projectId,
+                                                             @RequestBody List<Long> suiteIds) {
+        return ApiResponse.ok(suiteService.getPassRates(projectId, suiteIds));
+    }
+
+    /**
+     * 批量修改套件分组
+     */
+    @PostMapping("/batch-group")
+    public ApiResponse<Void> batchUpdateGroup(@PathVariable Long projectId,
+                                               @RequestBody BatchGroupRequest request) {
+        suiteService.batchUpdateGroup(request.getSuiteIds(), request.getGroupId());
+        return ApiResponse.ok();
+    }
+
+    /**
      * 查询套件内用例级生命周期配置
      */
     @GetMapping("/{suiteId}/lifecycle")
@@ -98,5 +121,14 @@ public class SuiteController {
                                             @RequestBody SuiteCaseLifecycleSaveRequest request) {
         suiteCaseLifecycleService.saveLifecycle(suiteId, request);
         return ApiResponse.ok();
+    }
+
+    /**
+     * 批量修改分组请求体
+     */
+    @lombok.Data
+    public static class BatchGroupRequest {
+        private List<Long> suiteIds;
+        private Long groupId;
     }
 }

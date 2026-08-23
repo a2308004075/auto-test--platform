@@ -37,4 +37,14 @@ public class CaseUpdateRequest implements Serializable {
     private Integer timeout;
 
     private Integer isActive;
+
+    /**
+     * 所属分组 ID
+     */
+    private Long groupId;
+
+    /**
+     * 标签列表（JSON）
+     */
+    private String tags;
 }

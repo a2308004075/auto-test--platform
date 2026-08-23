@@ -141,11 +141,14 @@ onMounted(fetchDetail)
           <tbody>
             <tr v-for="(row, index) in variables" :key="index" class="var-row">
               <td>
-                <input
-                  v-model="row.varKey"
-                  class="var-input"
-                  placeholder="变量名"
-                />
+                <div class="key-cell">
+                  <span class="required-dot" title="必填"></span>
+                  <input
+                    v-model="row.varKey"
+                    class="var-input"
+                    placeholder="变量名"
+                  />
+                </div>
               </td>
               <td>
                 <input
@@ -301,6 +304,20 @@ onMounted(fetchDetail)
 
 .var-row:hover {
   background: #fafafa;
+}
+
+.key-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.key-cell .required-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff4d4f;
+  flex-shrink: 0;
 }
 
 .var-input {

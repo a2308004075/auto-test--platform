@@ -1,168 +1,476 @@
 <!--
  @author HXN
- @date 2026-08-20 15:34
- @description 工具方法列表视图
+ @date 2026-08-23
+ @description 工具方法列表视图（对齐原型 tool-list.html）
 -->
 <script setup lang="ts">
 /**
  * 工具方法列表 - M6
+ * 左侧分组树（按 category 动态构建）+ 右侧高级搜索 + 批量操作 + 表字段调整 + 智能分页
+ * 对齐原型 tool-list.html
  */
-import { ref, reactive, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTools, createTool, updateTool, deleteTool, testTool } from '@/api/tool'
+import { getTools, deleteTool, testTool } from '@/api/tool'
+import PageHeader from '@/components/PageHeader/index.vue'
+import ProSearchCard from '@/components/ProSearchCard/index.vue'
+import BatchBar from '@/components/BatchBar/index.vue'
+import ColumnSettings, { type ColumnItem } from '@/components/ColumnSettings/index.vue'
+import ProPagination from '@/components/ProPagination/index.vue'
 import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
+const router = useRouter()
 const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 
+// ===== 全量数据（用于构建分组树和客户端筛选） =====
+const allTools = ref<any[]>([])
 const loading = ref(false)
-const list = ref<any[]>([])
-const category = ref('')
 const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
-const modalVisible = ref(false)
-const testVisible = ref(false)
-const testResult = ref<any>(null)
-const testLoading = ref(false)
-const editingId = ref<number>(0)
-const form = reactive({ name: '', category: 'CUSTOM', description: '', code: 'return "Hello"', returnType: 'String', paramDefinitions: '[]' })
-const testInput = ref('{}')
-const currentTestId = ref<number>(0)
+const selectedRows = ref<any[]>([])
 
-async function fetchList() {
+// ===== 搜索条件 =====
+const search = reactive({ keyword: '', description: '' })
+
+// ===== 分组树（按 category 动态构建） =====
+const activeCategory = ref('ALL')
+
+const categoryTree = computed(() => {
+  const categories = new Map<string, number>()
+  let ungroupedCount = 0
+  allTools.value.forEach((t) => {
+    const cat = t.category
+    if (!cat || cat === 'CUSTOM' || cat === 'BUILTIN') {
+      ungroupedCount++
+    } else {
+      categories.set(cat, (categories.get(cat) || 0) + 1)
+    }
+  })
+  return [
+    { id: 'ALL', name: '全部', count: allTools.value.length, isSystem: true },
+    { id: 'UNGROUPED', name: '未分组', count: ungroupedCount, isSystem: true },
+    ...Array.from(categories.entries()).map(([name, count]) => ({
+      id: name, name, count, isSystem: false,
+    })),
+  ]
+})
+
+function onCategoryClick(node: any) {
+  activeCategory.value = node.id
+  pagination.current = 1
+}
+
+// ===== 客户端筛选 + 分页 =====
+const filteredList = computed(() => {
+  let result = allTools.value
+  if (activeCategory.value === 'UNGROUPED') {
+    result = result.filter((t) => !t.category || t.category === 'CUSTOM' || t.category === 'BUILTIN')
+  } else if (activeCategory.value !== 'ALL') {
+    result = result.filter((t) => t.category === activeCategory.value)
+  }
+  const kw = search.keyword.trim().toLowerCase()
+  const desc = search.description.trim().toLowerCase()
+  if (kw) result = result.filter((t) => t.name?.toLowerCase().includes(kw))
+  if (desc) result = result.filter((t) => t.description?.toLowerCase().includes(desc))
+  return result
+})
+
+const pagedList = computed(() => {
+  const start = (pagination.current - 1) * pagination.pageSize
+  return filteredList.value.slice(start, start + pagination.pageSize)
+})
+
+watch(filteredList, () => {
+  pagination.total = filteredList.value.length
+  const maxPage = Math.ceil(pagination.total / pagination.pageSize) || 1
+  if (pagination.current > maxPage) {
+    pagination.current = 1
+  }
+}, { immediate: true })
+
+function handleSearch() { pagination.current = 1 }
+function handleReset() {
+  Object.assign(search, { keyword: '', description: '' })
+  activeCategory.value = 'ALL'
+  pagination.current = 1
+}
+
+// ===== 加载数据 =====
+async function fetchAllTools() {
   loading.value = true
   try {
-    const res: any = await getTools(projectId.value, {
-      category: category.value || undefined, page: pagination.current, pageSize: pagination.pageSize,
-    })
-    list.value = res.data?.items || []
-    pagination.total = res.data?.total || 0
-  } catch { list.value = [] } finally { loading.value = false }
+    const res: any = await getTools(projectId.value, { page: 1, pageSize: 10000 })
+    allTools.value = res.data?.items || []
+  } catch { allTools.value = [] } finally { loading.value = false }
 }
 
-function openCreate() {
-  editingId.value = 0
-  Object.assign(form, { name: '', category: 'CUSTOM', description: '', code: 'return "Hello"', returnType: 'String', paramDefinitions: '[]' })
-  modalVisible.value = true
+// ===== 批量操作 =====
+const selectedIds = computed(() => selectedRows.value.map((r: any) => r.id))
+function handleSelectionChange(rows: any[]) { selectedRows.value = rows }
+function clearSelection() { selectedRows.value = [] }
+function handleBatchAction(key: string) {
+  if (key === 'delete') handleBatchDelete()
 }
-
-function openEdit(record: any) {
-  editingId.value = record.id
-  Object.assign(form, { name: record.name, category: record.category, description: record.description || '', code: record.code || '', returnType: record.returnType || '', paramDefinitions: record.paramDefinitions || '[]' })
-  modalVisible.value = true
-}
-
-async function handleSubmit() {
-  if (!form.name || !form.code) { ElMessage.warning('请填写必填项'); return }
-  try {
-    if (editingId.value) {
-      await updateTool(projectId.value, editingId.value, form)
-      ElMessage.success('更新成功')
-    } else {
-      await createTool(projectId.value, { ...form, projectId: projectId.value })
-      ElMessage.success('创建成功')
+function handleBatchDelete() {
+  ElMessageBox.confirm(
+    `确定删除选中的 ${selectedIds.value.length} 个工具方法？`,
+    '批量删除', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' },
+  ).then(async () => {
+    for (const id of selectedIds.value) {
+      await deleteTool(projectId.value, id)
     }
-    modalVisible.value = false; fetchList()
-  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
+    ElMessage.success('删除成功')
+    clearSelection()
+    fetchAllTools()
+  }).catch(() => {})
 }
+
+function handleDelete(record: any) {
+  ElMessageBox.confirm(`确定删除工具方法「${record.name}」？`, '确认删除', { type: 'warning' })
+    .then(async () => { await deleteTool(projectId.value, record.id); ElMessage.success('删除成功'); fetchAllTools() })
+    .catch(() => {})
+}
+
+// ===== 表字段调整 =====
+const defaultColumns: ColumnItem[] = [
+  { key: 'id', label: 'ID', locked: true, visible: true },
+  { key: 'name', label: '工具方法', locked: true, visible: true },
+  { key: 'params', label: '参数', locked: false, visible: false },
+  { key: 'returnType', label: '返回', locked: false, visible: false },
+  { key: 'category', label: '分组', locked: false, visible: false },
+  { key: 'desc', label: '描述', locked: false, visible: false },
+  { key: 'createTime', label: '创建时间', locked: false, visible: false },
+  { key: 'action', label: '操作', locked: true, visible: true },
+]
+const columns = ref<ColumnItem[]>(defaultColumns.map((c) => ({ ...c })))
+function isColVisible(key: string) {
+  return columns.value.find((c) => c.key === key)?.visible ?? false
+}
+function resetColumns() {
+  columns.value = defaultColumns.map((c) => ({ ...c }))
+}
+
+// ===== 参数格式化 =====
+function formatParams(paramDefinitions?: string): string {
+  if (!paramDefinitions) return '无参数'
+  try {
+    const arr = JSON.parse(paramDefinitions)
+    if (!Array.isArray(arr) || arr.length === 0) return '无参数'
+    return arr.map((p: any) => {
+      const type = p.type || ''
+      return type ? `${p.name}: ${type}` : p.name
+    }).join(', ')
+  } catch { return '无参数' }
+}
+
+// ===== 在线测试弹窗 =====
+const testVisible = ref(false)
+const testLoading = ref(false)
+const testResult = ref<any>(null)
+const testParams = ref<any[]>([])
+const testValues = reactive<Record<string, string>>({})
+const currentTestTool = ref<any>(null)
 
 function openTest(record: any) {
-  currentTestId.value = record.id
-  testInput.value = record.testInput || '{}'
+  currentTestTool.value = record
   testResult.value = null
+  testParams.value = []
+  Object.keys(testValues).forEach((k) => delete testValues[k])
+  // 解析 paramDefinitions
+  if (record.paramDefinitions) {
+    try {
+      const arr = JSON.parse(record.paramDefinitions)
+      if (Array.isArray(arr)) {
+        testParams.value = arr.map((p: any) => ({
+          name: p.name || '',
+          type: p.type || '',
+          required: p.required !== false,
+          defaultValue: p.defaultValue || '',
+        }))
+        arr.forEach((p: any) => {
+          testValues[p.name] = p.defaultValue || ''
+        })
+      }
+    } catch { /* ignore */ }
+  }
   testVisible.value = true
 }
 
 async function handleTest() {
+  if (!currentTestTool.value) return
   testLoading.value = true
+  testResult.value = null
   try {
-    const res: any = await testTool(projectId.value, currentTestId.value, { testInput: testInput.value })
+    const res: any = await testTool(projectId.value, currentTestTool.value.id, {
+      testInput: JSON.stringify(testValues),
+    })
     testResult.value = res.data
-  } catch (e: any) { testResult.value = { success: 0, error: e?.message } } finally { testLoading.value = false }
+  } catch (e: any) {
+    testResult.value = { success: 0, error: e?.response?.data?.message || e?.message || '执行失败' }
+  } finally { testLoading.value = false }
 }
 
-function handleDelete(record: any) {
-  ElMessageBox.confirm(`确定删除工具「${record.name}」？`, '确认删除', { type: 'warning' })
-    .then(async () => { await deleteTool(projectId.value, record.id); ElMessage.success('删除成功'); fetchList() })
-    .catch(() => {})
-}
-
-onMounted(fetchList)
+onMounted(fetchAllTools)
 </script>
 
 <template>
   <div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h2>工具方法</h2>
-      <div style="display:flex;gap:8px">
-        <el-radio-group v-model="category" size="default" @change="fetchList">
-          <el-radio-button value="">全部</el-radio-button>
-          <el-radio-button value="BUILTIN">内置</el-radio-button>
-          <el-radio-button value="CUSTOM">自定义</el-radio-button>
-        </el-radio-group>
-        <el-button v-if="hasPermission('project:tool:add')" type="primary" @click="openCreate">新建工具</el-button>
+    <PageHeader title="工具方法">
+      <el-button v-if="hasPermission('project:tool:add')" type="primary"
+        @click="router.push(`/project/${projectId}/tools/new`)">+ 新建工具方法</el-button>
+    </PageHeader>
+
+    <div class="kw-layout">
+      <!-- 左侧分组树 -->
+      <div class="module-panel">
+        <div class="module-head">
+          <span class="module-title">工具分组</span>
+        </div>
+        <div class="module-tree">
+          <div
+            v-for="node in categoryTree"
+            :key="node.id"
+            :class="['module-tree-node', { active: activeCategory === node.id }]"
+            @click="onCategoryClick(node)"
+          >
+            <span class="module-name">{{ node.name }}</span>
+            <span class="module-count">{{ node.count }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧内容 -->
+      <div class="kw-content">
+        <ProSearchCard :loading="loading" @search="handleSearch" @reset="handleReset">
+          <div class="pro-search-field">
+            <span class="pro-search-label">工具方法</span>
+            <el-input v-model="search.keyword" placeholder="输入工具方法名称" clearable
+              style="width: 180px" @keyup.enter="handleSearch" />
+          </div>
+          <div class="pro-search-field">
+            <span class="pro-search-label">描述</span>
+            <el-input v-model="search.description" placeholder="输入描述" clearable
+              style="width: 180px" @keyup.enter="handleSearch" />
+          </div>
+        </ProSearchCard>
+
+        <div class="table-toolbar">
+          <ColumnSettings
+            :columns="columns"
+            @update:columns="(v: ColumnItem[]) => (columns = v)"
+            @reset="resetColumns"
+          />
+        </div>
+
+        <BatchBar
+          v-if="hasPermission('project:tool:delete')"
+          :selected-count="selectedIds.length"
+          :actions="[{ key: 'delete', label: '批量删除', danger: true }]"
+          @action="handleBatchAction"
+          @clear="clearSelection"
+        />
+
+        <el-table :data="pagedList" v-loading="loading" border stripe style="width: 100%"
+          @selection-change="handleSelectionChange">
+          <el-table-column type="selection" width="45" />
+          <el-table-column v-if="isColVisible('id')" prop="id" label="ID" width="70" />
+          <el-table-column v-if="isColVisible('name')" prop="name" label="工具方法" width="180" show-overflow-tooltip />
+          <el-table-column v-if="isColVisible('params')" label="参数" show-overflow-tooltip>
+            <template #default="{ row }">
+              <span class="cell-truncate">{{ formatParams(row.paramDefinitions) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="isColVisible('returnType')" label="返回" width="80">
+            <template #default="{ row }">
+              <el-tag v-if="row.returnType" size="small" type="info">{{ row.returnType }}</el-tag>
+              <span v-else style="color: #c0c4cc">--</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="isColVisible('category')" label="分组" width="120">
+            <template #default="{ row }">
+              <el-tag v-if="row.category && row.category !== 'CUSTOM' && row.category !== 'BUILTIN'"
+                size="small">{{ row.category }}</el-tag>
+              <span v-else style="color: #c0c4cc">未分组</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="isColVisible('desc')" prop="description" label="描述" show-overflow-tooltip />
+          <el-table-column v-if="isColVisible('createTime')" label="创建时间" width="120">
+            <template #default="{ row }">{{ row.createdAt?.substring(0, 10) }}</template>
+          </el-table-column>
+          <el-table-column v-if="isColVisible('action')" label="操作" width="160" fixed="right">
+            <template #default="{ row }">
+              <el-button v-if="hasPermission('project:tool:edit')" type="primary" link size="small"
+                @click="router.push(`/project/${projectId}/tools/${row.id}/edit`)">编辑</el-button>
+              <el-button v-if="hasPermission('project:tool:test')" type="primary" link size="small"
+                @click="openTest(row)">调试</el-button>
+              <el-button v-if="hasPermission('project:tool:delete')" type="danger" link size="small"
+                @click="handleDelete(row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <ProPagination
+          v-model:current-page="pagination.current"
+          v-model:page-size="pagination.pageSize"
+          :total="pagination.total"
+          @change="(p: number) => { pagination.current = p }"
+        />
       </div>
     </div>
-    <el-table v-loading="loading" :data="list" row-key="id" border style="width:100%">
-      <el-table-column prop="name" label="名称" width="200" />
-      <el-table-column label="分类" width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.category === 'BUILTIN' ? '' : 'success'" size="small">{{ row.category === 'BUILTIN' ? '内置' : '自定义' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="returnType" label="返回类型" width="100" />
-      <el-table-column prop="description" label="描述" show-overflow-tooltip />
-      <el-table-column label="操作" width="180" fixed="right">
-        <template #default="{ row }">
-          <el-button v-if="hasPermission('project:tool:test')" type="primary" link size="small" @click="openTest(row)">测试</el-button>
-          <el-button v-if="hasPermission('project:tool:edit')" type="primary" link size="small" @click="openEdit(row)">编辑</el-button>
-          <el-button v-if="hasPermission('project:tool:delete')" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <div v-if="pagination.total > 0" style="display:flex;justify-content:flex-end;margin-top:16px">
-      <el-pagination background layout="total, prev, pager, next" :total="pagination.total"
-        :page-size="pagination.pageSize" :current-page="pagination.current"
-        @current-change="(p: number) => { pagination.current = p; fetchList() }" />
-    </div>
 
-    <!-- 新建/编辑弹窗 -->
-    <el-dialog v-model="modalVisible" :title="editingId ? '编辑工具' : '新建工具'" width="640px">
-      <el-form label-position="top">
-        <el-form-item label="名称" required>
-          <el-input v-model="form.name" />
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="form.description" />
-        </el-form-item>
-        <el-form-item label="Groovy 代码" required>
-          <el-input v-model="form.code" type="textarea" :rows="8" style="font-family:monospace" />
-        </el-form-item>
-        <el-form-item label="返回类型">
-          <el-input v-model="form.returnType" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="modalVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">确定</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 测试弹窗 -->
-    <el-dialog v-model="testVisible" title="在线测试" width="560px">
-      <el-form-item label="输入参数 (JSON)">
-        <el-input v-model="testInput" type="textarea" :rows="4" style="font-family:monospace" />
-      </el-form-item>
-      <div v-if="testResult" style="margin-top:12px">
-        <el-alert :type="testResult.success === 1 ? 'success' : 'error'" :title="testResult.success === 1 ? '执行成功' : '执行失败'"
-          :description="testResult.output || testResult.error" show-icon :closable="false" />
-        <div v-if="testResult.executionTimeMs" style="color:#909399;margin-top:4px">耗时: {{ testResult.executionTimeMs }}ms</div>
+    <!-- 在线测试弹窗 -->
+    <el-dialog v-model="testVisible" :title="`在线测试${currentTestTool ? ' - ' + currentTestTool.name : ''}`" width="600px">
+      <div v-if="testParams.length > 0" class="test-params-section">
+        <h4 class="test-section-title">测试参数</h4>
+        <el-table :data="testParams" border size="small">
+          <el-table-column label="参数名" width="140">
+            <template #default="{ row }">
+              <code>{{ row.name }}</code>
+              <span v-if="row.required" style="color: var(--el-color-danger); margin-left: 4px">*</span>
+              <el-tag v-if="row.type" size="small" type="info" style="margin-left: 6px">{{ row.type }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="测试值">
+            <template #default="{ row }">
+              <el-input v-model="testValues[row.name]" :placeholder="row.required ? '必填' : '可选'"
+                size="small" style="width: 240px" />
+            </template>
+          </el-table-column>
+        </el-table>
       </div>
+      <div v-else class="test-empty">
+        <el-empty description="该方法无参数" :image-size="60" />
+      </div>
+
+      <div v-if="testResult" class="test-result-section">
+        <h4 class="test-section-title">执行结果</h4>
+        <div class="test-result-meta">
+          <span v-if="testResult.executionTimeMs != null">耗时：<b style="color: var(--el-color-success)">{{ testResult.executionTimeMs }}ms</b></span>
+          <span>状态：<el-tag :type="testResult.success === 1 ? 'success' : 'danger'" size="small">{{ testResult.success === 1 ? '成功' : '失败' }}</el-tag></span>
+        </div>
+        <div class="test-output">
+          <pre>{{ testResult.output || testResult.error }}</pre>
+        </div>
+      </div>
+
       <template #footer>
         <el-button @click="testVisible = false">关闭</el-button>
-        <el-button type="primary" :loading="testLoading" @click="handleTest">执行</el-button>
+        <el-button type="primary" :loading="testLoading" :disabled="testParams.length === 0" @click="handleTest">▶ 执行测试</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.kw-layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.module-panel {
+  width: 220px;
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid var(--el-border-color-light, #ebeef5);
+  border-radius: 6px;
+  padding: 12px;
+}
+.module-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.module-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--el-text-color-primary, #303133);
+}
+.module-tree {
+  max-height: 560px;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+.module-tree-node {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  gap: 6px;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.module-tree-node:hover {
+  background: var(--el-fill-color-light, #f5f7fa);
+}
+.module-tree-node.active {
+  background: var(--el-color-primary-light-9, #ecf5ff);
+  color: var(--el-color-primary, #409eff);
+  font-weight: 500;
+}
+.module-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.module-count {
+  font-size: 12px;
+  color: var(--el-text-color-secondary, #909399);
+  flex-shrink: 0;
+}
+.kw-content {
+  flex: 1;
+  min-width: 0;
+}
+.table-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+.cell-truncate {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.test-params-section {
+  margin-bottom: 16px;
+}
+.test-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+.test-empty {
+  padding: 24px 0;
+}
+.test-result-section {
+  margin-top: 16px;
+}
+.test-result-meta {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.test-output {
+  background: #1e1e1e;
+  border-radius: 4px;
+  padding: 12px;
+  min-height: 60px;
+}
+.test-output pre {
+  margin: 0;
+  color: #d4d4d4;
+  font-size: 12px;
+  font-family: Consolas, 'Courier New', monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+</style>

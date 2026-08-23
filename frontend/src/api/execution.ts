@@ -13,7 +13,18 @@ export function startExecution(planId: number, data?: { environmentId?: number; 
   return request.post(`/v1/plans/${planId}/executions`, data || {})
 }
 
-export function getExecutions(projectId: number, params?: { status?: string; page?: number; pageSize?: number }) {
+export function getExecutions(projectId: number, params?: {
+  planName?: string
+  environmentId?: number
+  status?: string
+  triggerType?: string
+  startedAtFrom?: string
+  startedAtTo?: string
+  finishedAtFrom?: string
+  finishedAtTo?: string
+  page?: number
+  pageSize?: number
+}) {
   return request.get(`/v1/projects/${projectId}/executions`, { params })
 }
 

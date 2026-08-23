@@ -24,6 +24,7 @@ public class SuiteResponse implements Serializable {
     private String description;
     private String tags;
     private String priority;
+    private Long groupId;
     private Integer enableOnceSetupTeardown;
     private String onceSetupSteps;
     private String onceTeardownSteps;

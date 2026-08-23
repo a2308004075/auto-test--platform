@@ -26,6 +26,8 @@ public class SuiteUpdateRequest implements Serializable {
 
     private String priority;
 
+    private Long groupId;
+
     private String tags;
 
     private Integer enableOnceSetupTeardown;

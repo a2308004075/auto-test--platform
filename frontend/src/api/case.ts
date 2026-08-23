@@ -9,7 +9,10 @@ import request from './request'
  * 测试用例模块 API（M8）
  */
 
-export function getCases(projectId: number, params?: { suiteId?: number; keyword?: string; page?: number; pageSize?: number }) {
+export function getCases(projectId: number, params?: {
+  suiteId?: number; groupId?: number; keyword?: string;
+  priority?: string; status?: string; page?: number; pageSize?: number
+}) {
   return request.get(`/v1/projects/${projectId}/cases`, { params })
 }
 
@@ -31,4 +34,22 @@ export function deleteCase(projectId: number, caseId: number) {
 
 export function toggleCaseStatus(projectId: number, caseId: number) {
   return request.post(`/v1/projects/${projectId}/cases/${caseId}/status`)
+}
+
+// ===== 用例分组 API =====
+
+export function getCaseGroups(projectId: number) {
+  return request.get(`/v1/projects/${projectId}/case-groups`)
+}
+
+export function createCaseGroup(projectId: number, data: { parentId?: number | null; name: string; description?: string }) {
+  return request.post(`/v1/projects/${projectId}/case-groups`, data)
+}
+
+export function updateCaseGroup(projectId: number, groupId: number, data: { parentId?: number | null; name?: string; description?: string }) {
+  return request.post(`/v1/projects/${projectId}/case-groups/${groupId}`, data)
+}
+
+export function deleteCaseGroup(projectId: number, groupId: number) {
+  return request.post(`/v1/projects/${projectId}/case-groups/${groupId}/delete`)
 }

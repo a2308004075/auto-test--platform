@@ -6,12 +6,18 @@
 <script setup lang="ts">
 /**
  * 执行记录列表 - M9
+ * 对齐原型 execution-list.html
+ * ProSearchCard（含折叠行）+ 进度条 + 动态操作按钮
  */
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getExecutions, cancelExecution } from '@/api/execution'
+import { getExecutions, cancelExecution, startExecution } from '@/api/execution'
+import { getEnvironments } from '@/api/environment'
+import { useDict, type DictOption } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
+import ProSearchCard from '@/components/ProSearchCard/index.vue'
+import ProPagination from '@/components/ProPagination/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,8 +26,24 @@ const projectId = computed(() => Number(route.params.id))
 
 const loading = ref(false)
 const list = ref<any[]>([])
-const statusFilter = ref<string>('')
 const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
+
+// ===== 搜索条件 =====
+const search = reactive({
+  planName: '',
+  environmentId: '' as string | number,
+  triggerType: '',
+  status: '',
+  startedAtFrom: '',
+  startedAtTo: '',
+  finishedAtFrom: '',
+  finishedAtTo: '',
+})
+
+// ===== 下拉选项 =====
+const environments = ref<any[]>([])
+const { options: statusOptions } = useDict('execution_status')
+const { options: triggerOptions } = useDict('trigger_type')
 
 const statusTypeMap: Record<string, string> = {
   PENDING: 'info',
@@ -31,30 +53,50 @@ const statusTypeMap: Record<string, string> = {
   CANCELLED: 'warning',
 }
 
-const statusLabels: Record<string, string> = {
-  PENDING: '等待中',
-  RUNNING: '执行中',
-  COMPLETED: '已完成',
-  FAILED: '执行失败',
-  CANCELLED: '已取消',
+function getLabel(options: DictOption[], value: string): string {
+  return options.find((o) => o.value === value)?.label || value
 }
 
+async function loadEnvironments() {
+  try {
+    const res: any = await getEnvironments(projectId.value)
+    environments.value = res.data || []
+  } catch { environments.value = [] }
+}
+
+// ===== 列表查询 =====
 async function fetchList() {
   loading.value = true
   try {
     const res: any = await getExecutions(projectId.value, {
-      status: statusFilter.value || undefined,
-      page: pagination.current, pageSize: pagination.pageSize,
+      planName: search.planName || undefined,
+      environmentId: search.environmentId ? Number(search.environmentId) : undefined,
+      status: search.status || undefined,
+      triggerType: search.triggerType || undefined,
+      startedAtFrom: search.startedAtFrom || undefined,
+      startedAtTo: search.startedAtTo || undefined,
+      finishedAtFrom: search.finishedAtFrom || undefined,
+      finishedAtTo: search.finishedAtTo || undefined,
+      page: pagination.current,
+      pageSize: pagination.pageSize,
     })
     list.value = res.data?.items || []
     pagination.total = res.data?.total || 0
   } catch { list.value = [] } finally { loading.value = false }
 }
 
-function handleFilter() { pagination.current = 1; fetchList() }
+function handleSearch() { pagination.current = 1; fetchList() }
+
+function handleReset() {
+  Object.assign(search, {
+    planName: '', environmentId: '', triggerType: '', status: '',
+    startedAtFrom: '', startedAtTo: '', finishedAtFrom: '', finishedAtTo: '',
+  })
+  handleSearch()
+}
 
 function viewDetail(record: any) {
-  router.push(`/project/${projectId}/executions/${record.id}`)
+  router.push(`/project/${projectId.value}/executions/${record.id}`)
 }
 
 function handleCancel(record: any) {
@@ -69,65 +111,159 @@ function handleCancel(record: any) {
     .catch(() => {})
 }
 
-onMounted(fetchList)
+function handleReRun(record: any) {
+  if (!record.planId) { ElMessage.warning('无关联计划，无法重新执行'); return }
+  ElMessageBox.confirm(`确定重新执行「${record.planName}」？`, '重新执行', { type: 'info' })
+    .then(async () => {
+      try {
+        const res: any = await startExecution(record.planId)
+        ElMessage.success('执行已触发')
+        router.push(`/project/${projectId.value}/executions/${res.data.id}`)
+      } catch { ElMessage.error('触发失败') }
+    })
+    .catch(() => {})
+}
+
+onMounted(() => { loadEnvironments(); fetchList() })
 </script>
 
 <template>
   <div>
+    <!-- 页头 -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h2 style="margin:0">执行记录</h2>
-      <el-select v-model="statusFilter" placeholder="全部状态" clearable style="width:160px" @change="handleFilter">
-        <el-option value="PENDING" label="等待中" />
-        <el-option value="RUNNING" label="执行中" />
-        <el-option value="COMPLETED" label="已完成" />
-        <el-option value="FAILED" label="执行失败" />
-        <el-option value="CANCELLED" label="已取消" />
-      </el-select>
     </div>
 
+    <!-- 搜索卡片 -->
+    <ProSearchCard :loading="loading" @search="handleSearch" @reset="handleReset">
+      <div class="pro-search-field">
+        <span class="pro-search-label">测试计划名称</span>
+        <el-input v-model="search.planName" placeholder="模糊查询" clearable style="width:180px" @keyup.enter="handleSearch" />
+      </div>
+      <div class="pro-search-field">
+        <span class="pro-search-label">环境</span>
+        <el-select v-model="search.environmentId" placeholder="全部环境" clearable style="width:160px">
+          <el-option v-for="env in environments" :key="env.id" :value="env.id" :label="env.name" />
+        </el-select>
+      </div>
+      <div class="pro-search-field">
+        <span class="pro-search-label">触发方式</span>
+        <el-select v-model="search.triggerType" placeholder="全部触发方式" clearable style="width:160px">
+          <el-option v-for="t in triggerOptions" :key="t.value" :value="t.value" :label="t.label" />
+        </el-select>
+      </div>
+      <template #collapse>
+        <div class="pro-search-field">
+          <span class="pro-search-label">状态</span>
+          <el-select v-model="search.status" placeholder="全部状态" clearable style="width:160px">
+            <el-option v-for="s in statusOptions" :key="s.value" :value="s.value" :label="s.label" />
+          </el-select>
+        </div>
+        <div class="pro-search-field">
+          <span class="pro-search-label">开始执行时间</span>
+          <el-date-picker v-model="search.startedAtFrom" type="date" placeholder="起始日期" value-format="YYYY-MM-DD" style="width:140px" />
+          <span style="color:#909399">至</span>
+          <el-date-picker v-model="search.startedAtTo" type="date" placeholder="结束日期" value-format="YYYY-MM-DD" style="width:140px" />
+        </div>
+        <div class="pro-search-field">
+          <span class="pro-search-label">结束执行时间</span>
+          <el-date-picker v-model="search.finishedAtFrom" type="date" placeholder="起始日期" value-format="YYYY-MM-DD" style="width:140px" />
+          <span style="color:#909399">至</span>
+          <el-date-picker v-model="search.finishedAtTo" type="date" placeholder="结束日期" value-format="YYYY-MM-DD" style="width:140px" />
+        </div>
+      </template>
+    </ProSearchCard>
+
+    <!-- 执行记录表格 -->
     <el-table v-loading="loading" :data="list" row-key="id" border style="width:100%">
-      <el-table-column prop="planName" label="计划" width="160" />
-      <el-table-column label="状态" width="100">
+      <el-table-column label="测试计划" width="180">
         <template #default="{ row }">
-          <el-tag :type="(statusTypeMap[row.status] || 'info') as any" size="small">{{ statusLabels[row.status] || row.status }}</el-tag>
+          <el-link type="primary" :underline="false" @click="viewDetail(row)">
+            {{ row.planName }}{{ row.executionNumber ? ` #${row.executionNumber}` : '' }}
+          </el-link>
         </template>
       </el-table-column>
-      <el-table-column prop="triggerType" label="触发" width="80" />
-      <el-table-column prop="totalCases" label="总数" width="70" />
-      <el-table-column prop="passedCases" label="通过" width="70" />
-      <el-table-column prop="failedCases" label="失败" width="70" />
-      <el-table-column prop="skippedCases" label="跳过" width="70" />
-      <el-table-column prop="durationMs" label="耗时(ms)" width="100" />
-      <el-table-column label="创建时间" width="160">
-        <template #default="{ row }">{{ row.createdAt?.substring(0, 19).replace('T', ' ') }}</template>
+      <el-table-column label="环境" width="100">
+        <template #default="{ row }">
+          <span style="font-size:12px">{{ row.environmentName || '-' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="触发方式" width="100">
+        <template #default="{ row }">
+          <el-tag
+            :type="row.triggerType === 'MANUAL' ? '' : row.triggerType === 'SCHEDULED' ? 'success' : row.triggerType === 'CI' ? 'warning' : 'info'"
+            size="small"
+          >{{ getLabel(triggerOptions, row.triggerType) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="执行进度" width="140">
+        <template #default="{ row }">
+          <div style="display:flex;align-items:center;gap:8px">
+            <el-progress
+              :percentage="row.progressPercent || 0"
+              :stroke-width="8"
+              :color="row.status === 'RUNNING' ? '#409eff' : row.status === 'FAILED' ? '#f56c6c' : '#67c23a'"
+              :show-text="false"
+              style="flex:1"
+            />
+            <span :style="{
+              fontSize: '12px', whiteSpace: 'nowrap', fontWeight: 500,
+              color: row.progressPercent >= 100 ? '#606266' : '#409eff'
+            }">{{ row.progressPercent || 0 }}%</span>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" width="90">
+        <template #default="{ row }">
+          <el-tag :type="(statusTypeMap[row.status] || 'info') as any" size="small">
+            {{ getLabel(statusOptions, row.status) }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="用例（通过/失败/跳过）" width="170">
+        <template #default="{ row }">
+          <span v-if="row.totalCases != null" style="font-size:12px">
+            {{ row.totalCases }}
+            (<span style="color:#67c23a">{{ row.passedCases || 0 }}</span>/<span style="color:#f56c6c">{{ row.failedCases || 0 }}</span>/{{ row.skippedCases || 0 }})
+          </span>
+          <span v-else style="color:#c0c4cc">-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="通过率" width="80">
+        <template #default="{ row }">
+          <span v-if="row.passRate != null" :style="{
+            fontWeight: 600, fontSize: '13px',
+            color: row.passRate >= 90 ? '#67c23a' : row.passRate >= 60 ? '#e6a23c' : '#f56c6c'
+          }">{{ row.passRate }}%</span>
+          <span v-else style="color:#c0c4cc">-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="开始执行时间" width="160">
+        <template #default="{ row }">
+          <span style="font-size:12px;color:#909399">{{ row.startedAt?.substring(0, 19).replace('T', ' ') || '-' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="结束执行时间" width="160">
+        <template #default="{ row }">
+          <span style="font-size:12px;color:#909399">{{ row.finishedAt?.substring(0, 19).replace('T', ' ') || '-' }}</span>
+        </template>
       </el-table-column>
       <el-table-column label="操作" width="140" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="viewDetail(row)">详情</el-button>
-          <el-button v-if="(row.status === 'PENDING' || row.status === 'RUNNING') && hasPermission('project:execution:cancel')"
-            type="danger" link size="small" @click="handleCancel(row)">取消</el-button>
+          <el-button v-if="(row.status === 'RUNNING' || row.status === 'PENDING') && hasPermission('project:execution:cancel')"
+            type="danger" link size="small" @click="handleCancel(row)">取消执行</el-button>
+          <el-button v-if="row.status !== 'RUNNING' && row.status !== 'PENDING'"
+            type="primary" link size="small" @click="handleReRun(row)">重新执行</el-button>
         </template>
       </el-table-column>
     </el-table>
-    <div v-if="pagination.total > 0" class="pagination">
-      <el-pagination
-        v-model:current-page="pagination.current"
-        v-model:page-size="pagination.pageSize"
-        :total="pagination.total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        background
-        @current-change="(p: number) => { pagination.current = p; fetchList() }"
-        @size-change="(s: number) => { pagination.pageSize = s; pagination.current = 1; fetchList() }"
-      />
-    </div>
+
+    <ProPagination
+      v-model:current-page="pagination.current"
+      v-model:page-size="pagination.pageSize"
+      :total="pagination.total"
+      @change="(p: number) => { pagination.current = p; fetchList() }"
+    />
   </div>
 </template>
-
-<style scoped>
-.pagination {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
-}
-</style>

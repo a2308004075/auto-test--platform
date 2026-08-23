@@ -27,13 +27,16 @@ public class PlanController {
 
     /**
      * 分页查询测试计划
+     *
+     * @param groupId 分组 ID（不传=全部，0=未分组，正数=指定分组含子分组）
      */
     @GetMapping("/api/v1/projects/{projectId}/plans")
     public ApiResponse<PageResponse<PlanResponse>> list(@PathVariable Long projectId,
                                                          @RequestParam(required = false) String keyword,
+                                                         @RequestParam(required = false) Long groupId,
                                                          @RequestParam(defaultValue = "1") int page,
                                                          @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.ok(planService.listPlans(projectId, keyword, page, pageSize));
+        return ApiResponse.ok(planService.listPlans(projectId, keyword, groupId, page, pageSize));
     }
 
     /**

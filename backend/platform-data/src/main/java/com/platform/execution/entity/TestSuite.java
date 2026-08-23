@@ -47,6 +47,11 @@ public class TestSuite extends BaseEntity {
     private String priority;
 
     /**
+     * 所属分组 ID（null 表示未分组）
+     */
+    private Long groupId;
+
+    /**
      * 套件级·整体 Setup 步骤树（JSON）
      */
     private String onceSetupSteps;

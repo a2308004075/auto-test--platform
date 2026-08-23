@@ -15,6 +15,11 @@ public class ToolMethodUpdateRequest {
     @Size(max = 100, message = "工具名称长度不能超过 100")
     private String name;
 
+    /**
+     * 分类/分组
+     */
+    private String category;
+
     @Size(max = 500, message = "描述长度不能超过 500")
     private String description;
 

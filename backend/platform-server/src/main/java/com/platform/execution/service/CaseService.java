@@ -28,6 +28,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 测试用例服务
@@ -38,18 +39,35 @@ public class CaseService {
 
     private final TestCaseMapper testCaseMapper;
     private final TestSuiteMapper testSuiteMapper;
+    private final CaseGroupService caseGroupService;
 
     /**
      * 分页查询测试用例
      */
-    public PageResponse<CaseResponse> listCases(Long suiteId, String keyword, int page, int pageSize) {
+    public PageResponse<CaseResponse> listCases(Long suiteId, Long groupId, String keyword,
+                                                 String priority, String status, int page, int pageSize) {
         LambdaQueryWrapper<TestCase> wrapper = new LambdaQueryWrapper<>();
         if (suiteId != null) {
             wrapper.eq(TestCase::getSuiteId, suiteId);
         }
+        // 按分组筛选（含子孙分组）
+        if (groupId != null) {
+            Set<Long> groupIds = caseGroupService.getDescendantGroupIds(groupId);
+            wrapper.in(TestCase::getGroupId, groupIds);
+        }
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(TestCase::getName, keyword)
                     .or().like(TestCase::getDescription, keyword));
+        }
+        if (StringUtils.hasText(priority)) {
+            wrapper.eq(TestCase::getPriority, priority);
+        }
+        if (StringUtils.hasText(status)) {
+            if ("1".equals(status)) {
+                wrapper.eq(TestCase::getIsActive, 1);
+            } else if ("0".equals(status)) {
+                wrapper.eq(TestCase::getIsActive, 0);
+            }
         }
         wrapper.orderByDesc(TestCase::getCreatedAt);
 
@@ -141,6 +159,12 @@ public class CaseService {
         }
         if (request.getIsActive() != null) {
             c.setIsActive(request.getIsActive());
+        }
+        if (request.getGroupId() != null) {
+            c.setGroupId(request.getGroupId());
+        }
+        if (request.getTags() != null) {
+            c.setTags(request.getTags());
         }
         testCaseMapper.updateById(c);
         return toResponse(c);

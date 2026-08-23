@@ -7,12 +7,16 @@
 /**
  * Action 流程编辑器 - M7
  * 三栏布局：元素面板 | 画布 | 属性面板
+ * 三 Tab：基础信息 / I/O 参数 / 节点编排器
  * 使用 @antv/x6 实现流程图画布
+ * 对齐原型 action-editor.html
  */
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getAction, updateAction } from '@/api/action'
+import { getKeywords } from '@/api/keyword'
+import { getTools } from '@/api/tool'
 import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
@@ -21,138 +25,639 @@ const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 const actionId = computed(() => Number(route.params.actionId))
 
-const containerRef = ref<HTMLDivElement>()
+// ===== Tab 状态 =====
+const activeTab = ref('basic')
+
+// ===== 基础信息 =====
 const actionName = ref('')
 const actionDesc = ref('')
+
+// ===== I/O 参数编辑 =====
+interface ParamRow {
+  name: string
+  type: string
+  required: boolean
+  defaultValue: string
+  description: string
+}
+const inputParams = ref<ParamRow[]>([])
+const outputParams = ref<ParamRow[]>([])
+const ioSubTab = ref<'input' | 'output'>('input')
+
+function parseParams(raw?: string): ParamRow[] {
+  if (!raw) return []
+  try {
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? arr : []
+  } catch {
+    return []
+  }
+}
+
+function serializeParams(rows: ParamRow[]): string {
+  return JSON.stringify(rows)
+}
+
+// ===== 画布 =====
+const containerRef = ref<HTMLDivElement>()
+const saving = ref(false)
+const loading = ref(false)
+let graph: any = null
+let graphInitialized = false
+
+// 节点数据
 const nodes = ref<any[]>([])
 const selectedNode = ref<any>(null)
-const saving = ref(false)
-let graph: any = null
+const selectedCellData = ref<any>(null)
 
+// 缩放百分比
+const zoomPercent = ref(100)
+
+// 全屏状态
+const isFullscreen = ref(false)
+
+// ===== 元素面板数据 =====
+interface ElementCategory {
+  title: string
+  badge: number
+  expanded: boolean
+  search: string
+  items: { name: string; type: string; shape: string }[]
+}
+const elementCategories = ref<ElementCategory[]>([
+  { title: '接口关键字', badge: 0, expanded: true, search: '', items: [] },
+  { title: '工具方法', badge: 0, expanded: false, search: '', items: [] },
+  { title: 'Action关键字', badge: 0, expanded: false, search: '', items: [] },
+  { title: '监听器', badge: 2, expanded: false, search: '', items: [
+    { name: '执行前监听', type: 'LISTENER', shape: 'node-listener' },
+    { name: '执行后监听', type: 'LISTENER', shape: 'node-listener' },
+  ] },
+  { title: '断言', badge: 3, expanded: false, search: '', items: [
+    { name: '状态码等于200', type: 'ASSERT', shape: 'node-assert' },
+    { name: '响应包含字段', type: 'ASSERT', shape: 'node-assert' },
+    { name: '响应时间校验', type: 'ASSERT', shape: 'node-assert' },
+  ] },
+  { title: '逻辑判断', badge: 3, expanded: false, search: '', items: [
+    { name: '状态是否为空', type: 'CONDITION', shape: 'node-logic' },
+    { name: '返回值是否成功', type: 'CONDITION', shape: 'node-logic' },
+    { name: '数量是否大于0', type: 'CONDITION', shape: 'node-logic' },
+  ] },
+])
+
+// 节点类型配置
+const nodeTypeConfig: Record<string, { color: string; icon: string; iconBg: string; label: string }> = {
+  API_KEYWORD: { color: '#1890ff', icon: 'K', iconBg: '#e6f7ff', label: '接口关键字' },
+  TOOL_METHOD: { color: '#52c41a', icon: 'T', iconBg: '#f6ffed', label: '工具方法' },
+  ACTION: { color: '#fa8c16', icon: 'A', iconBg: '#fff7e6', label: 'Action关键字' },
+  CONDITION: { color: '#722ed1', icon: '◇', iconBg: '#f9f0ff', label: '逻辑判断' },
+  ASSERT: { color: '#f5222d', icon: '断', iconBg: '#fff1f0', label: '断言' },
+  LISTENER: { color: '#999', icon: '♪', iconBg: '#f5f5f5', label: '监听器' },
+  START: { color: '#67c23a', icon: '▶', iconBg: '#f0f9eb', label: '开始' },
+  END: { color: '#f56c6c', icon: '■', iconBg: '#fef0f0', label: '结束' },
+}
+
+// ===== 加载数据 =====
 async function fetchAction() {
+  loading.value = true
   try {
     const res: any = await getAction(projectId.value, actionId.value)
     const data = res.data
     actionName.value = data.name || ''
     actionDesc.value = data.description || ''
     try { nodes.value = data.nodes ? JSON.parse(data.nodes) : [] } catch { nodes.value = [] }
-  } catch { ElMessage.error('加载 Action 失败') }
+    inputParams.value = parseParams(data.inputParams)
+    outputParams.value = parseParams(data.outputParams)
+  } catch {
+    ElMessage.error('加载 Action 失败')
+  } finally {
+    loading.value = false
+  }
 }
 
+async function fetchElementData() {
+  try {
+    const [kwRes, toolRes, actionRes]: any[] = await Promise.all([
+      getKeywords(projectId.value, { page: 1, pageSize: 100 }),
+      getTools(projectId.value, { page: 1, pageSize: 100 }),
+      // 使用动态 import 避免循环依赖
+      import('@/api/action').then((m) => m.getActions(projectId.value, { page: 1, pageSize: 100 })),
+    ])
+    // 接口关键字
+    const kwItems = (kwRes.data?.items || []).map((k: any) => ({
+      name: k.name, type: 'API_KEYWORD', shape: 'node-api',
+    }))
+    elementCategories.value[0].items = kwItems
+    elementCategories.value[0].badge = kwItems.length
+    // 工具方法
+    const toolItems = (toolRes.data?.items || []).map((t: any) => ({
+      name: t.name, type: 'TOOL_METHOD', shape: 'node-tool',
+    }))
+    elementCategories.value[1].items = toolItems
+    elementCategories.value[1].badge = toolItems.length
+    // Action关键字
+    const actionItems = (actionRes.data?.items || [])
+      .filter((a: any) => a.id !== actionId.value)
+      .map((a: any) => ({
+        name: a.name, type: 'ACTION', shape: 'node-action',
+      }))
+    elementCategories.value[2].items = actionItems
+    elementCategories.value[2].badge = actionItems.length
+  } catch {
+    // 忽略元素面板加载失败
+  }
+}
+
+function filteredItems(cat: ElementCategory) {
+  const kw = cat.search.toLowerCase()
+  if (!kw) return cat.items
+  return cat.items.filter((i) => i.name.toLowerCase().includes(kw))
+}
+
+function toggleCategory(cat: ElementCategory) {
+  cat.expanded = !cat.expanded
+}
+
+// ===== X6 画布初始化 =====
+function getNodeMarkup(color: string, icon: string, iconBg: string) {
+  return [
+    { tagName: 'rect', selector: 'body' },
+    {
+      tagName: 'foreignObject',
+      selector: 'fo',
+      attrs: { width: 200, height: 54 },
+      children: [{
+        ns: 'http://www.w3.org/1999/xhtml',
+        tagName: 'div',
+        attrs: { 'data-node-root': '1', width: 200, height: 54 },
+        style: `margin:0;padding:0;width:100%;height:100%;display:flex;align-items:center;gap:8px;box-sizing:border-box;font-family:inherit;border-radius:6px;overflow:hidden;border:1.5px solid transparent;cursor:pointer;`,
+        children: [
+          { tagName: 'div', style: `width:4px;align-self:stretch;background:${color};flex-shrink:0;` },
+          {
+            tagName: 'div',
+            style: `width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${iconBg};color:${color};font-size:12px;font-weight:700;`,
+            textContent: icon,
+          },
+          { tagName: 'strong', style: 'font-size:13px;color:rgba(0,0,0,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;min-width:0;', selector: 'label', attrs: { 'data-label': '1' } },
+        ],
+      }],
+    },
+  ]
+}
+
+function registerNodes(Graph: any) {
+  const portConfig = {
+    groups: {
+      top: { position: 'top', attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5 } } },
+      bottom: { position: 'bottom', attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5 } } },
+      left: { position: 'left', attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5 } } },
+      right: { position: 'right', attrs: { circle: { r: 5, magnet: true, stroke: '#d9d9d9', fill: '#fff', strokeWidth: 1.5 } } },
+    },
+    items: [{ group: 'top' }, { group: 'bottom' }, { group: 'left' }, { group: 'right' }],
+  }
+
+  // 注册方形节点
+  const registerSquare = (name: string, color: string, icon: string, iconBg: string) => {
+    Graph.registerNode(name, {
+      inherit: 'rect',
+      width: 200, height: 54,
+      markup: getNodeMarkup(color, icon, iconBg),
+      attrs: { body: { fill: iconBg, stroke: 'none', strokeWidth: 0, rx: 6, ry: 6 } },
+      ports: portConfig,
+    })
+  }
+  registerSquare('node-action', '#fa8c16', 'A', '#fff7e6')
+  registerSquare('node-api', '#1890ff', 'K', '#e6f7ff')
+  registerSquare('node-tool', '#52c41a', 'T', '#f6ffed')
+  registerSquare('node-listener', '#999', '♪', '#f5f5f5')
+
+  // 注册菱形节点（断言）
+  Graph.registerNode('node-assert', {
+    inherit: 'polygon',
+    width: 160, height: 80,
+    markup: [
+      { tagName: 'polygon', selector: 'body' },
+      {
+        tagName: 'foreignObject', selector: 'fo',
+        attrs: { x: 10, y: 22, width: 140, height: 36 },
+        children: [{
+          ns: 'http://www.w3.org/1999/xhtml', tagName: 'div',
+          attrs: { 'data-node-root': '1', width: 140, height: 36 },
+          style: 'margin:0;padding:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;',
+          children: [{
+            tagName: 'div',
+            style: 'width:100%;height:100%;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);display:flex;align-items:center;justify-content:center;background:#fff1f0;',
+            children: [{ tagName: 'span', style: 'font-size:11px;color:#f5222d;font-weight:600;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;padding:0 4px;', selector: 'label', attrs: { 'data-label': '1' } }],
+          }],
+        }],
+      },
+    ],
+    attrs: { body: { refPoints: '0.5,0 1,0.5 0.5,1 0,0.5', fill: '#fff1f0', stroke: 'none', strokeWidth: 0 } },
+    ports: portConfig,
+  })
+
+  // 注册菱形节点（逻辑判断）- 有 yes/no 两个输出端口
+  Graph.registerNode('node-logic', {
+    inherit: 'polygon',
+    width: 160, height: 80,
+    markup: [
+      { tagName: 'polygon', selector: 'body' },
+      {
+        tagName: 'foreignObject', selector: 'fo',
+        attrs: { x: 10, y: 22, width: 140, height: 36 },
+        children: [{
+          ns: 'http://www.w3.org/1999/xhtml', tagName: 'div',
+          attrs: { 'data-node-root': '1', width: 140, height: 36 },
+          style: 'margin:0;padding:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;',
+          children: [{
+            tagName: 'div',
+            style: 'width:100%;height:100%;clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);display:flex;align-items:center;justify-content:center;background:#f9f0ff;',
+            children: [{ tagName: 'span', style: 'font-size:11px;color:#722ed1;font-weight:600;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;padding:0 4px;', selector: 'label', attrs: { 'data-label': '1' } }],
+          }],
+        }],
+      },
+    ],
+    attrs: { body: { refPoints: '0.5,0 1,0.5 0.5,1 0,0.5', fill: '#f9f0ff', stroke: 'none', strokeWidth: 0 } },
+    ports: {
+      groups: {
+        yes: { position: 'right', attrs: { circle: { r: 5, magnet: true, stroke: '#52c41a', fill: '#fff', strokeWidth: 1.5 } } },
+        no: { position: 'bottom', attrs: { circle: { r: 5, magnet: true, stroke: '#ff4d4f', fill: '#fff', strokeWidth: 1.5 } } },
+      },
+      items: [{ id: 'yes', group: 'yes' }, { id: 'no', group: 'no' }],
+    },
+  })
+}
+
+const GRID = 20
+function snap(v: number) { return Math.round(v / GRID) * GRID }
+
 async function initGraph() {
-  const { Graph } = await import('@antv/x6')
+  if (graphInitialized) return
+  const x6 = await import('@antv/x6')
+  const { Graph } = x6
+
   if (!containerRef.value) return
 
+  // 注册自定义节点
+  registerNodes(Graph)
+
+  // 创建画布
   graph = new Graph({
     container: containerRef.value,
     width: containerRef.value.clientWidth,
     height: containerRef.value.clientHeight || 500,
-    grid: { visible: true, size: 10, type: 'mesh' },
-    selecting: { enabled: true, rubberband: true },
-    connecting: { snap: true, allowBlank: false, highlight: true },
-    mousewheel: { enabled: true, modifiers: ['ctrl'] },
-    panning: { enabled: true },
+    grid: { visible: false },
+    translating: { snap: { radius: GRID } },
+    mousewheel: { enabled: true, modifiers: null },
+    panning: { enabled: true, modifiers: 'space' },
+    selecting: {
+      enabled: true,
+      multiple: true,
+      rubberband: true,
+    },
+    connecting: {
+      snap: true,
+      router: 'manhattan',
+      connector: { name: 'rounded', args: { radius: 8 } },
+      allowBlank: false,
+    },
   } as any)
 
-  // 监听节点选中
+  // 监听选中
   graph.on('cell:selected', ({ cell }: any) => {
     if (cell.isNode()) {
       const data = cell.getData() || {}
-      const config = data.config ? (typeof data.config === 'string' ? JSON.parse(data.config) : data.config) : {}
+      selectedCellData.value = data
       selectedNode.value = {
         id: cell.id,
-        label: cell.getLabel(),
-        type: data.nodeType || 'START',
-        // 加载节点配置
-        conditionExpression: config.expression || '',
-        trueNext: config.trueNext || '',
-        falseNext: config.falseNext || '',
-        loopCount: config.count || 0,
-        loopExpression: config.expression || '',
-        nextNode: config.nextNode || '',
+        type: data.nodeType || 'API_KEYWORD',
+        label: data.label || '',
+        config: data.config || {},
         refKeywordId: data.refKeywordId || null,
+        refToolId: data.refToolId || null,
+        saveAs: data.save_as || '',
+        condition: data.condition || '',
+        assertType: data.assertType || 'equal',
+        actual: data.actual || '',
+        expected: data.expected || '',
+        description: data.description || '',
       }
     }
   })
-  graph.on('cell:unselected', () => { selectedNode.value = null })
+
+  graph.on('cell:unselected', () => {
+    selectedNode.value = null
+    selectedCellData.value = null
+  })
+
+  graph.on('blank:click', () => {
+    graph.cleanSelection()
+  })
+
+  // 缩放跟踪
+  const updateZoom = () => {
+    zoomPercent.value = Math.round(graph.zoom() * 100)
+  }
+  graph.on('scale', updateZoom)
+  graph.on('zoom', updateZoom)
+
+  // 新节点默认隐藏连接点
+  graph.on('node:added', ({ node }: any) => {
+    togglePorts(node, false)
+  })
+
+  // 键盘删除
+  const keyHandler = (e: KeyboardEvent) => {
+    const tag = (document.activeElement?.tagName) || ''
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return
+    if ((e.key === 'Delete' || e.key === 'Backspace') && graph) {
+      const sel = graph.getSelectedCells()
+      if (sel.length > 0) {
+        e.preventDefault()
+        graph.removeCells(sel)
+        ElMessage.info(`已删除 ${sel.length} 个元素`)
+      }
+    }
+  }
+  document.addEventListener('keydown', keyHandler)
 
   // 加载已有节点
-  renderNodes()
+  renderExistingNodes()
+
+  graphInitialized = true
 }
 
-function renderNodes() {
-  if (!graph) return
+// 连接点显隐
+function togglePorts(node: any, visible: boolean) {
+  if (!node || !node.isNode || !node.isNode()) return
+  try {
+    const view = graph.findViewByCell(node)
+    if (!view) return
+    const el = view.el || view.container
+    if (!el) return
+    if (visible) el.classList.add('is-selected')
+    else el.classList.remove('is-selected')
+    const ports = el.querySelectorAll('[magnet="true"], circle[port]')
+    ports.forEach((p: HTMLElement) => { p.style.display = visible ? '' : 'none' })
+  } catch { /* ignore */ }
+}
+
+function setNodeLabel(node: any, text: string) {
+  if (!node || !text) return
+  const data = node.getData() || {}
+  data.label = text
+  node.setData(data, { silent: true })
+  // 自适应宽度
+  const maxChars = 20
+  const displayText = text.length > maxChars ? text.substring(0, maxChars) + '…' : text
+  setTimeout(() => {
+    try {
+      const view = graph.findViewByCell(node)
+      const el = view?.el || view?.container
+      if (el) {
+        const labelEl = el.querySelector('[data-label]')
+        if (labelEl) {
+          labelEl.textContent = displayText
+          labelEl.title = text
+        }
+      }
+    } catch { /* ignore */ }
+  }, 100)
+}
+
+function renderExistingNodes() {
+  if (!graph || !nodes.value.length) return
   graph.clearCells()
-  const defaultNodes = [
-    { nodeKey: 'start', nodeType: 'START', label: '开始', positionX: 200, positionY: 40 },
-    { nodeKey: 'end', nodeType: 'END', label: '结束', positionX: 200, positionY: 400 },
-  ]
-  const allNodes = nodes.value.length ? nodes.value : defaultNodes
-  allNodes.forEach((n: any) => {
-    const color = getNodeColor(n.nodeType)
-    graph.addNode({
-      id: n.nodeKey,
+  const shapeMap: Record<string, string> = {
+    API_KEYWORD: 'node-api',
+    TOOL_METHOD: 'node-tool',
+    CONDITION: 'node-logic',
+    ASSERT: 'node-assert',
+    LISTENER: 'node-listener',
+    ACTION: 'node-action',
+  }
+  nodes.value.forEach((n: any) => {
+    const shape = shapeMap[n.nodeType] || 'node-api'
+    const node = graph.addNode({
+      shape,
       x: n.positionX || 200,
       y: n.positionY || 100,
-      width: 120, height: 40,
-      label: n.nodeKey,
-      shape: 'rect',
-      attrs: { body: { fill: color, stroke: '#333', rx: 6, ry: 6 }, label: { fill: '#fff', fontSize: 12 } },
       data: {
         nodeType: n.nodeType,
-        config: n.config || null,
+        label: n.nodeKey || n.label || '',
+        config: n.config ? (typeof n.config === 'string' ? JSON.parse(n.config) : n.config) : {},
         refKeywordId: n.refKeywordId || null,
         refToolId: n.refToolId || null,
       },
-      ports: { groups: { top: { position: 'top' }, bottom: { position: 'bottom' } }, items: [{ group: 'top' }, { group: 'bottom' }] },
     })
+    setNodeLabel(node, n.nodeKey || n.label || n.nodeType)
   })
+
+  // 重新绘制连线（如果有 config 中的连线信息）
+  setTimeout(() => {
+    try { graph.zoomToFit({ padding: 40, maxScale: 1 }) } catch { /* ignore */ }
+    graph.getNodes().forEach((n: any) => togglePorts(n, false))
+  }, 200)
 }
 
-function getNodeColor(type: string): string {
-  const colors: Record<string, string> = { START: '#67c23a', END: '#f56c6c', API_KEYWORD: '#409eff', TOOL_METHOD: '#722ed1', CONDITION: '#e6a23c', LOOP: '#13c2c2' }
-  return colors[type] || '#909399'
-}
-
-function addNode(type: string) {
+// ===== 添加节点 =====
+function addNode(type: string, shape: string, name: string) {
   if (!graph) return
-  const key = `node_${Date.now() % 10000}`
-  const label = type === 'API_KEYWORD' ? '接口关键字' : type === 'TOOL_METHOD' ? '工具方法' : type === 'CONDITION' ? '条件' : '循环'
-  graph.addNode({
-    id: key, x: 200, y: 200, width: 120, height: 40, label,
-    shape: 'rect',
-    attrs: { body: { fill: getNodeColor(type), stroke: '#333', rx: 6, ry: 6 }, label: { fill: '#fff', fontSize: 12 } },
-    data: { nodeType: type },
-    ports: { groups: { top: { position: 'top' }, bottom: { position: 'bottom' } }, items: [{ group: 'top' }, { group: 'bottom' }] },
+  const container = containerRef.value
+  if (!container) return
+  const rect = container.getBoundingClientRect()
+  const center = graph.clientToLocal(rect.left + rect.width / 2, rect.top + rect.height / 2)
+  const node = graph.addNode({
+    shape,
+    x: snap(center.x - 100),
+    y: snap(center.y - 27),
+    data: { nodeType: type, label: name },
   })
+  setNodeLabel(node, name)
+  ElMessage.success(`已添加节点：${name}`)
 }
 
+// 双击添加
+function onElementDblClick(item: { name: string; type: string; shape: string }) {
+  addNode(item.type, item.shape, item.name)
+}
+
+// 拖拽添加
+let dragGhost: HTMLElement | null = null
+function onElementDragStart(e: DragEvent, item: { name: string; type: string; shape: string }) {
+  if (!graph) return
+  e.dataTransfer!.effectAllowed = 'copy'
+  e.dataTransfer!.setData('text/plain', JSON.stringify(item))
+  // 创建拖拽预览
+  dragGhost = document.createElement('div')
+  dragGhost.style.cssText = 'position:fixed;z-index:9999;opacity:.75;pointer-events:none;padding:8px 12px;background:#fff;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;'
+  dragGhost.textContent = item.name
+  document.body.appendChild(dragGhost)
+}
+
+function onElementDragMove(e: DragEvent) {
+  if (dragGhost) {
+    dragGhost.style.left = (e.clientX - 40) + 'px'
+    dragGhost.style.top = (e.clientY - 16) + 'px'
+  }
+}
+
+function onElementDragEnd() {
+  if (dragGhost) {
+    dragGhost.remove()
+    dragGhost = null
+  }
+}
+
+function onCanvasDrop(e: DragEvent) {
+  e.preventDefault()
+  if (!graph || !containerRef.value) return
+  try {
+    const data = JSON.parse(e.dataTransfer!.getData('text/plain'))
+    const rect = containerRef.value.getBoundingClientRect()
+    if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) return
+    const local = graph.clientToLocal(e.clientX, e.clientY)
+    const node = graph.addNode({
+      shape: data.shape,
+      x: snap(local.x - 100),
+      y: snap(local.y - 27),
+      data: { nodeType: data.type, label: data.name },
+    })
+    setNodeLabel(node, data.name)
+  } catch { /* ignore */ }
+}
+
+function onCanvasDragOver(e: DragEvent) {
+  e.preventDefault()
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+}
+
+// ===== 画布工具栏 =====
+function zoomIn() { if (graph) graph.zoom(0.1) }
+function zoomOut() { if (graph) graph.zoom(-0.1) }
+function fitCanvas() {
+  if (graph) {
+    try { graph.zoomToFit({ padding: 40, maxScale: 1 }) } catch { /* ignore */ }
+  }
+}
 function deleteSelected() {
-  if (!graph || !selectedNode.value) return
-  const cell = graph.getCellById(selectedNode.value.id)
-  if (cell) graph.removeCell(cell)
-  selectedNode.value = null
+  if (!graph) return
+  const sel = graph.getSelectedCells()
+  if (sel.length > 0) {
+    graph.removeCells(sel)
+    ElMessage.info(`已删除 ${sel.length} 个元素`)
+    selectedNode.value = null
+  }
 }
 
-/** 将属性面板的配置保存到 X6 节点的 data 中 */
+// 一键美化（拓扑分层布局）
+function autoLayout() {
+  if (!graph) return
+  const gNodes = graph.getNodes()
+  const gEdges = graph.getEdges()
+  if (gNodes.length === 0) { ElMessage.info('画布为空，无需美化'); return }
+
+  // 构建邻接表与入度
+  const outMap: Record<string, string[]> = {}
+  const inDeg: Record<string, number> = {}
+  const inMap: Record<string, string[]> = {}
+  gNodes.forEach((n: any) => { outMap[n.id] = []; inDeg[n.id] = 0; inMap[n.id] = [] })
+  gEdges.forEach((e: any) => {
+    const src = e.getSourceCellId(), tgt = e.getTargetCellId()
+    if (outMap[src]) { outMap[src].push(tgt); inDeg[tgt] = (inDeg[tgt] || 0) + 1 }
+    if (inMap[tgt]) { inMap[tgt].push(src) }
+  })
+
+  const roots = gNodes.filter((n: any) => inDeg[n.id] === 0).map((n: any) => n.id)
+  if (roots.length === 0) roots.push(gNodes[0].id)
+
+  // 最长路径分层
+  const level: Record<string, number> = {}
+  gNodes.forEach((n: any) => { level[n.id] = 0 })
+  const deg: Record<string, number> = {}
+  gNodes.forEach((n: any) => { deg[n.id] = inDeg[n.id] })
+  const queue = [...roots]
+  while (queue.length > 0) {
+    const nid = queue.shift()!
+    ;(outMap[nid] || []).forEach((tid: string) => {
+      level[tid] = Math.max(level[tid] || 0, (level[nid] || 0) + 1)
+      deg[tid]--
+      if (deg[tid] === 0) queue.push(tid)
+    })
+  }
+
+  // 按层级分组
+  const groups: Record<number, any[]> = {}
+  gNodes.forEach((n: any) => {
+    const lv = level[n.id] || 0
+    if (!groups[lv]) groups[lv] = []
+    groups[lv].push(n)
+  })
+
+  // 定位
+  const gapX = 100, gapY = 100, padX = 80, padY = 40
+  const sortedLevels = Object.keys(groups).map(Number).sort((a, b) => a - b)
+  let currentY = padY
+  sortedLevels.forEach((lv) => {
+    const g = groups[lv]
+    let x = padX
+    let maxH = 0
+    g.forEach((n: any) => {
+      const size = n.size()
+      n.position(snap(x), snap(currentY))
+      x += size.width + gapX
+      maxH = Math.max(maxH, size.height)
+    })
+    currentY += maxH + gapY
+  })
+
+  // 刷新边路由
+  gEdges.forEach((edge: any) => {
+    try { edge.setRouter('manhattan'); edge.setVertices([]) } catch { /* ignore */ }
+  })
+
+  try { graph.zoomToFit({ padding: 40, maxScale: 1 }) } catch { /* ignore */ }
+  ElMessage.success('美化完成')
+}
+
+function clearAll() {
+  if (!graph) return
+  if (graph.getNodes().length === 0 && graph.getEdges().length === 0) {
+    ElMessage.info('画布已为空')
+    return
+  }
+  if (!confirm('确定要清空画布中的所有节点和连线吗？此操作不可撤销。')) return
+  graph.clearCells()
+  selectedNode.value = null
+  ElMessage.info('画布已清空')
+}
+
+function toggleFullscreen() {
+  const orchEl = containerRef.value?.closest('.orchestrator')
+  if (!orchEl) return
+  isFullscreen.value = !isFullscreen.value
+  orchEl.classList.toggle('orchestrator-fullscreen')
+  setTimeout(() => { if (graph) graph.resize() }, 60)
+}
+
+// ===== 属性面板保存 =====
 function saveNodeConfig() {
   if (!graph || !selectedNode.value) return
   const cell = graph.getCellById(selectedNode.value.id)
   if (!cell) return
-
-  const nodeType = selectedNode.value.type
+  const type = selectedNode.value.type
   const config: Record<string, any> = {}
 
-  if (nodeType === 'CONDITION') {
-    config.expression = selectedNode.value.conditionExpression || ''
-    config.trueNext = selectedNode.value.trueNext || ''
-    config.falseNext = selectedNode.value.falseNext || ''
-  } else if (nodeType === 'LOOP') {
-    config.count = selectedNode.value.loopCount || 0
-    config.expression = selectedNode.value.loopExpression || ''
-    config.nextNode = selectedNode.value.nextNode || ''
-  } else if (nodeType === 'API_KEYWORD' || nodeType === 'TOOL_METHOD') {
-    config.nextNode = selectedNode.value.nextNode || ''
+  if (type === 'CONDITION') {
+    config.condition = selectedNode.value.condition || ''
+  } else if (type === 'ASSERT') {
+    config.assertType = selectedNode.value.assertType || 'equal'
+    config.actual = selectedNode.value.actual || ''
+    config.expected = selectedNode.value.expected || ''
+    config.description = selectedNode.value.description || ''
+  } else if (type === 'API_KEYWORD' || type === 'TOOL_METHOD' || type === 'ACTION') {
+    config.save_as = selectedNode.value.saveAs || ''
+    if (type === 'API_KEYWORD') config.refKeywordId = selectedNode.value.refKeywordId || null
+    if (type === 'TOOL_METHOD') config.refToolId = selectedNode.value.refToolId || null
   }
 
   const existingData = cell.getData() || {}
@@ -160,139 +665,740 @@ function saveNodeConfig() {
     ...existingData,
     config: JSON.stringify(config),
     refKeywordId: selectedNode.value.refKeywordId || null,
+    refToolId: selectedNode.value.refToolId || null,
   })
-  ElMessage.success('节点配置已保存（点击顶部「保存」持久化）')
+
+  // 更新节点标签
+  let newLabel = selectedNode.value.label
+  if (type === 'CONDITION') newLabel = selectedNode.value.condition || newLabel
+  else if (type === 'ASSERT') newLabel = selectedNode.value.description || newLabel
+  setNodeLabel(cell, newLabel)
+
+  ElMessage.success('节点属性已保存')
 }
 
+// ===== 保存 Action =====
 async function handleSave() {
   saving.value = true
   try {
-    const graphNodes = graph.getNodes().map((n: any) => {
+    const graphNodes = graph ? graph.getNodes().map((n: any) => {
       const data = n.getData() || {}
+      const pos = n.position()
       const node: Record<string, any> = {
-        nodeKey: n.id,
+        nodeKey: data.label || n.id,
         nodeType: data.nodeType || 'API_KEYWORD',
-        positionX: Math.round(n.position().x),
-        positionY: Math.round(n.position().y),
+        positionX: Math.round(pos.x),
+        positionY: Math.round(pos.y),
       }
-      // 保存节点配置
       if (data.config) node.config = typeof data.config === 'string' ? data.config : JSON.stringify(data.config)
       if (data.refKeywordId) node.refKeywordId = data.refKeywordId
       if (data.refToolId) node.refToolId = data.refToolId
       return node
-    })
+    }) : []
+
     await updateAction(projectId.value, actionId.value, {
-      name: actionName.value, description: actionDesc.value, nodes: graphNodes,
+      name: actionName.value,
+      description: actionDesc.value,
+      nodes: graphNodes,
+      inputParams: serializeParams(inputParams.value),
+      outputParams: serializeParams(outputParams.value),
     })
     ElMessage.success('保存成功')
-  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '保存失败') } finally { saving.value = false }
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '保存失败')
+  } finally {
+    saving.value = false
+  }
 }
 
-onMounted(() => { fetchAction().then(initGraph) })
-onBeforeUnmount(() => { graph?.dispose() })
+// ===== 跳转调试 =====
+function gotoDebug() {
+  router.push(`/project/${projectId.value}/actions/${actionId.value}/debug`)
+}
+
+// ===== Tab 切换时延迟初始化画布 =====
+async function onTabChange(name: string) {
+  activeTab.value = name
+  if (name === 'orchestrator') {
+    await nextTick()
+    if (!graphInitialized) {
+      try {
+        await initGraph()
+      } catch (err) {
+        console.error('画布初始化失败:', err)
+        ElMessage.error('流程图画布加载失败')
+      }
+    } else if (graph) {
+      setTimeout(() => graph.resize(), 60)
+    }
+  }
+}
+
+onMounted(() => {
+  fetchAction()
+  fetchElementData()
+})
+
+onBeforeUnmount(() => {
+  if (graph) {
+    graph.dispose()
+    graph = null
+    graphInitialized = false
+  }
+})
 </script>
 
 <template>
-  <div class="action-editor">
-    <div class="editor-header">
-      <div style="display:flex;align-items:center;gap:12px">
+  <div v-loading="loading" class="action-editor">
+    <!-- 编辑器头部 -->
+    <div class="edit-header">
+      <div style="display: flex; align-items: center; gap: 12px">
         <el-button type="primary" link @click="router.back()">← 返回</el-button>
-        <el-input v-model="actionName" style="width:200px" placeholder="Action 名称" />
-        <el-button v-if="hasPermission('project:action:edit')" type="primary" :loading="saving" @click="handleSave">保存</el-button>
+        <h2 style="margin: 0; font-size: 18px">编辑 Action关键字</h2>
+      </div>
+      <div style="display: flex; gap: 8px">
+        <el-button @click="gotoDebug">调试</el-button>
+        <el-button
+          v-if="hasPermission('project:action:edit')"
+          type="primary"
+          :loading="saving"
+          @click="handleSave"
+        >
+          保存
+        </el-button>
+        <el-button @click="router.back()">取消</el-button>
       </div>
     </div>
 
-    <div class="editor-body">
-      <!-- 左侧元素面板 -->
-      <div class="element-panel">
-        <div class="panel-title">元素面板</div>
-        <div class="node-item" style="background:#67c23a" @click="addNode('START')">开始</div>
-        <div class="node-item" style="background:#409eff" @click="addNode('API_KEYWORD')">接口关键字</div>
-        <div class="node-item" style="background:#722ed1" @click="addNode('TOOL_METHOD')">工具方法</div>
-        <div class="node-item" style="background:#e6a23c" @click="addNode('CONDITION')">条件判断</div>
-        <div class="node-item" style="background:#13c2c2" @click="addNode('LOOP')">循环</div>
-        <div class="node-item" style="background:#f56c6c" @click="addNode('END')">结束</div>
-        <el-divider />
-        <el-button size="small" type="danger" @click="deleteSelected" :disabled="!selectedNode">删除选中</el-button>
-      </div>
+    <!-- Tab 页签 -->
+    <el-tabs v-model="activeTab" @tab-change="(n: string) => onTabChange(n)">
+      <!-- Tab: 基础信息 -->
+      <el-tab-pane label="基础信息" name="basic">
+        <el-card>
+          <el-form label-position="top" style="max-width: 800px">
+            <el-row :gutter="16">
+              <el-col :span="12">
+                <el-form-item label="名称" required>
+                  <el-input v-model="actionName" placeholder="请输入 Action 名称" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="描述">
+                  <el-input v-model="actionDesc" placeholder="请输入描述" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </el-form>
+        </el-card>
+      </el-tab-pane>
 
-      <!-- 中间画布 -->
-      <div class="canvas-area" ref="containerRef"></div>
+      <!-- Tab: I/O 参数 -->
+      <el-tab-pane label="I/O 参数" name="params">
+        <el-card>
+          <div style="display: flex; gap: 0; margin-bottom: 12px">
+            <el-button
+              :type="ioSubTab === 'input' ? 'primary' : 'default'"
+              @click="ioSubTab = 'input'"
+            >
+              输入参数
+            </el-button>
+            <el-button
+              :type="ioSubTab === 'output' ? 'primary' : 'default'"
+              @click="ioSubTab = 'output'"
+            >
+              输出参数
+            </el-button>
+          </div>
 
-      <!-- 右侧属性面板 -->
-      <div class="property-panel">
-        <div class="panel-title">属性面板</div>
-        <div v-if="selectedNode">
-          <p><strong>节点:</strong> {{ selectedNode.label }}</p>
-          <p><strong>类型:</strong> {{ selectedNode.type }}</p>
-          <p><strong>ID:</strong> {{ selectedNode.id }}</p>
-          <el-divider />
+          <el-table
+            v-if="ioSubTab === 'input'"
+            :data="inputParams"
+            size="small"
+            border
+            style="width: 100%"
+          >
+            <el-table-column label="名称" width="160">
+              <template #default="{ row }">
+                <el-input v-model="row.name" size="small" placeholder="参数名" />
+              </template>
+            </el-table-column>
+            <el-table-column label="类型" width="100">
+              <template #default="{ row }">
+                <el-select v-model="row.type" size="small" style="width: 100%">
+                  <el-option value="string" label="string" />
+                  <el-option value="int" label="int" />
+                  <el-option value="bool" label="bool" />
+                  <el-option value="float" label="float" />
+                  <el-option value="json" label="json" />
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column label="必填" width="80" align="center">
+              <template #default="{ row }">
+                <el-switch v-model="row.required" size="small" />
+              </template>
+            </el-table-column>
+            <el-table-column label="默认值" width="140">
+              <template #default="{ row }">
+                <el-input v-model="row.defaultValue" size="small" placeholder="无" />
+              </template>
+            </el-table-column>
+            <el-table-column label="说明">
+              <template #default="{ row }">
+                <el-input v-model="row.description" size="small" placeholder="说明" />
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="60" align="center">
+              <template #default="{ $index }">
+                <el-button
+                  link
+                  size="small"
+                  type="danger"
+                  @click="inputParams.splice($index, 1)"
+                >
+                  ×
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
 
-          <!-- CONDITION 节点配置 -->
-          <template v-if="selectedNode.type === 'CONDITION'">
-            <el-form label-position="top" size="small">
-              <el-form-item label="条件表达式 (Groovy)">
-                <el-input v-model="selectedNode.conditionExpression" type="textarea" :rows="3"
-                  placeholder="如: ${status} == 200" />
-                <div style="color:#909399;font-size:11px;margin-top:4px">支持 ${var} 引用上下文变量</div>
-              </el-form-item>
-              <el-form-item label="为 true 时跳转节点">
-                <el-input v-model="selectedNode.trueNext" placeholder="nodeKey" />
-              </el-form-item>
-              <el-form-item label="为 false 时跳转节点">
-                <el-input v-model="selectedNode.falseNext" placeholder="nodeKey" />
-              </el-form-item>
-              <el-button size="small" type="primary" @click="saveNodeConfig">保存配置</el-button>
-            </el-form>
-          </template>
+          <el-table
+            v-else
+            :data="outputParams"
+            size="small"
+            border
+            style="width: 100%"
+          >
+            <el-table-column label="名称" width="160">
+              <template #default="{ row }">
+                <el-input v-model="row.name" size="small" placeholder="参数名" />
+              </template>
+            </el-table-column>
+            <el-table-column label="类型" width="100">
+              <template #default="{ row }">
+                <el-select v-model="row.type" size="small" style="width: 100%">
+                  <el-option value="string" label="string" />
+                  <el-option value="int" label="int" />
+                  <el-option value="bool" label="bool" />
+                  <el-option value="float" label="float" />
+                  <el-option value="json" label="json" />
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column label="必填" width="80" align="center">
+              <template #default="{ row }">
+                <el-switch v-model="row.required" size="small" />
+              </template>
+            </el-table-column>
+            <el-table-column label="默认值" width="140">
+              <template #default="{ row }">
+                <el-input v-model="row.defaultValue" size="small" placeholder="无" />
+              </template>
+            </el-table-column>
+            <el-table-column label="说明">
+              <template #default="{ row }">
+                <el-input v-model="row.description" size="small" placeholder="说明" />
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="60" align="center">
+              <template #default="{ $index }">
+                <el-button
+                  link
+                  size="small"
+                  type="danger"
+                  @click="outputParams.splice($index, 1)"
+                >
+                  ×
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
 
-          <!-- LOOP 节点配置 -->
-          <template v-else-if="selectedNode.type === 'LOOP'">
-            <el-form label-position="top" size="small">
-              <el-form-item label="循环次数">
-                <el-input-number v-model="selectedNode.loopCount" :min="0" :max="1000" />
-              </el-form-item>
-              <el-form-item label="条件表达式（可选）">
-                <el-input v-model="selectedNode.loopExpression" type="textarea" :rows="2"
-                  placeholder="如: ${index} < 10" />
-                <div style="color:#909399;font-size:11px;margin-top:4px">当循环次数为 0 时，使用条件表达式控制循环</div>
-              </el-form-item>
-              <el-form-item label="后续节点">
-                <el-input v-model="selectedNode.nextNode" placeholder="nodeKey" />
-              </el-form-item>
-              <el-button size="small" type="primary" @click="saveNodeConfig">保存配置</el-button>
-            </el-form>
-          </template>
+          <el-button
+            size="small"
+            style="margin-top: 8px"
+            @click="(ioSubTab === 'input' ? inputParams : outputParams).push({ name: '', type: 'string', required: false, defaultValue: '', description: '' })"
+          >
+            + 添加参数
+          </el-button>
+        </el-card>
+      </el-tab-pane>
 
-          <!-- API_KEYWORD / TOOL_METHOD 节点配置 -->
-          <template v-else-if="selectedNode.type === 'API_KEYWORD' || selectedNode.type === 'TOOL_METHOD'">
-            <el-form label-position="top" size="small">
-              <el-form-item label="引用关键字 ID">
-                <el-input-number v-model="selectedNode.refKeywordId" :min="0" />
-              </el-form-item>
-              <el-form-item label="后续节点">
-                <el-input v-model="selectedNode.nextNode" placeholder="nodeKey" />
-              </el-form-item>
-              <el-button size="small" type="primary" @click="saveNodeConfig">保存配置</el-button>
-            </el-form>
-          </template>
+      <!-- Tab: 节点编排器 -->
+      <el-tab-pane label="节点编排器" name="orchestrator">
+        <div class="orchestrator" @drop="onCanvasDrop" @dragover="onCanvasDragOver">
+          <!-- 左侧：元素面板 -->
+          <div class="node-panel">
+            <div class="panel-title">元素类型</div>
+            <div
+              v-for="(cat, idx) in elementCategories"
+              :key="idx"
+              class="el-section"
+              :class="{ 'el-open': cat.expanded }"
+            >
+              <div class="el-header" @click="toggleCategory(cat)">
+                <span class="el-arrow" :class="{ expanded: cat.expanded }">▸</span>
+                <span>{{ cat.title }}</span>
+                <span class="el-badge">{{ cat.badge }}</span>
+              </div>
+              <div v-show="cat.expanded" class="el-body">
+                <input
+                  v-model="cat.search"
+                  class="el-search"
+                  type="text"
+                  :placeholder="`搜索${cat.title}…`"
+                />
+                <div class="el-items">
+                  <div
+                    v-for="(item, i) in filteredItems(cat)"
+                    :key="i"
+                    class="node-drag"
+                    draggable="true"
+                    @dblclick="onElementDblClick(item)"
+                    @dragstart="(e) => onElementDragStart(e, item)"
+                    @drag="onElementDragMove"
+                    @dragend="onElementDragEnd"
+                  >
+                    <div
+                      class="nd-icon"
+                      :style="{ background: nodeTypeConfig[item.type]?.iconBg, color: nodeTypeConfig[item.type]?.color }"
+                    >
+                      {{ nodeTypeConfig[item.type]?.icon }}
+                    </div>
+                    {{ item.name }}
+                  </div>
+                  <div
+                    v-if="filteredItems(cat).length === 0"
+                    style="font-size: 12px; color: #c0c4cc; text-align: center; padding: 8px"
+                  >
+                    无匹配项
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-          <p v-else style="color:#909399;font-size:12px">{{ selectedNode.type }} 类型节点无需额外配置</p>
+          <!-- 中间：画布 -->
+          <div class="canvas-wrap">
+            <!-- 工具栏 -->
+            <div class="canvas-toolbar">
+              <button class="tb-btn" title="放大" @click="zoomIn">+</button>
+              <button class="tb-btn" title="缩小" @click="zoomOut">−</button>
+              <span class="tb-label">{{ zoomPercent }}%</span>
+              <button class="tb-btn" title="适应画布" @click="fitCanvas">⊡</button>
+              <div class="tb-sep"></div>
+              <button class="tb-btn danger" title="删除选中" @click="deleteSelected">✕</button>
+              <div class="tb-sep"></div>
+              <button class="tb-btn" title="一键美化" @click="autoLayout">⊞</button>
+              <button class="tb-btn" title="一键清空" @click="clearAll">⌀</button>
+              <div class="tb-sep"></div>
+              <button
+                class="tb-btn"
+                :class="{ active: isFullscreen }"
+                title="全屏编辑"
+                @click="toggleFullscreen"
+              >
+                ⛶
+              </button>
+            </div>
+            <div ref="containerRef" class="flow-graph"></div>
+          </div>
+
+          <!-- 右侧：属性面板 -->
+          <div class="prop-panel">
+            <template v-if="selectedNode">
+              <!-- API_KEYWORD -->
+              <template v-if="selectedNode.type === 'API_KEYWORD'">
+                <h4>节点属性：接口关键字</h4>
+                <el-form label-position="top" size="small">
+                  <el-form-item label="接口关键字">
+                    <el-input v-model="selectedNode.label" />
+                  </el-form-item>
+                  <el-form-item label="引用关键字 ID">
+                    <el-input-number v-model="selectedNode.refKeywordId" :min="0" style="width: 100%" />
+                  </el-form-item>
+                  <el-form-item label="save_as 变量名">
+                    <el-input v-model="selectedNode.saveAs" placeholder="如：api_result" />
+                  </el-form-item>
+                  <el-button size="small" type="primary" @click="saveNodeConfig">保存</el-button>
+                </el-form>
+              </template>
+
+              <!-- TOOL_METHOD -->
+              <template v-else-if="selectedNode.type === 'TOOL_METHOD'">
+                <h4>节点属性：工具方法</h4>
+                <el-form label-position="top" size="small">
+                  <el-form-item label="工具方法">
+                    <el-input v-model="selectedNode.label" />
+                  </el-form-item>
+                  <el-form-item label="引用工具方法 ID">
+                    <el-input-number v-model="selectedNode.refToolId" :min="0" style="width: 100%" />
+                  </el-form-item>
+                  <el-form-item label="save_as 变量名">
+                    <el-input v-model="selectedNode.saveAs" placeholder="如：tool_result" />
+                  </el-form-item>
+                  <el-button size="small" type="primary" @click="saveNodeConfig">保存</el-button>
+                </el-form>
+              </template>
+
+              <!-- ACTION -->
+              <template v-else-if="selectedNode.type === 'ACTION'">
+                <h4>节点属性：Action关键字</h4>
+                <el-form label-position="top" size="small">
+                  <el-form-item label="Action关键字">
+                    <el-input v-model="selectedNode.label" />
+                  </el-form-item>
+                  <el-form-item label="save_as 变量名">
+                    <el-input v-model="selectedNode.saveAs" placeholder="如：action_result" />
+                  </el-form-item>
+                  <el-button size="small" type="primary" @click="saveNodeConfig">保存</el-button>
+                </el-form>
+              </template>
+
+              <!-- CONDITION -->
+              <template v-else-if="selectedNode.type === 'CONDITION'">
+                <h4>节点属性：逻辑判断</h4>
+                <el-form label-position="top" size="small">
+                  <el-form-item label="条件表达式（Python 语法）">
+                    <el-input
+                      v-model="selectedNode.condition"
+                      type="textarea"
+                      :rows="3"
+                      placeholder="如：status == 'empty'"
+                      style="font-family: monospace"
+                    />
+                    <div style="color: #909399; font-size: 11px; margin-top: 4px">
+                      支持 Python 语法：==, !=, &gt;, &lt;, and, or, not, in, len() 等
+                    </div>
+                  </el-form-item>
+                  <div style="margin-top: 12px; padding: 10px; background: #fafafa; border-radius: 4px; font-size: 12px">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px">
+                      <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #52c41a"></span>
+                      <strong>是（满足条件）</strong>
+                      <span style="color: #909399">→ 右侧分支</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px">
+                      <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f56c6c"></span>
+                      <strong>否（不满足条件）</strong>
+                      <span style="color: #909399">→ 下方分支</span>
+                    </div>
+                  </div>
+                  <el-button size="small" type="primary" @click="saveNodeConfig" style="margin-top: 12px">保存</el-button>
+                </el-form>
+              </template>
+
+              <!-- ASSERT -->
+              <template v-else-if="selectedNode.type === 'ASSERT'">
+                <h4>节点属性：断言</h4>
+                <el-form label-position="top" size="small">
+                  <el-form-item label="断言类型">
+                    <el-select v-model="selectedNode.assertType" style="width: 100%">
+                      <el-option value="equal" label="equal（等于）" />
+                      <el-option value="not_equal" label="not_equal（不等于）" />
+                      <el-option value="include" label="include（包含）" />
+                      <el-option value="not_include" label="不包含" />
+                      <el-option value="true" label="true（为真）" />
+                      <el-option value="not_true" label="not_true（为假）" />
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item label="实际值表达式">
+                    <el-input
+                      v-model="selectedNode.actual"
+                      placeholder="如：${response.status_code}"
+                      style="font-family: monospace"
+                    />
+                  </el-form-item>
+                  <el-form-item label="预期值">
+                    <el-input v-model="selectedNode.expected" placeholder="如：200" />
+                  </el-form-item>
+                  <el-form-item label="描述（可选）">
+                    <el-input v-model="selectedNode.description" placeholder="断言描述" />
+                  </el-form-item>
+                  <p style="font-size: 11px; color: #909399; line-height: 1.6">
+                    断言节点在执行时对上游节点的结果进行校验，校验失败则标记该节点为失败状态
+                  </p>
+                  <el-button size="small" type="primary" @click="saveNodeConfig">保存</el-button>
+                </el-form>
+              </template>
+
+              <!-- LISTENER -->
+              <template v-else-if="selectedNode.type === 'LISTENER'">
+                <h4>节点属性：监听器</h4>
+                <p style="font-size: 12px; color: #909399">
+                  监听器功能待定义，敬请期待。
+                </p>
+              </template>
+
+              <!-- 默认 -->
+              <template v-else>
+                <h4>节点属性</h4>
+                <p style="color: #909399; font-size: 12px">
+                  {{ selectedNode.type }} 类型节点无需额外配置
+                </p>
+              </template>
+            </template>
+
+            <!-- 空状态 -->
+            <div v-else class="prop-empty">
+              <div class="pe-icon">⊞</div>
+              <p>点击流程图中的节点查看和编辑属性</p>
+              <p style="font-size: 11px; margin-top: 4px">从左侧拖拽或双击元素添加到画布</p>
+            </div>
+          </div>
         </div>
-        <div v-else style="color:#909399;text-align:center;padding:40px">选中节点查看属性</div>
-      </div>
-    </div>
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 
 <style scoped>
-.action-editor { height:calc(100vh - 120px); display:flex; flex-direction:column; margin:-24px; }
-.editor-header { padding:12px 16px; border-bottom:1px solid #ebeef5; background:#fff; }
-.editor-body { flex:1; display:flex; overflow:hidden; }
-.element-panel { width:160px; background:#f5f7fa; border-right:1px solid #ebeef5; padding:12px; overflow-y:auto; }
-.canvas-area { flex:1; background:#f5f7fa; }
-.property-panel { width:240px; background:#f5f7fa; border-left:1px solid #ebeef5; padding:12px; overflow-y:auto; }
-.panel-title { font-weight:600; margin-bottom:12px; font-size:14px; }
-.node-item { padding:8px 12px; margin-bottom:8px; border-radius:6px; color:#fff; text-align:center; cursor:pointer; font-size:13px; }
-.node-item:hover { opacity:0.85; }
+.action-editor {
+  margin: -24px;
+}
+.edit-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #ebeef5;
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 节点编排器布局 */
+.orchestrator {
+  display: flex;
+  height: 640px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  min-height: 360px;
+  max-height: 85vh;
+}
+.orchestrator-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 10000;
+  border-radius: 0;
+  border: none;
+}
+
+/* 左侧元素面板 */
+.node-panel {
+  width: 180px;
+  background: #fafafa;
+  border-right: 1px solid #ebeef5;
+  padding: 10px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.panel-title {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.el-section {
+  margin-bottom: 2px;
+}
+.el-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #303133;
+  user-select: none;
+  transition: background 0.15s;
+}
+.el-header:hover {
+  background: #f0f0f0;
+}
+.el-arrow {
+  font-size: 9px;
+  color: #c0c4cc;
+  transition: transform 0.2s;
+  display: inline-block;
+  width: 10px;
+  text-align: center;
+}
+.el-arrow.expanded {
+  transform: rotate(90deg);
+}
+.el-badge {
+  margin-left: auto;
+  font-size: 10px;
+  color: #909399;
+  background: #f0f0f0;
+  border-radius: 8px;
+  padding: 0 5px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 16px;
+}
+.el-body {
+  padding: 0 2px 4px;
+}
+.el-search {
+  width: 100%;
+  height: 24px;
+  border: 1px solid #dcdfe6;
+  border-radius: 3px;
+  padding: 0 6px;
+  font-size: 11px;
+  margin-bottom: 4px;
+  outline: none;
+  box-sizing: border-box;
+  background: #fff;
+}
+.el-search:focus {
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+}
+.el-items {
+  max-height: 150px;
+  overflow-y: auto;
+}
+.node-drag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  cursor: grab;
+  font-size: 13px;
+  transition: all 0.15s;
+  user-select: none;
+}
+.node-drag:hover {
+  border-color: #409eff;
+  box-shadow: 0 1px 4px rgba(64, 158, 255, 0.15);
+}
+.node-drag:active {
+  cursor: grabbing;
+}
+.nd-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+/* 中间画布 */
+.canvas-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: #fff;
+  overflow: hidden;
+}
+.canvas-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-bottom: 1px solid #ebeef5;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+.tb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  color: #606266;
+  transition: all 0.15s;
+}
+.tb-btn:hover {
+  border-color: #409eff;
+  color: #409eff;
+}
+.tb-btn.danger:hover {
+  border-color: #f56c6c;
+  color: #f56c6c;
+}
+.tb-btn.active {
+  background: #409eff;
+  color: #fff;
+  border-color: #409eff;
+}
+.tb-sep {
+  width: 1px;
+  height: 18px;
+  background: #dcdfe6;
+  margin: 0 4px;
+}
+.tb-label {
+  font-size: 12px;
+  color: #606266;
+  min-width: 40px;
+  text-align: center;
+}
+.flow-graph {
+  flex: 1;
+  overflow: hidden;
+  background-color: #fff;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.07) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* 连接点默认隐藏，选中节点时显示 */
+:deep(.flow-port),
+:deep([magnet="true"]) {
+  display: none;
+}
+:deep(.is-selected .flow-port),
+:deep(.is-selected [magnet="true"]) {
+  display: inline;
+}
+
+/* 右侧属性面板 */
+.prop-panel {
+  width: 280px;
+  border-left: 1px solid #ebeef5;
+  background: #fff;
+  overflow-y: auto;
+  padding: 12px;
+  flex-shrink: 0;
+}
+.prop-panel h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #303133;
+}
+.prop-empty {
+  text-align: center;
+  padding: 60px 16px;
+  color: #c0c4cc;
+  font-size: 13px;
+}
+.prop-empty .pe-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+  opacity: 0.4;
+}
 </style>

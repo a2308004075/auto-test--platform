@@ -25,15 +25,30 @@ public class PlanResponse {
     private String description;
 
     /**
+     * 所属分组 ID
+     */
+    private Long groupId;
+
+    /**
      * 关联的测试套件 ID 列表
      */
     private List<Long> suiteIds;
+
+    /**
+     * 关联的测试套件名称列表（表格展示用）
+     */
+    private List<String> suiteNames;
 
     private Long environmentId;
 
     private String environmentName;
 
     private String scheduleCron;
+
+    /**
+     * 触发方式：MANUAL / SCHEDULED / CI
+     */
+    private String triggerType;
 
     private Integer isActive;
 
@@ -42,4 +57,19 @@ public class PlanResponse {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    /**
+     * 最近一次执行时间（从 test_execution 聚合）
+     */
+    private LocalDateTime lastExecutionTime;
+
+    /**
+     * 最近一次执行通过率（0-100，保留 1 位小数）
+     */
+    private Double passRate;
+
+    /**
+     * 关联套件下的用例总数
+     */
+    private Integer caseCount;
 }

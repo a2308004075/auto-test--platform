@@ -48,6 +48,16 @@ public class CaseCreateRequest implements Serializable {
     private String priority;
 
     /**
+     * 所属分组 ID
+     */
+    private Long groupId;
+
+    /**
+     * 标签列表（JSON）
+     */
+    private String tags;
+
+    /**
      * 超时秒数，默认 30
      */
     private Integer timeout;

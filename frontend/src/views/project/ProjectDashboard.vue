@@ -255,20 +255,20 @@ watch(projectId, fetchDashboard)
     </div>
 
     <!-- Layer 2: 质量健康度 -->
-    <div class="health-panel">
-      <div class="health-left">
-        <div class="health-circle-wrap">
+    <div class="health-score-panel">
+      <div class="health-score-left">
+        <div class="health-score-circle-wrap">
           <svg viewBox="0 0 120 120" width="120" height="120">
             <circle cx="60" cy="60" :r="circleR" fill="none" stroke="#f0f0f0" stroke-width="8" />
             <circle cx="60" cy="60" :r="circleR" fill="none" :stroke="healthColor(stats.healthScore || 0)" stroke-width="8"
               :stroke-dasharray="circleDash(stats.healthScore || 0)" stroke-linecap="round" transform="rotate(-90 60 60)" />
           </svg>
-          <div class="health-center">
-            <span class="health-num" :style="{ color: healthColor(stats.healthScore || 0) }">{{ stats.healthScore || 0 }}</span>
-            <span class="health-grade">{{ healthGrade(stats.healthScore || 0) }}</span>
+          <div class="health-score-center">
+            <span class="health-score-num" :style="{ color: healthColor(stats.healthScore || 0) }">{{ stats.healthScore || 0 }}</span>
+            <span class="health-score-grade">{{ healthGrade(stats.healthScore || 0) }}</span>
           </div>
         </div>
-        <div class="health-title">
+        <div class="health-score-title">
           质量健康度
           <el-tooltip placement="top">
             <template #content>
@@ -277,42 +277,42 @@ watch(projectId, fetchDashboard)
                 评分等级：≥90 优秀、≥75 良好、≥60 一般、&lt;60 较差
               </div>
             </template>
-            <span class="help-icon">ⓘ</span>
+            <span class="metric-help-btn">ⓘ</span>
           </el-tooltip>
         </div>
-        <div class="health-subtitle">基于最近 30 天测试数据综合评估</div>
+        <div class="health-score-subtitle">基于最近 30 天测试数据综合评估</div>
       </div>
-      <div class="health-right">
-        <div class="score-dim" v-for="dim in healthDimensions" :key="dim.label">
+      <div class="health-score-right">
+        <div class="score-dimension" v-for="dim in healthDimensions" :key="dim.label">
           <div class="score-dim-header">
             <span class="score-dim-label">{{ dim.label }}</span>
             <el-tooltip :content="dim.tip" placement="top">
-              <span class="help-icon">ⓘ</span>
+              <span class="metric-help-btn">ⓘ</span>
             </el-tooltip>
             <span class="score-dim-value">{{ dim.value }}</span>
           </div>
-          <div class="score-bar">
-            <div class="score-fill" :style="{ width: dim.value + '%', background: healthColor(dim.value) }"></div>
+          <div class="score-dim-bar">
+            <div class="score-dim-fill" :style="{ width: dim.value + '%', background: healthColor(dim.value) }"></div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Layer 3: 8 KPI 卡片 -->
-    <div class="kpi-grid">
-      <div class="kpi-card" v-for="kpi in kpiCards" :key="kpi.label">
-        <div class="kpi-icon" :style="{ background: kpi.iconBg }">{{ kpi.icon }}</div>
-        <div class="kpi-info">
-          <div class="kpi-label">
+    <div class="overview-kpi-row">
+      <div class="overview-kpi-card" v-for="kpi in kpiCards" :key="kpi.label">
+        <div class="overview-kpi-icon" :style="{ background: kpi.iconBg }">{{ kpi.icon }}</div>
+        <div class="overview-kpi-info">
+          <div class="overview-kpi-label">
             {{ kpi.label }}
             <el-tooltip :content="kpi.tip" placement="top">
-              <span class="help-icon">ⓘ</span>
+              <span class="metric-help-btn">ⓘ</span>
             </el-tooltip>
           </div>
-          <div class="kpi-value" :style="{ color: kpi.color || 'rgba(0,0,0,.88)' }">
+          <div class="overview-kpi-value" :style="{ color: kpi.color || 'rgba(0,0,0,.88)' }">
             {{ kpi.value }}<span v-if="kpi.suffix" style="font-size:14px;font-weight:400;color:rgba(0,0,0,.45);">{{ kpi.suffix }}</span>
           </div>
-          <div class="kpi-footer" v-if="kpi.trend || kpi.footer">
+          <div class="overview-kpi-footer" v-if="kpi.trend || kpi.footer">
             <template v-if="kpi.trend">
               <span :class="kpi.trend.isUp ? 'trend-up' : 'trend-down'">
                 {{ kpi.trend.isUp ? '↑' : '↓' }} {{ kpi.trend.delta }}%
@@ -327,13 +327,13 @@ watch(projectId, fetchDashboard)
     </div>
 
     <!-- Layer 4: 趋势分析 -->
-    <div class="trend-section">
+    <div class="trend-section-3col">
       <!-- 通过率趋势 -->
-      <div class="card trend-main">
+      <div class="card trend-card-main">
         <div class="card-header">
           <span>通过率趋势</span>
           <div class="trend-controls">
-            <div class="target-line"><span class="target-dot"></span>目标 95%</div>
+            <div class="trend-target-line"><span class="trend-target-dot"></span>目标 95%</div>
             <el-radio-group v-model="timeRange" size="small">
               <el-radio-button label="day">天</el-radio-button>
               <el-radio-button label="week">周</el-radio-button>
@@ -347,18 +347,18 @@ watch(projectId, fetchDashboard)
       </div>
       <!-- 右侧两卡片 -->
       <div class="trend-side-col">
-        <div class="card trend-side">
-          <div class="card-header">
+        <div class="card trend-card-side">
+          <div class="card-header" style="padding:12px 16px;">
             <span style="font-size:13px;font-weight:600;">每日执行频次</span>
             <span style="font-size:11px;color:rgba(0,0,0,.45);">近 7 天</span>
           </div>
-          <div class="card-body">
+          <div class="card-body" style="padding:12px 16px;">
             <div ref="execFreqRef" style="width:100%;height:140px;"></div>
           </div>
         </div>
         <!-- 缺陷趋势（暂无数据，显示占位） -->
-        <div class="card trend-side">
-          <div class="card-header">
+        <div class="card trend-card-side">
+          <div class="card-header" style="padding:12px 16px;">
             <span style="font-size:13px;font-weight:600;">缺陷趋势</span>
             <span style="font-size:11px;color:rgba(0,0,0,.45);">近 4 周</span>
           </div>
@@ -374,24 +374,24 @@ watch(projectId, fetchDashboard)
     </div>
 
     <!-- Layer 5: 覆盖率 & 风险 -->
-    <div class="coverage-risk-section">
+    <div class="overview-section" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
       <!-- 模块覆盖率 -->
       <div class="card">
         <div class="card-header">模块测试覆盖率</div>
         <div class="card-body">
           <div v-if="trend.moduleCoverage?.length">
             <div class="coverage-item" v-for="m in trend.moduleCoverage" :key="m.moduleName">
-              <span class="cov-module">
+              <span class="coverage-module">
                 {{ m.moduleName }}
                 <el-tooltip content="该模块的接口被测试用例覆盖的比例" placement="top">
-                  <span class="help-icon">ⓘ</span>
+                  <span class="metric-help-btn">ⓘ</span>
                 </el-tooltip>
               </span>
-              <div class="cov-bar-wrap">
-                <div class="cov-bar" :style="{ width: (m.percentage || 0) + '%', background: (m.percentage || 0) >= 80 ? '#52c41a' : '#faad14' }"></div>
+              <div class="coverage-bar-wrap">
+                <div class="coverage-bar" :style="{ width: (m.percentage || 0) + '%', background: (m.percentage || 0) >= 80 ? '#52c41a' : '#faad14' }"></div>
               </div>
-              <span class="cov-count">{{ m.count }}</span>
-              <span class="cov-pct" :style="{ color: (m.percentage || 0) >= 80 ? '#52c41a' : '#faad14' }">{{ m.percentage || 0 }}%</span>
+              <span class="coverage-count">{{ m.count }}</span>
+              <span class="coverage-pct" :style="{ color: (m.percentage || 0) >= 80 ? '#52c41a' : '#faad14' }">{{ m.percentage || 0 }}%</span>
             </div>
           </div>
           <el-empty v-else description="暂无模块数据" :image-size="60" />
@@ -399,21 +399,21 @@ watch(projectId, fetchDashboard)
       </div>
       <!-- 质量风险 Top 5 -->
       <div class="card">
-        <div class="card-header">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
           <span>质量风险 Top 5</span>
-          <a style="font-size:12px;color:#1890ff;cursor:pointer;" @click="router.push(`/project/${projectId}/cases`)">查看全部 →</a>
+          <a style="font-size:12px;font-weight:normal;color:#1890ff;cursor:pointer;" @click="router.push(`/project/${projectId}/cases`)">查看全部 →</a>
         </div>
         <div class="card-body">
           <div v-if="trend.qualityRiskTop5?.length">
-            <div class="risk-item" v-for="r in trend.qualityRiskTop5" :key="r.rank">
-              <div class="risk-rank" :class="r.rank <= 3 ? 'top' : 'normal'">{{ r.rank }}</div>
-              <div class="risk-info">
-                <div class="risk-name">{{ r.caseName }}</div>
-                <div class="risk-meta">{{ r.suiteName }} · 近 30 天失败 {{ r.failCount }} 次 · 失败率 {{ r.failRate }}%</div>
+            <div class="unstable-item" v-for="r in trend.qualityRiskTop5" :key="r.rank">
+              <div class="unstable-rank" :class="r.rank <= 3 ? 'top' : 'normal'">{{ r.rank }}</div>
+              <div class="unstable-info">
+                <div class="unstable-name">{{ r.caseName }}</div>
+                <div class="unstable-meta">{{ r.suiteName }} · 近 30 天失败 {{ r.failCount }} 次 · 失败率 {{ r.failRate }}%</div>
               </div>
-              <div class="risk-fail">{{ r.failRate }}%</div>
+              <div class="unstable-fail">{{ r.failRate }}%</div>
             </div>
-            <div class="risk-footer">
+            <div class="risk-monitor-footer">
               <span>持续失败用例：</span>
               <span class="risk-count">{{ trend.continuousFailCount || 0 }}</span>
               <span>个用例连续 3 次以上执行失败</span>
@@ -462,81 +462,81 @@ watch(projectId, fetchDashboard)
 .data-update-time { font-size: 11px; color: rgba(0,0,0,.25); margin-top: 4px; }
 
 /* Layer 2: 质量健康度 */
-.health-panel {
+.health-score-panel {
   display: flex; align-items: center; gap: 40px;
   margin-bottom: 16px; padding: 24px 28px;
   background: #fff; border-radius: 6px;
   border: 1px solid #f0f0f0;
   box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 1px 6px -1px rgba(0,0,0,.02), 0 2px 4px rgba(0,0,0,.02);
 }
-.health-left {
+.health-score-left {
   display: flex; flex-direction: column; align-items: center;
   flex-shrink: 0; min-width: 160px;
 }
-.health-circle-wrap { position: relative; width: 120px; height: 120px; }
-.health-center {
+.health-score-circle-wrap { position: relative; width: 120px; height: 120px; }
+.health-score-center {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%); text-align: center;
   display: flex; flex-direction: column; align-items: center;
 }
-.health-num { font-size: 36px; font-weight: 800; line-height: 1; }
-.health-grade { font-size: 12px; font-weight: 600; color: rgba(0,0,0,.45); margin-top: 2px; letter-spacing: .5px; }
-.health-title {
+.health-score-num { font-size: 36px; font-weight: 800; line-height: 1; }
+.health-score-grade { font-size: 12px; font-weight: 600; color: rgba(0,0,0,.45); margin-top: 2px; letter-spacing: .5px; }
+.health-score-title {
   margin-top: 12px; font-size: 15px; font-weight: 600; color: rgba(0,0,0,.88);
   display: flex; align-items: center; gap: 6px;
 }
-.health-subtitle { font-size: 11px; color: rgba(0,0,0,.45); margin-top: 2px; }
-.health-right { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.health-score-subtitle { font-size: 11px; color: rgba(0,0,0,.45); margin-top: 2px; }
+.health-score-right { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
 .score-dim-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
 .score-dim-label { font-size: 13px; color: rgba(0,0,0,.88); font-weight: 500; }
 .score-dim-value { margin-left: auto; font-size: 14px; font-weight: 700; color: rgba(0,0,0,.88); }
-.score-bar { height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden; }
-.score-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+.score-dim-bar { height: 6px; background: #f0f0f0; border-radius: 3px; overflow: hidden; }
+.score-dim-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
 
-/* 帮助按钮 */
-.help-icon {
+/* Metric help button */
+.metric-help-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 15px; height: 15px; border-radius: 50%;
   font-size: 10px; color: rgba(0,0,0,.25); background: #f0f0f0;
   cursor: help; font-style: normal; line-height: 1;
   transition: color .15s, background .15s;
 }
-.help-icon:hover { color: #1890ff; background: #e6f4ff; }
+.metric-help-btn:hover { color: #1890ff; background: #e6f4ff; }
 
 /* Layer 3: KPI 卡片 */
-.kpi-grid {
+.overview-kpi-row {
   display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 14px; margin-bottom: 16px;
 }
-.kpi-card {
+.overview-kpi-card {
   background: #fff; border-radius: 6px;
   border: 1px solid #f0f0f0;
   box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 1px 6px -1px rgba(0,0,0,.02), 0 2px 4px rgba(0,0,0,.02);
   padding: 16px 18px; display: flex; align-items: center; gap: 14px;
   transition: box-shadow 0.2s, border-color 0.2s;
 }
-.kpi-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-.kpi-icon {
+.overview-kpi-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.overview-kpi-icon {
   width: 44px; height: 44px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   font-size: 20px; flex-shrink: 0;
 }
-.kpi-info { flex: 1; min-width: 0; }
-.kpi-label {
+.overview-kpi-info { flex: 1; min-width: 0; }
+.overview-kpi-label {
   font-size: 12px; color: rgba(0,0,0,.45); margin-bottom: 4px;
   display: flex; align-items: center; gap: 4px; white-space: nowrap;
 }
-.kpi-value { font-size: 24px; font-weight: 700; line-height: 1.2; color: rgba(0,0,0,.88); }
-.kpi-footer {
+.overview-kpi-value { font-size: 24px; font-weight: 700; line-height: 1.2; color: rgba(0,0,0,.88); }
+.overview-kpi-footer {
   display: flex; align-items: center; gap: 6px;
   font-size: 12px; color: rgba(0,0,0,.45); margin-top: 4px;
 }
-.kpi-footer .trend-up { color: #52c41a; font-weight: 500; }
-.kpi-footer .trend-down { color: #ff4d4f; font-weight: 500; }
-.kpi-footer .footer-sep { color: rgba(0,0,0,.25); }
+.overview-kpi-footer .trend-up { color: #52c41a; font-weight: 500; }
+.overview-kpi-footer .trend-down { color: #ff4d4f; font-weight: 500; }
+.overview-kpi-footer .footer-sep { color: rgba(0,0,0,.25); }
 
 /* Layer 4: 趋势分析 */
-.trend-section {
+.trend-section-3col {
   display: grid; grid-template-columns: 1fr 1fr;
   gap: 16px; margin-bottom: 16px;
 }
@@ -553,8 +553,8 @@ watch(projectId, fetchDashboard)
 }
 .card-body { padding: 16px; }
 .trend-controls { display: flex; align-items: center; gap: 12px; }
-.target-line { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #faad14; }
-.target-dot { width: 8px; height: 2px; background: #faad14; border-radius: 1px; }
+.trend-target-line { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #faad14; }
+.trend-target-dot { width: 8px; height: 2px; background: #faad14; border-radius: 1px; }
 
 /* 缺陷趋势占位 */
 .defect-trend-empty {
@@ -564,42 +564,39 @@ watch(projectId, fetchDashboard)
 }
 
 /* Layer 5: 覆盖率 & 风险 */
-.coverage-risk-section {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 16px; margin-bottom: 16px;
-}
+.overview-section { margin-bottom: 16px; }
 .coverage-item {
   display: flex; align-items: center; gap: 12px;
   padding: 10px 0; border-bottom: 1px solid #f0f0f0;
 }
 .coverage-item:last-child { border-bottom: none; }
-.cov-module {
+.coverage-module {
   font-size: 13px; color: rgba(0,0,0,.88); width: 120px; flex-shrink: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   display: flex; align-items: center; gap: 4px;
 }
-.cov-bar-wrap { flex: 1; height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
-.cov-bar { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
-.cov-count { font-size: 12px; color: rgba(0,0,0,.45); width: 32px; text-align: right; flex-shrink: 0; }
-.cov-pct { font-size: 12px; font-weight: 500; width: 42px; text-align: right; flex-shrink: 0; }
+.coverage-bar-wrap { flex: 1; height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
+.coverage-bar { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+.coverage-count { font-size: 12px; color: rgba(0,0,0,.45); width: 32px; text-align: right; flex-shrink: 0; }
+.coverage-pct { font-size: 12px; font-weight: 500; width: 42px; text-align: right; flex-shrink: 0; }
 
-.risk-item {
+.unstable-item {
   display: flex; align-items: center; gap: 12px;
   padding: 10px 0; border-bottom: 1px solid #f0f0f0;
 }
-.risk-item:last-of-type { border-bottom: none; }
-.risk-rank {
+.unstable-item:last-child { border-bottom: none; }
+.unstable-rank {
   width: 22px; height: 22px; border-radius: 4px;
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 700; flex-shrink: 0;
 }
-.risk-rank.top { background: #fff2f0; color: #ff4d4f; }
-.risk-rank.normal { background: #f0f0f0; color: rgba(0,0,0,.45); }
-.risk-info { flex: 1; min-width: 0; }
-.risk-name { font-size: 13px; color: rgba(0,0,0,.88); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.risk-meta { font-size: 11px; color: rgba(0,0,0,.45); margin-top: 2px; }
-.risk-fail { font-size: 12px; font-weight: 600; color: #ff4d4f; flex-shrink: 0; }
-.risk-footer {
+.unstable-rank.top { background: #fff2f0; color: #ff4d4f; }
+.unstable-rank.normal { background: #f0f0f0; color: rgba(0,0,0,.45); }
+.unstable-info { flex: 1; min-width: 0; }
+.unstable-name { font-size: 13px; color: rgba(0,0,0,.88); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.unstable-meta { font-size: 11px; color: rgba(0,0,0,.45); margin-top: 2px; }
+.unstable-fail { font-size: 12px; font-weight: 600; color: #ff4d4f; flex-shrink: 0; }
+.risk-monitor-footer {
   margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0;
   display: flex; align-items: center; gap: 8px;
   font-size: 13px; color: rgba(0,0,0,.65);
@@ -607,6 +604,6 @@ watch(projectId, fetchDashboard)
 .risk-count { font-weight: 600; color: #ff4d4f; }
 
 @media (max-width: 1200px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .overview-kpi-row { grid-template-columns: repeat(2, 1fr); }
 }
 </style>

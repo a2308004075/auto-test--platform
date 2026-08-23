@@ -28,6 +28,11 @@ public class TestPlan extends BaseEntity {
     private String description;
 
     /**
+     * 所属分组 ID（NULL=未分组）
+     */
+    private Long groupId;
+
+    /**
      * 关联的测试套件 ID 列表（JSON 数组字符串）
      */
     private String suiteIds;
@@ -41,6 +46,11 @@ public class TestPlan extends BaseEntity {
      * 定时执行 cron 表达式
      */
     private String scheduleCron;
+
+    /**
+     * 触发方式：MANUAL / SCHEDULED / CI
+     */
+    private String triggerType;
 
     @TableLogic
     private Integer isActive;

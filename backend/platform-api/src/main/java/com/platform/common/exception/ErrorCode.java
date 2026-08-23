@@ -104,6 +104,11 @@ public final class ErrorCode {
     public static final int SUITE_NAME_DUPLICATE = 1803;
     public static final int CASE_NOT_FOUND = 1804;
     public static final int CASE_NAME_DUPLICATE = 1805;
+    public static final int SUITE_GROUP_NOT_FOUND = 1806;
+    public static final int SUITE_GROUP_NAME_DUPLICATE = 1807;
+    public static final int SUITE_GROUP_HAS_CHILDREN = 1808;
+    public static final int CASE_GROUP_NOT_FOUND = 1809;
+    public static final int CASE_GROUP_SYSTEM = 1810;
 
     // ===== M9 测试执行 (1900-1999) =====
     public static final int EXECUTION_QUEUE_FULL = 1900;
@@ -119,7 +124,7 @@ public final class ErrorCode {
 
     // ===== 业务错误码 → HTTP 状态码映射 =====
     private static final int[] UNAUTHORIZED_CODES = {UNAUTHORIZED, ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED};
-    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN};
+    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, CASE_GROUP_SYSTEM};
 
     public static int toHttpStatus(int errorCode) {
         for (int code : UNAUTHORIZED_CODES) {
@@ -139,6 +144,8 @@ public final class ErrorCode {
             case SUITE_NOT_FOUND:
             case CASE_NOT_FOUND:
             case PLAN_NOT_FOUND:
+            case SUITE_GROUP_NOT_FOUND:
+            case CASE_GROUP_NOT_FOUND:
             case ROLE_NOT_FOUND:
             case MENU_NOT_FOUND:
             case DICT_NOT_FOUND:
@@ -154,6 +161,8 @@ public final class ErrorCode {
             case KEYWORD_NAME_DUPLICATE:
             case SUITE_NAME_DUPLICATE:
             case CASE_NAME_DUPLICATE:
+            case SUITE_GROUP_NAME_DUPLICATE:
+            case SUITE_GROUP_HAS_CHILDREN:
             case PLAN_NAME_DUPLICATE:
             case ROLE_CODE_DUPLICATE:
             case ROLE_HAS_USERS:

@@ -9,7 +9,7 @@ import request from './request'
  * 测试套件模块 API（M8）
  */
 
-export function getSuites(projectId: number, params?: { keyword?: string; page?: number; pageSize?: number }) {
+export function getSuites(projectId: number, params?: { keyword?: string; groupId?: number | null; page?: number; pageSize?: number }) {
   return request.get(`/v1/projects/${projectId}/suites`, { params })
 }
 
@@ -30,6 +30,20 @@ export function deleteSuite(projectId: number, suiteId: number) {
 }
 
 /**
+ * 批量查询套件通过率
+ */
+export function getSuitePassRates(projectId: number, suiteIds: number[]) {
+  return request.post(`/v1/projects/${projectId}/suites/pass-rates`, suiteIds)
+}
+
+/**
+ * 批量修改套件分组
+ */
+export function batchUpdateSuiteGroup(projectId: number, data: { suiteIds: number[]; groupId: number | null }) {
+  return request.post(`/v1/projects/${projectId}/suites/batch-group`, data)
+}
+
+/**
  * 获取套件内用例级生命周期配置
  */
 export function getSuiteLifecycle(projectId: number, suiteId: number) {
@@ -41,4 +55,22 @@ export function getSuiteLifecycle(projectId: number, suiteId: number) {
  */
 export function saveSuiteLifecycle(projectId: number, suiteId: number, data: any) {
   return request.put(`/v1/projects/${projectId}/suites/${suiteId}/lifecycle`, data)
+}
+
+/* ===== 套件分组 API ===== */
+
+export function getSuiteGroups(projectId: number) {
+  return request.get(`/v1/projects/${projectId}/suite-groups`)
+}
+
+export function createSuiteGroup(projectId: number, data: { name: string; parentId?: number | null; sortNo?: number }) {
+  return request.post(`/v1/projects/${projectId}/suite-groups`, data)
+}
+
+export function updateSuiteGroup(projectId: number, groupId: number, data: { name: string; parentId?: number | null; sortNo?: number }) {
+  return request.post(`/v1/projects/${projectId}/suite-groups/${groupId}`, data)
+}
+
+export function deleteSuiteGroup(projectId: number, groupId: number) {
+  return request.post(`/v1/projects/${projectId}/suite-groups/${groupId}/delete`)
 }

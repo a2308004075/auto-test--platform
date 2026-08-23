@@ -32,6 +32,11 @@ public class SuiteCreateRequest implements Serializable {
     private String priority;
 
     /**
+     * 所属分组 ID
+     */
+    private Long groupId;
+
+    /**
      * 标签列表（JSON 数组字符串）
      */
     private String tags;

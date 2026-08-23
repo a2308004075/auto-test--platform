@@ -16,8 +16,8 @@ import com.platform.common.response.PageResponse;
 import com.platform.execution.dto.PlanCreateRequest;
 import com.platform.execution.dto.PlanResponse;
 import com.platform.execution.dto.PlanUpdateRequest;
-import com.platform.execution.entity.TestPlan;
-import com.platform.execution.mapper.TestPlanMapper;
+import com.platform.execution.entity.*;
+import com.platform.execution.mapper.*;
 import com.platform.environment.entity.Environment;
 import com.platform.environment.mapper.EnvironmentMapper;
 import com.platform.project.service.ProjectService;
@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,17 +44,36 @@ import java.util.List;
 public class PlanService {
 
     private final TestPlanMapper testPlanMapper;
+    private final PlanGroupMapper planGroupMapper;
     private final ProjectService projectService;
     private final EnvironmentMapper environmentMapper;
+    private final TestExecutionMapper testExecutionMapper;
+    private final TestSuiteMapper testSuiteMapper;
+    private final TestCaseMapper testCaseMapper;
     private final ObjectMapper objectMapper;
 
     /**
      * 分页查询测试计划
+     *
+     * @param groupId 分组 ID（null=不过滤，0=未分组，其他=指定分组含子分组）
      */
     public PageResponse<PlanResponse> listPlans(Long projectId, String keyword,
-                                                 int page, int pageSize) {
+                                                 Long groupId, int page, int pageSize) {
         LambdaQueryWrapper<TestPlan> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TestPlan::getProjectId, projectId);
+
+        // 按分组过滤
+        if (groupId != null) {
+            if (groupId == 0L) {
+                // 未分组
+                wrapper.isNull(TestPlan::getGroupId);
+            } else {
+                // 指定分组（含子分组递归）
+                List<Long> groupIds = getDescendantGroupIds(groupId);
+                wrapper.in(TestPlan::getGroupId, groupIds);
+            }
+        }
+
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(TestPlan::getName, keyword)
                     .or().like(TestPlan::getDescription, keyword));
@@ -93,6 +113,7 @@ public class PlanService {
         TestPlan plan = new TestPlan();
         BeanUtils.copyProperties(request, plan);
         plan.setSuiteIds(serializeSuiteIds(request.getSuiteIds()));
+        plan.setTriggerType(request.getTriggerType() != null ? request.getTriggerType() : "MANUAL");
         plan.setIsActive(1);
         plan.setCreatedBy(getCurrentUserId());
         testPlanMapper.insert(plan);
@@ -119,6 +140,9 @@ public class PlanService {
         if (request.getDescription() != null) {
             plan.setDescription(request.getDescription());
         }
+        if (request.getGroupId() != null) {
+            plan.setGroupId(request.getGroupId());
+        }
         if (request.getSuiteIds() != null) {
             plan.setSuiteIds(serializeSuiteIds(request.getSuiteIds()));
         }
@@ -127,6 +151,9 @@ public class PlanService {
         }
         if (request.getScheduleCron() != null) {
             plan.setScheduleCron(request.getScheduleCron());
+        }
+        if (request.getTriggerType() != null) {
+            plan.setTriggerType(request.getTriggerType());
         }
         if (request.getIsActive() != null) {
             plan.setIsActive(request.getIsActive());
@@ -157,6 +184,7 @@ public class PlanService {
         PlanResponse resp = new PlanResponse();
         BeanUtils.copyProperties(plan, resp);
         resp.setSuiteIds(parseSuiteIds(plan.getSuiteIds()));
+
         // 获取环境名称
         if (plan.getEnvironmentId() != null) {
             Environment env = environmentMapper.selectById(plan.getEnvironmentId());
@@ -164,6 +192,45 @@ public class PlanService {
                 resp.setEnvironmentName(env.getName());
             }
         }
+
+        // 获取套件名称列表
+        List<Long> suiteIdList = resp.getSuiteIds();
+        List<String> suiteNames = new ArrayList<>();
+        int caseCount = 0;
+        for (Long suiteId : suiteIdList) {
+            TestSuite suite = testSuiteMapper.selectById(suiteId);
+            if (suite != null) {
+                suiteNames.add(suite.getName());
+                // 统计该套件下启用的用例数
+                LambdaQueryWrapper<TestCase> caseWrapper = new LambdaQueryWrapper<>();
+                caseWrapper.eq(TestCase::getSuiteId, suiteId)
+                        .eq(TestCase::getIsActive, 1);
+                caseCount += Math.toIntExact(testCaseMapper.selectCount(caseWrapper));
+            }
+        }
+        resp.setSuiteNames(suiteNames);
+        resp.setCaseCount(caseCount);
+
+        // 获取最近一次执行记录（COMPLETED 状态）
+        LambdaQueryWrapper<TestExecution> execWrapper = new LambdaQueryWrapper<>();
+        execWrapper.eq(TestExecution::getPlanId, plan.getId())
+                .eq(TestExecution::getStatus, "COMPLETED")
+                .orderByDesc(TestExecution::getCreatedAt)
+                .last("LIMIT 1");
+        List<TestExecution> executions = testExecutionMapper.selectList(execWrapper);
+        if (!executions.isEmpty()) {
+            TestExecution lastExec = executions.get(0);
+            resp.setLastExecutionTime(lastExec.getCreatedAt());
+            // 计算通过率
+            int total = lastExec.getTotalCases() != null ? lastExec.getTotalCases() : 0;
+            int passed = lastExec.getPassedCases() != null ? lastExec.getPassedCases() : 0;
+            if (total > 0) {
+                resp.setPassRate(Math.round(passed * 1000.0 / total) / 10.0);
+            } else {
+                resp.setPassRate(0.0);
+            }
+        }
+
         return resp;
     }
 
@@ -196,5 +263,21 @@ public class PlanService {
             return ((User) auth.getPrincipal()).getId();
         }
         return null;
+    }
+
+    /**
+     * 获取分组及所有后代分组 ID（通过 PlanGroupMapper 递归查询）
+     */
+    private List<Long> getDescendantGroupIds(Long groupId) {
+        List<Long> ids = new ArrayList<>();
+        ids.add(groupId);
+
+        LambdaQueryWrapper<PlanGroup> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PlanGroup::getParentId, groupId);
+        List<PlanGroup> children = planGroupMapper.selectList(wrapper);
+        for (PlanGroup child : children) {
+            ids.addAll(getDescendantGroupIds(child.getId()));
+        }
+        return ids;
     }
 }

@@ -30,6 +30,7 @@ const envDescription = ref('')
 interface VarRow {
   varKey: string
   varValue: string
+  dataType: string
   description: string
   isFixed?: boolean
 }
@@ -48,15 +49,16 @@ async function fetchDetail() {
       const apiVars: VarRow[] = (data.variables || []).map((v: any) => ({
         varKey: v.varKey || '',
         varValue: v.varValue || '',
+        dataType: v.dataType || 'text',
         description: v.description || '',
       }))
       // 确保固定变量 host、header 始终在顶部
-      const hostVar = apiVars.find(v => v.varKey === 'host') || { varKey: 'host', varValue: '', description: '' }
-      const headerVar = apiVars.find(v => v.varKey === 'header') || { varKey: 'header', varValue: '', description: '' }
+      const hostVar = apiVars.find(v => v.varKey === 'host') || { varKey: 'host', varValue: '', dataType: 'text', description: '' }
+      const headerVar = apiVars.find(v => v.varKey === 'header') || { varKey: 'header', varValue: '', dataType: 'json', description: '' }
       const customVars = apiVars.filter(v => v.varKey !== 'host' && v.varKey !== 'header')
       variables.value = [
-        { ...hostVar, isFixed: true },
-        { ...headerVar, isFixed: true },
+        { ...hostVar, isFixed: true, dataType: 'text' },
+        { ...headerVar, isFixed: true, dataType: 'json' },
         ...customVars.map(v => ({ ...v, isFixed: false })),
       ]
     }
@@ -68,11 +70,20 @@ async function fetchDetail() {
 }
 
 function addVarRow() {
-  variables.value.push({ varKey: '', varValue: '', description: '', isFixed: false })
+  variables.value.push({ varKey: '', varValue: '', dataType: 'text', description: '', isFixed: false })
 }
 
 function removeRow(index: number) {
   variables.value.splice(index, 1)
+}
+
+function formatJson(row: VarRow) {
+  if (!row.varValue.trim()) return
+  try {
+    row.varValue = JSON.stringify(JSON.parse(row.varValue), null, 2)
+  } catch {
+    ElMessage.warning('JSON 格式不正确')
+  }
 }
 
 /**
@@ -145,8 +156,8 @@ onMounted(fetchDetail)
     <!-- 环境信息卡片 -->
     <div v-loading="loading" class="env-edit-card">
       <div class="env-edit-header">
-        <h3>{{ envName }}</h3>
-        <p class="env-desc">{{ envDescription || '暂无描述' }}</p>
+        <el-input v-model="envName" placeholder="环境名称" maxlength="50" show-word-limit style="font-size: 18px; font-weight: 600;" />
+        <el-input v-model="envDescription" placeholder="环境描述" maxlength="200" show-word-limit style="margin-top: 8px;" />
       </div>
 
       <!-- 变量工具栏 -->
@@ -162,6 +173,7 @@ onMounted(fetchDetail)
           <thead>
             <tr>
               <th class="col-key">变量名</th>
+              <th class="col-type">数据类型</th>
               <th class="col-value">变量值</th>
               <th class="col-desc">描述</th>
               <th class="col-action">操作</th>
@@ -176,7 +188,18 @@ onMounted(fetchDetail)
                 </div>
               </td>
               <td>
-                <el-input v-model="row.varValue" placeholder="变量值" />
+                <el-select v-model="row.dataType" :disabled="row.isFixed" size="small" style="width: 100%">
+                  <el-option label="文本" value="text" />
+                  <el-option label="数字" value="number" />
+                  <el-option label="JSON" value="json" />
+                </el-select>
+              </td>
+              <td>
+                <el-input v-model="row.varValue" placeholder="变量值">
+                  <template v-if="row.dataType === 'json'" #append>
+                    <el-button @click="formatJson(row)">格式化</el-button>
+                  </template>
+                </el-input>
               </td>
               <td>
                 <el-input v-model="row.description" placeholder="描述" />
@@ -189,7 +212,7 @@ onMounted(fetchDetail)
               </td>
             </tr>
             <tr v-if="variables.length === 0">
-              <td colspan="4" class="empty-tip">暂无变量，点击"添加变量"开始配置</td>
+              <td colspan="5" class="empty-tip">暂无变量，点击"添加变量"开始配置</td>
             </tr>
           </tbody>
         </table>
@@ -290,7 +313,11 @@ onMounted(fetchDetail)
 }
 
 .var-table .col-key {
-  width: 220px;
+  width: 180px;
+}
+
+.var-table .col-type {
+  width: 120px;
 }
 
 .var-table .col-value {

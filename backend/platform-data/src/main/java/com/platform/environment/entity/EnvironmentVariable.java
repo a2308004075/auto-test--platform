@@ -24,6 +24,8 @@ public class EnvironmentVariable extends BaseEntity {
 
     private String varValue;
 
+    private String dataType;
+
     private String description;
 
     private Integer sortNo;

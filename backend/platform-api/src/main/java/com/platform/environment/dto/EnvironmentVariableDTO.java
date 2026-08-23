@@ -23,6 +23,11 @@ public class EnvironmentVariableDTO {
     @Size(max = 2000, message = "变量值长度不能超过 2000")
     private String varValue;
 
+    /**
+     * 数据类型：text/number/json
+     */
+    private String dataType = "text";
+
     @Size(max = 500, message = "变量描述长度不能超过 500")
     private String description;
 }

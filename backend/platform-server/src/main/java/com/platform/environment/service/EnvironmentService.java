@@ -63,8 +63,8 @@ public class EnvironmentService {
         environmentMapper.insert(env);
 
         // 预置固定变量 host、header
-        insertPresetVariable(env.getId(), "host", "", 0);
-        insertPresetVariable(env.getId(), "header", "", 1);
+        insertPresetVariable(env.getId(), "host", "", "text", 0);
+        insertPresetVariable(env.getId(), "header", "", "json", 1);
 
         return toBasicResponse(env);
     }
@@ -164,8 +164,8 @@ public class EnvironmentService {
         }
 
         // 先插入固定变量 host、header
-        insertPresetVariable(envId, "host", hostValue, 0);
-        insertPresetVariable(envId, "header", headerValue, 1);
+        insertPresetVariable(envId, "host", hostValue, "text", 0);
+        insertPresetVariable(envId, "header", headerValue, "json", 1);
 
         // 再插入自定义变量
         int sortNo = 2;
@@ -174,6 +174,7 @@ public class EnvironmentService {
             variable.setEnvironmentId(envId);
             variable.setVarKey(dto.getVarKey());
             variable.setVarValue(dto.getVarValue());
+            variable.setDataType(dto.getDataType() != null ? dto.getDataType() : "text");
             variable.setDescription(dto.getDescription());
             variable.setSortNo(sortNo++);
             environmentVariableMapper.insert(variable);
@@ -183,11 +184,12 @@ public class EnvironmentService {
     /**
      * 插入预置固定变量
      */
-    private void insertPresetVariable(Long envId, String key, String value, int sortNo) {
+    private void insertPresetVariable(Long envId, String key, String value, String dataType, int sortNo) {
         EnvironmentVariable variable = new EnvironmentVariable();
         variable.setEnvironmentId(envId);
         variable.setVarKey(key);
         variable.setVarValue(value);
+        variable.setDataType(dataType);
         variable.setSortNo(sortNo);
         environmentVariableMapper.insert(variable);
     }
@@ -206,6 +208,7 @@ public class EnvironmentService {
             EnvironmentVariableDTO dto = new EnvironmentVariableDTO();
             dto.setVarKey(v.getVarKey());
             dto.setVarValue(v.getVarValue());
+            dto.setDataType(v.getDataType());
             dto.setDescription(v.getDescription());
             result.add(dto);
         }

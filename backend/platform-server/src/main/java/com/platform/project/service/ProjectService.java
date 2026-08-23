@@ -6,6 +6,8 @@
 package com.platform.project.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.platform.action.entity.Action;
 import com.platform.action.entity.ActionGroup;
@@ -26,7 +28,9 @@ import com.platform.execution.mapper.TestPlanMapper;
 import com.platform.execution.mapper.TestResultMapper;
 import com.platform.execution.mapper.TestCaseMapper;
 import com.platform.execution.mapper.TestSuiteMapper;
+import com.platform.keyword.entity.ApiKeyword;
 import com.platform.keyword.entity.Keyword;
+import com.platform.keyword.mapper.ApiKeywordMapper;
 import com.platform.keyword.mapper.KeywordMapper;
 import com.platform.project.dto.*;
 import com.platform.project.entity.ApiModule;
@@ -64,6 +68,7 @@ public class ProjectService {
     private final TestPlanMapper testPlanMapper;
     private final TestExecutionMapper testExecutionMapper;
     private final TestResultMapper testResultMapper;
+    private final ApiKeywordMapper apiKeywordMapper;
 
     /**
      * 分页查询项目列表（含卡片统计）
@@ -87,36 +92,31 @@ public class ProjectService {
         List<Project> records = result.getRecords();
         List<ProjectResponse> responses = new ArrayList<>();
 
-        // 批量查询各类型计数，避免 N+1
-        Map<Long, Long> apiCountMap = new HashMap<>();
-        Map<Long, Long> kwCountMap = new HashMap<>();
-        Map<Long, Long> actionCountMap = new HashMap<>();
-        Map<Long, Long> suiteCountMap = new HashMap<>();
-        Map<Long, Long> planCountMap = new HashMap<>();
-        for (Project p : records) {
-            Long pid = p.getId();
-            LambdaQueryWrapper<Api> aw = new LambdaQueryWrapper<>();
-            aw.eq(Api::getProjectId, pid);
-            apiCountMap.put(pid, apiMapper.selectCount(aw));
+        List<Long> projectIds = records.stream().map(Project::getId).collect(Collectors.toList());
+        // 各类型计数：每类一次查询 + 内存分组，消除 N+1（原为每项目 5 次 selectCount）
+        Map<Long, Long> apiCountMap = countByKey(projectIds, apiMapper, Api::getProjectId);
+        Map<Long, Long> kwCountMap = countByKey(projectIds, keywordMapper, Keyword::getProjectId);
+        Map<Long, Long> actionCountMap = countByKey(projectIds, actionMapper, Action::getProjectId);
+        Map<Long, Long> suiteCountMap = countByKey(projectIds, testSuiteMapper, TestSuite::getProjectId);
+        Map<Long, Long> planCountMap = countByKey(projectIds, testPlanMapper, TestPlan::getProjectId);
 
-            LambdaQueryWrapper<Keyword> kw = new LambdaQueryWrapper<>();
-            kw.eq(Keyword::getProjectId, pid);
-            kwCountMap.put(pid, keywordMapper.selectCount(kw));
-
-            LambdaQueryWrapper<Action> acw = new LambdaQueryWrapper<>();
-            acw.eq(Action::getProjectId, pid);
-            actionCountMap.put(pid, actionMapper.selectCount(acw));
-
-            LambdaQueryWrapper<TestSuite> sw = new LambdaQueryWrapper<>();
-            sw.eq(TestSuite::getProjectId, pid);
-            suiteCountMap.put(pid, testSuiteMapper.selectCount(sw));
-
-            LambdaQueryWrapper<TestPlan> pw = new LambdaQueryWrapper<>();
-            pw.eq(TestPlan::getProjectId, pid);
-            planCountMap.put(pid, testPlanMapper.selectCount(pw));
+        // 用例数：一次查所有项目的 suite，再一次查 case 按套件分组
+        Map<Long, List<Long>> suiteIdsByProject = new HashMap<>();
+        List<Long> allSuiteIds = new ArrayList<>();
+        if (!projectIds.isEmpty()) {
+            List<TestSuite> allSuites = testSuiteMapper.selectList(
+                    new LambdaQueryWrapper<TestSuite>()
+                            .select(TestSuite::getId, TestSuite::getProjectId)
+                            .in(TestSuite::getProjectId, projectIds));
+            for (TestSuite s : allSuites) {
+                if (s.getProjectId() != null && s.getId() != null) {
+                    suiteIdsByProject.computeIfAbsent(s.getProjectId(), k -> new ArrayList<>()).add(s.getId());
+                    allSuiteIds.add(s.getId());
+                }
+            }
         }
+        Map<Long, Long> caseCountBySuite = countByKey(allSuiteIds, testCaseMapper, TestCase::getSuiteId);
 
-        // 用例数需要通过 suiteId 关联，逐项目统计
         for (Project p : records) {
             ProjectResponse resp = toResponse(p);
             resp.setApiCount(apiCountMap.getOrDefault(p.getId(), 0L));
@@ -125,13 +125,8 @@ public class ProjectService {
             resp.setSuiteCount(suiteCountMap.getOrDefault(p.getId(), 0L));
             resp.setPlanCount(planCountMap.getOrDefault(p.getId(), 0L));
 
-            // 用例数：通过该项目的 suiteIds 查询
-            List<Long> suiteIds = getSuiteIds(p.getId());
-            if (!suiteIds.isEmpty()) {
-                LambdaQueryWrapper<TestCase> caseWrapper = new LambdaQueryWrapper<>();
-                caseWrapper.in(TestCase::getSuiteId, suiteIds);
-                resp.setCaseCount(testCaseMapper.selectCount(caseWrapper));
-            }
+            List<Long> sids = suiteIdsByProject.getOrDefault(p.getId(), Collections.emptyList());
+            resp.setCaseCount(sids.stream().mapToLong(sid -> caseCountBySuite.getOrDefault(sid, 0L)).sum());
             responses.add(resp);
         }
 
@@ -260,6 +255,12 @@ public class ProjectService {
             execWrapper.in(TestExecution::getPlanId, planIds);
             allExecutions = testExecutionMapper.selectList(execWrapper);
         }
+        // 一次性批量加载 plan，避免后续循环内 selectById 造成 N+1
+        Set<Long> execPlanIds = allExecutions.stream()
+                .map(TestExecution::getPlanId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, TestPlan> planMap = execPlanIds.isEmpty() ? Collections.emptyMap()
+                : testPlanMapper.selectBatchIds(execPlanIds).stream()
+                        .collect(Collectors.toMap(TestPlan::getId, p -> p));
 
         stats.setExecutionCount((long) allExecutions.size());
         long passed = 0, failed = 0;
@@ -280,13 +281,13 @@ public class ProjectService {
                 .count();
         stats.setWeeklyExecutionCount(weeklyCount);
 
-        // ── 接口覆盖率 ──
+        // ── 接口覆盖率：已覆盖接口 = 有 api_keyword 绑定的接口数（按 apiId 去重） ──
         if (totalApiCount > 0) {
-            // 已覆盖接口 = 有关联 api_keyword 的接口
-            LambdaQueryWrapper<Api> coveredWrapper = new LambdaQueryWrapper<>();
-            coveredWrapper.eq(Api::getProjectId, projectId);
-            // 简单计算：有 api_keyword 绑定的接口算已覆盖
-            long coveredCount = Math.min(totalApiCount, (long) (totalApiCount * 0.8));
+            LambdaQueryWrapper<ApiKeyword> coveredWrapper = new LambdaQueryWrapper<>();
+            coveredWrapper.select(ApiKeyword::getApiId).eq(ApiKeyword::getProjectId, projectId);
+            long coveredCount = apiKeywordMapper.selectList(coveredWrapper).stream()
+                    .map(ApiKeyword::getApiId).filter(Objects::nonNull).distinct().count();
+            coveredCount = Math.min(coveredCount, totalApiCount);
             stats.setCoveredApiCount(coveredCount);
             stats.setApiCoverageRate(Math.round(coveredCount * 1000.0 / totalApiCount) / 10.0);
         }
@@ -295,7 +296,7 @@ public class ProjectService {
         if (!suiteIds.isEmpty()) {
             Set<Long> executedSuiteIds = new HashSet<>();
             for (TestExecution exec : allExecutions) {
-                TestPlan plan = testPlanMapper.selectById(exec.getPlanId());
+                TestPlan plan = planMap.get(exec.getPlanId());
                 if (plan != null && plan.getSuiteIds() != null) {
                     // suiteIds 是 JSON 数组字符串，简单解析
                     String sids = plan.getSuiteIds().replaceAll("[\\[\\]\"']", "");
@@ -365,7 +366,7 @@ public class ProjectService {
             for (TestExecution e : recent) {
                 RecentExecution re = new RecentExecution();
                 BeanUtils.copyProperties(e, re);
-                TestPlan plan = testPlanMapper.selectById(e.getPlanId());
+                TestPlan plan = planMap.get(e.getPlanId());
                 if (plan != null) {
                     re.setPlanName(plan.getName());
                 }
@@ -396,6 +397,22 @@ public class ProjectService {
     }
 
     // ───────────────────── 私有方法 ─────────────────────
+
+    /**
+     * 批量统计记录数：一次查询 + 内存分组，消除 N+1
+     * <p>仅查询 key 列以减少传输，count 聚合在内存完成
+     * ponytail: 内存分组而非 SQL GROUP BY，避免 @Select 原生 SQL 绕过 MyBatis-Plus 逻辑删除；
+     *          单项目维度记录数可控，若某表单项目行数达万级需改为 SQL 聚合
+     */
+    private <T> Map<Long, Long> countByKey(List<Long> keys, BaseMapper<T> mapper, SFunction<T, Long> keyGetter) {
+        if (keys == null || keys.isEmpty()) return Collections.emptyMap();
+        LambdaQueryWrapper<T> w = new LambdaQueryWrapper<>();
+        w.select(keyGetter).in(keyGetter, keys);
+        return mapper.selectList(w).stream()
+                .map(keyGetter)
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(k -> k, Collectors.counting()));
+    }
 
     private List<Long> getSuiteIds(Long projectId) {
         LambdaQueryWrapper<TestSuite> wrapper = new LambdaQueryWrapper<>();

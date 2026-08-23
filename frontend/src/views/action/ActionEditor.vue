@@ -786,10 +786,6 @@ function insertNodeFromMenu(item: { name: string; type: string; shape: string })
   ElMessage.success(`已添加节点：${item.name}`)
 }
 
-function closeInsertMenu() {
-  insertMenuVisible.value = false
-}
-
 // ===== 属性面板保存 =====
 function saveNodeConfig() {
   if (!graph || !selectedNode.value) return

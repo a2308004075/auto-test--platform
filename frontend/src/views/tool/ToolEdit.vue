@@ -200,9 +200,6 @@ async function runTest() {
 // ===== 保存成功弹窗（新建模式） =====
 const saveModalVisible = ref(false)
 const saveModalName = ref('')
-function closeSaveModal() {
-  saveModalVisible.value = false
-}
 function continueCreate() {
   saveModalVisible.value = false
   form.name = ''
@@ -348,7 +345,7 @@ onMounted(() => {
         </div>
         <el-table v-loading="referenceLoading" :data="referenceList" size="small" style="max-width: 800px">
           <el-table-column label="引用类型" width="120">
-            <template #default="{ row }">
+            <template #default>
               <el-tag type="primary" size="small">Action关键字</el-tag>
             </template>
           </el-table-column>

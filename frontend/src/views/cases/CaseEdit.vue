@@ -623,9 +623,9 @@ watch(activeTab, (v) => {
               <div class="st-tags-row">
                 <span v-for="(step, idx) in setupSteps" :key="idx" class="st-step-tag">
                   <template v-if="step.stepType === 'keyword'">
-                    <span :style="{ color: keywordConfig[step.keywordType]?.color, fontWeight: 600 }">{{ keywordConfig[step.keywordType]?.icon }}</span>
+                    <span :style="{ color: keywordConfig[step.keywordType ?? '']?.color, fontWeight: 600 }">{{ keywordConfig[step.keywordType ?? '']?.icon }}</span>
                     {{ step.name }}
-                    <el-tag :type="keywordConfig[step.keywordType]?.tagType" size="small" style="font-size:9px;margin:0;">{{ keywordConfig[step.keywordType]?.label }}</el-tag>
+                    <el-tag :type="keywordConfig[step.keywordType ?? '']?.tagType" size="small" style="font-size:9px;margin:0;">{{ keywordConfig[step.keywordType ?? '']?.label }}</el-tag>
                   </template>
                   <template v-else>
                     <span :style="{ color: logicConfig[step.stepType]?.color, fontWeight: 600 }" v-html="logicConfig[step.stepType]?.icon"></span>
@@ -779,9 +779,9 @@ watch(activeTab, (v) => {
               <div class="st-tags-row">
                 <span v-for="(step, idx) in teardownSteps" :key="idx" class="st-step-tag">
                   <template v-if="step.stepType === 'keyword'">
-                    <span :style="{ color: keywordConfig[step.keywordType]?.color, fontWeight: 600 }">{{ keywordConfig[step.keywordType]?.icon }}</span>
+                    <span :style="{ color: keywordConfig[step.keywordType ?? '']?.color, fontWeight: 600 }">{{ keywordConfig[step.keywordType ?? '']?.icon }}</span>
                     {{ step.name }}
-                    <el-tag :type="keywordConfig[step.keywordType]?.tagType" size="small" style="font-size:9px;margin:0;">{{ keywordConfig[step.keywordType]?.label }}</el-tag>
+                    <el-tag :type="keywordConfig[step.keywordType ?? '']?.tagType" size="small" style="font-size:9px;margin:0;">{{ keywordConfig[step.keywordType ?? '']?.label }}</el-tag>
                   </template>
                   <template v-else>
                     <span :style="{ color: logicConfig[step.stepType]?.color, fontWeight: 600 }" v-html="logicConfig[step.stepType]?.icon"></span>

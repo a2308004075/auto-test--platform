@@ -18,6 +18,10 @@ import com.platform.action.mapper.ActionNodeMapper;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
 import com.platform.common.response.PageResponse;
+import com.platform.environment.service.EnvironmentService;
+import com.platform.execution.engine.ActionExecutor;
+import com.platform.execution.engine.ExecutionContext;
+import com.platform.execution.engine.StepResult;
 import com.platform.execution.entity.TestCase;
 import com.platform.execution.mapper.TestCaseMapper;
 import com.platform.keyword.entity.Keyword;
@@ -47,6 +51,8 @@ public class ActionService {
     private final TestCaseMapper testCaseMapper;
     private final ProjectService projectService;
     private final ObjectMapper objectMapper;
+    private final ActionExecutor actionExecutor;
+    private final EnvironmentService environmentService;
 
     /**
      * 分页查询 Action 列表
@@ -192,11 +198,12 @@ public class ActionService {
 
     /**
      * 调试执行 Action
+     * <p>加载环境配置 → 构建 ExecutionContext → 委托 ActionExecutor 执行 → 返回每个节点的真实执行结果。
      */
     public ActionDebugResponse debug(Long actionId, ActionDebugRequest request) {
         Action action = findById(actionId);
 
-        // 获取节点列表
+        // 获取节点列表（用于结果展示）
         LambdaQueryWrapper<ActionNode> nodeWrapper = new LambdaQueryWrapper<>();
         nodeWrapper.eq(ActionNode::getActionId, actionId)
                 .orderByAsc(ActionNode::getPositionY);
@@ -206,23 +213,56 @@ public class ActionService {
             return ActionDebugResponse.fail("Action 没有节点");
         }
 
-        long start = System.currentTimeMillis();
-        List<Map<String, Object>> nodeResults = new ArrayList<>();
+        // 构建执行上下文
+        ExecutionContext context = new ExecutionContext();
+        context.setProjectId(action.getProjectId());
+        context.setEnvironmentId(request.getEnvironmentId());
 
-        // 简化执行：按顺序执行每个节点
-        for (ActionNode node : nodes) {
-            Map<String, Object> nodeResult = new LinkedHashMap<>();
-            nodeResult.put("nodeKey", node.getNodeKey());
-            nodeResult.put("nodeType", node.getNodeType());
-            nodeResult.put("status", "SKIPPED");
-            nodeResult.put("message", "调试模式：节点执行引擎待 M8 完成后实现");
-            nodeResults.add(nodeResult);
+        // 加载环境配置
+        try {
+            com.platform.environment.dto.EnvironmentResponse env =
+                    environmentService.getDetail(request.getEnvironmentId());
+            if (env != null) {
+                String baseUrl = env.getHost();
+                if (env.getPort() != null) {
+                    baseUrl += ":" + env.getPort();
+                }
+                context.setBaseUrl(baseUrl);
+            }
+        } catch (Exception e) {
+            log.warn("加载环境配置失败: {}", e.getMessage());
         }
 
+        long start = System.currentTimeMillis();
+
+        // 执行 Action
+        StepResult result = actionExecutor.executeAction(action, request.getInputParams(), context);
+
         long elapsed = System.currentTimeMillis() - start;
+
+        // 从 result.response 中提取 nodeResults
+        List<Map<String, Object>> nodeResults = new ArrayList<>();
+        if (result.getResponse() != null) {
+            Object nr = result.getResponse().get("nodeResults");
+            if (nr instanceof List) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> casted = (List<Map<String, Object>>) nr;
+                nodeResults = casted;
+            }
+        }
+
         Map<String, Object> output = new LinkedHashMap<>();
-        output.put("message", "调试执行完成（节点执行引擎待完善）");
+        output.put("status", result.getStatus());
+        output.put("message", result.getMessage());
         output.put("nodeCount", nodes.size());
+
+        // 输出上下文变量（排除内部变量）
+        Map<String, Object> vars = new LinkedHashMap<>(context.getVariables());
+        vars.remove("_loopCount");
+        vars.remove("_loopIndex");
+        if (!vars.isEmpty()) {
+            output.put("variables", vars);
+        }
 
         return ActionDebugResponse.ok(output, nodeResults, elapsed);
     }

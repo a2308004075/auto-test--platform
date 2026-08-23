@@ -21,8 +21,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 接口分组管理服务
@@ -36,7 +36,8 @@ public class ApiModuleService {
     private final ProjectService projectService;
 
     /**
-     * 查询项目下的分组列表
+     * 查询项目下的分组列表（扁平列表，前端自行建树）
+     * <p>apiCount 包含子分组的接口数（自底向上聚合）。
      */
     public List<ApiModuleResponse> listByProject(Long projectId) {
         LambdaQueryWrapper<ApiModule> wrapper = new LambdaQueryWrapper<>();
@@ -44,15 +45,41 @@ public class ApiModuleService {
         wrapper.orderByDesc(ApiModule::getIsSystem, ApiModule::getCreatedAt);
 
         List<ApiModule> list = apiModuleMapper.selectList(wrapper);
+
+        // 统计每个分组的直接接口数
+        Map<Long, Integer> directCountMap = new LinkedHashMap<>();
+        for (ApiModule module : list) {
+            LambdaQueryWrapper<Api> apiWrapper = new LambdaQueryWrapper<>();
+            apiWrapper.eq(Api::getModuleId, module.getId());
+            directCountMap.put(module.getId(), apiMapper.selectCount(apiWrapper).intValue());
+        }
+
+        // 建树后自底向上聚合子分组接口数
+        Map<Long, List<ApiModule>> childrenMap = list.stream()
+                .filter(m -> m.getParentId() != null)
+                .collect(Collectors.groupingBy(ApiModule::getParentId));
+
+        Map<Long, Integer> totalCountMap = new LinkedHashMap<>();
+        for (ApiModule module : list) {
+            totalCountMap.put(module.getId(), aggregateCount(module.getId(), directCountMap, childrenMap));
+        }
+
         List<ApiModuleResponse> result = new ArrayList<>();
         for (ApiModule module : list) {
             ApiModuleResponse resp = toResponse(module);
-            // 统计分组下的接口数
-            LambdaQueryWrapper<Api> apiWrapper = new LambdaQueryWrapper<>();
-            apiWrapper.eq(Api::getModuleId, module.getId());
-            resp.setApiCount(apiMapper.selectCount(apiWrapper).intValue());
+            resp.setApiCount(totalCountMap.getOrDefault(module.getId(), 0));
             result.add(resp);
         }
+        return result;
+    }
+
+    /**
+     * 获取指定分组及其所有子孙分组的 ID 集合（用于接口列表过滤）
+     */
+    public Set<Long> getDescendantModuleIds(Long moduleId) {
+        Set<Long> result = new LinkedHashSet<>();
+        result.add(moduleId);
+        collectDescendants(moduleId, result);
         return result;
     }
 
@@ -112,6 +139,13 @@ public class ApiModuleService {
             throw new BusinessException(ErrorCode.API_MODULE_SYSTEM, "系统分组不允许删除");
         }
 
+        // 检查是否有子分组
+        LambdaQueryWrapper<ApiModule> childWrapper = new LambdaQueryWrapper<>();
+        childWrapper.eq(ApiModule::getParentId, moduleId);
+        if (apiModuleMapper.selectCount(childWrapper) > 0) {
+            throw new BusinessException(ErrorCode.API_MODULE_HAS_APIS, "分组下存在子分组，请先删除子分组");
+        }
+
         // 检查分组下是否有接口
         LambdaQueryWrapper<Api> apiWrapper = new LambdaQueryWrapper<>();
         apiWrapper.eq(Api::getModuleId, moduleId);
@@ -135,6 +169,34 @@ public class ApiModuleService {
     }
 
     // ───────────────────── 私有方法 ─────────────────────
+
+    /**
+     * 递归聚合分组及其子分组的接口数
+     */
+    private int aggregateCount(Long moduleId, Map<Long, Integer> directCountMap,
+                                Map<Long, List<ApiModule>> childrenMap) {
+        int count = directCountMap.getOrDefault(moduleId, 0);
+        List<ApiModule> children = childrenMap.get(moduleId);
+        if (children != null) {
+            for (ApiModule child : children) {
+                count += aggregateCount(child.getId(), directCountMap, childrenMap);
+            }
+        }
+        return count;
+    }
+
+    /**
+     * 递归收集子孙分组 ID
+     */
+    private void collectDescendants(Long parentId, Set<Long> collected) {
+        LambdaQueryWrapper<ApiModule> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ApiModule::getParentId, parentId);
+        List<ApiModule> children = apiModuleMapper.selectList(wrapper);
+        for (ApiModule child : children) {
+            collected.add(child.getId());
+            collectDescendants(child.getId(), collected);
+        }
+    }
 
     private ApiModule findById(Long moduleId) {
         ApiModule module = apiModuleMapper.selectById(moduleId);

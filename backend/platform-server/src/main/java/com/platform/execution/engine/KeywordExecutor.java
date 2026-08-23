@@ -13,6 +13,8 @@ import com.platform.action.mapper.ActionMapper;
 import com.platform.apidoc.entity.Api;
 import com.platform.apidoc.mapper.ApiMapper;
 import com.platform.common.util.SpringContextHolder;
+import com.platform.execution.entity.TestCase;
+import com.platform.execution.mapper.TestCaseMapper;
 import com.platform.keyword.entity.ApiKeyword;
 import com.platform.keyword.entity.Keyword;
 import com.platform.keyword.mapper.ApiKeywordMapper;
@@ -35,6 +37,7 @@ import java.util.*;
  *   <li>API → HttpClientEngine（查 ApiKeyword → Api → 发送 HTTP 请求）</li>
  *   <li>TOOL → GroovySandboxExecutor（查 ToolMethod → 执行 Groovy 代码）</li>
  *   <li>ACTION → ActionExecutor（查 Action → 执行节点树）</li>
+ *   <li>TEST_CASE → CaseExecutor（查 TestCase → 执行嵌套用例）</li>
  * </ul>
  */
 @Component
@@ -47,6 +50,7 @@ public class KeywordExecutor {
     private final ApiMapper apiMapper;
     private final ToolMethodMapper toolMethodMapper;
     private final ActionMapper actionMapper;
+    private final TestCaseMapper testCaseMapper;
     private final HttpClientEngine httpClientEngine;
     private final AssertionEngine assertionEngine;
     private final GroovySandboxExecutor groovySandboxExecutor;
@@ -78,7 +82,7 @@ public class KeywordExecutor {
             case "ACTION":
                 return executeActionKeyword(step, keyword, context);
             case "TEST_CASE":
-                return StepResult.error("TEST_CASE 类型关键字暂不支持嵌套执行");
+                return executeTestCaseKeyword(step, keyword, context);
             default:
                 return StepResult.error("未知关键字类型：" + type);
         }
@@ -280,6 +284,28 @@ public class KeywordExecutor {
         // 委托 ActionExecutor 执行节点树
         ActionExecutor actionExecutor = SpringContextHolder.getBean(ActionExecutor.class);
         return actionExecutor.executeAction(action, step.getParams(), context);
+    }
+
+    /**
+     * 执行 TEST_CASE 类型关键字
+     *
+     * <p>查 TestCase 实体，委托 CaseExecutor 执行嵌套用例。
+     * 使用 SpringContextHolder 获取 CaseExecutor 避免循环依赖。
+     */
+    private StepResult executeTestCaseKeyword(StepNode step, Keyword keyword, ExecutionContext context) {
+        Long refId = keyword.getRefId();
+        if (refId == null) {
+            return StepResult.error("TEST_CASE 关键字缺少 refId：" + keyword.getName());
+        }
+
+        TestCase testCase = testCaseMapper.selectById(refId);
+        if (testCase == null) {
+            return StepResult.error("测试用例不存在：" + refId);
+        }
+
+        // 使用 SpringContextHolder 获取 CaseExecutor 避免循环依赖
+        CaseExecutor caseExecutor = SpringContextHolder.getBean(CaseExecutor.class);
+        return caseExecutor.execute(testCase, context);
     }
 
     @SuppressWarnings("unchecked")

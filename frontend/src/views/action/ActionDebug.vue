@@ -142,20 +142,30 @@ onMounted(loadData)
               />
 
               <!-- 步骤结果 -->
-              <div v-if="debugResult.stepResults?.length" style="margin-bottom:16px">
-                <div style="font-weight:600;margin-bottom:8px">步骤执行明细</div>
+              <div v-if="debugResult.nodeResults?.length" style="margin-bottom:16px">
+                <div style="font-weight:600;margin-bottom:8px">节点执行明细</div>
                 <el-timeline>
-                  <el-timeline-item v-for="(step, idx) in debugResult.stepResults" :key="idx"
-                    :type="step.status === 'PASSED' ? 'success' : step.status === 'FAILED' || step.status === 'ERROR' ? 'danger' : 'info'"
+                  <el-timeline-item v-for="(step, idx) in debugResult.nodeResults" :key="idx"
+                    :type="step.status === 'PASSED' ? 'success' : step.status === 'FAILED' || step.status === 'ERROR' ? 'danger' : step.status === 'SKIPPED' ? 'warning' : 'info'"
                     :hollow="step.status !== 'PASSED'">
                     <div style="font-weight:600">
-                      {{ step.stepName || step.name }} - {{ statusLabels[step.status] || step.status }}
+                      {{ step.nodeKey || step.name }}
+                      <el-tag size="small" :type="step.nodeType === 'CONDITION' ? 'warning' : step.nodeType === 'LOOP' ? 'info' : ''" style="margin-left:6px">
+                        {{ step.nodeType }}
+                      </el-tag>
+                      <el-tag size="small" :type="step.status === 'PASSED' ? 'success' : step.status === 'FAILED' || step.status === 'ERROR' ? 'danger' : 'info'" style="margin-left:4px">
+                        {{ statusLabels[step.status] || step.status }}
+                      </el-tag>
                     </div>
                     <div v-if="step.message" style="color:#909399;font-size:12px">{{ step.message }}</div>
                     <div v-if="step.durationMs != null" style="color:#909399;font-size:12px">耗时: {{ step.durationMs }}ms</div>
                     <details v-if="step.response" style="margin-top:4px">
                       <summary style="cursor:pointer;font-size:12px;color:#409eff">响应详情</summary>
                       <pre style="font-size:11px;background:#f5f7fa;padding:8px;max-height:200px;overflow:auto">{{ JSON.stringify(step.response, null, 2) }}</pre>
+                    </details>
+                    <details v-if="step.request" style="margin-top:4px">
+                      <summary style="cursor:pointer;font-size:12px;color:#409eff">请求详情</summary>
+                      <pre style="font-size:11px;background:#f5f7fa;padding:8px;max-height:200px;overflow:auto">{{ JSON.stringify(step.request, null, 2) }}</pre>
                     </details>
                   </el-timeline-item>
                 </el-timeline>

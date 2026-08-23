@@ -214,7 +214,7 @@ async function handleCreateUser() {
   // 账号唯一性校验（若尚未实时校验，提交前补校验）
   if (accountAvailable.value !== true) {
     await checkAccountAvailable()
-    if (accountAvailable.value !== true) {
+    if (!accountAvailable.value) {
       return
     }
   }

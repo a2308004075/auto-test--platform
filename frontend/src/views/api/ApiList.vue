@@ -7,7 +7,7 @@
 /**
  * 接口列表 - M4
  * 左侧分组面板 + 右侧高级搜索 + 批量操作 + 表字段调整 + 分页表格
- * 对齐原型 api-list.html（分组树形多层暂未做，后端 ApiModule 缺 parentId）
+ * 对齐原型 api-list.html（分组树形多层已支持，后端 ApiModule 含 parentId）
  */
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'

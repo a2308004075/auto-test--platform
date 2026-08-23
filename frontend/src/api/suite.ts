@@ -28,3 +28,17 @@ export function updateSuite(projectId: number, suiteId: number, data: any) {
 export function deleteSuite(projectId: number, suiteId: number) {
   return request.post(`/v1/projects/${projectId}/suites/${suiteId}/delete`)
 }
+
+/**
+ * 获取套件内用例级生命周期配置
+ */
+export function getSuiteLifecycle(projectId: number, suiteId: number) {
+  return request.get(`/v1/projects/${projectId}/suites/${suiteId}/lifecycle`)
+}
+
+/**
+ * 保存套件内用例级生命周期配置
+ */
+export function saveSuiteLifecycle(projectId: number, suiteId: number, data: any) {
+  return request.put(`/v1/projects/${projectId}/suites/${suiteId}/lifecycle`, data)
+}

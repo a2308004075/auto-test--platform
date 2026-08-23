@@ -11,7 +11,8 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getSuite, updateSuite } from '@/api/suite'
+import { getSuite, updateSuite, getSuiteLifecycle, saveSuiteLifecycle } from '@/api/suite'
+import { getCases } from '@/api/case'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
 
@@ -24,6 +25,10 @@ const suiteId = computed(() => Number(route.params.suiteId))
 const loading = ref(false)
 const saving = ref(false)
 const { options: priorityOptions } = useDict('priority')
+
+// 套件内用例列表和生命周期配置
+const suiteCases = ref<any[]>([])
+const lifecycleItems = ref<any[]>([])
 
 const form = reactive({
   name: '',
@@ -55,7 +60,64 @@ async function loadSuite() {
       perCaseSetupSteps: s.perCaseSetupSteps || '[]',
       perCaseTeardownSteps: s.perCaseTeardownSteps || '[]',
     })
+    // 加载套件内用例列表和生命周期配置
+    await Promise.all([loadSuiteCases(), loadLifecycle()])
   } catch { ElMessage.error('加载套件失败') } finally { loading.value = false }
+}
+
+async function loadSuiteCases() {
+  try {
+    const res: any = await getCases(projectId.value, { suiteId: suiteId.value, pageSize: 1000 })
+    suiteCases.value = (res.data?.records || res.data || []) as any[]
+  } catch { /* ignore */ }
+}
+
+async function loadLifecycle() {
+  try {
+    const res: any = await getSuiteLifecycle(projectId.value, suiteId.value)
+    const list = (res.data || []) as any[]
+    // 构建以 caseId 为键的映射
+    const map = new Map<number, any>()
+    for (const item of list) {
+      map.set(item.caseId, item)
+    }
+    // 为每个用例初始化生命周期项
+    lifecycleItems.value = suiteCases.value.map(c => {
+      const existing = map.get(c.id)
+      return {
+        caseId: c.id,
+        caseName: c.name,
+        setupSteps: existing?.setupSteps || '',
+        teardownSteps: existing?.teardownSteps || '',
+      }
+    })
+  } catch { /* ignore */ }
+}
+
+function formatLifecycle(field: 'setupSteps' | 'teardownSteps', index: number) {
+  const item = lifecycleItems.value[index]
+  try {
+    item[field] = JSON.stringify(JSON.parse(item[field] || '[]'), null, 2)
+  } catch {
+    ElMessage.warning('JSON 格式错误，无法格式化')
+  }
+}
+
+async function saveLifecycle() {
+  // 构建保存请求：只保存有内容的项
+  const items = lifecycleItems.value
+    .filter(item => item.setupSteps?.trim() || item.teardownSteps?.trim())
+    .map(item => ({
+      caseId: item.caseId,
+      setupSteps: item.setupSteps || null,
+      teardownSteps: item.teardownSteps || null,
+    }))
+  try {
+    await saveSuiteLifecycle(projectId.value, suiteId.value, { items })
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '保存生命周期配置失败')
+    throw e
+  }
 }
 
 function formatJson(field: keyof typeof form) {
@@ -85,6 +147,8 @@ async function handleSave() {
   saving.value = true
   try {
     await updateSuite(projectId.value, suiteId.value, { ...form })
+    // 同时保存套件内用例级生命周期配置
+    await saveLifecycle()
     ElMessage.success('保存成功')
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '保存失败')
@@ -191,6 +255,43 @@ onMounted(loadSuite)
           </div>
         </div>
         <div v-else style="color:#909399;text-align:center;padding:20px">未启用套件级每条用例生命周期</div>
+      </el-card>
+
+      <!-- 套件内用例级差异化生命周期 -->
+      <el-card style="margin-top:16px">
+        <template #header>
+          <span>套件内用例级差异化 Setup / Teardown</span>
+        </template>
+        <div style="color:#909399;font-size:12px;margin-bottom:8px">
+          为套件内每条用例配置差异化的 Setup/Teardown 步骤。留空则使用用例自身的配置。
+        </div>
+        <div v-if="lifecycleItems.length === 0" style="color:#909399;text-align:center;padding:20px">
+          套件下暂无用例
+        </div>
+        <el-collapse v-else accordion>
+          <el-collapse-item v-for="(item, idx) in lifecycleItems" :key="item.caseId" :name="item.caseId">
+            <template #title>
+              <span style="font-weight:600">{{ item.caseName }}</span>
+              <el-tag v-if="item.setupSteps?.trim() || item.teardownSteps?.trim()" size="small" type="success" style="margin-left:8px">已配置</el-tag>
+            </template>
+            <el-row :gutter="16" style="margin-top:8px">
+              <el-col :span="12">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                  <span style="font-weight:600">差异化 Setup</span>
+                  <el-button size="small" @click="formatLifecycle('setupSteps', idx)">格式化</el-button>
+                </div>
+                <el-input v-model="item.setupSteps" type="textarea" :rows="6" placeholder="留空则使用用例自身 Setup" style="font-family:monospace;font-size:12px" />
+              </el-col>
+              <el-col :span="12">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                  <span style="font-weight:600">差异化 Teardown</span>
+                  <el-button size="small" @click="formatLifecycle('teardownSteps', idx)">格式化</el-button>
+                </div>
+                <el-input v-model="item.teardownSteps" type="textarea" :rows="6" placeholder="留空则使用用例自身 Teardown" style="font-family:monospace;font-size:12px" />
+              </el-col>
+            </el-row>
+          </el-collapse-item>
+        </el-collapse>
       </el-card>
     </div>
   </div>

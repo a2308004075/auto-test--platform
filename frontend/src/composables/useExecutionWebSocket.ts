@@ -13,6 +13,9 @@ export interface ExecutionProgress {
   failedCases: number
   skippedCases: number
   durationMs: number
+  progressPercent: number
+  passRate: number
+  currentCaseName?: string
   message: string
 }
 

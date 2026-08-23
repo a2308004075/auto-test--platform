@@ -29,7 +29,10 @@ public class CaseExecutor {
     private final ObjectMapper objectMapper;
 
     /**
-     * 执行测试用例
+     * 执行测试用例的完整生命周期（Setup → Steps → Teardown）
+     *
+     * <p>此方法供独立执行用例调用。当由 SuiteExecutor 调度时，
+     * 使用 {@link #executeMainSteps} 和 {@link #executeStep} 分阶段执行。
      *
      * @param testCase 测试用例
      * @param context  执行上下文
@@ -73,13 +76,55 @@ public class CaseExecutor {
             executeStep(step, testCase.getName(), "teardown", context, stepLogs);
         }
 
-        long elapsed = System.currentTimeMillis() - start;
-        StepResult result = new StepResult();
-        result.setStatus(passed ? "PASSED" : "FAILED");
-        result.setMessage(passed ? "用例执行通过" : (errorMessage != null ? errorMessage : "用例执行失败"));
-        result.setDurationMs(elapsed);
+        return buildCaseResult(passed, errorMessage, start, stepLogs);
+    }
+
+    /**
+     * 仅执行用例的主步骤（不含 Setup/Teardown）
+     *
+     * <p>供 SuiteExecutor 调度时使用。Setup/Teardown 由 SuiteExecutor 管理。
+     *
+     * @param testCase 测试用例
+     * @param context  执行上下文
+     * @return 执行结果（status + stepLogs + durationMs）
+     */
+    public StepResult executeMainSteps(TestCase testCase, ExecutionContext context) {
+        long start = System.currentTimeMillis();
+        List<Map<String, Object>> stepLogs = new ArrayList<>();
+        boolean passed = true;
+        String errorMessage = null;
+
+        List<StepNode> mainSteps = parseSteps(testCase.getSteps());
+        for (StepNode step : mainSteps) {
+            StepResult sr = executeStep(step, testCase.getName(), "main", context, stepLogs);
+            if ("FAILED".equals(sr.getStatus()) || "ERROR".equals(sr.getStatus())) {
+                passed = false;
+                errorMessage = sr.getMessage();
+                break;
+            }
+        }
+
+        return buildCaseResult(passed, errorMessage, start, stepLogs);
+    }
+
+    /**
+     * 执行单个步骤（公开方法，供 SuiteExecutor 调用）
+     *
+     * @param step    步骤节点
+     * @param phase   阶段标识（suite_once_setup / case_setup / main / case_teardown 等）
+     * @param context 执行上下文
+     * @return 步骤执行结果（response 中包含 stepLogs 列表）
+     */
+    public StepResult executeStep(StepNode step, String phase, ExecutionContext context) {
+        List<Map<String, Object>> stepLogs = new ArrayList<>();
+        StepResult result = executeStep(step, "", phase, context, stepLogs);
+
+        // 将 stepLogs 附带到 response 中
         Map<String, Object> respDetail = new LinkedHashMap<>();
         respDetail.put("stepLogs", stepLogs);
+        if (result.getResponse() != null) {
+            respDetail.putAll(result.getResponse());
+        }
         result.setResponse(respDetail);
         return result;
     }
@@ -121,9 +166,24 @@ public class CaseExecutor {
     }
 
     /**
-     * 解析步骤树 JSON
+     * 构建用例执行结果
      */
-    private List<StepNode> parseSteps(String json) {
+    private StepResult buildCaseResult(boolean passed, String errorMessage, long start, List<Map<String, Object>> stepLogs) {
+        long elapsed = System.currentTimeMillis() - start;
+        StepResult result = new StepResult();
+        result.setStatus(passed ? "PASSED" : "FAILED");
+        result.setMessage(passed ? "用例执行通过" : (errorMessage != null ? errorMessage : "用例执行失败"));
+        result.setDurationMs(elapsed);
+        Map<String, Object> respDetail = new LinkedHashMap<>();
+        respDetail.put("stepLogs", stepLogs);
+        result.setResponse(respDetail);
+        return result;
+    }
+
+    /**
+     * 解析步骤树 JSON（公开方法，供 SuiteExecutor 调用）
+     */
+    public List<StepNode> parseSteps(String json) {
         if (json == null || json.trim().isEmpty()) {
             return Collections.emptyList();
         }

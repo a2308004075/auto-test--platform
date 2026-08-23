@@ -11,7 +11,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getExecution, getExecutionResults } from '@/api/execution'
+import { getExecution, getExecutionResults, cancelExecution } from '@/api/execution'
 import { useExecutionWebSocket } from '@/composables/useExecutionWebSocket'
 
 const route = useRoute()
@@ -38,20 +38,26 @@ const liveExecution = computed(() => {
       failedCases: progress.value.failedCases,
       skippedCases: progress.value.skippedCases,
       durationMs: progress.value.durationMs,
+      progressPercent: progress.value.progressPercent,
+      passRate: progress.value.passRate,
+      currentCaseName: progress.value.currentCaseName,
     }
   }
   return execution.value
 })
 
 const liveMessage = computed(() => progress.value?.message || '')
+const liveProgressPercent = computed(() => progress.value?.progressPercent || 0)
+const livePassRate = computed(() => progress.value?.passRate || 0)
+const liveCurrentCase = computed(() => progress.value?.currentCaseName || '')
 
 const statusTypeMap: Record<string, string> = {
-  PENDING: 'info', RUNNING: '', COMPLETED: 'success',
+  PENDING: 'info', QUEUED: 'info', RUNNING: '', COMPLETED: 'success',
   FAILED: 'danger', CANCELLED: 'warning',
   PASSED: 'success', SKIPPED: 'info', ERROR: 'danger',
 }
 const statusLabels: Record<string, string> = {
-  PENDING: '等待中', RUNNING: '执行中', COMPLETED: '已完成',
+  PENDING: '等待中', QUEUED: '排队中', RUNNING: '执行中', COMPLETED: '已完成',
   FAILED: '执行失败', CANCELLED: '已取消',
   PASSED: '通过', SKIPPED: '跳过', ERROR: '错误',
 }
@@ -65,8 +71,8 @@ async function loadData() {
     ])
     execution.value = (execRes as any).data || {}
     results.value = (resultsRes as any).data || []
-    // 执行中则建立 WebSocket 连接
-    if (execution.value.status === 'RUNNING' || execution.value.status === 'PENDING') {
+    // 执行中或排队中则建立 WebSocket 连接
+    if (execution.value.status === 'RUNNING' || execution.value.status === 'PENDING' || execution.value.status === 'QUEUED') {
       connect()
     }
   } catch { ElMessage.error('加载执行详情失败') } finally { loading.value = false }
@@ -90,6 +96,21 @@ function showLogs(record: any) {
 
 function refresh() { loadData() }
 
+async function handleCancel() {
+  try {
+    await cancelExecution(executionId.value)
+    ElMessage.success('已取消执行')
+    loadData()
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '取消失败')
+  }
+}
+
+const canCancel = computed(() => {
+  const s = liveExecution.value?.status
+  return s === 'RUNNING' || s === 'PENDING' || s === 'QUEUED'
+})
+
 onMounted(loadData)
 </script>
 
@@ -103,12 +124,24 @@ onMounted(loadData)
       <div style="display:flex;gap:8px">
         <el-button @click="router.back()">返回</el-button>
         <el-button @click="refresh">刷新</el-button>
+        <el-button v-if="canCancel" type="danger" @click="handleCancel">取消执行</el-button>
       </div>
     </div>
 
     <!-- 实时进度提示 -->
     <el-alert v-if="liveMessage && connected" :title="liveMessage" type="info" show-icon
       :closable="false" style="margin-bottom:16px" />
+
+    <!-- 进度条 -->
+    <el-card v-if="connected && liveExecution.status === 'RUNNING'" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:16px">
+        <el-progress :percentage="liveProgressPercent" :stroke-width="20" text-inside striped striped-flow style="flex:1" />
+        <div style="white-space:nowrap;font-size:13px;color:#606266">
+          <span v-if="liveCurrentCase" style="margin-right:12px">当前: {{ liveCurrentCase }}</span>
+          <span>通过率: {{ livePassRate }}%</span>
+        </div>
+      </div>
+    </el-card>
 
     <!-- 统计卡片 -->
     <el-row :gutter="16" style="margin-bottom:16px">

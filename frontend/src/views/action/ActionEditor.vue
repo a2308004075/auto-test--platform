@@ -57,7 +57,21 @@ async function initGraph() {
   // 监听节点选中
   graph.on('cell:selected', ({ cell }: any) => {
     if (cell.isNode()) {
-      selectedNode.value = { id: cell.id, label: cell.getLabel(), type: cell.getData()?.nodeType || 'START' }
+      const data = cell.getData() || {}
+      const config = data.config ? (typeof data.config === 'string' ? JSON.parse(data.config) : data.config) : {}
+      selectedNode.value = {
+        id: cell.id,
+        label: cell.getLabel(),
+        type: data.nodeType || 'START',
+        // 加载节点配置
+        conditionExpression: config.expression || '',
+        trueNext: config.trueNext || '',
+        falseNext: config.falseNext || '',
+        loopCount: config.count || 0,
+        loopExpression: config.expression || '',
+        nextNode: config.nextNode || '',
+        refKeywordId: data.refKeywordId || null,
+      }
     }
   })
   graph.on('cell:unselected', () => { selectedNode.value = null })
@@ -84,7 +98,12 @@ function renderNodes() {
       label: n.nodeKey,
       shape: 'rect',
       attrs: { body: { fill: color, stroke: '#333', rx: 6, ry: 6 }, label: { fill: '#fff', fontSize: 12 } },
-      data: { nodeType: n.nodeType },
+      data: {
+        nodeType: n.nodeType,
+        config: n.config || null,
+        refKeywordId: n.refKeywordId || null,
+        refToolId: n.refToolId || null,
+      },
       ports: { groups: { top: { position: 'top' }, bottom: { position: 'bottom' } }, items: [{ group: 'top' }, { group: 'bottom' }] },
     })
   })
@@ -115,13 +134,53 @@ function deleteSelected() {
   selectedNode.value = null
 }
 
+/** 将属性面板的配置保存到 X6 节点的 data 中 */
+function saveNodeConfig() {
+  if (!graph || !selectedNode.value) return
+  const cell = graph.getCellById(selectedNode.value.id)
+  if (!cell) return
+
+  const nodeType = selectedNode.value.type
+  const config: Record<string, any> = {}
+
+  if (nodeType === 'CONDITION') {
+    config.expression = selectedNode.value.conditionExpression || ''
+    config.trueNext = selectedNode.value.trueNext || ''
+    config.falseNext = selectedNode.value.falseNext || ''
+  } else if (nodeType === 'LOOP') {
+    config.count = selectedNode.value.loopCount || 0
+    config.expression = selectedNode.value.loopExpression || ''
+    config.nextNode = selectedNode.value.nextNode || ''
+  } else if (nodeType === 'API_KEYWORD' || nodeType === 'TOOL_METHOD') {
+    config.nextNode = selectedNode.value.nextNode || ''
+  }
+
+  const existingData = cell.getData() || {}
+  cell.setData({
+    ...existingData,
+    config: JSON.stringify(config),
+    refKeywordId: selectedNode.value.refKeywordId || null,
+  })
+  ElMessage.success('节点配置已保存（点击顶部「保存」持久化）')
+}
+
 async function handleSave() {
   saving.value = true
   try {
-    const graphNodes = graph.getNodes().map((n: any) => ({
-      nodeKey: n.id, nodeType: n.getData()?.nodeType || 'API_KEYWORD',
-      positionX: Math.round(n.position().x), positionY: Math.round(n.position().y),
-    }))
+    const graphNodes = graph.getNodes().map((n: any) => {
+      const data = n.getData() || {}
+      const node: Record<string, any> = {
+        nodeKey: n.id,
+        nodeType: data.nodeType || 'API_KEYWORD',
+        positionX: Math.round(n.position().x),
+        positionY: Math.round(n.position().y),
+      }
+      // 保存节点配置
+      if (data.config) node.config = typeof data.config === 'string' ? data.config : JSON.stringify(data.config)
+      if (data.refKeywordId) node.refKeywordId = data.refKeywordId
+      if (data.refToolId) node.refToolId = data.refToolId
+      return node
+    })
     await updateAction(projectId.value, actionId.value, {
       name: actionName.value, description: actionDesc.value, nodes: graphNodes,
     })
@@ -168,7 +227,57 @@ onBeforeUnmount(() => { graph?.dispose() })
           <p><strong>类型:</strong> {{ selectedNode.type }}</p>
           <p><strong>ID:</strong> {{ selectedNode.id }}</p>
           <el-divider />
-          <p style="color:#909399;font-size:12px">节点属性配置待完善</p>
+
+          <!-- CONDITION 节点配置 -->
+          <template v-if="selectedNode.type === 'CONDITION'">
+            <el-form label-position="top" size="small">
+              <el-form-item label="条件表达式 (Groovy)">
+                <el-input v-model="selectedNode.conditionExpression" type="textarea" :rows="3"
+                  placeholder="如: ${status} == 200" />
+                <div style="color:#909399;font-size:11px;margin-top:4px">支持 ${var} 引用上下文变量</div>
+              </el-form-item>
+              <el-form-item label="为 true 时跳转节点">
+                <el-input v-model="selectedNode.trueNext" placeholder="nodeKey" />
+              </el-form-item>
+              <el-form-item label="为 false 时跳转节点">
+                <el-input v-model="selectedNode.falseNext" placeholder="nodeKey" />
+              </el-form-item>
+              <el-button size="small" type="primary" @click="saveNodeConfig">保存配置</el-button>
+            </el-form>
+          </template>
+
+          <!-- LOOP 节点配置 -->
+          <template v-else-if="selectedNode.type === 'LOOP'">
+            <el-form label-position="top" size="small">
+              <el-form-item label="循环次数">
+                <el-input-number v-model="selectedNode.loopCount" :min="0" :max="1000" />
+              </el-form-item>
+              <el-form-item label="条件表达式（可选）">
+                <el-input v-model="selectedNode.loopExpression" type="textarea" :rows="2"
+                  placeholder="如: ${index} < 10" />
+                <div style="color:#909399;font-size:11px;margin-top:4px">当循环次数为 0 时，使用条件表达式控制循环</div>
+              </el-form-item>
+              <el-form-item label="后续节点">
+                <el-input v-model="selectedNode.nextNode" placeholder="nodeKey" />
+              </el-form-item>
+              <el-button size="small" type="primary" @click="saveNodeConfig">保存配置</el-button>
+            </el-form>
+          </template>
+
+          <!-- API_KEYWORD / TOOL_METHOD 节点配置 -->
+          <template v-else-if="selectedNode.type === 'API_KEYWORD' || selectedNode.type === 'TOOL_METHOD'">
+            <el-form label-position="top" size="small">
+              <el-form-item label="引用关键字 ID">
+                <el-input-number v-model="selectedNode.refKeywordId" :min="0" />
+              </el-form-item>
+              <el-form-item label="后续节点">
+                <el-input v-model="selectedNode.nextNode" placeholder="nodeKey" />
+              </el-form-item>
+              <el-button size="small" type="primary" @click="saveNodeConfig">保存配置</el-button>
+            </el-form>
+          </template>
+
+          <p v-else style="color:#909399;font-size:12px">{{ selectedNode.type }} 类型节点无需额外配置</p>
         </div>
         <div v-else style="color:#909399;text-align:center;padding:40px">选中节点查看属性</div>
       </div>

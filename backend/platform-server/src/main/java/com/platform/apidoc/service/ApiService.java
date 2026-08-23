@@ -48,6 +48,7 @@ public class ApiService {
     private final KeywordMapper keywordMapper;
     private final ProjectService projectService;
     private final EnvironmentService environmentService;
+    private final ApiModuleService apiModuleService;
 
     /**
      * 分页查询接口列表
@@ -58,7 +59,9 @@ public class ApiService {
         wrapper.eq(Api::getProjectId, projectId);
 
         if (moduleId != null) {
-            wrapper.eq(Api::getModuleId, moduleId);
+            // 查询该分组及其所有子孙分组的接口
+            Set<Long> moduleIds = apiModuleService.getDescendantModuleIds(moduleId);
+            wrapper.in(Api::getModuleId, moduleIds);
         }
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(Api::getName, keyword)

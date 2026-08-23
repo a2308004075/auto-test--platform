@@ -29,6 +29,7 @@ import com.platform.environment.mapper.EnvironmentMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -49,6 +50,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class ExecutionService {
+
+    @Value("${execution.max-concurrent:3}")
+    private int maxConcurrent;
 
     private final TestExecutionMapper testExecutionMapper;
     private final TestPlanMapper testPlanMapper;
@@ -117,6 +121,9 @@ public class ExecutionService {
 
     /**
      * 触发执行
+     *
+     * <p>并发控制：当 RUNNING 状态的执行数已达上限时，
+     * 新执行记录状态设为 QUEUED，等待前置任务完成后自动触发。
      */
     @Transactional(rollbackFor = Exception.class)
     public ExecutionResponse startExecution(Long planId, ExecutionStartRequest request) {
@@ -132,23 +139,28 @@ public class ExecutionService {
                 ? request.getEnvironmentId() : plan.getEnvironmentId());
         execution.setTriggerType(request.getTriggerType() != null
                 ? request.getTriggerType() : "MANUAL");
-        execution.setStatus("PENDING");
         execution.setTotalCases(0);
         execution.setPassedCases(0);
         execution.setFailedCases(0);
         execution.setSkippedCases(0);
         execution.setTriggeredBy(getCurrentUserId());
         execution.setCreatedAt(LocalDateTime.now());
+
+        // 并发控制：检查当前 RUNNING 数量
+        int runningCount = countRunningExecutions();
+        if (runningCount >= maxConcurrent) {
+            execution.setStatus("QUEUED");
+            testExecutionMapper.insert(execution);
+            log.info("并发上限已达，执行排队: planId={}, executionId={}, running={}/{}",
+                    planId, execution.getId(), runningCount, maxConcurrent);
+            return toResponse(execution);
+        }
+
+        execution.setStatus("PENDING");
         testExecutionMapper.insert(execution);
 
         // 发送 MQ 消息异步执行
-        ExecutionMessage message = new ExecutionMessage();
-        message.setExecutionId(execution.getId());
-        message.setPlanId(planId);
-        message.setEnvironmentId(execution.getEnvironmentId());
-        message.setTriggeredBy(execution.getTriggeredBy());
-        message.setTriggerType(execution.getTriggerType());
-        executionProducer.sendExecutionMessage(message);
+        sendExecutionMessage(execution, planId);
 
         log.info("触发执行: planId={}, executionId={}", planId, execution.getId());
         return toResponse(execution);
@@ -156,6 +168,8 @@ public class ExecutionService {
 
     /**
      * 取消执行
+     *
+     * <p>如果取消的是 RUNNING 任务，触发下一个排队任务。
      */
     @Transactional(rollbackFor = Exception.class)
     public ExecutionResponse cancelExecution(Long executionId) {
@@ -164,15 +178,76 @@ public class ExecutionService {
             throw new BusinessException(ErrorCode.EXECUTION_NOT_FOUND, "执行记录不存在：" + executionId);
         }
 
-        if (!"PENDING".equals(execution.getStatus()) && !"RUNNING".equals(execution.getStatus())) {
+        if (!"PENDING".equals(execution.getStatus())
+                && !"RUNNING".equals(execution.getStatus())
+                && !"QUEUED".equals(execution.getStatus())) {
             throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
-                    "只能取消 PENDING 或 RUNNING 状态的执行");
+                    "只能取消 PENDING、RUNNING 或 QUEUED 状态的执行");
         }
+
+        boolean wasRunning = "RUNNING".equals(execution.getStatus());
 
         execution.setStatus("CANCELLED");
         execution.setFinishedAt(LocalDateTime.now());
         testExecutionMapper.updateById(execution);
+
+        // 如果取消的是 RUNNING 任务，触发下一个排队任务
+        if (wasRunning) {
+            triggerNextQueued();
+        }
+
         return toResponse(execution);
+    }
+
+    /**
+     * 查询当前 RUNNING 状态的执行数量
+     */
+    public int countRunningExecutions() {
+        LambdaQueryWrapper<TestExecution> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(TestExecution::getStatus, "RUNNING");
+        return Math.toIntExact(testExecutionMapper.selectCount(wrapper));
+    }
+
+    /**
+     * 触发下一个排队中的执行任务
+     *
+     * <p>查找最早的 QUEUED 状态记录，更新为 PENDING 并发送 MQ 消息。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void triggerNextQueued() {
+        LambdaQueryWrapper<TestExecution> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(TestExecution::getStatus, "QUEUED")
+                .orderByAsc(TestExecution::getCreatedAt)
+                .last("LIMIT 1");
+        TestExecution queued = testExecutionMapper.selectOne(wrapper);
+        if (queued == null) {
+            return;
+        }
+
+        // 再次检查并发数（防止竞态）
+        if (countRunningExecutions() >= maxConcurrent) {
+            log.debug("并发数仍达上限，跳过触发排队任务");
+            return;
+        }
+
+        queued.setStatus("PENDING");
+        testExecutionMapper.updateById(queued);
+
+        sendExecutionMessage(queued, queued.getPlanId());
+        log.info("触发排队任务: executionId={}, planId={}", queued.getId(), queued.getPlanId());
+    }
+
+    /**
+     * 发送执行消息到 MQ
+     */
+    private void sendExecutionMessage(TestExecution execution, Long planId) {
+        ExecutionMessage message = new ExecutionMessage();
+        message.setExecutionId(execution.getId());
+        message.setPlanId(planId);
+        message.setEnvironmentId(execution.getEnvironmentId());
+        message.setTriggeredBy(execution.getTriggeredBy());
+        message.setTriggerType(execution.getTriggerType());
+        executionProducer.sendExecutionMessage(message);
     }
 
     private ExecutionResponse toResponse(TestExecution execution) {

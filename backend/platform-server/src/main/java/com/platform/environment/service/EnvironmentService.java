@@ -11,19 +11,17 @@ import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
 import com.platform.environment.dto.*;
 import com.platform.environment.entity.Environment;
+import com.platform.environment.entity.EnvironmentVariable;
 import com.platform.environment.mapper.EnvironmentMapper;
+import com.platform.environment.mapper.EnvironmentVariableMapper;
 import com.platform.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * 环境配置管理服务
@@ -34,10 +32,11 @@ import java.util.List;
 public class EnvironmentService {
 
     private final EnvironmentMapper environmentMapper;
+    private final EnvironmentVariableMapper environmentVariableMapper;
     private final ProjectService projectService;
 
     /**
-     * 查询项目下的环境列表
+     * 查询项目下的环境列表（基本信息，不含变量详情）
      */
     public List<EnvironmentResponse> listByProject(Long projectId) {
         LambdaQueryWrapper<Environment> wrapper = new LambdaQueryWrapper<>();
@@ -47,13 +46,13 @@ public class EnvironmentService {
         List<Environment> list = environmentMapper.selectList(wrapper);
         List<EnvironmentResponse> result = new ArrayList<>();
         for (Environment env : list) {
-            result.add(toResponse(env));
+            result.add(toBasicResponse(env));
         }
         return result;
     }
 
     /**
-     * 创建环境
+     * 创建环境（仅基本信息，变量通过编辑页单独管理）
      */
     public EnvironmentResponse create(EnvironmentCreateRequest request) {
         projectService.findActiveById(request.getProjectId());
@@ -61,52 +60,38 @@ public class EnvironmentService {
         Environment env = new Environment();
         env.setProjectId(request.getProjectId());
         env.setName(request.getName());
-        env.setHost(request.getHost());
-        env.setPort(request.getPort());
-        env.setDatabaseName(request.getDatabaseName());
-        env.setUsername(request.getUsername());
-        env.setPassword(request.getPassword());
-        env.setConfigJson(request.getConfigJson());
+        env.setDescription(request.getDescription());
         env.setIsCurrent(0);
 
         environmentMapper.insert(env);
-        return toResponse(env);
+        return toBasicResponse(env);
     }
 
     /**
-     * 更新环境
+     * 更新环境（基本信息 + 全量替换变量）
      */
+    @Transactional(rollbackFor = Exception.class)
     public EnvironmentResponse update(Long envId, EnvironmentUpdateRequest request) {
         Environment env = findById(envId);
 
         if (StringUtils.hasText(request.getName())) {
             env.setName(request.getName());
         }
-        if (request.getHost() != null) {
-            env.setHost(request.getHost());
+        if (request.getDescription() != null) {
+            env.setDescription(request.getDescription());
         }
-        if (request.getPort() != null) {
-            env.setPort(request.getPort());
-        }
-        if (request.getDatabaseName() != null) {
-            env.setDatabaseName(request.getDatabaseName());
-        }
-        if (request.getUsername() != null) {
-            env.setUsername(request.getUsername());
-        }
-        if (request.getPassword() != null) {
-            env.setPassword(request.getPassword());
-        }
-        if (request.getConfigJson() != null) {
-            env.setConfigJson(request.getConfigJson());
+        environmentMapper.updateById(env);
+
+        // 全量替换变量（先删后插）
+        if (request.getVariables() != null) {
+            replaceVariables(envId, request.getVariables());
         }
 
-        environmentMapper.updateById(env);
-        return toResponse(env);
+        return getDetail(envId);
     }
 
     /**
-     * 删除环境
+     * 删除环境（变量由 FK ON DELETE CASCADE 级联删除）
      */
     public void delete(Long envId) {
         findById(envId);
@@ -137,31 +122,17 @@ public class EnvironmentService {
             environmentMapper.updateById(env);
         }
 
-        return toResponse(env);
+        return toBasicResponse(env);
     }
 
     /**
-     * 测试环境连接
-     */
-    public TestResult testConnection(Long envId) {
-        Environment env = findById(envId);
-        return doTestConnection(env);
-    }
-
-    /**
-     * 测试连接（使用请求参数）
-     */
-    public TestResult testConnectionByParams(EnvironmentCreateRequest request) {
-        Environment temp = new Environment();
-        BeanUtils.copyProperties(request, temp);
-        return doTestConnection(temp);
-    }
-
-    /**
-     * 获取环境详情
+     * 获取环境详情（含变量列表）
      */
     public EnvironmentResponse getDetail(Long envId) {
-        return toResponse(findById(envId));
+        Environment env = findById(envId);
+        EnvironmentResponse response = toBasicResponse(env);
+        response.setVariables(listVariables(envId));
+        return response;
     }
 
     /**
@@ -176,7 +147,26 @@ public class EnvironmentService {
         if (env == null) {
             return null;
         }
-        return toResponse(env);
+        return toBasicResponse(env);
+    }
+
+    /**
+     * 获取环境变量 Map（供执行引擎和调试服务使用）
+     *
+     * @param envId 环境 ID
+     * @return 变量名 → 变量值 的 Map
+     */
+    public Map<String, String> getVariablesAsMap(Long envId) {
+        LambdaQueryWrapper<EnvironmentVariable> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(EnvironmentVariable::getEnvironmentId, envId)
+                .orderByAsc(EnvironmentVariable::getSortNo);
+
+        List<EnvironmentVariable> variables = environmentVariableMapper.selectList(wrapper);
+        Map<String, String> map = new LinkedHashMap<>();
+        for (EnvironmentVariable v : variables) {
+            map.put(v.getVarKey(), v.getVarValue());
+        }
+        return map;
     }
 
     // ───────────────────── 私有方法 ─────────────────────
@@ -189,40 +179,60 @@ public class EnvironmentService {
         return env;
     }
 
-    private TestResult doTestConnection(Environment env) {
-        if (!StringUtils.hasText(env.getHost())) {
-            return TestResult.fail("主机地址不能为空");
-        }
+    /**
+     * 全量替换变量：先删除所有旧变量，再批量插入新变量
+     */
+    private void replaceVariables(Long envId, List<EnvironmentVariableDTO> dtos) {
+        // 删除所有旧变量
+        LambdaQueryWrapper<EnvironmentVariable> deleteWrapper = new LambdaQueryWrapper<>();
+        deleteWrapper.eq(EnvironmentVariable::getEnvironmentId, envId);
+        environmentVariableMapper.delete(deleteWrapper);
 
-        String url = buildJdbcUrl(env);
-        long start = System.currentTimeMillis();
-
-        try (Connection conn = DriverManager.getConnection(url, env.getUsername(), env.getPassword())) {
-            long elapsed = System.currentTimeMillis() - start;
-            return TestResult.ok(elapsed);
-        } catch (Exception e) {
-            log.warn("环境连接测试失败 [{}]: {}", env.getName(), e.getMessage());
-            return TestResult.fail("连接失败：" + e.getMessage());
+        // 批量插入新变量
+        int sortNo = 0;
+        for (EnvironmentVariableDTO dto : dtos) {
+            EnvironmentVariable variable = new EnvironmentVariable();
+            variable.setEnvironmentId(envId);
+            variable.setVarKey(dto.getVarKey());
+            variable.setVarValue(dto.getVarValue());
+            variable.setDescription(dto.getDescription());
+            variable.setSortNo(sortNo++);
+            environmentVariableMapper.insert(variable);
         }
     }
 
-    private String buildJdbcUrl(Environment env) {
-        StringBuilder sb = new StringBuilder("jdbc:mysql://");
-        sb.append(env.getHost());
-        if (env.getPort() != null) {
-            sb.append(":").append(env.getPort());
+    /**
+     * 查询环境的变量列表
+     */
+    private List<EnvironmentVariableDTO> listVariables(Long envId) {
+        LambdaQueryWrapper<EnvironmentVariable> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(EnvironmentVariable::getEnvironmentId, envId)
+                .orderByAsc(EnvironmentVariable::getSortNo);
+
+        List<EnvironmentVariable> variables = environmentVariableMapper.selectList(wrapper);
+        List<EnvironmentVariableDTO> result = new ArrayList<>();
+        for (EnvironmentVariable v : variables) {
+            EnvironmentVariableDTO dto = new EnvironmentVariableDTO();
+            dto.setVarKey(v.getVarKey());
+            dto.setVarValue(v.getVarValue());
+            dto.setDescription(v.getDescription());
+            result.add(dto);
         }
-        if (StringUtils.hasText(env.getDatabaseName())) {
-            sb.append("/").append(env.getDatabaseName());
-        }
-        sb.append("?connectTimeout=5000&socketTimeout=5000&useSSL=false&characterEncoding=UTF-8");
-        return sb.toString();
+        return result;
     }
 
-    private EnvironmentResponse toResponse(Environment env) {
+    /**
+     * 转换为基本响应（不含变量）
+     */
+    private EnvironmentResponse toBasicResponse(Environment env) {
         EnvironmentResponse response = new EnvironmentResponse();
-        BeanUtils.copyProperties(env, response);
-        response.setPassword(null); // 不返回密码
+        response.setId(env.getId());
+        response.setProjectId(env.getProjectId());
+        response.setName(env.getName());
+        response.setDescription(env.getDescription());
+        response.setIsCurrent(env.getIsCurrent());
+        response.setCreatedAt(env.getCreatedAt());
+        response.setUpdatedAt(env.getUpdatedAt());
         return response;
     }
 }

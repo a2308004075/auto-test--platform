@@ -14,7 +14,6 @@ import com.platform.apidoc.util.SwaggerParser;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
 import com.platform.common.response.PageResponse;
-import com.platform.environment.dto.EnvironmentResponse;
 import com.platform.environment.service.EnvironmentService;
 import com.platform.keyword.entity.ApiKeyword;
 import com.platform.keyword.entity.Keyword;
@@ -244,17 +243,14 @@ public class ApiService {
     public ApiDebugResponse debug(Long apiId, ApiDebugRequest request) {
         Api api = findById(apiId);
 
-        // 获取环境配置
-        EnvironmentResponse env = environmentService.getDetail(request.getEnvironmentId());
-        if (env == null) {
-            return ApiDebugResponse.error("环境不存在");
+        // 获取环境变量
+        Map<String, String> envVars = environmentService.getVariablesAsMap(request.getEnvironmentId());
+        if (envVars.isEmpty()) {
+            return ApiDebugResponse.error("环境不存在或没有配置变量");
         }
 
-        // 构建请求 URL
-        String baseUrl = env.getHost();
-        if (env.getPort() != null) {
-            baseUrl += ":" + env.getPort();
-        }
+        // 从变量中构建 baseUrl（查找 host 变量）
+        String baseUrl = envVars.getOrDefault("host", "");
 
         String path = api.getPath();
         // 替换路径参数

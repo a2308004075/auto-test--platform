@@ -72,16 +72,7 @@ public class EnvironmentController {
     }
 
     /**
-     * 测试环境连接
-     */
-    @PostMapping("/{envId}/test")
-    public ApiResponse<TestResult> testConnection(@PathVariable Long projectId,
-                                                   @PathVariable Long envId) {
-        return ApiResponse.ok(environmentService.testConnection(envId));
-    }
-
-    /**
-     * 获取环境详情
+     * 获取环境详情（含变量列表）
      */
     @GetMapping("/{envId}")
     public ApiResponse<EnvironmentResponse> getDetail(@PathVariable Long projectId,

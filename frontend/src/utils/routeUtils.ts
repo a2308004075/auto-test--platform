@@ -103,6 +103,9 @@ export function addSettingsRedirect(router: Router, layoutName: string): void {
  */
 export function addSupplementaryRoutes(router: Router, layoutName: string): void {
   const routes = [
+    // ===== 环境模块 =====
+    { path: 'project/:id/environments/:envId/edit', component: 'environment/EnvironmentEdit', title: '编辑环境变量' },
+
     // ===== 接口模块 =====
     { path: 'project/:id/apis/new',              component: 'api/ApiEdit',          title: '新建接口' },
     { path: 'project/:id/apis/:apiId/edit',      component: 'api/ApiEdit',          title: '编辑接口' },

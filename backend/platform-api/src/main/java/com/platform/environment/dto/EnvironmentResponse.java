@@ -8,6 +8,7 @@ package com.platform.environment.dto;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 环境响应
@@ -18,17 +19,13 @@ public class EnvironmentResponse {
     private Long id;
     private Long projectId;
     private String name;
-    private String host;
-    private Integer port;
-    private String databaseName;
-    private String username;
-    private String password;
-    private String dbUrl;
-    private String dbUsername;
-    private String redisHost;
-    private String redisPort;
-    private String configJson;
+    private String description;
     private Integer isCurrent;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /**
+     * 环境变量列表（详情接口返回，列表接口可为 null）
+     */
+    private List<EnvironmentVariableDTO> variables;
 }

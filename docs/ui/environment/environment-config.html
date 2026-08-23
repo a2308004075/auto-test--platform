@@ -6,6 +6,8 @@
   <title>环境配置 - Postman Platform</title>
   <link rel="stylesheet" href="../common/shared-styles.css">
   <style>
+    .env-project-bar { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: #f0f5ff; border: 1px solid #d6e4ff; border-radius: 6px; margin-bottom: 16px; font-size: 13px; color: rgba(0,0,0,.65); }
+    .env-project-bar .project-name { font-weight: 600; color: #1890ff; }
     .env-split { display: flex; flex-direction: column; gap: 16px; }
     .env-table-section { background: #fff; border-radius: var(--border-radius-lg); border: 1px solid var(--border-color-secondary); }
     .env-table-header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color-secondary); }
@@ -17,6 +19,8 @@
   <header class="layout-header">
     <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
     <div class="header-breadcrumb">
+      <a href="../project/project-dashboard.html">电池管理系统</a>
+      <span class="sep">&#8250;</span>
       <span class="current">环境配置</span>
     </div>
     <div class="header-right">
@@ -67,6 +71,14 @@
     <div class="page-header">
       <h1>环境配置</h1>
       <button class="btn btn-primary" onclick="showModal('newEnvModal')">+ 新建环境</button>
+    </div>
+
+    <!-- Project Context Bar -->
+    <div class="env-project-bar">
+      <span>📌</span>
+      <span>当前项目：<span class="project-name">电池管理系统</span></span>
+      <span style="color:var(--text-tertiary);">|</span>
+      <span>每个项目独立管理环境配置，环境切换不影响其他项目</span>
     </div>
 
     <div class="env-split">
@@ -150,7 +162,7 @@
         <button class="modal-close" onclick="hideModal('deleteEnvModal')">×</button>
       </div>
       <div class="modal-body">
-        <p style="margin:0;">确定删除环境「<strong id="deleteEnvName"></strong>」？删除后不可恢复。</p>
+        <p style="margin:0;">确定删除环境「<strong id="deleteEnvName"></strong>」？删除后该项目下相关配置将不可恢复。</p>
       </div>
       <div class="modal-footer">
         <button class="btn" onclick="hideModal('deleteEnvModal')">取消</button>

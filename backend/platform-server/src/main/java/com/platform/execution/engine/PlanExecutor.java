@@ -19,8 +19,7 @@ import com.platform.execution.mapper.TestResultMapper;
 import com.platform.execution.mapper.TestSuiteMapper;
 import com.platform.execution.mapper.TestCaseMapper;
 import com.platform.execution.websocket.ExecutionWebSocketHandler;
-import com.platform.environment.entity.Environment;
-import com.platform.environment.mapper.EnvironmentMapper;
+import com.platform.environment.service.EnvironmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -50,7 +49,7 @@ public class PlanExecutor {
     private final TestResultMapper testResultMapper;
     private final TestSuiteMapper testSuiteMapper;
     private final TestCaseMapper testCaseMapper;
-    private final EnvironmentMapper environmentMapper;
+    private final EnvironmentService environmentService;
     private final ObjectMapper objectMapper;
     private final ExecutionWebSocketHandler executionWebSocketHandler;
 
@@ -236,31 +235,26 @@ public class PlanExecutor {
         context.setProjectId(plan.getProjectId());
         context.setEnvironmentId(execution.getEnvironmentId());
 
-        // 加载环境配置
+        // 加载环境变量
         Long envId = execution.getEnvironmentId() != null
                 ? execution.getEnvironmentId() : plan.getEnvironmentId();
         if (envId != null) {
-            Environment env = environmentMapper.selectById(envId);
-            if (env != null) {
-                String baseUrl = "";
-                if (env.getHost() != null) {
-                    baseUrl = env.getPort() != null
-                            ? "http://" + env.getHost() + ":" + env.getPort()
-                            : "http://" + env.getHost();
-                }
-                context.setBaseUrl(baseUrl);
-                context.setEnvironmentId(env.getId());
+            context.setEnvironmentId(envId);
+            try {
+                Map<String, String> variables = environmentService.getVariablesAsMap(envId);
 
-                // 解析额外配置
-                if (env.getConfigJson() != null && !env.getConfigJson().isEmpty()) {
-                    try {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> config = objectMapper.readValue(env.getConfigJson(), Map.class);
-                        context.setEnvConfig(config);
-                    } catch (Exception e) {
-                        log.warn("解析环境配置 JSON 失败: {}", e.getMessage());
-                    }
+                // 从变量中构建 baseUrl（查找 host 变量）
+                String host = variables.get("host");
+                if (host != null && !host.isEmpty()) {
+                    context.setBaseUrl(host);
                 }
+
+                // 将所有环境变量加载到执行上下文中，支持 ${var} 引用
+                for (Map.Entry<String, String> entry : variables.entrySet()) {
+                    context.setVariable(entry.getKey(), entry.getValue());
+                }
+            } catch (Exception e) {
+                log.warn("加载环境变量失败: {}", e.getMessage());
             }
         }
 

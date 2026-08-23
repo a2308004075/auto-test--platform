@@ -23,20 +23,7 @@ public class Environment extends BaseEntity {
 
     private String name;
 
-    private String host;
-
-    private Integer port;
-
-    private String databaseName;
-
-    private String username;
-
-    private String password;
-
-    /**
-     * 额外配置（JSON 格式）
-     */
-    private String configJson;
+    private String description;
 
     /**
      * 是否为当前激活环境（0-否，1-是）

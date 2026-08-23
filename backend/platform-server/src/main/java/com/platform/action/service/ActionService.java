@@ -218,16 +218,17 @@ public class ActionService {
         context.setProjectId(action.getProjectId());
         context.setEnvironmentId(request.getEnvironmentId());
 
-        // 加载环境配置
+        // 加载环境变量
         try {
-            com.platform.environment.dto.EnvironmentResponse env =
-                    environmentService.getDetail(request.getEnvironmentId());
-            if (env != null) {
-                String baseUrl = env.getHost();
-                if (env.getPort() != null) {
-                    baseUrl += ":" + env.getPort();
-                }
-                context.setBaseUrl(baseUrl);
+            Map<String, String> envVars =
+                    environmentService.getVariablesAsMap(request.getEnvironmentId());
+            String host = envVars.get("host");
+            if (host != null) {
+                context.setBaseUrl(host);
+            }
+            // 将环境变量加载到上下文
+            for (Map.Entry<String, String> entry : envVars.entrySet()) {
+                context.setVariable(entry.getKey(), entry.getValue());
             }
         } catch (Exception e) {
             log.warn("加载环境配置失败: {}", e.getMessage());

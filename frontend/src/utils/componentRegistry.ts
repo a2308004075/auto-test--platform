@@ -24,6 +24,7 @@ export const componentMap: Record<string, () => Promise<any>> = {
 
   // ===== 环境模块 =====
   'environment/EnvironmentList': () => import('@/views/environment/EnvironmentList.vue'),
+  'environment/EnvironmentEdit': () => import('@/views/environment/EnvironmentEdit.vue'),
 
   // ===== 关键字模块 =====
   'keywords/KeywordList': () => import('@/views/keywords/KeywordList.vue'),

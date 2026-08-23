@@ -11,14 +11,24 @@ import type { MenuTreeNode } from '@/api/menu'
 /**
  * 从路由路径生成路由 name
  * 例：'settings/profile' -> 'SettingsProfile'
- *     'project/:id/apis' -> 'ProjectApis'
+ *     'project/:id/apis' -> 'ProjectIdApis'
+ *     'project/:id/executions/:executionId' -> 'ProjectIdExecutionsExecutionId'
+ *
+ * 注意：:param 段转为 Param 形式参与 name 生成（而非丢弃），确保不同路径生成唯一 name，
+ * 避免列表路由与详情路由生成相同 name 导致后者覆盖前者。
+ * 例：project/:id/executions 与 project/:id/executions/:executionId
+ *     若丢弃参数段则两者均生成 'ProjectExecutions'，后注册的详情路由会覆盖列表路由。
  */
 function generateRouteName(path: string): string {
   return path
     .replace(/^\//, '')
     .split('/')
-    .filter(s => s && !s.startsWith(':'))
-    .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+    .filter(s => s)
+    .map(s => {
+      // :param 段去掉冒号后参与 name 生成，保证路径唯一性
+      const seg = s.startsWith(':') ? s.slice(1) : s
+      return seg.charAt(0).toUpperCase() + seg.slice(1)
+    })
     .join('')
     || 'DynamicRoute'
 }

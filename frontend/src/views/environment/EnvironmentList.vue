@@ -123,7 +123,7 @@ onMounted(fetchList)
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="180">
           <template #default="{ row }">
-            {{ row.createdAt ? row.createdAt.substring(0, 10) : '-' }}
+            {{ row.createdAt ? row.createdAt.substring(0, 19).replace('T', ' ') : '-' }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="140" fixed="right">

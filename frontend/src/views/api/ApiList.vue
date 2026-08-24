@@ -14,7 +14,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getApis, deleteApi, batchDeleteApis, batchMoveApis, getModules, createModule, updateModule, deleteModule,
-  getSyncConfigs, createSyncConfig, updateSyncConfig, deleteSyncConfig, syncOneConfig, syncAllConfigs,
 } from '@/api/apidoc'
 import PageHeader from '@/components/PageHeader/index.vue'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
@@ -337,122 +336,6 @@ function openDebug(id: number) {
   debugVisible.value = true
 }
 
-// ===== URL 同步配置 =====
-const syncConfigVisible = ref(false)
-const syncConfigs = ref<any[]>([])
-const syncConfigLoading = ref(false)
-const syncAllLoading = ref(false)
-const syncOneLoadingId = ref<number | null>(null)
-
-const syncConfigFormVisible = ref(false)
-const syncConfigFormMode = ref<'add' | 'edit'>('add')
-const syncConfigForm = reactive({ id: null as number | null, name: '', url: '', moduleId: null as number | null, headers: '' })
-const syncConfigSaving = ref(false)
-
-async function openSyncConfigPanel() {
-  syncConfigVisible.value = true
-  await fetchSyncConfigs()
-}
-
-async function fetchSyncConfigs() {
-  syncConfigLoading.value = true
-  try {
-    const res: any = await getSyncConfigs(projectId.value)
-    syncConfigs.value = res.data || []
-  } catch { syncConfigs.value = [] } finally { syncConfigLoading.value = false }
-}
-
-function openAddSyncConfig() {
-  syncConfigFormMode.value = 'add'
-  syncConfigForm.id = null
-  syncConfigForm.name = ''
-  syncConfigForm.url = ''
-  syncConfigForm.moduleId = activeModuleId.value || null
-  syncConfigForm.headers = ''
-  syncConfigFormVisible.value = true
-}
-
-function openEditSyncConfig(row: any) {
-  syncConfigFormMode.value = 'edit'
-  syncConfigForm.id = row.id
-  syncConfigForm.name = row.name
-  syncConfigForm.url = row.url
-  syncConfigForm.moduleId = row.moduleId
-  syncConfigForm.headers = row.headers || ''
-  syncConfigFormVisible.value = true
-}
-
-async function handleSaveSyncConfig() {
-  if (!syncConfigForm.name) { ElMessage.warning('请输入配置名称'); return }
-  if (!syncConfigForm.url) { ElMessage.warning('请输入文档 URL'); return }
-  if (!syncConfigForm.moduleId) { ElMessage.warning('请选择目标分组'); return }
-  syncConfigSaving.value = true
-  try {
-    const data = { name: syncConfigForm.name, url: syncConfigForm.url, moduleId: syncConfigForm.moduleId!, headers: syncConfigForm.headers || undefined }
-    if (syncConfigFormMode.value === 'add') {
-      await createSyncConfig(projectId.value, data)
-      ElMessage.success('配置已保存')
-    } else {
-      await updateSyncConfig(projectId.value, syncConfigForm.id!, data)
-      ElMessage.success('配置已更新')
-    }
-    syncConfigFormVisible.value = false
-    await fetchSyncConfigs()
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || '保存失败')
-  } finally {
-    syncConfigSaving.value = false
-  }
-}
-
-async function handleDeleteSyncConfig(row: any) {
-  try {
-    await ElMessageBox.confirm(`确定删除配置「${row.name}」？`, '提示', { type: 'warning' })
-    await deleteSyncConfig(projectId.value, row.id)
-    ElMessage.success('已删除')
-    await fetchSyncConfigs()
-  } catch { /* 取消 */ }
-}
-
-async function handleSyncOne(row: any) {
-  syncOneLoadingId.value = row.id
-  try {
-    const res: any = await syncOneConfig(projectId.value, row.id)
-    const r = res.data
-    ElMessage.success(`「${row.name}」同步完成：新增 ${r.created} 条，更新 ${r.updated} 条，共 ${r.total} 条`)
-    await fetchSyncConfigs()
-    fetchModules(); fetchList()
-  } catch (e: any) {
-    ElMessage.error(`「${row.name}」同步失败：${e?.response?.data?.message || e.message}`)
-  } finally {
-    syncOneLoadingId.value = null
-  }
-}
-
-async function handleSyncAll() {
-  if (syncConfigs.value.length === 0) { ElMessage.warning('暂无同步配置'); return }
-  syncAllLoading.value = true
-  try {
-    const res: any = await syncAllConfigs(projectId.value)
-    const results = res.data || []
-    let ok = 0, fail = 0, created = 0, updated = 0
-    for (const r of results) {
-      if (r.error) { fail++ } else { ok++; created += r.created; updated += r.updated }
-    }
-    if (fail === 0) {
-      ElMessage.success(`全部同步完成：共 ${ok} 个配置，新增 ${created} 条，更新 ${updated} 条`)
-    } else {
-      ElMessage.warning(`同步完成：成功 ${ok} 个，失败 ${fail} 个，新增 ${created} 条，更新 ${updated} 条`)
-    }
-    await fetchSyncConfigs()
-    fetchModules(); fetchList()
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || '同步失败')
-  } finally {
-    syncAllLoading.value = false
-  }
-}
-
 // ===== 生命周期 =====
 const treeRef = ref()
 function onDocClick() { closeContextMenu() }
@@ -468,7 +351,7 @@ onBeforeUnmount(() => {
 <template>
   <div>
     <PageHeader title="接口文档">
-      <el-button v-if="hasPermission('project:api:swagger')" @click="openSyncConfigPanel">URL 同步</el-button>
+      <el-button v-if="hasPermission('project:api:swagger')" @click="router.push(`/project/${projectId}/apis/sync-configs`)">URL 同步</el-button>
       <el-button v-if="hasPermission('project:api:add')" type="primary" @click="router.push(`/project/${projectId}/apis/new`)">+ 新建接口</el-button>
     </PageHeader>
 
@@ -688,61 +571,6 @@ onBeforeUnmount(() => {
 
     <!-- 调试弹窗 -->
     <ApiDebugModal v-model="debugVisible" :project-id="projectId" :api-id="debugApiId" />
-
-    <!-- URL 同步配置面板 -->
-    <el-dialog v-model="syncConfigVisible" title="URL 同步配置" width="820px" destroy-on-close>
-      <div style="display: flex; justify-content: space-between; margin-bottom: 12px">
-        <el-button type="primary" :loading="syncAllLoading" @click="handleSyncAll">全部同步</el-button>
-        <el-button @click="openAddSyncConfig">+ 新增配置</el-button>
-      </div>
-      <el-table :data="syncConfigs" v-loading="syncConfigLoading" border style="width: 100%" empty-text="暂无同步配置，点击右上角新增">
-        <el-table-column prop="name" label="名称" width="160" show-overflow-tooltip />
-        <el-table-column prop="url" label="URL" min-width="200" show-overflow-tooltip />
-        <el-table-column label="目标分组" width="120">
-          <template #default="{ row }">{{ moduleMap[row.moduleId]?.name || '--' }}</template>
-        </el-table-column>
-        <el-table-column label="最后同步" width="160">
-          <template #default="{ row }">{{ row.lastSyncAt?.replace('T', ' ').substring(0, 19) || '未同步' }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
-          <template #default="{ row }">
-            <el-button type="primary" link size="small" :loading="syncOneLoadingId === row.id" @click="handleSyncOne(row)">同步</el-button>
-            <el-button type="primary" link size="small" @click="openEditSyncConfig(row)">编辑</el-button>
-            <el-button type="danger" link size="small" @click="handleDeleteSyncConfig(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <template #footer>
-        <el-button @click="syncConfigVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 新增/编辑同步配置 -->
-    <el-dialog v-model="syncConfigFormVisible" :title="syncConfigFormMode === 'add' ? '新增同步配置' : '编辑同步配置'" width="520px" destroy-on-close append-to-body>
-      <el-form label-position="top">
-        <el-form-item label="配置名称" required>
-          <el-input v-model="syncConfigForm.name" placeholder="如：测试环境-用户服务" clearable />
-        </el-form-item>
-        <el-form-item label="文档 URL" required>
-          <el-input v-model="syncConfigForm.url" placeholder="支持 doc.html 页面地址或 /v3/api-docs JSON 端点" clearable />
-        </el-form-item>
-        <el-form-item label="目标分组" required>
-          <el-select v-model="syncConfigForm.moduleId" placeholder="选择导入目标分组" filterable style="width: 100%">
-            <el-option v-for="m in modules.filter((x: any) => x.isSystem !== 1 || x.name === '未分类')" :key="m.id" :value="m.id" :label="m.name" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="请求头（可选）">
-          <el-input v-model="syncConfigForm.headers" type="textarea" :rows="3" placeholder="每行一个，格式：Key: Value&#10;如 Authorization: Bearer eyJxxx" />
-        </el-form-item>
-      </el-form>
-      <div style="color: #909399; font-size: 12px; margin-top: -8px">
-        系统将自动从 URL 拉取 OpenAPI/Swagger JSON 文档（支持 doc.html 自动探测），以增量方式导入到选定分组。
-      </div>
-      <template #footer>
-        <el-button @click="syncConfigFormVisible = false">取消</el-button>
-        <el-button type="primary" :loading="syncConfigSaving" @click="handleSaveSyncConfig">保存</el-button>
-      </template>
-    </el-dialog>
 
     <!-- 右键上下文菜单 -->
     <Teleport to="body">

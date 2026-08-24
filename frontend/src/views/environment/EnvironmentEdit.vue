@@ -158,7 +158,7 @@ onMounted(fetchDetail)
     <div v-loading="loading" class="env-edit-card">
       <div class="env-edit-header">
         <el-input v-model="envName" placeholder="环境名称" maxlength="50" show-word-limit style="font-size: 18px; font-weight: 600;" />
-        <el-input v-model="envDescription" placeholder="环境描述" maxlength="200" show-word-limit style="margin-top: 8px;" />
+        <el-input v-model="envDescription" type="textarea" :rows="2" placeholder="环境描述" maxlength="200" show-word-limit style="margin-top: 8px;" />
       </div>
 
       <!-- 变量工具栏 -->

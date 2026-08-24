@@ -9,7 +9,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.platform.apidoc.dto.*;
 import com.platform.apidoc.entity.Api;
+import com.platform.apidoc.entity.ApiSyncConfig;
 import com.platform.apidoc.mapper.ApiMapper;
+import com.platform.apidoc.mapper.ApiSyncConfigMapper;
 import com.platform.apidoc.util.SwaggerParser;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
@@ -32,6 +34,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -48,6 +51,7 @@ public class ApiService {
     private final ProjectService projectService;
     private final EnvironmentService environmentService;
     private final ApiModuleService apiModuleService;
+    private final ApiSyncConfigMapper apiSyncConfigMapper;
 
     /**
      * 分页查询接口列表
@@ -439,6 +443,107 @@ public class ApiService {
         return basePath + "v3/api-docs";
     }
 
+    // ===== URL 同步配置管理 =====
+
+    /**
+     * 查询项目的所有同步配置
+     */
+    public List<ApiSyncConfigResponse> listSyncConfigs(Long projectId) {
+        LambdaQueryWrapper<ApiSyncConfig> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ApiSyncConfig::getProjectId, projectId)
+               .orderByDesc(ApiSyncConfig::getCreatedAt);
+        List<ApiSyncConfig> configs = apiSyncConfigMapper.selectList(wrapper);
+        List<ApiSyncConfigResponse> result = new ArrayList<>();
+        for (ApiSyncConfig config : configs) {
+            result.add(toSyncConfigResponse(config));
+        }
+        return result;
+    }
+
+    /**
+     * 创建同步配置
+     */
+    public ApiSyncConfigResponse createSyncConfig(Long projectId, ApiSyncConfigRequest request) {
+        projectService.findActiveById(projectId);
+        ApiSyncConfig config = new ApiSyncConfig();
+        config.setProjectId(projectId);
+        config.setName(request.getName());
+        config.setUrl(request.getUrl());
+        config.setModuleId(request.getModuleId());
+        config.setHeaders(request.getHeaders());
+        apiSyncConfigMapper.insert(config);
+        return toSyncConfigResponse(config);
+    }
+
+    /**
+     * 更新同步配置
+     */
+    public ApiSyncConfigResponse updateSyncConfig(Long configId, ApiSyncConfigRequest request) {
+        ApiSyncConfig config = findSyncConfigById(configId);
+        config.setName(request.getName());
+        config.setUrl(request.getUrl());
+        config.setModuleId(request.getModuleId());
+        config.setHeaders(request.getHeaders());
+        apiSyncConfigMapper.updateById(config);
+        return toSyncConfigResponse(config);
+    }
+
+    /**
+     * 删除同步配置
+     */
+    public void deleteSyncConfig(Long configId) {
+        findSyncConfigById(configId);
+        apiSyncConfigMapper.deleteById(configId);
+    }
+
+    /**
+     * 同步单条配置
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public SwaggerImportResult syncOneConfig(Long configId) {
+        ApiSyncConfig config = findSyncConfigById(configId);
+        SwaggerSyncRequest syncRequest = new SwaggerSyncRequest();
+        syncRequest.setProjectId(config.getProjectId());
+        syncRequest.setUrl(config.getUrl());
+        syncRequest.setModuleId(config.getModuleId());
+        syncRequest.setHeaders(parseHeadersText(config.getHeaders()));
+        SwaggerImportResult result = syncFromUrl(syncRequest);
+        // 更新最后同步时间
+        config.setLastSyncAt(LocalDateTime.now());
+        apiSyncConfigMapper.updateById(config);
+        return result;
+    }
+
+    /**
+     * 全部同步：逐条执行，单条失败不影响其他
+     */
+    public List<Map<String, Object>> syncAllConfigs(Long projectId) {
+        LambdaQueryWrapper<ApiSyncConfig> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ApiSyncConfig::getProjectId, projectId)
+               .orderByAsc(ApiSyncConfig::getCreatedAt);
+        List<ApiSyncConfig> configs = apiSyncConfigMapper.selectList(wrapper);
+        List<Map<String, Object>> results = new ArrayList<>();
+        for (ApiSyncConfig config : configs) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("configId", config.getId());
+            item.put("configName", config.getName());
+            try {
+                SwaggerImportResult sr = syncOneConfig(config.getId());
+                item.put("created", sr.getCreated());
+                item.put("updated", sr.getUpdated());
+                item.put("total", sr.getTotal());
+                item.put("error", null);
+            } catch (Exception e) {
+                item.put("created", 0);
+                item.put("updated", 0);
+                item.put("total", 0);
+                item.put("error", e.getMessage());
+            }
+            results.add(item);
+        }
+        return results;
+    }
+
     // ───────────────────── 私有方法 ─────────────────────
 
     private Api findById(Long apiId) {
@@ -453,6 +558,37 @@ public class ApiService {
         ApiInfoResponse response = new ApiInfoResponse();
         BeanUtils.copyProperties(api, response);
         return response;
+    }
+
+    private ApiSyncConfig findSyncConfigById(Long configId) {
+        ApiSyncConfig config = apiSyncConfigMapper.selectById(configId);
+        if (config == null) {
+            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
+                    "同步配置不存在：" + configId);
+        }
+        return config;
+    }
+
+    private ApiSyncConfigResponse toSyncConfigResponse(ApiSyncConfig config) {
+        ApiSyncConfigResponse response = new ApiSyncConfigResponse();
+        BeanUtils.copyProperties(config, response);
+        return response;
+    }
+
+    private Map<String, String> parseHeadersText(String headersText) {
+        if (!StringUtils.hasText(headersText)) {
+            return null;
+        }
+        Map<String, String> headers = new LinkedHashMap<>();
+        for (String line : headersText.split("\n")) {
+            line = line.trim();
+            if (line.isEmpty()) continue;
+            int idx = line.indexOf(':');
+            if (idx > 0) {
+                headers.put(line.substring(0, idx).trim(), line.substring(idx + 1).trim());
+            }
+        }
+        return headers.isEmpty() ? null : headers;
     }
 
     private String readStream(InputStream is) throws IOException {

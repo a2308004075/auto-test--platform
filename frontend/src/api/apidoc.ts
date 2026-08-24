@@ -46,6 +46,31 @@ export function syncSwaggerUrl(projectId: number, data: { url: string; moduleId:
   return request.post(`/v1/projects/${projectId}/apis/swagger-sync-url`, data)
 }
 
+// URL 同步配置
+export function getSyncConfigs(projectId: number) {
+  return request.get(`/v1/projects/${projectId}/apis/sync-configs`)
+}
+
+export function createSyncConfig(projectId: number, data: { name: string; url: string; moduleId: number; headers?: string }) {
+  return request.post(`/v1/projects/${projectId}/apis/sync-configs`, data)
+}
+
+export function updateSyncConfig(projectId: number, configId: number, data: { name: string; url: string; moduleId: number; headers?: string }) {
+  return request.post(`/v1/projects/${projectId}/apis/sync-configs/${configId}`, data)
+}
+
+export function deleteSyncConfig(projectId: number, configId: number) {
+  return request.post(`/v1/projects/${projectId}/apis/sync-configs/${configId}/delete`)
+}
+
+export function syncOneConfig(projectId: number, configId: number) {
+  return request.post(`/v1/projects/${projectId}/apis/sync-configs/${configId}/sync`)
+}
+
+export function syncAllConfigs(projectId: number) {
+  return request.post(`/v1/projects/${projectId}/apis/sync-configs/sync-all`)
+}
+
 export function debugApi(projectId: number, apiId: number, data: any) {
   return request.post(`/v1/projects/${projectId}/apis/${apiId}/debug`, data)
 }

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 接口文档管理接口
@@ -117,6 +118,62 @@ public class ApiController {
                                                             @Valid @RequestBody SwaggerSyncRequest request) {
         request.setProjectId(projectId);
         return ApiResponse.ok(apiService.syncFromUrl(request));
+    }
+
+    // ===== URL 同步配置管理 =====
+
+    /**
+     * 查询同步配置列表
+     */
+    @GetMapping("/sync-configs")
+    public ApiResponse<List<ApiSyncConfigResponse>> listSyncConfigs(@PathVariable Long projectId) {
+        return ApiResponse.ok(apiService.listSyncConfigs(projectId));
+    }
+
+    /**
+     * 新建同步配置
+     */
+    @PostMapping("/sync-configs")
+    public ApiResponse<ApiSyncConfigResponse> createSyncConfig(@PathVariable Long projectId,
+                                                                @Valid @RequestBody ApiSyncConfigRequest request) {
+        return ApiResponse.ok(apiService.createSyncConfig(projectId, request));
+    }
+
+    /**
+     * 全部同步
+     */
+    @PostMapping("/sync-configs/sync-all")
+    public ApiResponse<List<Map<String, Object>>> syncAllConfigs(@PathVariable Long projectId) {
+        return ApiResponse.ok(apiService.syncAllConfigs(projectId));
+    }
+
+    /**
+     * 更新同步配置
+     */
+    @PostMapping("/sync-configs/{configId}")
+    public ApiResponse<ApiSyncConfigResponse> updateSyncConfig(@PathVariable Long projectId,
+                                                                @PathVariable Long configId,
+                                                                @Valid @RequestBody ApiSyncConfigRequest request) {
+        return ApiResponse.ok(apiService.updateSyncConfig(configId, request));
+    }
+
+    /**
+     * 删除同步配置
+     */
+    @PostMapping("/sync-configs/{configId}/delete")
+    public ApiResponse<Void> deleteSyncConfig(@PathVariable Long projectId,
+                                               @PathVariable Long configId) {
+        apiService.deleteSyncConfig(configId);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * 同步单条配置
+     */
+    @PostMapping("/sync-configs/{configId}/sync")
+    public ApiResponse<SwaggerImportResult> syncOneConfig(@PathVariable Long projectId,
+                                                            @PathVariable Long configId) {
+        return ApiResponse.ok(apiService.syncOneConfig(configId));
     }
 
     /**

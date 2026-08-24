@@ -7,7 +7,6 @@ package com.platform.apidoc.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.platform.apidoc.entity.Api;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -16,13 +15,14 @@ import org.springframework.util.StringUtils;
 import java.util.*;
 
 /**
- * Swagger 2.0 JSON 解析器
- * 将 Swagger 文档解析为 Api 实体列表
+ * OpenAPI / Swagger 文档解析器
+ * 同时支持 Swagger 2.0 和 OpenAPI 3.0，将文档解析为 Api 实体列表
  */
 @Slf4j
 public class SwaggerParser {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final String[] HTTP_METHODS = {"get", "post", "put", "delete", "patch"};
 
     /**
      * 解析结果
@@ -50,12 +50,15 @@ public class SwaggerParser {
     }
 
     /**
-     * 解析 Swagger 2.0 JSON
+     * 解析 OpenAPI 3.0 / Swagger 2.0 JSON
      */
     public static ParseResult parse(String swaggerJson) {
         ParseResult result = new ParseResult();
         try {
             JsonNode root = MAPPER.readTree(swaggerJson);
+
+            // 检测版本：有 "openapi" 字段则为 3.0，有 "swagger" 字段则为 2.0
+            boolean isOpenApi3 = root.has("openapi");
 
             // 基本信息
             JsonNode info = root.get("info");
@@ -65,9 +68,9 @@ public class SwaggerParser {
             }
             result.setBasePath(getTextValue(root, "basePath"));
 
-            // 解析 definitions（用于引用解析）
+            // 构建统一的 schema 引用表（Swagger 2.0: definitions / OpenAPI 3.0: components.schemas）
             Map<String, JsonNode> definitions = new HashMap<>();
-            JsonNode defs = root.get("definitions");
+            JsonNode defs = isOpenApi3 ? root.path("components").path("schemas") : root.get("definitions");
             if (defs != null && defs.isObject()) {
                 Iterator<String> names = defs.fieldNames();
                 while (names.hasNext()) {
@@ -87,26 +90,25 @@ public class SwaggerParser {
                 String pathStr = pathNames.next();
                 JsonNode pathNode = paths.get(pathStr);
 
-                String[] methods = {"get", "post", "put", "delete", "patch"};
-                for (String method : methods) {
+                for (String method : HTTP_METHODS) {
                     JsonNode operation = pathNode.get(method);
                     if (operation == null) {
                         continue;
                     }
 
-                    ApiEntry entry = parseOperation(pathStr, method.toUpperCase(), operation, definitions);
+                    ApiEntry entry = parseOperation(pathStr, method.toUpperCase(), operation, definitions, isOpenApi3);
                     result.getApis().add(entry);
                 }
             }
         } catch (Exception e) {
-            log.error("Swagger JSON 解析失败", e);
-            throw new RuntimeException("Swagger JSON 解析失败：" + e.getMessage(), e);
+            log.error("OpenAPI/Swagger JSON 解析失败", e);
+            throw new RuntimeException("OpenAPI/Swagger JSON 解析失败：" + e.getMessage(), e);
         }
         return result;
     }
 
     private static ApiEntry parseOperation(String path, String httpMethod, JsonNode operation,
-                                            Map<String, JsonNode> definitions) {
+                                            Map<String, JsonNode> definitions, boolean isOpenApi3) {
         ApiEntry entry = new ApiEntry();
         entry.setHttpMethod(httpMethod);
         entry.setPath(path);
@@ -132,13 +134,34 @@ public class SwaggerParser {
         // 解析参数
         List<Map<String, Object>> params = new ArrayList<>();
         List<Map<String, Object>> headerParams = new ArrayList<>();
-        JsonNode parameters = operation.get("parameters");
         JsonNode bodySchema = null;
 
+        // --- 请求体 ---
+        if (isOpenApi3) {
+            // OpenAPI 3.0: requestBody.content.{mediaType}.schema
+            JsonNode requestBody = operation.get("requestBody");
+            if (requestBody != null) {
+                JsonNode content = requestBody.get("content");
+                if (content != null) {
+                    Iterator<String> mediaTypes = content.fieldNames();
+                    if (mediaTypes.hasNext()) {
+                        JsonNode mediaType = content.get(mediaTypes.next());
+                        JsonNode schema = mediaType.get("schema");
+                        if (schema != null) {
+                            bodySchema = resolveRef(schema, definitions);
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- 参数（query / path / header / formData / body） ---
+        JsonNode parameters = operation.get("parameters");
         if (parameters != null && parameters.isArray()) {
             for (JsonNode param : parameters) {
                 String in = getTextValue(param, "in");
                 if ("body".equals(in)) {
+                    // Swagger 2.0: parameters[in=body].schema
                     JsonNode schema = param.get("schema");
                     if (schema != null) {
                         bodySchema = resolveRef(schema, definitions);
@@ -154,7 +177,15 @@ public class SwaggerParser {
                     Map<String, Object> p = new LinkedHashMap<>();
                     p.put("name", getTextValue(param, "name"));
                     p.put("in", in);
-                    p.put("type", getTextValue(param, "type"));
+                    // OpenAPI 3.0: type 在 schema 内；Swagger 2.0: type 直接在 param 上
+                    String type;
+                    if (isOpenApi3) {
+                        JsonNode schema = param.get("schema");
+                        type = schema != null ? getTextValue(schema, "type") : null;
+                    } else {
+                        type = getTextValue(param, "type");
+                    }
+                    p.put("type", type);
                     p.put("required", param.path("required").asBoolean(false));
                     p.put("description", getTextValue(param, "description"));
                     params.add(p);
@@ -184,7 +215,21 @@ public class SwaggerParser {
                 okResponse = responses.get("201");
             }
             if (okResponse != null) {
-                JsonNode schema = okResponse.get("schema");
+                JsonNode schema;
+                if (isOpenApi3) {
+                    // OpenAPI 3.0: responses.200.content.{mediaType}.schema
+                    JsonNode content = okResponse.get("content");
+                    schema = null;
+                    if (content != null) {
+                        Iterator<String> mediaTypes = content.fieldNames();
+                        if (mediaTypes.hasNext()) {
+                            schema = content.get(mediaTypes.next()).get("schema");
+                        }
+                    }
+                } else {
+                    // Swagger 2.0: responses.200.schema
+                    schema = okResponse.get("schema");
+                }
                 if (schema != null) {
                     JsonNode resolved = resolveRef(schema, definitions);
                     try {
@@ -200,7 +245,7 @@ public class SwaggerParser {
     }
 
     /**
-     * 解析 $ref 引用
+     * 解析 $ref 引用（兼容 #/definitions/Name 和 #/components/schemas/Name）
      */
     private static JsonNode resolveRef(JsonNode node, Map<String, JsonNode> definitions) {
         if (node == null) {

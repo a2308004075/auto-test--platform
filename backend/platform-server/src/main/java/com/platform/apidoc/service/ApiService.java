@@ -361,34 +361,45 @@ public class ApiService {
     }
 
     /**
-     * 从 URL 同步 Swagger 文档（拉取远程 Swagger JSON 后增量导入）
+     * 从 URL 同步 OpenAPI/Swagger 文档（拉取远程 JSON 后增量导入）
+     * 支持 doc.html 页面地址自动探测 JSON 端点，支持自定义请求头认证
      */
     @Transactional(rollbackFor = Exception.class)
     public SwaggerImportResult syncFromUrl(SwaggerSyncRequest request) {
         projectService.findActiveById(request.getProjectId());
 
+        // 自动探测：用户粘贴的是 doc.html 页面时，尝试同源 /v3/api-docs 或 /v2/api-docs
+        String actualUrl = resolveApiDocsUrl(request.getUrl());
+
         String swaggerJson;
         try {
-            URL url = new URL(request.getUrl());
+            URL url = new URL(actualUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(15000);
             conn.setReadTimeout(30000);
             conn.setRequestProperty("Accept", "application/json");
 
+            // 应用自定义请求头（用于认证等场景）
+            if (request.getHeaders() != null && !request.getHeaders().isEmpty()) {
+                for (Map.Entry<String, String> entry : request.getHeaders().entrySet()) {
+                    conn.setRequestProperty(entry.getKey(), entry.getValue());
+                }
+            }
+
             int statusCode = conn.getResponseCode();
             if (statusCode < 200 || statusCode >= 300) {
                 throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
-                        "获取 Swagger 文档失败，HTTP 状态码：" + statusCode);
+                        "获取 OpenAPI/Swagger 文档失败，HTTP 状态码：" + statusCode);
             }
 
             swaggerJson = readStream(conn.getInputStream());
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.warn("从 URL 获取 Swagger 文档失败: {}", e.getMessage());
+            log.warn("从 URL 获取 OpenAPI/Swagger 文档失败: {}", e.getMessage());
             throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
-                    "获取 Swagger 文档失败：" + e.getMessage());
+                    "获取 OpenAPI/Swagger 文档失败：" + e.getMessage());
         }
 
         // 复用已有的增量导入逻辑
@@ -397,6 +408,35 @@ public class ApiService {
         importRequest.setModuleId(request.getModuleId());
         importRequest.setSwaggerJson(swaggerJson);
         return importSwagger(importRequest);
+    }
+
+    /**
+     * 将 doc.html 页面 URL 转换为实际的 JSON 端点 URL
+     * 如 https://host/mock/doc.html#/... → https://host/mock/v3/api-docs
+     */
+    private String resolveApiDocsUrl(String rawUrl) {
+        // 去掉 fragment（# 及之后的内容）
+        String url = rawUrl;
+        int hashIdx = url.indexOf('#');
+        if (hashIdx >= 0) {
+            url = url.substring(0, hashIdx);
+        }
+
+        // 如果不包含 doc.html，视为已是 JSON 端点，直接返回
+        if (!url.contains("doc.html")) {
+            return url;
+        }
+
+        // 截取 doc.html 之前的部分作为 base path
+        int docIdx = url.indexOf("doc.html");
+        String basePath = url.substring(0, docIdx);
+
+        // 确保以 / 结尾
+        if (!basePath.endsWith("/")) {
+            basePath = basePath + "/";
+        }
+
+        return basePath + "v3/api-docs";
     }
 
     // ───────────────────── 私有方法 ─────────────────────

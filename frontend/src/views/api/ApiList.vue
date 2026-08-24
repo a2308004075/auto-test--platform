@@ -340,12 +340,26 @@ function openDebug(id: number) {
 // ===== Swagger URL 同步 =====
 const syncVisible = ref(false)
 const syncLoading = ref(false)
-const syncForm = reactive({ url: '', moduleId: null as number | null })
+const syncForm = reactive({ url: '', moduleId: null as number | null, headersText: '' })
 
 function openSyncDialog() {
   syncForm.url = ''
   syncForm.moduleId = activeModuleId.value || null
+  syncForm.headersText = ''
   syncVisible.value = true
+}
+
+function parseHeaders(text: string): Record<string, string> | undefined {
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
+  if (lines.length === 0) return undefined
+  const headers: Record<string, string> = {}
+  for (const line of lines) {
+    const idx = line.indexOf(':')
+    if (idx > 0) {
+      headers[line.substring(0, idx).trim()] = line.substring(idx + 1).trim()
+    }
+  }
+  return Object.keys(headers).length > 0 ? headers : undefined
 }
 
 async function handleSyncSubmit() {
@@ -353,7 +367,8 @@ async function handleSyncSubmit() {
   if (!syncForm.moduleId) { ElMessage.warning('请选择目标分组'); return }
   syncLoading.value = true
   try {
-    const res: any = await syncSwaggerUrl(projectId.value, { url: syncForm.url, moduleId: syncForm.moduleId })
+    const headers = parseHeaders(syncForm.headersText)
+    const res: any = await syncSwaggerUrl(projectId.value, { url: syncForm.url, moduleId: syncForm.moduleId, headers })
     const result = res.data
     ElMessage.success(`同步完成：新增 ${result.created} 条，更新 ${result.updated} 条，共 ${result.total} 条`)
     syncVisible.value = false
@@ -602,20 +617,23 @@ onBeforeUnmount(() => {
     <!-- 调试弹窗 -->
     <ApiDebugModal v-model="debugVisible" :project-id="projectId" :api-id="debugApiId" />
 
-    <!-- Swagger URL 同步弹窗 -->
-    <el-dialog v-model="syncVisible" title="Swagger URL 同步" width="520px" destroy-on-close>
+    <!-- OpenAPI/Swagger URL 同步弹窗 -->
+    <el-dialog v-model="syncVisible" title="OpenAPI/Swagger URL 同步" width="520px" destroy-on-close>
       <el-form label-position="top">
-        <el-form-item label="Swagger JSON URL" required>
-          <el-input v-model="syncForm.url" placeholder="如 http://localhost:8080/v2/api-docs" clearable />
+        <el-form-item label="文档 URL" required>
+          <el-input v-model="syncForm.url" placeholder="支持 doc.html 页面地址或 /v3/api-docs / /v2/api-docs JSON 端点" clearable />
         </el-form-item>
         <el-form-item label="目标分组" required>
           <el-select v-model="syncForm.moduleId" placeholder="选择导入目标分组" filterable style="width: 100%">
             <el-option v-for="m in modules.filter((x: any) => x.isSystem !== 1 || x.name === '未分类')" :key="m.id" :value="m.id" :label="m.name" />
           </el-select>
         </el-form-item>
+        <el-form-item label="请求头（可选）">
+          <el-input v-model="syncForm.headersText" type="textarea" :rows="3" placeholder="每行一个，格式：Key: Value&#10;如 Authorization: Bearer eyJxxx" />
+        </el-form-item>
       </el-form>
       <div style="color: #909399; font-size: 12px; margin-top: -8px">
-        系统将从指定 URL 拉取 Swagger JSON 文档，并以增量方式导入到选定的分组中（已存在的接口更新，新接口创建）。
+        系统将自动从 URL 拉取 OpenAPI/Swagger JSON 文档（支持 doc.html 自动探测），以增量方式导入到选定分组（已存在接口更新，新接口创建）。
       </div>
       <template #footer>
         <el-button @click="syncVisible = false">取消</el-button>

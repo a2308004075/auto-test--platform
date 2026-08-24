@@ -149,6 +149,16 @@ class SwaggerParserTest {
     }
 
     @Test
+    void parseOpenApi3_contentTypeInHeaders() {
+        SwaggerParser.ParseResult result = SwaggerParser.parse(OPENAPI_3_JSON);
+        // 第二个接口有 requestBody，content type 为 application/json
+        SwaggerParser.ApiEntry entry = result.getApis().get(1);
+        assertNotNull(entry.getHeaders(), "有 requestBody 的接口应有 Content-Type 请求头");
+        assertTrue(entry.getHeaders().contains("\"name\":\"Content-Type\""));
+        assertTrue(entry.getHeaders().contains("\"value\":\"application/json\""));
+    }
+
+    @Test
     void parseSwagger2_backwardsCompatible() {
         SwaggerParser.ParseResult result = SwaggerParser.parse(SWAGGER_2_JSON);
         assertEquals(1, result.getApis().size());

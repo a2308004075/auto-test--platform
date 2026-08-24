@@ -79,6 +79,9 @@ public class SwaggerParser {
                 }
             }
 
+            // 提取根级 consumes（Swagger 2.0 全局请求数据类型）
+            JsonNode rootConsumes = root.get("consumes");
+
             // 解析 paths
             JsonNode paths = root.get("paths");
             if (paths == null || !paths.isObject()) {
@@ -96,7 +99,7 @@ public class SwaggerParser {
                         continue;
                     }
 
-                    ApiEntry entry = parseOperation(pathStr, method.toUpperCase(), operation, definitions, isOpenApi3);
+                    ApiEntry entry = parseOperation(pathStr, method.toUpperCase(), operation, definitions, isOpenApi3, rootConsumes);
                     result.getApis().add(entry);
                 }
             }
@@ -108,7 +111,7 @@ public class SwaggerParser {
     }
 
     private static ApiEntry parseOperation(String path, String httpMethod, JsonNode operation,
-                                            Map<String, JsonNode> definitions, boolean isOpenApi3) {
+                                            Map<String, JsonNode> definitions, boolean isOpenApi3, JsonNode rootConsumes) {
         ApiEntry entry = new ApiEntry();
         entry.setHttpMethod(httpMethod);
         entry.setPath(path);
@@ -135,6 +138,7 @@ public class SwaggerParser {
         List<Map<String, Object>> params = new ArrayList<>();
         List<Map<String, Object>> headerParams = new ArrayList<>();
         JsonNode bodySchema = null;
+        String contentType = null;
 
         // --- 请求体 ---
         if (isOpenApi3) {
@@ -145,7 +149,8 @@ public class SwaggerParser {
                 if (content != null) {
                     Iterator<String> mediaTypes = content.fieldNames();
                     if (mediaTypes.hasNext()) {
-                        JsonNode mediaType = content.get(mediaTypes.next());
+                        contentType = mediaTypes.next();
+                        JsonNode mediaType = content.get(contentType);
                         JsonNode schema = mediaType.get("schema");
                         if (schema != null) {
                             bodySchema = resolveRef(schema, definitions);
@@ -169,6 +174,7 @@ public class SwaggerParser {
                 } else if ("header".equals(in)) {
                     Map<String, Object> hp = new LinkedHashMap<>();
                     hp.put("name", getTextValue(param, "name"));
+                    hp.put("type", "string");
                     hp.put("required", param.path("required").asBoolean(false));
                     hp.put("description", resolveDescription(param, isOpenApi3));
                     headerParams.add(hp);
@@ -185,6 +191,36 @@ public class SwaggerParser {
                     p.put("description", resolveDescription(param, isOpenApi3));
                     params.add(p);
                 }
+            }
+        }
+
+        // Swagger 2.0: 从 consumes 获取请求数据类型
+        if (!isOpenApi3) {
+            JsonNode consumes = operation.get("consumes");
+            if (consumes != null && consumes.isArray() && consumes.size() > 0) {
+                contentType = consumes.get(0).asText();
+            } else if (rootConsumes != null && rootConsumes.isArray() && rootConsumes.size() > 0) {
+                contentType = rootConsumes.get(0).asText();
+            }
+        }
+
+        // 将请求数据类型写入 Content-Type 请求头
+        if (contentType != null) {
+            boolean hasContentType = false;
+            for (Map<String, Object> h : headerParams) {
+                if ("Content-Type".equalsIgnoreCase((String) h.get("name"))) {
+                    hasContentType = true;
+                    break;
+                }
+            }
+            if (!hasContentType) {
+                Map<String, Object> ct = new LinkedHashMap<>();
+                ct.put("name", "Content-Type");
+                ct.put("type", "string");
+                ct.put("required", false);
+                ct.put("description", "内容类型");
+                ct.put("value", contentType);
+                headerParams.add(ct);
             }
         }
 

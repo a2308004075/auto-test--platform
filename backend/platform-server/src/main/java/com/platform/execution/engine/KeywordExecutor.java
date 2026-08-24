@@ -112,14 +112,18 @@ public class KeywordExecutor {
             return StepResult.error("接口定义不存在：" + apiKeyword.getApiId());
         }
 
-        // 解析 headers（Api.headers 是 JSON 字符串）
+        // 解析 headers（Api.headers 是 JSON 数组字符串）
         Map<String, String> headers = new LinkedHashMap<>();
         if (api.getHeaders() != null && !api.getHeaders().isEmpty()) {
             try {
-                Map<String, Object> apiHeaders = objectMapper.readValue(api.getHeaders(),
-                        new TypeReference<Map<String, Object>>() {});
-                for (Map.Entry<String, Object> e : apiHeaders.entrySet()) {
-                    headers.put(e.getKey(), e.getValue() != null ? e.getValue().toString() : "");
+                List<Map<String, Object>> apiHeaders = objectMapper.readValue(api.getHeaders(),
+                        new TypeReference<List<Map<String, Object>>>() {});
+                for (Map<String, Object> h : apiHeaders) {
+                    String name = (String) h.get("name");
+                    if (name != null) {
+                        Object value = h.get("value");
+                        headers.put(name, value != null ? value.toString() : "");
+                    }
                 }
             } catch (Exception e) {
                 log.warn("解析接口 headers 失败: {}", e.getMessage());

@@ -100,7 +100,7 @@ function syncToForm() {
 watch([queryParams, headerParams, responseFields, bodyText], syncToForm, { deep: true })
 
 function addRow(arr: any[]) {
-  arr.push({ name: '', type: 'string', required: false, description: '' })
+  arr.push({ name: '', type: 'string', required: false, description: '', value: '' })
 }
 function removeRow(arr: any[], idx: number) {
   arr.splice(idx, 1)
@@ -339,6 +339,9 @@ onMounted(() => {
             </el-table-column>
             <el-table-column label="说明">
               <template #default="{ row }"><el-input v-model="row.description" size="small" /></template>
+            </el-table-column>
+            <el-table-column label="值" width="200">
+              <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="如 application/json" /></template>
             </el-table-column>
             <el-table-column label="操作" width="70">
               <template #default="{ $index }">

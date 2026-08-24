@@ -49,7 +49,7 @@ async function fetchApi() {
     queryParams.value.forEach((p: any) => { if (p.name) pv[p.name] = '' })
     paramValues.value = pv
     const hv: Record<string, string> = {}
-    headerParams.value.forEach((p: any) => { if (p.name) hv[p.name] = '' })
+    headerParams.value.forEach((p: any) => { if (p.name) hv[p.name] = p.value || '' })
     headerValues.value = hv
   } catch { ElMessage.error('加载接口信息失败') }
 }

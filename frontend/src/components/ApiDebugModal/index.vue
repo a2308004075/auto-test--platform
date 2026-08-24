@@ -59,7 +59,7 @@ async function loadApi() {
     qp.forEach((p: any) => { if (p.name) pv[p.name] = '' })
     paramValues.value = pv
     const hv: Record<string, string> = {}
-    hp.forEach((p: any) => { if (p.name) hv[p.name] = '' })
+    hp.forEach((p: any) => { if (p.name) hv[p.name] = p.value || '' })
     headerValues.value = hv
   } catch { ElMessage.error('加载接口失败') } finally { loading.value = false }
 }

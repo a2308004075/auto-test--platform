@@ -58,6 +58,25 @@ const GROOVY_BUILTINS = [
   'Arrays', 'Random', 'StringBuilder', 'Date', 'Time', 'UUID',
 ]
 
+// ===== JavaScript 关键字 =====
+const JS_KEYWORDS = [
+  'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger',
+  'default', 'delete', 'do', 'else', 'export', 'extends', 'finally',
+  'for', 'function', 'if', 'import', 'in', 'instanceof', 'new', 'of',
+  'return', 'super', 'switch', 'this', 'throw', 'try', 'typeof', 'var',
+  'let', 'void', 'while', 'with', 'yield', 'async', 'await', 'static',
+]
+
+const JS_LITERALS = [
+  'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
+]
+
+const JS_BUILTINS = [
+  'Math', 'JSON', 'Object', 'Array', 'String', 'Number', 'Boolean',
+  'Date', 'RegExp', 'Map', 'Set', 'Promise', 'console', 'Symbol',
+  'Error', 'TypeError', 'RangeError',
+]
+
 function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
@@ -179,8 +198,113 @@ function highlightGroovy(code: string): string {
   return out.join('\n')
 }
 
+/**
+ * JavaScript 语法高亮
+ */
+function highlightJs(code: string): string {
+  const lines = code.split('\n')
+  const out: string[] = []
+  for (const line of lines) {
+    let result = ''
+    let i = 0
+    while (i < line.length) {
+      // 单行注释
+      if (line[i] === '/' && line[i + 1] === '/') {
+        result += `<span style="color:#6a9955;">${esc(line.substring(i))}</span>`
+        i = line.length
+        continue
+      }
+      // 块注释
+      if (line[i] === '/' && line[i + 1] === '*') {
+        const end = line.indexOf('*/', i + 2)
+        if (end !== -1) {
+          result += `<span style="color:#6a9955;">${esc(line.substring(i, end + 2))}</span>`
+          i = end + 2
+        } else {
+          result += `<span style="color:#6a9955;">${esc(line.substring(i))}</span>`
+          i = line.length
+        }
+        continue
+      }
+      // 模板字符串（反引号）
+      if (line[i] === '`') {
+        let j = i + 1
+        while (j < line.length && line[j] !== '`') {
+          if (line[j] === '\\') j++
+          j++
+        }
+        j = Math.min(j + 1, line.length)
+        result += `<span style="color:#ce9178;">${esc(line.substring(i, j))}</span>`
+        i = j
+        continue
+      }
+      // 字符串（双引号）
+      if (line[i] === '"') {
+        let j = i + 1
+        while (j < line.length && line[j] !== '"') {
+          if (line[j] === '\\') j++
+          j++
+        }
+        j = Math.min(j + 1, line.length)
+        result += `<span style="color:#ce9178;">${esc(line.substring(i, j))}</span>`
+        i = j
+        continue
+      }
+      // 字符串（单引号）
+      if (line[i] === "'") {
+        let j = i + 1
+        while (j < line.length && line[j] !== "'") {
+          if (line[j] === '\\') j++
+          j++
+        }
+        j = Math.min(j + 1, line.length)
+        result += `<span style="color:#ce9178;">${esc(line.substring(i, j))}</span>`
+        i = j
+        continue
+      }
+      // 数字
+      if (/\d/.test(line[i]) && (i === 0 || /[\s=+\-*/%<>!,(:]/.test(line[i - 1]))) {
+        const nm = line.substring(i).match(/^\d+\.?\d*[eE]?[+-]?\d*/)
+        if (nm) {
+          result += `<span style="color:#b5cea8;">${esc(nm[0])}</span>`
+          i += nm[0].length
+          continue
+        }
+      }
+      // 标识符
+      if (/[a-zA-Z_$]/.test(line[i])) {
+        const wm = line.substring(i).match(/^[a-zA-Z_$][\w$]*/)
+        if (wm) {
+          const w = wm[0]
+          if (JS_KEYWORDS.includes(w) || JS_LITERALS.includes(w)) {
+            result += `<span style="color:#569cd6;">${esc(w)}</span>`
+          } else if (JS_BUILTINS.includes(w)) {
+            result += `<span style="color:#4ec9b0;">${esc(w)}</span>`
+          } else if (i > 0 && line[i - 1] === '.') {
+            result += `<span style="color:#d4d4d4;">${esc(w)}</span>`
+          } else {
+            const after = line.substring(i + w.length)
+            if (/^\s*\(/.test(after)) {
+              result += `<span style="color:#dcdcaa;">${esc(w)}</span>`
+            } else {
+              result += `<span style="color:#9cdcfe;">${esc(w)}</span>`
+            }
+          }
+          i += w.length
+          continue
+        }
+      }
+      result += esc(line[i])
+      i++
+    }
+    out.push(result)
+  }
+  return out.join('\n')
+}
+
 const highlightedCode = computed(() => {
-  return highlightGroovy(code.value) + '\n'
+  const fn = props.language === 'javascript' ? highlightJs : highlightGroovy
+  return fn(code.value) + '\n'
 })
 
 const lineNumbers = computed(() => {

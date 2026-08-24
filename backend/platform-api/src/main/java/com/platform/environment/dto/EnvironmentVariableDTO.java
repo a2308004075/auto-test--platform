@@ -24,7 +24,7 @@ public class EnvironmentVariableDTO {
     private String varValue;
 
     /**
-     * 数据类型：text/number/json
+     * 数据类型：text/number/json/script
      */
     private String dataType = "text";
 

@@ -13,6 +13,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getEnvironment, updateEnvironment } from '@/api/environment'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
+import CodeEditor from '@/components/CodeEditor/index.vue'
 import { useProjectStore } from '@/stores/modules/project'
 
 const route = useRoute()
@@ -188,18 +189,25 @@ onMounted(fetchDetail)
                 </div>
               </td>
               <td>
-                <el-select v-model="row.dataType" :disabled="row.isFixed" size="small" style="width: 100%">
-                  <el-option label="文本" value="text" />
-                  <el-option label="数字" value="number" />
-                  <el-option label="JSON" value="json" />
-                </el-select>
+                <div class="type-cell">
+                  <el-select v-model="row.dataType" :disabled="row.isFixed" size="small" style="flex: 1">
+                    <el-option label="文本" value="text" />
+                    <el-option label="数字" value="number" />
+                    <el-option label="JSON" value="json" />
+                    <el-option label="脚本" value="script" />
+                  </el-select>
+                  <el-button v-if="row.dataType === 'json'" size="small" @click="formatJson(row)">格式化</el-button>
+                </div>
               </td>
               <td>
-                <el-input v-model="row.varValue" placeholder="变量值">
-                  <template v-if="row.dataType === 'json'" #append>
-                    <el-button @click="formatJson(row)">格式化</el-button>
-                  </template>
-                </el-input>
+                <CodeEditor
+                  v-if="row.dataType === 'json' || row.dataType === 'script'"
+                  v-model="row.varValue"
+                  :language="row.dataType === 'json' ? 'json' : 'javascript'"
+                  :min-height="120"
+                  :placeholder="row.dataType === 'json' ? 'JSON 值' : 'JavaScript 脚本，如：Math.random().toString(36).substring(2)'"
+                />
+                <el-input v-else v-model="row.varValue" placeholder="变量值" />
               </td>
               <td>
                 <el-input v-model="row.description" placeholder="描述" />
@@ -317,7 +325,7 @@ onMounted(fetchDetail)
 }
 
 .var-table .col-type {
-  width: 120px;
+  width: 190px;
 }
 
 .var-table .col-value {
@@ -370,5 +378,11 @@ onMounted(fetchDetail)
   padding: 32px 16px !important;
   color: rgba(0, 0, 0, 0.25);
   font-size: 13px;
+}
+
+.type-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 </style>

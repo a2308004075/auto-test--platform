@@ -15,10 +15,14 @@ import com.platform.environment.mapper.EnvironmentMapper;
 import com.platform.environment.mapper.EnvironmentVariableMapper;
 import com.platform.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.util.*;
 
 /**
@@ -26,11 +30,22 @@ import java.util.*;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EnvironmentService {
 
     private final EnvironmentMapper environmentMapper;
     private final EnvironmentVariableMapper environmentVariableMapper;
     private final ProjectService projectService;
+
+    // ponytail: 每次调用创建新 engine 保证线程安全，Nashorn 创建开销可接受
+    private static final ScriptEngineManager ENGINE_MANAGER = new ScriptEngineManager();
+
+    private static final List<String> JS_BLACKLIST = Arrays.asList(
+            "Runtime", "ProcessBuilder", "System.exit",
+            "java.io", "java.net", "java.lang.reflect",
+            "Packages", "Java.type", "importPackage", "importClass",
+            "load(", "loadWithNewGlobal"
+    );
 
     /**
      * 查询项目下的环境列表（基本信息，不含变量详情）
@@ -124,9 +139,37 @@ public class EnvironmentService {
         List<EnvironmentVariable> variables = environmentVariableMapper.selectList(wrapper);
         Map<String, String> map = new LinkedHashMap<>();
         for (EnvironmentVariable v : variables) {
-            map.put(v.getVarKey(), v.getVarValue());
+            if ("script".equals(v.getDataType())) {
+                map.put(v.getVarKey(), evaluateScript(v.getVarKey(), v.getVarValue()));
+            } else {
+                map.put(v.getVarKey(), v.getVarValue());
+            }
         }
         return map;
+    }
+
+    /**
+     * 执行脚本类型变量，返回脚本输出结果
+     */
+    private String evaluateScript(String varKey, String code) {
+        if (code == null || code.trim().isEmpty()) {
+            return "";
+        }
+        // 安全检查
+        for (String blocked : JS_BLACKLIST) {
+            if (code.contains(blocked)) {
+                log.warn("环境变量 [{}] 脚本安全检查失败：包含禁止操作 {}", varKey, blocked);
+                return "";
+            }
+        }
+        try {
+            ScriptEngine engine = ENGINE_MANAGER.getEngineByName("javascript");
+            Object result = engine.eval(code);
+            return result != null ? result.toString() : "";
+        } catch (ScriptException e) {
+            log.warn("环境变量 [{}] 脚本执行异常: {}", varKey, e.getMessage());
+            return "";
+        }
     }
 
     // ───────────────────── 私有方法 ─────────────────────
@@ -205,6 +248,7 @@ public class EnvironmentService {
         List<EnvironmentVariable> variables = environmentVariableMapper.selectList(wrapper);
         List<EnvironmentVariableDTO> result = new ArrayList<>();
         for (EnvironmentVariable v : variables) {
+            log.info("[DEBUG] envVar id={}, key={}, value={}", v.getId(), v.getVarKey(), v.getVarValue());
             EnvironmentVariableDTO dto = new EnvironmentVariableDTO();
             dto.setVarKey(v.getVarKey());
             dto.setVarValue(v.getVarValue());

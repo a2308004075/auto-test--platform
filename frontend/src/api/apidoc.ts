@@ -42,7 +42,7 @@ export function syncSwaggerUrl(projectId: number, data: { url: string; moduleId:
   return request.post(`/v1/projects/${projectId}/apis/swagger-sync-url`, data)
 }
 
-// URL 同步配置
+// Swagger 同步配置
 export function getSyncConfigs(projectId: number) {
   return request.get(`/v1/projects/${projectId}/apis/sync-configs`)
 }

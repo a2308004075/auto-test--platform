@@ -1,7 +1,7 @@
 /**
  * @author HXN
  * @date 2026-08-24
- * @description URL 同步配置实体类
+ * @description Swagger 同步配置实体类
  */
 package com.platform.apidoc.entity;
 
@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 import java.time.LocalDateTime;
 
 /**
- * URL 同步配置实体（对应 api_sync_config 表）
+ * Swagger 同步配置实体（对应 api_sync_config 表）
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

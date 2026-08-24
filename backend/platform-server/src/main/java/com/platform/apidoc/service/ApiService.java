@@ -365,7 +365,7 @@ public class ApiService {
     }
 
     /**
-     * 从 URL 同步 OpenAPI/Swagger 文档（拉取远程 JSON 后增量导入）
+     * Swagger 同步（拉取远程 JSON 后增量导入）
      * 支持 doc.html 页面地址自动探测 JSON 端点，支持自定义请求头认证
      */
     @Transactional(rollbackFor = Exception.class)
@@ -443,7 +443,7 @@ public class ApiService {
         return basePath + "v3/api-docs";
     }
 
-    // ===== URL 同步配置管理 =====
+    // ===== Swagger 同步配置管理 =====
 
     /**
      * 查询项目的所有同步配置

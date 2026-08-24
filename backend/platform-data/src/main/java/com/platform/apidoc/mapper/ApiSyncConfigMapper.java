@@ -1,7 +1,7 @@
 /**
  * @author HXN
  * @date 2026-08-24
- * @description URL 同步配置 Mapper
+ * @description Swagger 同步配置 Mapper
  */
 package com.platform.apidoc.mapper;
 

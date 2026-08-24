@@ -351,7 +351,7 @@ onBeforeUnmount(() => {
 <template>
   <div>
     <PageHeader title="接口文档">
-      <el-button v-if="hasPermission('project:api:swagger')" @click="router.push(`/project/${projectId}/apis/sync-configs`)">URL 同步</el-button>
+      <el-button v-if="hasPermission('project:api:swagger')" @click="router.push(`/project/${projectId}/apis/sync-configs`)">Swagger 同步</el-button>
       <el-button v-if="hasPermission('project:api:add')" type="primary" @click="router.push(`/project/${projectId}/apis/new`)">+ 新建接口</el-button>
     </PageHeader>
 

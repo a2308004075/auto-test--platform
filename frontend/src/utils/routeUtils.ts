@@ -109,7 +109,7 @@ export function addSupplementaryRoutes(router: Router, layoutName: string): void
     // ===== 接口模块 =====
     { path: 'project/:id/apis/new',              component: 'api/ApiEdit',          title: '新建接口' },
     { path: 'project/:id/apis/:apiId/edit',      component: 'api/ApiEdit',          title: '编辑接口' },
-    { path: 'project/:id/apis/sync-configs',     component: 'api/ApiSyncConfig',    title: 'URL同步配置' },
+    { path: 'project/:id/apis/sync-configs',     component: 'api/ApiSyncConfig',    title: 'Swagger同步配置' },
 
     // ===== 关键字模块 =====
     { path: 'project/:id/keywords/new',               component: 'keywords/KeywordEdit',  title: '新建关键字' },

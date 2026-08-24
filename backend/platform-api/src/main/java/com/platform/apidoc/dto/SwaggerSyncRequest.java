@@ -1,7 +1,7 @@
 /**
  * @author HXN
  * @date 2026-08-23
- * @description Swagger URL 同步请求 DTO
+ * @description Swagger 同步请求 DTO
  */
 package com.platform.apidoc.dto;
 
@@ -12,7 +12,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Map;
 
 /**
- * 从 URL 同步 Swagger 文档请求
+ * Swagger 同步请求
  */
 @Data
 public class SwaggerSyncRequest {

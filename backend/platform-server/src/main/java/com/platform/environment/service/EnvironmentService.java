@@ -64,7 +64,7 @@ public class EnvironmentService {
     }
 
     /**
-     * 创建环境（自动预置 host、header 两个固定变量，用户可通过编辑页添加自定义变量）
+     * 创建环境（自动预置 host、authorization 两个固定变量，用户可通过编辑页添加自定义变量）
      */
     @Transactional(rollbackFor = Exception.class)
     public EnvironmentResponse create(EnvironmentCreateRequest request) {
@@ -77,9 +77,9 @@ public class EnvironmentService {
 
         environmentMapper.insert(env);
 
-        // 预置固定变量 host、header
+        // 预置固定变量 host、authorization
         insertPresetVariable(env.getId(), "host", "", "text", 0);
-        insertPresetVariable(env.getId(), "header", "", "json", 1);
+        insertPresetVariable(env.getId(), "authorization", "", "text", 1);
 
         return toBasicResponse(env);
     }
@@ -191,24 +191,24 @@ public class EnvironmentService {
         deleteWrapper.eq(EnvironmentVariable::getEnvironmentId, envId);
         environmentVariableMapper.delete(deleteWrapper);
 
-        // 从请求中提取 host、header 的值（固定变量，键名锁定）
+        // 从请求中提取 host、authorization 的值（固定变量，键名锁定）
         String hostValue = "";
-        String headerValue = "";
+        String authorizationValue = "";
         List<EnvironmentVariableDTO> customVars = new ArrayList<>();
         for (EnvironmentVariableDTO dto : dtos) {
             String key = dto.getVarKey();
             if ("host".equals(key)) {
                 hostValue = dto.getVarValue() != null ? dto.getVarValue() : "";
-            } else if ("header".equals(key)) {
-                headerValue = dto.getVarValue() != null ? dto.getVarValue() : "";
+            } else if ("authorization".equals(key)) {
+                authorizationValue = dto.getVarValue() != null ? dto.getVarValue() : "";
             } else {
                 customVars.add(dto);
             }
         }
 
-        // 先插入固定变量 host、header
+        // 先插入固定变量 host、authorization
         insertPresetVariable(envId, "host", hostValue, "text", 0);
-        insertPresetVariable(envId, "header", headerValue, "json", 1);
+        insertPresetVariable(envId, "authorization", authorizationValue, "text", 1);
 
         // 再插入自定义变量
         int sortNo = 2;

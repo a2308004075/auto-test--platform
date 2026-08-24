@@ -53,13 +53,13 @@ async function fetchDetail() {
         dataType: v.dataType || 'text',
         description: v.description || '',
       }))
-      // 确保固定变量 host、header 始终在顶部
+      // 确保固定变量 host、authorization 始终在顶部
       const hostVar = apiVars.find(v => v.varKey === 'host') || { varKey: 'host', varValue: '', dataType: 'text', description: '' }
-      const headerVar = apiVars.find(v => v.varKey === 'header') || { varKey: 'header', varValue: '', dataType: 'json', description: '' }
-      const customVars = apiVars.filter(v => v.varKey !== 'host' && v.varKey !== 'header')
+      const authorizationVar = apiVars.find(v => v.varKey === 'authorization') || { varKey: 'authorization', varValue: '', dataType: 'text', description: '' }
+      const customVars = apiVars.filter(v => v.varKey !== 'host' && v.varKey !== 'authorization')
       variables.value = [
         { ...hostVar, isFixed: true, dataType: 'text' },
-        { ...headerVar, isFixed: true, dataType: 'json' },
+        { ...authorizationVar, isFixed: true, dataType: 'text' },
         ...customVars.map(v => ({ ...v, isFixed: false })),
       ]
     }
@@ -164,7 +164,7 @@ onMounted(fetchDetail)
       <!-- 变量工具栏 -->
       <div class="env-edit-toolbar">
         <el-button type="primary" size="small" @click="addVarRow">+ 添加变量</el-button>
-        <span class="var-hint">host、header 为固定变量，不可删除或重命名</span>
+        <span class="var-hint">host、authorization 为固定变量，不可删除或重命名</span>
         <span class="var-count">共 {{ varCount }} 个变量</span>
       </div>
 

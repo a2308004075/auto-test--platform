@@ -1,7 +1,7 @@
 /**
  * @author HXN
  * @date 2026-08-24
- * @description URL 同步配置响应 DTO
+ * @description Swagger 同步配置响应 DTO
  */
 package com.platform.apidoc.dto;
 

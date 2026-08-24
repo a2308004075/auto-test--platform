@@ -1,11 +1,11 @@
 <!--
  @author HXN
  @date 2026-08-24
- @description URL 同步配置独立页面
+ @description Swagger 同步配置独立页面
 -->
 <script setup lang="ts">
 /**
- * URL 同步配置管理页
+ * Swagger 同步配置管理页
  * 从弹窗迁移为独立页面，支持新增/编辑/删除/单条同步/全部同步
  */
 import { ref, reactive, computed, onMounted } from 'vue'
@@ -155,7 +155,7 @@ onMounted(() => {
 
 <template>
   <div>
-    <EditPageHeader title="URL 同步配置" :back-route="`/project/${projectId}/apis`">
+    <EditPageHeader title="Swagger 同步配置" :back-route="`/project/${projectId}/apis`">
       <el-button v-if="hasPermission('project:api:swagger')" type="primary" :loading="syncAllLoading" @click="handleSyncAll">全部同步</el-button>
       <el-button v-if="hasPermission('project:api:swagger')" @click="openAdd">+ 新增配置</el-button>
     </EditPageHeader>

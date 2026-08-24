@@ -101,7 +101,7 @@ public class ApiController {
     }
 
     /**
-     * 从 URL 同步 Swagger 文档（增量导入）
+     * Swagger 同步（增量导入）
      */
     @PostMapping("/swagger-sync-url")
     public ApiResponse<SwaggerImportResult> swaggerSyncUrl(@PathVariable Long projectId,
@@ -110,7 +110,7 @@ public class ApiController {
         return ApiResponse.ok(apiService.syncFromUrl(request));
     }
 
-    // ===== URL 同步配置管理 =====
+    // ===== Swagger 同步配置管理 =====
 
     /**
      * 查询同步配置列表

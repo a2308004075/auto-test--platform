@@ -277,7 +277,7 @@ async function handleGroupSubmit() {
       await updateModule(projectId.value, editingGroupId.value, groupForm)
       ElMessage.success('更新成功')
     } else {
-      await createModule(projectId.value, groupForm)
+      await createModule(projectId.value, { ...groupForm, projectId: projectId.value })
       ElMessage.success('创建成功')
     }
     groupModalVisible.value = false

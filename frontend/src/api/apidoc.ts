@@ -38,10 +38,6 @@ export function batchMoveApis(projectId: number, targetModuleId: number, apiIds:
   return request.post(`/v1/projects/${projectId}/apis/batch-move`, apiIds, { params: { targetModuleId } })
 }
 
-export function importSwagger(projectId: number, data: any) {
-  return request.post(`/v1/projects/${projectId}/apis/swagger-import`, data)
-}
-
 export function syncSwaggerUrl(projectId: number, data: { url: string; moduleId: number; headers?: Record<string, string> }) {
   return request.post(`/v1/projects/${projectId}/apis/swagger-sync-url`, data)
 }

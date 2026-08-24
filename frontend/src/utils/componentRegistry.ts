@@ -20,7 +20,6 @@ export const componentMap: Record<string, () => Promise<any>> = {
   'api/ApiList': () => import('@/views/api/ApiList.vue'),
   'api/ApiEdit': () => import('@/views/api/ApiEdit.vue'),
   'api/ApiDebug': () => import('@/views/api/ApiDebug.vue'),
-  'api/SwaggerImport': () => import('@/views/api/SwaggerImport.vue'),
 
   // ===== 环境模块 =====
   'environment/EnvironmentList': () => import('@/views/environment/EnvironmentList.vue'),

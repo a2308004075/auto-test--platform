@@ -101,16 +101,6 @@ public class ApiController {
     }
 
     /**
-     * Swagger 导入
-     */
-    @PostMapping("/swagger-import")
-    public ApiResponse<SwaggerImportResult> swaggerImport(@PathVariable Long projectId,
-                                                           @Valid @RequestBody SwaggerImportRequest request) {
-        request.setProjectId(projectId);
-        return ApiResponse.ok(apiService.importSwagger(request));
-    }
-
-    /**
      * 从 URL 同步 Swagger 文档（增量导入）
      */
     @PostMapping("/swagger-sync-url")

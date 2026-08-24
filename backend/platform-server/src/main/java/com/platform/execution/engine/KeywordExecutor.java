@@ -12,7 +12,9 @@ import com.platform.action.entity.Action;
 import com.platform.action.mapper.ActionMapper;
 import com.platform.apidoc.entity.Api;
 import com.platform.apidoc.mapper.ApiMapper;
+import com.platform.apidoc.service.ApiModuleService;
 import com.platform.common.util.SpringContextHolder;
+import com.platform.project.entity.ApiModule;
 import com.platform.execution.entity.TestCase;
 import com.platform.execution.mapper.TestCaseMapper;
 import com.platform.keyword.entity.ApiKeyword;
@@ -48,6 +50,7 @@ public class KeywordExecutor {
     private final KeywordMapper keywordMapper;
     private final ApiKeywordMapper apiKeywordMapper;
     private final ApiMapper apiMapper;
+    private final ApiModuleService apiModuleService;
     private final ToolMethodMapper toolMethodMapper;
     private final ActionMapper actionMapper;
     private final TestCaseMapper testCaseMapper;
@@ -112,6 +115,10 @@ public class KeywordExecutor {
             return StepResult.error("接口定义不存在：" + apiKeyword.getApiId());
         }
 
+        // 解析接口所在分组的有效服务前缀（子分组优先）
+        Map<Long, ApiModule> moduleMap = apiModuleService.getModuleMap(api.getProjectId());
+        String servicePrefix = apiModuleService.resolveServicePrefix(api.getModuleId(), moduleMap);
+
         // 解析 headers（Api.headers 是 JSON 数组字符串）
         Map<String, String> headers = new LinkedHashMap<>();
         if (api.getHeaders() != null && !api.getHeaders().isEmpty()) {
@@ -166,9 +173,12 @@ public class KeywordExecutor {
             }
         }
 
+        // 拼接服务前缀与路径
+        String fullPath = joinPath(servicePrefix, path);
+
         // 发送 HTTP 请求
         StepResult result = httpClientEngine.execute(
-                api.getHttpMethod(), path, headers, body, context);
+                api.getHttpMethod(), fullPath, headers, body, context);
 
         // 执行断言（步骤级断言 + 关键字级 responseAssertion）
         if (result.getResponse() != null) {
@@ -310,6 +320,22 @@ public class KeywordExecutor {
         // 使用 SpringContextHolder 获取 CaseExecutor 避免循环依赖
         CaseExecutor caseExecutor = SpringContextHolder.getBean(CaseExecutor.class);
         return caseExecutor.execute(testCase, context);
+    }
+
+    private String joinPath(String prefix, String path) {
+        if (!org.springframework.util.StringUtils.hasText(prefix)) {
+            return path == null ? "" : path;
+        }
+        if (path == null || path.isEmpty()) {
+            return prefix;
+        }
+        String p = prefix;
+        if (p.endsWith("/") && path.startsWith("/")) {
+            p = p.substring(0, p.length() - 1);
+        } else if (!p.endsWith("/") && !path.startsWith("/")) {
+            p = p + "/";
+        }
+        return p + path;
     }
 
     @SuppressWarnings("unchecked")

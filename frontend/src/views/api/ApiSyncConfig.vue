@@ -9,7 +9,7 @@
  * 从弹窗迁移为独立页面，支持新增/编辑/删除/单条同步/全部同步
  */
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getSyncConfigs, createSyncConfig, updateSyncConfig, deleteSyncConfig,
@@ -19,7 +19,6 @@ import EditPageHeader from '@/components/EditPageHeader/index.vue'
 import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
-const router = useRouter()
 const projectId = computed(() => Number(route.params.id))
 const { hasPermission } = usePermission()
 

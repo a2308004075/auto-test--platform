@@ -4,7 +4,7 @@
  @description 项目全局变量组件（不绑定环境，整个项目任何地方可引用）
 -->
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { InfoFilled } from '@element-plus/icons-vue'
 import { getProjectVariables, updateProjectVariables } from '@/api/environment'
@@ -24,7 +24,6 @@ interface VarRow {
 const loading = ref(false)
 const saving = ref(false)
 const variables = ref<VarRow[]>([])
-const varCount = computed(() => variables.value.length)
 
 async function fetchVariables() {
   loading.value = true

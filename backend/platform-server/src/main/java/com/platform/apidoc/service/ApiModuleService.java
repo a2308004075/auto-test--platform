@@ -74,6 +74,33 @@ public class ApiModuleService {
     }
 
     /**
+     * 查询项目下所有分组，返回以分组 ID 为 key 的 Map
+     */
+    public Map<Long, ApiModule> getModuleMap(Long projectId) {
+        LambdaQueryWrapper<ApiModule> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ApiModule::getProjectId, projectId);
+        return apiModuleMapper.selectList(wrapper).stream()
+                .collect(Collectors.toMap(ApiModule::getId, m -> m, (a, b) -> a, LinkedHashMap::new));
+    }
+
+    /**
+     * 解析分组的有效服务前缀：优先使用自身，否则向上追溯父分组
+     */
+    public String resolveServicePrefix(Long moduleId, Map<Long, ApiModule> moduleMap) {
+        ApiModule module = moduleMap.get(moduleId);
+        if (module == null) {
+            return "";
+        }
+        if (StringUtils.hasText(module.getServicePrefix())) {
+            return module.getServicePrefix();
+        }
+        if (module.getParentId() == null) {
+            return "";
+        }
+        return resolveServicePrefix(module.getParentId(), moduleMap);
+    }
+
+    /**
      * 获取指定分组及其所有子孙分组的 ID 集合（用于接口列表过滤）
      */
     public Set<Long> getDescendantModuleIds(Long moduleId) {

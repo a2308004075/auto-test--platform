@@ -51,8 +51,6 @@ const moduleMap = computed<Record<number, any>>(() => {
   modules.value.forEach((mod) => { m[mod.id] = mod })
   return m
 })
-// 用户分组（非系统），用于父分组下拉
-const userModules = computed(() => modules.value.filter((m) => m.isSystem !== 1))
 // 批量移动可选分组（用户分组 + 未分类系统分组）
 const moveTargetModules = computed(() =>
   modules.value.filter((m) => m.isSystem !== 1 || m.name === '未分类')
@@ -360,7 +358,6 @@ onBeforeUnmount(() => {
       <div class="module-panel" @contextmenu="handleBlankContextmenu">
         <div class="module-head">
           <span class="module-title">分组</span>
-          <el-button v-if="hasPermission('project:api:group')" size="small" type="primary" link @click="openCreateGroup()">+ 新建</el-button>
         </div>
         <div class="tree-search">
           <el-input v-model="filterText" size="small" placeholder="搜索分组..." clearable @input="(v: string) => treeRef?.filter(v)" />
@@ -456,7 +453,7 @@ onBeforeUnmount(() => {
             <template #default="{ row }">{{ row.moduleName || moduleMap[row.moduleId]?.name || '--' }}</template>
           </el-table-column>
           <el-table-column v-if="isColVisible('prefix')" label="服务前缀" width="120">
-            <template #default="{ row }">{{ moduleMap[row.moduleId]?.servicePrefix || '--' }}</template>
+            <template #default="{ row }">{{ row.servicePrefix || '--' }}</template>
           </el-table-column>
           <el-table-column v-if="isColVisible('desc')" prop="description" label="描述" show-overflow-tooltip />
           <el-table-column v-if="isColVisible('source')" label="来源" width="90">
@@ -488,14 +485,6 @@ onBeforeUnmount(() => {
       <el-form label-position="top">
         <el-form-item label="分组名称" required>
           <el-input v-model="groupForm.name" placeholder="如：用户管理服务" />
-        </el-form-item>
-        <el-form-item label="父分组">
-          <el-select v-model="groupForm.parentId" placeholder="无（根分组）" clearable style="width: 100%">
-            <el-option
-              v-for="m in userModules.filter((x: any) => x.id !== editingGroupId)"
-              :key="m.id" :value="m.id" :label="m.name"
-            />
-          </el-select>
         </el-form-item>
         <el-form-item label="服务前缀">
           <el-input v-model="groupForm.servicePrefix" placeholder="可选，如 /api/users" />

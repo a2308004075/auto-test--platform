@@ -21,6 +21,7 @@ import com.platform.keyword.entity.ApiKeyword;
 import com.platform.keyword.entity.Keyword;
 import com.platform.keyword.mapper.ApiKeywordMapper;
 import com.platform.keyword.mapper.KeywordMapper;
+import com.platform.project.entity.ApiModule;
 import com.platform.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -79,9 +80,10 @@ public class ApiService {
         Page<Api> pageParam = new Page<>(page, pageSize);
         Page<Api> result = apiMapper.selectPage(pageParam, wrapper);
 
+        Map<Long, ApiModule> moduleMap = apiModuleService.getModuleMap(projectId);
         List<ApiInfoResponse> records = new ArrayList<>();
         for (Api api : result.getRecords()) {
-            records.add(toResponse(api));
+            records.add(toResponse(api, moduleMap));
         }
         return PageResponse.of(records, result.getTotal(), page, pageSize);
     }
@@ -97,7 +99,8 @@ public class ApiService {
         api.setSourceType("MANUAL");
 
         apiMapper.insert(api);
-        return toResponse(api);
+        Map<Long, ApiModule> moduleMap = apiModuleService.getModuleMap(api.getProjectId());
+        return toResponse(api, moduleMap);
     }
 
     /**
@@ -138,14 +141,17 @@ public class ApiService {
         }
 
         apiMapper.updateById(api);
-        return toResponse(api);
+        Map<Long, ApiModule> moduleMap = apiModuleService.getModuleMap(api.getProjectId());
+        return toResponse(api, moduleMap);
     }
 
     /**
      * 获取接口详情
      */
     public ApiInfoResponse getById(Long apiId) {
-        return toResponse(findById(apiId));
+        Api api = findById(apiId);
+        Map<Long, ApiModule> moduleMap = apiModuleService.getModuleMap(api.getProjectId());
+        return toResponse(api, moduleMap);
     }
 
     /**
@@ -256,6 +262,10 @@ public class ApiService {
         // 从变量中构建 baseUrl（查找 host 变量）
         String baseUrl = envVars.getOrDefault("host", "");
 
+        // 解析接口所在分组的有效服务前缀（子分组优先）
+        Map<Long, ApiModule> moduleMap = apiModuleService.getModuleMap(api.getProjectId());
+        String servicePrefix = apiModuleService.resolveServicePrefix(api.getModuleId(), moduleMap);
+
         String path = api.getPath();
         // 替换路径参数
         if (request.getPathParams() != null) {
@@ -265,7 +275,7 @@ public class ApiService {
         }
 
         // 拼接查询参数
-        StringBuilder urlBuilder = new StringBuilder(baseUrl).append(path);
+        StringBuilder urlBuilder = new StringBuilder(joinUrl(baseUrl, servicePrefix, path));
         if (request.getQueryParams() != null && !request.getQueryParams().isEmpty()) {
             urlBuilder.append("?");
             boolean first = true;
@@ -554,9 +564,10 @@ public class ApiService {
         return api;
     }
 
-    private ApiInfoResponse toResponse(Api api) {
+    private ApiInfoResponse toResponse(Api api, Map<Long, ApiModule> moduleMap) {
         ApiInfoResponse response = new ApiInfoResponse();
         BeanUtils.copyProperties(api, response);
+        response.setServicePrefix(apiModuleService.resolveServicePrefix(api.getModuleId(), moduleMap));
         return response;
     }
 
@@ -589,6 +600,27 @@ public class ApiService {
             }
         }
         return headers.isEmpty() ? null : headers;
+    }
+
+    private String joinUrl(String baseUrl, String prefix, String path) {
+        StringBuilder sb = new StringBuilder(baseUrl == null ? "" : baseUrl);
+        if (StringUtils.hasText(prefix)) {
+            if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '/' && prefix.startsWith("/")) {
+                prefix = prefix.substring(1);
+            } else if (sb.length() > 0 && sb.charAt(sb.length() - 1) != '/' && !prefix.startsWith("/")) {
+                sb.append('/');
+            }
+            sb.append(prefix);
+        }
+        if (StringUtils.hasText(path)) {
+            if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '/' && path.startsWith("/")) {
+                path = path.substring(1);
+            } else if (sb.length() > 0 && sb.charAt(sb.length() - 1) != '/' && !path.startsWith("/")) {
+                sb.append('/');
+            }
+            sb.append(path);
+        }
+        return sb.toString();
     }
 
     private String readStream(InputStream is) throws IOException {

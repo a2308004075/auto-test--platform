@@ -22,6 +22,7 @@ public class ApiInfoResponse {
     private String service;
     private String httpMethod;
     private String path;
+    private String servicePrefix;
     private String requestParams;
     private String requestBody;
     private String responseBody;

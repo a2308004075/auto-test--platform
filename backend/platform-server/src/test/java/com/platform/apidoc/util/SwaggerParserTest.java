@@ -20,7 +20,8 @@ class SwaggerParserTest {
             "        \"summary\": \"设置 EPC 读取错误\",\n" +
             "        \"operationId\": \"setReadEpcErr\",\n" +
             "        \"parameters\": [\n" +
-            "          {\"name\": \"err\", \"in\": \"query\", \"required\": false, \"schema\": {\"type\": \"boolean\", \"default\": true}}\n" +
+            "          {\"name\": \"err\", \"in\": \"query\", \"required\": false, \"description\": \"是否设置错误\", \"schema\": {\"type\": \"boolean\", \"default\": true}},\n" +
+            "          {\"name\": \"mode\", \"in\": \"query\", \"required\": false, \"schema\": {\"type\": \"string\", \"description\": \"模拟模式\"}}\n" +
             "        ],\n" +
             "        \"responses\": {\n" +
             "          \"200\": {\"description\": \"OK\", \"content\": {\"*/*\": {\"schema\": {\"$ref\": \"#/components/schemas/ResponseBoolean\"}}}}\n" +
@@ -47,8 +48,8 @@ class SwaggerParserTest {
             "        \"summary\": \"获取数据列表\",\n" +
             "        \"operationId\": \"getDataList\",\n" +
             "        \"parameters\": [\n" +
-            "          {\"name\": \"page\", \"in\": \"query\", \"required\": false, \"schema\": {\"type\": \"integer\"}},\n" +
-            "          {\"name\": \"size\", \"in\": \"query\", \"required\": false, \"schema\": {\"type\": \"integer\"}}\n" +
+            "          {\"name\": \"page\", \"in\": \"query\", \"required\": false, \"description\": \"页码\", \"schema\": {\"type\": \"integer\", \"format\": \"int32\"}},\n" +
+            "          {\"name\": \"size\", \"in\": \"query\", \"required\": false, \"description\": \"每页条数\", \"schema\": {\"type\": \"integer\", \"format\": \"int32\"}}\n" +
             "        ],\n" +
             "        \"responses\": {\n" +
             "          \"200\": {\"description\": \"OK\", \"content\": {\"*/*\": {\"schema\": {\"type\": \"string\"}}}}\n" +
@@ -58,8 +59,8 @@ class SwaggerParserTest {
             "  },\n" +
             "  \"components\": {\n" +
             "    \"schemas\": {\n" +
-            "      \"ResponseBoolean\": {\"type\": \"object\", \"properties\": {\"code\": {\"type\": \"integer\"}, \"data\": {\"type\": \"boolean\"}, \"msg\": {\"type\": \"string\"}}},\n" +
-            "      \"PlcBinValueReqVO\": {\"required\": [\"binNo\"], \"type\": \"object\", \"properties\": {\"binNo\": {\"type\": \"integer\"}}}\n" +
+            "      \"ResponseBoolean\": {\"type\": \"object\", \"properties\": {\"code\": {\"type\": \"integer\", \"description\": \"状态码\"}, \"data\": {\"type\": \"boolean\", \"description\": \"操作结果\"}, \"msg\": {\"type\": \"string\", \"description\": \"提示消息\"}}},\n" +
+            "      \"PlcBinValueReqVO\": {\"required\": [\"binNo\"], \"type\": \"object\", \"properties\": {\"binNo\": {\"type\": \"integer\", \"description\": \"充电桩编号（1-24）\", \"example\": 1}}}\n" +
             "    }\n" +
             "  }\n" +
             "}";
@@ -89,32 +90,43 @@ class SwaggerParserTest {
         SwaggerParser.ParseResult result = SwaggerParser.parse(OPENAPI_3_JSON);
         assertEquals(3, result.getApis().size());
 
-        // 第一个接口：POST + query params，无 body
+        // 第一个接口：POST + query params（含 param 层和 schema 层 description），无 body
         SwaggerParser.ApiEntry entry = result.getApis().get(0);
         assertEquals("setReadEpcErr", entry.getOperationId());
         assertEquals("/rfid/setReadEpcErr", entry.getPath());
         assertEquals("POST", entry.getHttpMethod());
         assertEquals("设备管理 - RFID", entry.getService());
         assertNotNull(entry.getRequestParams(), "QueryParams 应被解析");
+        // param 层 description
         assertTrue(entry.getRequestParams().contains("\"name\":\"err\""));
         assertTrue(entry.getRequestParams().contains("\"type\":\"boolean\""));
+        assertTrue(entry.getRequestParams().contains("\"description\":\"是否设置错误\""));
+        // schema 层 description 回退
+        assertTrue(entry.getRequestParams().contains("\"name\":\"mode\""));
+        assertTrue(entry.getRequestParams().contains("\"type\":\"string\""));
+        assertTrue(entry.getRequestParams().contains("\"description\":\"模拟模式\""), "schema 层 description 应回退解析");
         assertNull(entry.getRequestBody(), "无 requestBody 应为 null");
         assertNotNull(entry.getResponseBody(), "响应体应被解析");
-        assertTrue(entry.getResponseBody().contains("\"type\":\"object\""));
+        // 响应参数说明
+        assertTrue(entry.getResponseBody().contains("\"description\":\"状态码\""));
+        assertTrue(entry.getResponseBody().contains("\"description\":\"操作结果\""));
+        assertTrue(entry.getResponseBody().contains("\"description\":\"提示消息\""));
     }
 
     @Test
     void parseOpenApi3_postWithBody() {
         SwaggerParser.ParseResult result = SwaggerParser.parse(OPENAPI_3_JSON);
 
-        // 第二个接口：POST + body，无 query params
+        // 第二个接口：POST + body（含属性 description），无 query params
         SwaggerParser.ApiEntry entry = result.getApis().get(1);
         assertEquals("setWaterElectron", entry.getOperationId());
         assertEquals("/plc/setWaterElectron", entry.getPath());
         assertEquals("POST", entry.getHttpMethod());
         assertNull(entry.getRequestParams(), "无 query params 应为 null");
         assertNotNull(entry.getRequestBody(), "Body 应被解析");
+        // Body 参数说明
         assertTrue(entry.getRequestBody().contains("\"binNo\""));
+        assertTrue(entry.getRequestBody().contains("\"description\":\"充电桩编号（1-24）\""), "Body 属性 description 应被保留");
         assertNotNull(entry.getResponseBody());
     }
 
@@ -122,13 +134,17 @@ class SwaggerParserTest {
     void parseOpenApi3_getWithQueryParams() {
         SwaggerParser.ParseResult result = SwaggerParser.parse(OPENAPI_3_JSON);
 
-        // 第三个接口：GET + query params，无 body
+        // 第三个接口：GET + query params（含 description），无 body
         SwaggerParser.ApiEntry entry = result.getApis().get(2);
         assertEquals("getDataList", entry.getOperationId());
         assertEquals("GET", entry.getHttpMethod());
         assertNotNull(entry.getRequestParams(), "GET 的 QueryParams 应被解析");
         assertTrue(entry.getRequestParams().contains("\"name\":\"page\""));
+        assertTrue(entry.getRequestParams().contains("\"type\":\"integer\""));
+        assertTrue(entry.getRequestParams().contains("\"format\":\"int32\""));
+        assertTrue(entry.getRequestParams().contains("\"description\":\"页码\""));
         assertTrue(entry.getRequestParams().contains("\"name\":\"size\""));
+        assertTrue(entry.getRequestParams().contains("\"description\":\"每页条数\""));
         assertNull(entry.getRequestBody(), "GET 无 body 应为 null");
     }
 

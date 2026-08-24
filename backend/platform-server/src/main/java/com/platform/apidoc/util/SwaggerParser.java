@@ -170,24 +170,19 @@ public class SwaggerParser {
                     Map<String, Object> hp = new LinkedHashMap<>();
                     hp.put("name", getTextValue(param, "name"));
                     hp.put("required", param.path("required").asBoolean(false));
-                    hp.put("description", getTextValue(param, "description"));
+                    hp.put("description", resolveDescription(param, isOpenApi3));
                     headerParams.add(hp);
                 } else {
                     // query / path / formData
                     Map<String, Object> p = new LinkedHashMap<>();
                     p.put("name", getTextValue(param, "name"));
                     p.put("in", in);
-                    // OpenAPI 3.0: type 在 schema 内；Swagger 2.0: type 直接在 param 上
-                    String type;
-                    if (isOpenApi3) {
-                        JsonNode schema = param.get("schema");
-                        type = schema != null ? getTextValue(schema, "type") : null;
-                    } else {
-                        type = getTextValue(param, "type");
-                    }
-                    p.put("type", type);
+                    // OpenAPI 3.0: type/format 在 schema 内；Swagger 2.0: 直接在 param 上
+                    JsonNode schemaNode = isOpenApi3 ? param.get("schema") : param;
+                    p.put("type", schemaNode != null ? getTextValue(schemaNode, "type") : null);
+                    p.put("format", schemaNode != null ? getTextValue(schemaNode, "format") : null);
                     p.put("required", param.path("required").asBoolean(false));
-                    p.put("description", getTextValue(param, "description"));
+                    p.put("description", resolveDescription(param, isOpenApi3));
                     params.add(p);
                 }
             }
@@ -277,6 +272,20 @@ public class SwaggerParser {
     private static String getTextValue(JsonNode node, String field) {
         JsonNode child = node.get(field);
         return (child != null && !child.isNull()) ? child.asText() : null;
+    }
+
+    /**
+     * 解析参数说明：优先 parameter 层 description，OpenAPI 3.0 回退到 schema 层
+     */
+    private static String resolveDescription(JsonNode param, boolean isOpenApi3) {
+        String desc = getTextValue(param, "description");
+        if (desc == null && isOpenApi3) {
+            JsonNode schema = param.get("schema");
+            if (schema != null) {
+                desc = getTextValue(schema, "description");
+            }
+        }
+        return desc;
     }
 
     /**

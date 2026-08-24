@@ -28,3 +28,14 @@ export function updateEnvironment(projectId: number, envId: number, data: any) {
 export function deleteEnvironment(projectId: number, envId: number) {
   return request.post(`/v1/projects/${projectId}/environments/${envId}/delete`)
 }
+
+/**
+ * 项目全局变量（不绑定环境，整个项目任何地方可引用）
+ */
+export function getProjectVariables(projectId: number) {
+  return request.get(`/v1/projects/${projectId}/variables`)
+}
+
+export function updateProjectVariables(projectId: number, data: any) {
+  return request.post(`/v1/projects/${projectId}/variables`, data)
+}

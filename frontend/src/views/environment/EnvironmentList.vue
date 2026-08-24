@@ -14,6 +14,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { getEnvironments, createEnvironment, deleteEnvironment } from '@/api/environment'
 import { useProjectStore } from '@/stores/modules/project'
 import { usePermission } from '@/composables/usePermission'
+import GlobalVariables from '@/components/GlobalVariables/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -153,6 +154,9 @@ onMounted(fetchList)
         </template>
       </el-table>
     </div>
+
+    <!-- 全局变量 -->
+    <GlobalVariables :project-id="projectId" />
 
     <!-- 新建环境弹窗 -->
     <el-dialog v-model="modalVisible" title="新建环境" width="480px" @closed="handleDialogClosed">

@@ -36,6 +36,7 @@ public class EnvironmentService {
     private final EnvironmentMapper environmentMapper;
     private final EnvironmentVariableMapper environmentVariableMapper;
     private final ProjectService projectService;
+    private final ProjectVariableService projectVariableService;
 
     // ponytail: 每次调用创建新 engine 保证线程安全，Nashorn 创建开销可接受
     private static final ScriptEngineManager ENGINE_MANAGER = new ScriptEngineManager();
@@ -132,12 +133,22 @@ public class EnvironmentService {
      * @return 变量名 → 变量值 的 Map
      */
     public Map<String, String> getVariablesAsMap(Long envId) {
+        Environment env = findById(envId);
+        Map<String, String> map = new LinkedHashMap<>();
+
+        // 先加载项目全局变量（低优先级）
+        try {
+            map.putAll(projectVariableService.getVariablesAsMap(env.getProjectId()));
+        } catch (Exception e) {
+            log.warn("加载项目全局变量失败: {}", e.getMessage());
+        }
+
+        // 再叠加环境变量（高优先级，同名时覆盖全局变量）
         LambdaQueryWrapper<EnvironmentVariable> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(EnvironmentVariable::getEnvironmentId, envId)
                 .orderByAsc(EnvironmentVariable::getSortNo);
 
         List<EnvironmentVariable> variables = environmentVariableMapper.selectList(wrapper);
-        Map<String, String> map = new LinkedHashMap<>();
         for (EnvironmentVariable v : variables) {
             if ("script".equals(v.getDataType())) {
                 map.put(v.getVarKey(), evaluateScript(v.getVarKey(), v.getVarValue()));

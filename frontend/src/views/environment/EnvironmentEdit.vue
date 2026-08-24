@@ -11,6 +11,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { InfoFilled } from '@element-plus/icons-vue'
 import { getEnvironment, updateEnvironment } from '@/api/environment'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
 import CodeEditor from '@/components/CodeEditor/index.vue'
@@ -165,6 +166,17 @@ onMounted(fetchDetail)
       <div class="env-edit-toolbar">
         <el-button type="primary" size="small" @click="addVarRow">+ 添加变量</el-button>
         <span class="var-hint">host、authorization 为固定变量，不可删除或重命名</span>
+        <el-tooltip placement="bottom" effect="light">
+          <template #content>
+            <div style="max-width: 360px; line-height: 1.7;">
+              <div style="font-weight: 600; margin-bottom: 4px;">如何引用环境变量</div>
+              <div>在测试用例、接口调试、关键字、执行计划中，使用 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${变量名}</code> 语法引用。</div>
+              <div style="margin-top: 6px; color: #999;">示例：<code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${host}</code> 替换为当前环境的 host 值</div>
+              <div style="margin-top: 6px; color: #999;">环境变量仅在选中此环境时生效；项目全局变量在所有环境下均可引用，同名时环境变量优先</div>
+            </div>
+          </template>
+          <el-icon class="var-help-icon"><InfoFilled /></el-icon>
+        </el-tooltip>
         <span class="var-count">共 {{ varCount }} 个变量</span>
       </div>
 
@@ -293,6 +305,12 @@ onMounted(fetchDetail)
 .var-hint {
   font-size: 12px;
   color: rgba(0, 0, 0, 0.45);
+}
+
+.var-help-icon {
+  color: #909399;
+  cursor: pointer;
+  font-size: 16px;
 }
 
 .fixed-tag {

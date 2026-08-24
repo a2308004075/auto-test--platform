@@ -54,7 +54,7 @@ async function fetchList() {
 // ===== 新增/编辑弹窗 =====
 const formVisible = ref(false)
 const formMode = ref<'add' | 'edit'>('add')
-const form = reactive({ id: null as number | null, name: '', url: '', moduleId: null as number | null, headers: '' })
+const form = reactive({ id: null as number | null, name: '', url: '', moduleId: null as number | null, headers: '', authUsername: '', authPassword: '' })
 const saving = ref(false)
 
 function openAdd() {
@@ -64,6 +64,8 @@ function openAdd() {
   form.url = ''
   form.moduleId = null
   form.headers = ''
+  form.authUsername = ''
+  form.authPassword = ''
   formVisible.value = true
 }
 
@@ -74,6 +76,8 @@ function openEdit(row: any) {
   form.url = row.url
   form.moduleId = row.moduleId
   form.headers = row.headers || ''
+  form.authUsername = row.authUsername || ''
+  form.authPassword = row.authPassword || ''
   formVisible.value = true
 }
 
@@ -83,7 +87,12 @@ async function handleSave() {
   if (!form.moduleId) { ElMessage.warning('请选择目标分组'); return }
   saving.value = true
   try {
-    const data = { name: form.name, url: form.url, moduleId: form.moduleId!, headers: form.headers || undefined }
+    const data = {
+      name: form.name, url: form.url, moduleId: form.moduleId!,
+      headers: form.headers || undefined,
+      authUsername: form.authUsername || undefined,
+      authPassword: form.authPassword || undefined,
+    }
     if (formMode.value === 'add') {
       await createSyncConfig(projectId.value, data)
       ElMessage.success('配置已保存')
@@ -190,6 +199,12 @@ onMounted(() => {
           <el-select v-model="form.moduleId" placeholder="选择导入目标分组" filterable style="width: 100%">
             <el-option v-for="m in modules.filter((x: any) => x.isSystem !== 1 || x.name === '未分类')" :key="m.id" :value="m.id" :label="m.name" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="认证账号（可选）">
+          <el-input v-model="form.authUsername" placeholder="Swagger 文档 Basic Auth 账号" clearable />
+        </el-form-item>
+        <el-form-item label="认证密码（可选）">
+          <el-input v-model="form.authPassword" type="password" show-password placeholder="Swagger 文档 Basic Auth 密码" clearable />
         </el-form-item>
         <el-form-item label="请求头（可选）">
           <el-input v-model="form.headers" type="textarea" :rows="3" placeholder="每行一个，格式：Key: Value&#10;如 Authorization: Bearer eyJxxx" />

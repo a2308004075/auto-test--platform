@@ -47,11 +47,11 @@ export function getSyncConfigs(projectId: number) {
   return request.get(`/v1/projects/${projectId}/apis/sync-configs`)
 }
 
-export function createSyncConfig(projectId: number, data: { name: string; url: string; moduleId: number; headers?: string }) {
+export function createSyncConfig(projectId: number, data: { name: string; url: string; moduleId: number; headers?: string; authUsername?: string; authPassword?: string }) {
   return request.post(`/v1/projects/${projectId}/apis/sync-configs`, data)
 }
 
-export function updateSyncConfig(projectId: number, configId: number, data: { name: string; url: string; moduleId: number; headers?: string }) {
+export function updateSyncConfig(projectId: number, configId: number, data: { name: string; url: string; moduleId: number; headers?: string; authUsername?: string; authPassword?: string }) {
   return request.post(`/v1/projects/${projectId}/apis/sync-configs/${configId}`, data)
 }
 

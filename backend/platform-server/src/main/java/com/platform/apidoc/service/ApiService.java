@@ -383,37 +383,23 @@ public class ApiService {
         projectService.findActiveById(request.getProjectId());
 
         // 自动探测：用户粘贴的是 doc.html 页面时，尝试同源 /v3/api-docs 或 /v2/api-docs
-        String actualUrl = resolveApiDocsUrl(request.getUrl());
+        List<String> candidates = resolveApiDocsUrls(request.getUrl());
 
-        String swaggerJson;
-        try {
-            URL url = new URL(actualUrl);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setConnectTimeout(15000);
-            conn.setReadTimeout(30000);
-            conn.setRequestProperty("Accept", "application/json");
-
-            // 应用自定义请求头（用于认证等场景）
-            if (request.getHeaders() != null && !request.getHeaders().isEmpty()) {
-                for (Map.Entry<String, String> entry : request.getHeaders().entrySet()) {
-                    conn.setRequestProperty(entry.getKey(), entry.getValue());
-                }
+        String swaggerJson = null;
+        Exception lastException = null;
+        for (String actualUrl : candidates) {
+            try {
+                swaggerJson = fetchSwaggerJson(actualUrl, request.getHeaders());
+                break;
+            } catch (BusinessException e) {
+                lastException = e;
+                log.warn("Swagger 同步尝试失败 [{}]: {}", actualUrl, e.getMessage());
             }
-
-            int statusCode = conn.getResponseCode();
-            if (statusCode < 200 || statusCode >= 300) {
-                throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
-                        "获取 OpenAPI/Swagger 文档失败，HTTP 状态码：" + statusCode);
-            }
-
-            swaggerJson = readStream(conn.getInputStream());
-        } catch (BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            log.warn("从 URL 获取 OpenAPI/Swagger 文档失败: {}", e.getMessage());
+        }
+        if (swaggerJson == null) {
+            String msg = lastException != null ? lastException.getMessage() : "所有端点均失败";
             throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
-                    "获取 OpenAPI/Swagger 文档失败：" + e.getMessage());
+                    "获取 OpenAPI/Swagger 文档失败：" + msg);
         }
 
         // 复用已有的增量导入逻辑
@@ -425,10 +411,10 @@ public class ApiService {
     }
 
     /**
-     * 将 doc.html 页面 URL 转换为实际的 JSON 端点 URL
-     * 如 https://host/mock/doc.html#/... → https://host/mock/v3/api-docs
+     * 将 doc.html 页面 URL 转换为可能的 JSON 端点 URL 列表
+     * 如 https://host/mock/doc.html#/... → [https://host/mock/v3/api-docs, https://host/mock/v2/api-docs]
      */
-    private String resolveApiDocsUrl(String rawUrl) {
+    private List<String> resolveApiDocsUrls(String rawUrl) {
         // 去掉 fragment（# 及之后的内容）
         String url = rawUrl;
         int hashIdx = url.indexOf('#');
@@ -436,9 +422,11 @@ public class ApiService {
             url = url.substring(0, hashIdx);
         }
 
+        List<String> candidates = new ArrayList<>();
         // 如果不包含 doc.html，视为已是 JSON 端点，直接返回
         if (!url.contains("doc.html")) {
-            return url;
+            candidates.add(url);
+            return candidates;
         }
 
         // 截取 doc.html 之前的部分作为 base path
@@ -450,7 +438,43 @@ public class ApiService {
             basePath = basePath + "/";
         }
 
-        return basePath + "v3/api-docs";
+        candidates.add(basePath + "v3/api-docs");
+        candidates.add(basePath + "v2/api-docs");
+        return candidates;
+    }
+
+    private String fetchSwaggerJson(String actualUrl, Map<String, String> headers) {
+        try {
+            URL url = new URL(actualUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(30000);
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setRequestProperty("User-Agent", "auto-test-platform/swagger-sync");
+
+            // 应用自定义请求头（用于认证等场景）
+            if (headers != null && !headers.isEmpty()) {
+                for (Map.Entry<String, String> entry : headers.entrySet()) {
+                    conn.setRequestProperty(entry.getKey(), entry.getValue());
+                }
+            }
+
+            int statusCode = conn.getResponseCode();
+            if (statusCode < 200 || statusCode >= 300) {
+                String errorBody = readStream(conn.getErrorStream());
+                log.warn("Swagger 同步远端返回非 2xx [{}] status={}, body={}", actualUrl, statusCode, errorBody);
+                throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
+                        "HTTP 状态码：" + statusCode + ", 响应：" + errorBody);
+            }
+
+            return readStream(conn.getInputStream());
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("从 URL 获取 OpenAPI/Swagger 文档失败 [{}]: {}", actualUrl, e.getMessage());
+            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, e.getMessage());
+        }
     }
 
     // ===== Swagger 同步配置管理 =====
@@ -481,6 +505,8 @@ public class ApiService {
         config.setUrl(request.getUrl());
         config.setModuleId(request.getModuleId());
         config.setHeaders(request.getHeaders());
+        config.setAuthUsername(request.getAuthUsername());
+        config.setAuthPassword(request.getAuthPassword());
         apiSyncConfigMapper.insert(config);
         return toSyncConfigResponse(config);
     }
@@ -494,6 +520,8 @@ public class ApiService {
         config.setUrl(request.getUrl());
         config.setModuleId(request.getModuleId());
         config.setHeaders(request.getHeaders());
+        config.setAuthUsername(request.getAuthUsername());
+        config.setAuthPassword(request.getAuthPassword());
         apiSyncConfigMapper.updateById(config);
         return toSyncConfigResponse(config);
     }
@@ -516,7 +544,7 @@ public class ApiService {
         syncRequest.setProjectId(config.getProjectId());
         syncRequest.setUrl(config.getUrl());
         syncRequest.setModuleId(config.getModuleId());
-        syncRequest.setHeaders(parseHeadersText(config.getHeaders()));
+        syncRequest.setHeaders(buildSyncHeaders(config));
         SwaggerImportResult result = syncFromUrl(syncRequest);
         // 更新最后同步时间
         config.setLastSyncAt(LocalDateTime.now());
@@ -598,6 +626,19 @@ public class ApiService {
             if (idx > 0) {
                 headers.put(line.substring(0, idx).trim(), line.substring(idx + 1).trim());
             }
+        }
+        return headers.isEmpty() ? null : headers;
+    }
+
+    private Map<String, String> buildSyncHeaders(ApiSyncConfig config) {
+        Map<String, String> headers = parseHeadersText(config.getHeaders());
+        if (headers == null) {
+            headers = new LinkedHashMap<>();
+        }
+        if (StringUtils.hasText(config.getAuthUsername())) {
+            String credentials = config.getAuthUsername() + ":" + (config.getAuthPassword() == null ? "" : config.getAuthPassword());
+            String basic = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+            headers.put("Authorization", "Basic " + basic);
         }
         return headers.isEmpty() ? null : headers;
     }

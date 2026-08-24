@@ -24,4 +24,10 @@ public class ApiSyncConfigRequest {
 
     /** 自定义请求头文本（多行 Key: Value） */
     private String headers;
+
+    /** 认证账号（Basic Auth，可选） */
+    private String authUsername;
+
+    /** 认证密码（Basic Auth，可选） */
+    private String authPassword;
 }

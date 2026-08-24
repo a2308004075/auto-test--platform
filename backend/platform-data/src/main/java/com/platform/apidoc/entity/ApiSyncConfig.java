@@ -34,6 +34,12 @@ public class ApiSyncConfig extends BaseEntity {
     /** 自定义请求头（多行 Key: Value 文本） */
     private String headers;
 
+    /** 认证账号（Basic Auth） */
+    private String authUsername;
+
+    /** 认证密码（Basic Auth） */
+    private String authPassword;
+
     /** 最后一次同步时间 */
     private LocalDateTime lastSyncAt;
 }

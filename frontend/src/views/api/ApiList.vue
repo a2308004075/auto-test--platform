@@ -582,12 +582,12 @@ onBeforeUnmount(() => {
       >
         <!-- 空白区域右键：仅显示"新建分组" -->
         <template v-if="!contextModule">
-          <div class="context-menu-item" @click="contextCreateGroup">新建分组</div>
+          <div v-if="hasPermission('project:api:group')" class="context-menu-item" @click="contextCreateGroup">新建分组</div>
         </template>
         <!-- 用户分组右键 -->
         <template v-else>
-          <div class="context-menu-item" @click="contextCreateChild">新建子分组</div>
-          <div class="context-menu-divider" />
+          <div v-if="hasPermission('project:api:group')" class="context-menu-item" @click="contextCreateChild">新建子分组</div>
+          <div v-if="hasPermission('project:api:group')" class="context-menu-divider" />
           <div class="context-menu-item" @click="contextEdit">编辑</div>
           <div class="context-menu-item danger" @click="contextDelete">删除</div>
         </template>

@@ -31,13 +31,13 @@ public class ApiSyncConfig extends BaseEntity {
     /** 目标分组 ID */
     private Long moduleId;
 
-    /** 自定义请求头（多行 Key: Value 文本） */
+    /** 导入后统一附加到各接口的请求头（多行 Key: Value 文本） */
     private String headers;
 
-    /** 认证账号（Basic Auth） */
+    /** Swagger 文档认证账号（Basic Auth） */
     private String authUsername;
 
-    /** 认证密码（Basic Auth） */
+    /** Swagger 文档认证密码（Basic Auth） */
     private String authPassword;
 
     /** 最后一次同步时间 */

@@ -31,7 +31,7 @@ public class SwaggerSyncRequest {
     private Long moduleId;
 
     /**
-     * 自定义请求头（可选，用于认证等场景，如 Authorization: Bearer xxx）
+     * 导入后统一附加到各接口的请求头（可选，多行 Key: Value，如 Authorization: Bearer xxx）
      */
     private Map<String, String> headers;
 

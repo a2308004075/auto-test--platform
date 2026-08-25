@@ -13,6 +13,8 @@ import com.platform.apidoc.entity.ApiSyncConfig;
 import com.platform.apidoc.mapper.ApiMapper;
 import com.platform.apidoc.mapper.ApiSyncConfigMapper;
 import com.platform.apidoc.util.SwaggerParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
 import com.platform.common.response.PageResponse;
@@ -53,6 +55,7 @@ public class ApiService {
     private final EnvironmentService environmentService;
     private final ApiModuleService apiModuleService;
     private final ApiSyncConfigMapper apiSyncConfigMapper;
+    private final ObjectMapper objectMapper;
 
     /**
      * 分页查询接口列表
@@ -201,6 +204,14 @@ public class ApiService {
 
         SwaggerParser.ParseResult parseResult = SwaggerParser.parse(request.getSwaggerJson());
         List<SwaggerParser.ApiEntry> entries = parseResult.getApis();
+
+        // 合并同步配置中的默认请求头到每个接口
+        List<Map<String, Object>> defaultHeaders = toDefaultHeaderItems(request.getDefaultHeaders());
+        if (!defaultHeaders.isEmpty()) {
+            for (SwaggerParser.ApiEntry entry : entries) {
+                entry.setHeaders(mergeHeadersJson(entry.getHeaders(), defaultHeaders));
+            }
+        }
 
         int created = 0;
         int updated = 0;
@@ -376,7 +387,7 @@ public class ApiService {
 
     /**
      * Swagger 同步（拉取远程 JSON 后增量导入）
-     * 支持 doc.html 页面地址自动探测 JSON 端点，支持自定义请求头认证
+     * 支持 doc.html 页面地址自动探测 JSON 端点，认证账号/密码仅用于拉取 Swagger 文档
      */
     @Transactional(rollbackFor = Exception.class)
     public SwaggerImportResult syncFromUrl(SwaggerSyncRequest request) {
@@ -407,6 +418,7 @@ public class ApiService {
         importRequest.setProjectId(request.getProjectId());
         importRequest.setModuleId(request.getModuleId());
         importRequest.setSwaggerJson(swaggerJson);
+        importRequest.setDefaultHeaders(request.getHeaders());
         return importSwagger(importRequest);
     }
 
@@ -544,7 +556,7 @@ public class ApiService {
         syncRequest.setProjectId(config.getProjectId());
         syncRequest.setUrl(config.getUrl());
         syncRequest.setModuleId(config.getModuleId());
-        syncRequest.setHeaders(buildSyncHeaders(config));
+        syncRequest.setHeaders(buildSwaggerAuthHeaders(config));
         SwaggerImportResult result = syncFromUrl(syncRequest);
         // 更新最后同步时间
         config.setLastSyncAt(LocalDateTime.now());
@@ -630,17 +642,61 @@ public class ApiService {
         return headers.isEmpty() ? null : headers;
     }
 
-    private Map<String, String> buildSyncHeaders(ApiSyncConfig config) {
-        Map<String, String> headers = parseHeadersText(config.getHeaders());
-        if (headers == null) {
-            headers = new LinkedHashMap<>();
-        }
+    private Map<String, String> buildSwaggerAuthHeaders(ApiSyncConfig config) {
         if (StringUtils.hasText(config.getAuthUsername())) {
             String credentials = config.getAuthUsername() + ":" + (config.getAuthPassword() == null ? "" : config.getAuthPassword());
             String basic = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+            Map<String, String> headers = new LinkedHashMap<>();
             headers.put("Authorization", "Basic " + basic);
+            return headers;
         }
-        return headers.isEmpty() ? null : headers;
+        return null;
+    }
+
+    private List<Map<String, Object>> toDefaultHeaderItems(Map<String, String> defaultHeaders) {
+        if (defaultHeaders == null || defaultHeaders.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map.Entry<String, String> entry : defaultHeaders.entrySet()) {
+            Map<String, Object> h = new LinkedHashMap<>();
+            h.put("name", entry.getKey());
+            h.put("type", "string");
+            h.put("required", false);
+            h.put("description", "");
+            h.put("value", entry.getValue());
+            result.add(h);
+        }
+        return result;
+    }
+
+    private String mergeHeadersJson(String existingJson, List<Map<String, Object>> defaultHeaders) {
+        try {
+            List<Map<String, Object>> headers = new ArrayList<>();
+            if (StringUtils.hasText(existingJson)) {
+                List<Map<String, Object>> parsed = objectMapper.readValue(existingJson, new TypeReference<List<Map<String, Object>>>() {});
+                if (parsed != null) {
+                    headers.addAll(parsed);
+                }
+            }
+            Set<String> existingNames = new HashSet<>();
+            for (Map<String, Object> h : headers) {
+                Object name = h.get("name");
+                if (name != null) {
+                    existingNames.add(name.toString());
+                }
+            }
+            for (Map<String, Object> h : defaultHeaders) {
+                Object name = h.get("name");
+                if (name != null && !existingNames.contains(name.toString())) {
+                    headers.add(h);
+                }
+            }
+            return headers.isEmpty() ? null : objectMapper.writeValueAsString(headers);
+        } catch (Exception e) {
+            log.warn("合并默认请求头失败: {}", e.getMessage());
+            return existingJson;
+        }
     }
 
     private String joinUrl(String baseUrl, String prefix, String path) {

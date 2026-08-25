@@ -201,17 +201,17 @@ onMounted(() => {
           </el-select>
         </el-form-item>
         <el-form-item label="认证账号（可选）">
-          <el-input v-model="form.authUsername" placeholder="Swagger 文档 Basic Auth 账号" clearable />
+          <el-input v-model="form.authUsername" placeholder="用于拉取 Swagger 文档的 Basic Auth 账号" clearable />
         </el-form-item>
         <el-form-item label="认证密码（可选）">
-          <el-input v-model="form.authPassword" type="password" show-password placeholder="Swagger 文档 Basic Auth 密码" clearable />
+          <el-input v-model="form.authPassword" type="password" show-password placeholder="用于拉取 Swagger 文档的 Basic Auth 密码" clearable />
         </el-form-item>
-        <el-form-item label="请求头（可选）">
-          <el-input v-model="form.headers" type="textarea" :rows="3" placeholder="每行一个，格式：Key: Value&#10;如 Authorization: Bearer eyJxxx" />
+        <el-form-item label="默认请求头（可选）">
+          <el-input v-model="form.headers" type="textarea" :rows="3" placeholder="导入后统一附加到各接口的请求头&#10;每行一个，格式：Key: Value&#10;如 Authorization: ${authorization}" />
         </el-form-item>
       </el-form>
       <div style="color: #909399; font-size: 12px; margin-top: -8px">
-        系统将自动从 URL 拉取 OpenAPI/Swagger JSON 文档（支持 doc.html 自动探测），以增量方式导入到选定分组。
+        认证账号/密码仅用于拉取 Swagger 文档；默认请求头会在导入后附加到各接口。系统将自动从 URL 拉取 OpenAPI/Swagger JSON 文档（支持 doc.html 自动探测），以增量方式导入到选定分组。
       </div>
       <template #footer>
         <el-button @click="formVisible = false">取消</el-button>

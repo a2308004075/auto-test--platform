@@ -22,12 +22,12 @@ public class ApiSyncConfigRequest {
     @NotNull(message = "目标分组不能为空")
     private Long moduleId;
 
-    /** 自定义请求头文本（多行 Key: Value） */
+    /** 导入后统一附加到各接口的请求头文本（多行 Key: Value） */
     private String headers;
 
-    /** 认证账号（Basic Auth，可选） */
+    /** Swagger 文档认证账号（Basic Auth，可选） */
     private String authUsername;
 
-    /** 认证密码（Basic Auth，可选） */
+    /** Swagger 文档认证密码（Basic Auth，可选） */
     private String authPassword;
 }

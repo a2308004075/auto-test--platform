@@ -9,6 +9,7 @@ import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.Map;
 
 /**
  * Swagger 导入请求
@@ -32,4 +33,9 @@ public class SwaggerImportRequest {
      * 导入模式：FULL（全量）/ INCREMENTAL（增量）
      */
     private String importMode;
+
+    /**
+     * 导入后统一附加到各接口的请求头（Key: Value）
+     */
+    private Map<String, String> defaultHeaders;
 }

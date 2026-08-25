@@ -69,14 +69,25 @@ NEW_MIGRATIONS=$(git diff --cached --name-only --diff-filter=A -- "$MIGRATION_DI
 # 获取被修改/新增/删除/重命名的实体类文件
 ENTITY_CHANGES=$(git diff --cached --name-only --diff-filter=ACMR -- "$ENTITY_DIR" | grep '/entity/')
 
-if [ -n "$ENTITY_CHANGES" ] && [ -z "$NEW_MIGRATIONS" ]; then
+# 过滤出真正涉及数据库字段定义的变更（忽略仅注释/格式化修改）
+SIGNIFICANT_ENTITY_CHANGES=""
+for file in $ENTITY_CHANGES; do
+    if git diff --cached -U0 -- "$file" | grep -qE '^[+-].*(private[[:space:]]+[A-Za-z0-9_<>]+[[:space:]]+[A-Za-z0-9_]+[[:space:]]*;|@Column|@TableField|@TableId|@TableLogic|@TableName)'; then
+        SIGNIFICANT_ENTITY_CHANGES="$SIGNIFICANT_ENTITY_CHANGES
+$file"
+    fi
+done
+# 去掉开头的换行
+SIGNIFICANT_ENTITY_CHANGES=$(echo "$SIGNIFICANT_ENTITY_CHANGES" | sed '/^$/d')
+
+if [ -n "$SIGNIFICANT_ENTITY_CHANGES" ] && [ -z "$NEW_MIGRATIONS" ]; then
     echo ""
     echo "============================================================"
-    echo "  [WARNING] 检测到后端实体类被修改，但未新增 Flyway 迁移文件！"
+    echo "  [WARNING] 检测到后端实体类结构变更，但未新增 Flyway 迁移文件！"
     echo "============================================================"
     echo ""
-    echo "  以下实体类文件被修改："
-    echo "$ENTITY_CHANGES" | while read -r file; do
+    echo "  以下实体类文件涉及字段/表结构变更："
+    echo "$SIGNIFICANT_ENTITY_CHANGES" | while read -r file; do
         echo "    - $file"
     done
     echo ""

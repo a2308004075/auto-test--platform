@@ -6,7 +6,7 @@
 <script setup lang="ts">
 /**
  * 接口编辑/新建 - M4
- * 7 Tab：基础信息 / Header参数 / QueryParams / body / 响应体 / 调试 / 引用关系
+ * 6 Tab：基础信息 / 请求参数 / 请求体 / 响应定义 / 调试 / 引用关系
  * 对齐原型 api-edit.html（请求参数/响应改为可视化表格编辑，数据仍序列化为 JSON 存储）
  */
 import { ref, reactive, onMounted, computed, watch } from 'vue'
@@ -278,44 +278,8 @@ onMounted(() => {
         </el-card>
       </el-tab-pane>
 
-      <!-- Tab: Header参数 -->
-      <el-tab-pane label="Header参数" name="headers">
-        <div class="params-section">
-          <div class="section-head">
-            <h4>Header 参数</h4>
-            <el-button size="small" @click="addRow(headerParams)">+ 添加参数</el-button>
-          </div>
-          <el-table :data="headerParams" size="small" border>
-            <el-table-column label="参数名" width="180">
-              <template #default="{ row }"><el-input v-model="row.name" size="small" placeholder="如 Authorization" /></template>
-            </el-table-column>
-            <el-table-column label="类型" width="120">
-              <template #default="{ row }">
-                <el-select v-model="row.type" size="small">
-                  <el-option v-for="t in paramTypeOptions" :key="t.value" :value="t.value" :label="t.label" />
-                </el-select>
-              </template>
-            </el-table-column>
-            <el-table-column label="必填" width="70">
-              <template #default="{ row }"><el-switch v-model="row.required" /></template>
-            </el-table-column>
-            <el-table-column label="值" min-width="300">
-              <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="如 application/json" /></template>
-            </el-table-column>
-            <el-table-column label="说明" width="160">
-              <template #default="{ row }"><el-input v-model="row.description" size="small" /></template>
-            </el-table-column>
-            <el-table-column label="操作" width="70">
-              <template #default="{ $index }">
-                <el-button link size="small" type="danger" @click="removeRow(headerParams, $index)">删除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
-      </el-tab-pane>
-
-      <!-- Tab: QueryParams -->
-      <el-tab-pane label="QueryParams" name="query">
+      <!-- Tab: 请求参数 -->
+      <el-tab-pane label="请求参数" name="params">
         <div class="params-section">
           <h4>Path 参数</h4>
           <p v-if="!pathParams.length" class="empty-hint">该接口无 Path 参数</p>
@@ -354,10 +318,42 @@ onMounted(() => {
             </el-table-column>
           </el-table>
         </div>
+        <div class="params-section">
+          <div class="section-head">
+            <h4>Header 参数</h4>
+            <el-button size="small" @click="addRow(headerParams)">+ 添加参数</el-button>
+          </div>
+          <el-table :data="headerParams" size="small" border>
+            <el-table-column label="参数名" width="180">
+              <template #default="{ row }"><el-input v-model="row.name" size="small" placeholder="如 Authorization" /></template>
+            </el-table-column>
+            <el-table-column label="类型" width="120">
+              <template #default="{ row }">
+                <el-select v-model="row.type" size="small">
+                  <el-option v-for="t in paramTypeOptions" :key="t.value" :value="t.value" :label="t.label" />
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column label="必填" width="70">
+              <template #default="{ row }"><el-switch v-model="row.required" /></template>
+            </el-table-column>
+            <el-table-column label="值" min-width="300">
+              <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="如 application/json" /></template>
+            </el-table-column>
+            <el-table-column label="说明" width="160">
+              <template #default="{ row }"><el-input v-model="row.description" size="small" /></template>
+            </el-table-column>
+            <el-table-column label="操作" width="70">
+              <template #default="{ $index }">
+                <el-button link size="small" type="danger" @click="removeRow(headerParams, $index)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
       </el-tab-pane>
 
-      <!-- Tab: body -->
-      <el-tab-pane label="body" name="body">
+      <!-- Tab: 请求体 -->
+      <el-tab-pane label="请求体" name="body">
         <div v-if="form.httpMethod === 'GET'" class="empty-state">
           <div class="empty-icon">📋</div>
           <div>GET 请求不包含请求体</div>
@@ -365,8 +361,8 @@ onMounted(() => {
         <el-input v-else v-model="bodyText" type="textarea" :rows="14" placeholder='{"key":"value"}' style="font-family: monospace; max-width: 800px" />
       </el-tab-pane>
 
-      <!-- Tab: 响应体 -->
-      <el-tab-pane label="响应体" name="response">
+      <!-- Tab: 响应定义 -->
+      <el-tab-pane label="响应定义" name="response">
         <div class="params-section">
           <div class="section-head">
             <h4>响应字段</h4>

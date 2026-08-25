@@ -88,6 +88,10 @@ export function deleteModule(projectId: number, moduleId: number) {
   return request.post(`/v1/projects/${projectId}/modules/${moduleId}/delete`)
 }
 
+export function clearModuleApis(projectId: number, moduleId: number) {
+  return request.post(`/v1/projects/${projectId}/modules/${moduleId}/clear-apis`)
+}
+
 // 接口被关键字引用的关系
 export function getApiReferences(projectId: number, apiId: number) {
   return request.get(`/v1/projects/${projectId}/apis/${apiId}/references`)

@@ -9,6 +9,7 @@ import com.platform.apidoc.dto.ApiModuleCreateRequest;
 import com.platform.apidoc.dto.ApiModuleResponse;
 import com.platform.apidoc.dto.ApiModuleUpdateRequest;
 import com.platform.apidoc.service.ApiModuleService;
+import com.platform.apidoc.service.ApiService;
 import com.platform.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +26,7 @@ import java.util.List;
 public class ApiModuleController {
 
     private final ApiModuleService apiModuleService;
+    private final ApiService apiService;
 
     /**
      * 查询分组列表
@@ -61,6 +63,16 @@ public class ApiModuleController {
     public ApiResponse<Void> delete(@PathVariable Long projectId,
                                      @PathVariable Long moduleId) {
         apiModuleService.delete(moduleId);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * 清空分组内所有接口（含子孙分组）
+     */
+    @PostMapping("/{moduleId}/clear-apis")
+    public ApiResponse<Void> clearApis(@PathVariable Long projectId,
+                                        @PathVariable Long moduleId) {
+        apiService.clearByModule(moduleId);
         return ApiResponse.ok();
     }
 }

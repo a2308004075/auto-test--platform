@@ -202,6 +202,20 @@ public class ApiService {
     }
 
     /**
+     * 清空分组及其子孙分组中的所有接口
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void clearByModule(Long moduleId) {
+        Set<Long> moduleIds = apiModuleService.getDescendantModuleIds(moduleId);
+        LambdaQueryWrapper<Api> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(Api::getModuleId, moduleIds);
+        List<Api> apis = apiMapper.selectList(wrapper);
+        for (Api api : apis) {
+            delete(api.getId());
+        }
+    }
+
+    /**
      * Swagger 导入（增量）
      */
     @Transactional(rollbackFor = Exception.class)
@@ -215,9 +229,12 @@ public class ApiService {
         // 合并同步配置中的默认请求头到每个接口
         List<Map<String, Object>> defaultHeaders = toDefaultHeaderItems(request.getDefaultHeaders());
         if (!defaultHeaders.isEmpty()) {
-            SWAGGER_LOG.info("Swagger 导入附加默认请求头: {}", request.getDefaultHeaders());
+            SWAGGER_LOG.info("Swagger 导入附加默认请求头: keys={}", extractHeaderNames(defaultHeaders));
             for (SwaggerParser.ApiEntry entry : entries) {
-                entry.setHeaders(mergeHeadersJson(entry.getHeaders(), defaultHeaders));
+                String merged = mergeHeadersJson(entry.getHeaders(), defaultHeaders);
+                entry.setHeaders(merged);
+                SWAGGER_LOG.debug("Swagger 接口请求头合并结果: operationId={}, keys={}",
+                        entry.getOperationId(), extractHeaderNames(merged));
             }
         }
 
@@ -593,12 +610,18 @@ public class ApiService {
     @Transactional(rollbackFor = Exception.class)
     public SwaggerImportResult syncOneConfig(Long configId) {
         ApiSyncConfig config = findSyncConfigById(configId);
+        SWAGGER_LOG.info("同步配置读取: configId={}, headersText={}", configId,
+                config.getHeaders() == null ? "<null>" : "\"" + config.getHeaders().replace("\n", "\\n") + "\"");
+        Map<String, String> defaultHeaders = parseHeadersText(config.getHeaders());
+        SWAGGER_LOG.info("同步配置解析默认请求头: configId={}, keys={}", configId,
+                defaultHeaders == null ? "<null>" : defaultHeaders.keySet());
+
         SwaggerSyncRequest syncRequest = new SwaggerSyncRequest();
         syncRequest.setProjectId(config.getProjectId());
         syncRequest.setUrl(config.getUrl());
         syncRequest.setModuleId(config.getModuleId());
         syncRequest.setHeaders(buildSwaggerAuthHeaders(config));
-        syncRequest.setDefaultHeaders(parseHeadersText(config.getHeaders()));
+        syncRequest.setDefaultHeaders(defaultHeaders);
         SwaggerImportResult result = syncFromUrl(syncRequest);
         // 更新最后同步时间
         config.setLastSyncAt(LocalDateTime.now());
@@ -679,6 +702,8 @@ public class ApiService {
             int idx = line.indexOf(':');
             if (idx > 0) {
                 headers.put(line.substring(0, idx).trim(), line.substring(idx + 1).trim());
+            } else {
+                SWAGGER_LOG.warn("默认请求头格式无效，忽略该行: {}", line);
             }
         }
         return headers.isEmpty() ? null : headers;
@@ -733,6 +758,32 @@ public class ApiService {
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
                     "无法解析 Swagger JSON：" + e.getMessage());
+        }
+    }
+
+    private List<String> extractHeaderNames(List<Map<String, Object>> headers) {
+        if (headers == null) {
+            return Collections.emptyList();
+        }
+        List<String> names = new ArrayList<>();
+        for (Map<String, Object> h : headers) {
+            Object name = h.get("name");
+            if (name != null) {
+                names.add(name.toString());
+            }
+        }
+        return names;
+    }
+
+    private List<String> extractHeaderNames(String headersJson) {
+        if (!StringUtils.hasText(headersJson)) {
+            return Collections.emptyList();
+        }
+        try {
+            List<Map<String, Object>> parsed = objectMapper.readValue(headersJson, new TypeReference<List<Map<String, Object>>>() {});
+            return extractHeaderNames(parsed);
+        } catch (Exception e) {
+            return Collections.emptyList();
         }
     }
 

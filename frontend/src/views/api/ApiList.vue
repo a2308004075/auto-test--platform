@@ -13,7 +13,7 @@ import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  getApis, deleteApi, batchDeleteApis, batchMoveApis, getModules, createModule, updateModule, deleteModule,
+  getApis, deleteApi, batchDeleteApis, batchMoveApis, getModules, createModule, updateModule, deleteModule, clearModuleApis,
 } from '@/api/apidoc'
 import PageHeader from '@/components/PageHeader/index.vue'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
@@ -182,6 +182,24 @@ function contextEdit() {
 function contextDelete() {
   if (contextModule.value) handleDeleteGroup(contextModule.value)
   closeContextMenu()
+}
+
+function contextClear() {
+  if (!contextModule.value) return
+  const m = contextModule.value
+  closeContextMenu()
+  ElMessageBox.confirm(
+    `确定清空分组「${m.name}」及其子分组中的所有接口？此操作不可恢复。`,
+    '确认清空',
+    { type: 'warning', confirmButtonText: '清空', cancelButtonText: '取消' }
+  )
+    .then(async () => {
+      await clearModuleApis(projectId.value, m.id)
+      ElMessage.success('已清空')
+      fetchModules()
+      fetchList()
+    })
+    .catch(() => {})
 }
 
 // ===== 批量操作 =====
@@ -575,6 +593,7 @@ onBeforeUnmount(() => {
           <div v-if="hasPermission('project:api:group')" class="context-menu-item" @click="contextCreateChild">新建子分组</div>
           <div v-if="hasPermission('project:api:group')" class="context-menu-divider" />
           <div class="context-menu-item" @click="contextEdit">编辑</div>
+          <div class="context-menu-item danger" @click="contextClear">清空接口</div>
           <div class="context-menu-item danger" @click="contextDelete">删除</div>
         </template>
       </div>

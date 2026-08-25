@@ -16,8 +16,9 @@ import { getApi, createApi, updateApi, getModules, getApiReferences, debugApi } 
 import { getEnvironments } from '@/api/environment'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
-import { schemaToExampleString } from '@/utils/schemaToExample'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
+import CodeEditor from '@/components/CodeEditor/index.vue'
+import { schemaToExampleString } from '@/utils/schemaToExample'
 
 const route = useRoute()
 const router = useRouter()
@@ -45,29 +46,27 @@ function parseArr(raw?: string): any[] {
   if (!raw) return []
   try { const a = JSON.parse(raw); return Array.isArray(a) ? a : [] } catch { return [] }
 }
+
+function looksLikeSchema(text: string): boolean {
+  try {
+    const obj = JSON.parse(text)
+    return obj && typeof obj === 'object' && 'type' in obj && 'properties' in obj
+  } catch {
+    return false
+  }
+}
 const queryParams = ref<any[]>([])
 const headerParams = ref<any[]>([])
-const bodyText = ref('{}')
-const bodyMode = ref<'schema' | 'example'>('example')
-const bodyExample = computed(() => {
-  try {
-    const schema = JSON.parse(bodyText.value || '{}')
-    return schemaToExampleString(schema)
-  } catch {
-    return '{}'
-  }
-})
 
 function syncToForm() {
   form.requestParams = JSON.stringify(queryParams.value)
   form.headers = JSON.stringify(headerParams.value)
-  form.requestBody = bodyText.value
   // Content-Type 统一在 Header 参数 tab 管理，同步回 form.contentType 保持后端兼容
   const ct = headerParams.value.find((h: any) => h.name && h.name.toLowerCase() === 'content-type')
   form.contentType = ct ? (ct.value || '') : ''
 }
 
-watch([queryParams, headerParams, bodyText], syncToForm, { deep: true })
+watch([queryParams, headerParams], syncToForm, { deep: true })
 
 function addRow(arr: any[]) {
   arr.push({ name: '', type: 'string', required: false, description: '', value: '' })
@@ -105,9 +104,16 @@ async function fetchApi() {
   try {
     const res: any = await getApi(projectId.value, apiId.value)
     Object.assign(form, res.data)
+    if (!form.requestBody) form.requestBody = '{}'
+    if (looksLikeSchema(form.requestBody)) {
+      form.requestBody = schemaToExampleString(JSON.parse(form.requestBody))
+    }
+    if (!form.responseBody) form.responseBody = '{}'
+    if (looksLikeSchema(form.responseBody)) {
+      form.responseBody = schemaToExampleString(JSON.parse(form.responseBody))
+    }
     queryParams.value = parseArr(form.requestParams)
     headerParams.value = parseArr(form.headers)
-    bodyText.value = form.requestBody || '{}'
     // 将 contentType 合并到 headerParams（统一在 Header 参数 tab 管理）
     if (form.contentType) {
       const hasCT = headerParams.value.some((h: any) => h.name && h.name.toLowerCase() === 'content-type')
@@ -343,31 +349,17 @@ onMounted(() => {
           <div>GET 请求不包含请求体</div>
         </div>
         <template v-else>
-          <div style="display: flex; gap: 8px; margin-bottom: 12px">
-            <el-button :type="bodyMode === 'example' ? 'primary' : 'default'" size="small" @click="bodyMode = 'example'">示例</el-button>
-            <el-button :type="bodyMode === 'schema' ? 'primary' : 'default'" size="small" @click="bodyMode = 'schema'">Schema</el-button>
+          <div style="height: 360px; max-width: 800px">
+            <CodeEditor v-model="form.requestBody" language="javascript" :min-height="320" placeholder="请输入请求体示例..." />
           </div>
-          <el-input
-            v-if="bodyMode === 'schema'"
-            v-model="bodyText"
-            type="textarea"
-            :rows="14"
-            placeholder='{"type":"object","properties":{}}'
-            style="font-family: monospace; max-width: 800px"
-          />
-          <pre v-else class="example-body">{{ bodyExample }}</pre>
         </template>
       </el-tab-pane>
 
       <!-- Tab: 响应参数 -->
       <el-tab-pane label="响应参数" name="response">
-        <el-input
-          v-model="form.responseBody"
-          type="textarea"
-          :rows="14"
-          placeholder='{"type":"object","properties":{}}'
-          style="font-family: monospace; max-width: 800px"
-        />
+        <div style="height: 360px; max-width: 800px">
+          <CodeEditor v-model="form.responseBody" language="javascript" :min-height="320" placeholder="请输入响应体示例..." />
+        </div>
       </el-tab-pane>
 
       <!-- Tab: 调试 -->
@@ -548,20 +540,5 @@ onMounted(() => {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-all;
-}
-.example-body {
-  background: #f5f7fa;
-  padding: 12px;
-  border-radius: 4px;
-  max-width: 800px;
-  min-height: 280px;
-  max-height: 360px;
-  overflow: auto;
-  font-size: 12px;
-  font-family: monospace;
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-all;
-  border: 1px solid #dcdfe6;
 }
 </style>

@@ -371,6 +371,7 @@ watch(() => props.modelValue, () => {
   background: #1e1e1e;
   border-radius: 0 0 6px 6px;
   overflow: hidden;
+  height: 100%;
 }
 .code-gutter {
   padding: 16px 0;

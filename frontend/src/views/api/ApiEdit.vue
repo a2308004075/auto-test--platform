@@ -16,7 +16,7 @@ import { getApi, createApi, updateApi, getModules, getApiReferences, debugApi } 
 import { getEnvironments } from '@/api/environment'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
-import { schemaToExample } from '@/utils/schemaToExample'
+import { schemaToExampleString } from '@/utils/schemaToExample'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
 const route = useRoute()
@@ -52,7 +52,7 @@ const bodyMode = ref<'schema' | 'example'>('example')
 const bodyExample = computed(() => {
   try {
     const schema = JSON.parse(bodyText.value || '{}')
-    return JSON.stringify(schemaToExample(schema), null, 2)
+    return schemaToExampleString(schema)
   } catch {
     return '{}'
   }

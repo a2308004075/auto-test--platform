@@ -378,10 +378,7 @@ onBeforeUnmount(() => {
                 :class="['module-tree-node', { active: activeModuleId === data.id }]"
                 @contextmenu.stop="handleNodeContextmenu($event, data)"
               >
-                <span class="module-name">
-                  {{ data.name }}
-                  <span v-if="data.servicePrefix" class="module-prefix">{{ data.servicePrefix }}</span>
-                </span>
+                <span class="module-name">{{ data.name }}</span>
                 <span class="module-count">{{ data.apiCount ?? 0 }}</span>
                 <span v-if="data.isSystem === 1" class="module-lock" title="系统默认分组">🔒</span>
               </div>

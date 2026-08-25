@@ -59,6 +59,8 @@ public class SwaggerParser {
 
             // 检测版本：有 "openapi" 字段则为 3.0，有 "swagger" 字段则为 2.0
             boolean isOpenApi3 = root.has("openapi");
+            String version = isOpenApi3 ? getTextValue(root, "openapi") : getTextValue(root, "swagger");
+            log.info("Swagger 解析开始，版本标识={}, title={}", version, result.getTitle());
 
             // 基本信息
             JsonNode info = root.get("info");
@@ -85,8 +87,10 @@ public class SwaggerParser {
             // 解析 paths
             JsonNode paths = root.get("paths");
             if (paths == null || !paths.isObject()) {
+                log.warn("Swagger 解析失败：缺少 paths 节点或类型不正确");
                 return result;
             }
+            log.info("Swagger paths 节点包含 {} 个路径", paths.size());
 
             Iterator<String> pathNames = paths.fieldNames();
             while (pathNames.hasNext()) {
@@ -103,6 +107,7 @@ public class SwaggerParser {
                     result.getApis().add(entry);
                 }
             }
+            log.info("Swagger 解析结束，共解析 {} 个接口", result.getApis().size());
         } catch (Exception e) {
             log.error("OpenAPI/Swagger JSON 解析失败", e);
             throw new RuntimeException("OpenAPI/Swagger JSON 解析失败：" + e.getMessage(), e);

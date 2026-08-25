@@ -14,6 +14,7 @@ import com.platform.apidoc.mapper.ApiMapper;
 import com.platform.apidoc.mapper.ApiSyncConfigMapper;
 import com.platform.apidoc.util.SwaggerParser;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
@@ -204,10 +205,12 @@ public class ApiService {
 
         SwaggerParser.ParseResult parseResult = SwaggerParser.parse(request.getSwaggerJson());
         List<SwaggerParser.ApiEntry> entries = parseResult.getApis();
+        log.info("Swagger 解析完成，共 {} 个接口，moduleId={}", entries.size(), request.getModuleId());
 
         // 合并同步配置中的默认请求头到每个接口
         List<Map<String, Object>> defaultHeaders = toDefaultHeaderItems(request.getDefaultHeaders());
         if (!defaultHeaders.isEmpty()) {
+            log.info("Swagger 导入附加默认请求头: {}", request.getDefaultHeaders());
             for (SwaggerParser.ApiEntry entry : entries) {
                 entry.setHeaders(mergeHeadersJson(entry.getHeaders(), defaultHeaders));
             }
@@ -229,13 +232,17 @@ public class ApiService {
                 existingByOpId.put(api.getSwaggerOperationId(), api);
             }
         }
+        log.info("Swagger 导入已有接口数={}, operationIds={}", existingByOpId.size(), existingByOpId.keySet());
 
         for (SwaggerParser.ApiEntry entry : entries) {
             String opId = entry.getOperationId();
+            log.debug("Swagger 接口处理: operationId={}, method={}, path={}", opId, entry.getHttpMethod(), entry.getPath());
 
             if (opId != null && existingByOpId.containsKey(opId)) {
                 // 更新已有接口
                 Api existingApi = existingByOpId.get(opId);
+                log.info("Swagger 接口更新: operationId={}, oldPath={}, newPath={}",
+                        opId, existingApi.getPath(), entry.getPath());
                 existingApi.setName(entry.getName());
                 existingApi.setHttpMethod(entry.getHttpMethod());
                 existingApi.setPath(entry.getPath());
@@ -249,12 +256,21 @@ public class ApiService {
                 updated++;
             } else {
                 // 创建新接口
+                if (opId == null) {
+                    log.warn("Swagger 接口缺少 operationId，将创建新接口: method={}, path={}",
+                            entry.getHttpMethod(), entry.getPath());
+                } else {
+                    log.info("Swagger 接口新建: operationId={}, method={}, path={}",
+                            opId, entry.getHttpMethod(), entry.getPath());
+                }
                 Api newApi = SwaggerParser.toApiEntity(entry, request.getProjectId(), request.getModuleId());
                 apiMapper.insert(newApi);
                 created++;
             }
         }
 
+        log.info("Swagger 导入结果: total={}, created={}, updated={}, moduleId={}",
+                entries.size(), created, updated, request.getModuleId());
         return SwaggerImportResult.of(entries.size(), created, updated, skipped);
     }
 
@@ -395,12 +411,15 @@ public class ApiService {
 
         // 自动探测：用户粘贴的是 doc.html 页面时，尝试同源 /v3/api-docs 或 /v2/api-docs
         List<String> candidates = resolveApiDocsUrls(request.getUrl());
+        log.info("Swagger 同步开始，projectId={}, moduleId={}, candidates={}",
+                request.getProjectId(), request.getModuleId(), candidates);
 
         String swaggerJson = null;
         Exception lastException = null;
         for (String actualUrl : candidates) {
             try {
                 swaggerJson = fetchSwaggerJson(actualUrl, request.getHeaders());
+                log.info("Swagger 文档拉取成功 [{}]，JSON 长度={}", actualUrl, swaggerJson != null ? swaggerJson.length() : 0);
                 break;
             } catch (BusinessException e) {
                 lastException = e;
@@ -418,7 +437,7 @@ public class ApiService {
         importRequest.setProjectId(request.getProjectId());
         importRequest.setModuleId(request.getModuleId());
         importRequest.setSwaggerJson(swaggerJson);
-        importRequest.setDefaultHeaders(request.getHeaders());
+        importRequest.setDefaultHeaders(request.getDefaultHeaders());
         return importSwagger(importRequest);
     }
 
@@ -451,7 +470,10 @@ public class ApiService {
         }
 
         candidates.add(basePath + "v3/api-docs");
+        candidates.add(basePath + "v3/api-docs/default");
+        candidates.add(basePath + "v3/api-docs?group=default");
         candidates.add(basePath + "v2/api-docs");
+        candidates.add(basePath + "v2/api-docs?group=default");
         return candidates;
     }
 
@@ -480,7 +502,11 @@ public class ApiService {
                         "HTTP 状态码：" + statusCode + ", 响应：" + errorBody);
             }
 
-            return readStream(conn.getInputStream());
+            String body = readStream(conn.getInputStream());
+            String preview = body.length() > 500 ? body.substring(0, 500) + "..." : body;
+            log.info("Swagger 文档响应 [{}] status={}, 内容预览={}", actualUrl, statusCode, preview);
+            validateSwaggerJson(body, actualUrl);
+            return body;
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
@@ -557,6 +583,7 @@ public class ApiService {
         syncRequest.setUrl(config.getUrl());
         syncRequest.setModuleId(config.getModuleId());
         syncRequest.setHeaders(buildSwaggerAuthHeaders(config));
+        syncRequest.setDefaultHeaders(parseHeadersText(config.getHeaders()));
         SwaggerImportResult result = syncFromUrl(syncRequest);
         // 更新最后同步时间
         config.setLastSyncAt(LocalDateTime.now());
@@ -653,6 +680,23 @@ public class ApiService {
         return null;
     }
 
+    private void validateSwaggerJson(String body, String actualUrl) {
+        try {
+            JsonNode root = objectMapper.readTree(body);
+            boolean hasVersion = root.has("openapi") || root.has("swagger");
+            boolean hasPaths = root.has("paths") && root.get("paths").isObject();
+            if (!hasVersion || !hasPaths) {
+                throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
+                        "响应不是有效的 OpenAPI/Swagger 文档（缺少 openapi/swagger 或 paths）：" + actualUrl);
+            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
+                    "无法解析 Swagger JSON：" + e.getMessage());
+        }
+    }
+
     private List<Map<String, Object>> toDefaultHeaderItems(Map<String, String> defaultHeaders) {
         if (defaultHeaders == null || defaultHeaders.isEmpty()) {
             return Collections.emptyList();
@@ -679,19 +723,21 @@ public class ApiService {
                     headers.addAll(parsed);
                 }
             }
-            Set<String> existingNames = new HashSet<>();
-            for (Map<String, Object> h : headers) {
-                Object name = h.get("name");
-                if (name != null) {
-                    existingNames.add(name.toString());
-                }
-            }
+
+            // 默认请求头优先级高于已有同名请求头（用户显式配置，同步时覆盖旧值）
+            Set<String> defaultNames = new HashSet<>();
             for (Map<String, Object> h : defaultHeaders) {
                 Object name = h.get("name");
-                if (name != null && !existingNames.contains(name.toString())) {
-                    headers.add(h);
+                if (name != null) {
+                    defaultNames.add(name.toString().toLowerCase());
                 }
             }
+            headers.removeIf(h -> {
+                Object name = h.get("name");
+                return name != null && defaultNames.contains(name.toString().toLowerCase());
+            });
+
+            headers.addAll(defaultHeaders);
             return headers.isEmpty() ? null : objectMapper.writeValueAsString(headers);
         } catch (Exception e) {
             log.warn("合并默认请求头失败: {}", e.getMessage());

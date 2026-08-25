@@ -31,9 +31,14 @@ public class SwaggerSyncRequest {
     private Long moduleId;
 
     /**
-     * 导入后统一附加到各接口的请求头（可选，多行 Key: Value，如 Authorization: Bearer xxx）
+     * 拉取 Swagger 文档时使用的请求头（可选，如 Basic Auth 的 Authorization）
      */
     private Map<String, String> headers;
+
+    /**
+     * 导入后统一附加到各接口的请求头（可选，Key: Value）
+     */
+    private Map<String, String> defaultHeaders;
 
     /**
      * 项目 ID（由 Controller 层注入）

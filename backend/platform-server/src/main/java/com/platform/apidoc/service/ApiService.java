@@ -274,13 +274,14 @@ public class ApiService {
 
         for (SwaggerParser.ApiEntry entry : entries) {
             String opId = entry.getOperationId();
-            SWAGGER_LOG.debug("Swagger 接口处理: operationId={}, method={}, path={}", opId, entry.getHttpMethod(), entry.getPath());
+            SWAGGER_LOG.debug("Swagger 接口处理: operationId={}, method={}, path={}, contentType={}",
+                    opId, entry.getHttpMethod(), entry.getPath(), entry.getContentType());
 
             if (opId != null && existingByOpId.containsKey(opId)) {
                 // 更新已有接口
                 Api existingApi = existingByOpId.get(opId);
-                SWAGGER_LOG.info("Swagger 接口更新: operationId={}, oldPath={}, newPath={}",
-                        opId, existingApi.getPath(), entry.getPath());
+                SWAGGER_LOG.info("Swagger 接口更新: operationId={}, oldPath={}, newPath={}, contentType={}",
+                        opId, existingApi.getPath(), entry.getPath(), entry.getContentType());
                 existingApi.setName(entry.getName());
                 existingApi.setHttpMethod(entry.getHttpMethod());
                 existingApi.setPath(entry.getPath());
@@ -299,8 +300,8 @@ public class ApiService {
                     SWAGGER_LOG.warn("Swagger 接口缺少 operationId，将创建新接口: method={}, path={}",
                             entry.getHttpMethod(), entry.getPath());
                 } else {
-                    SWAGGER_LOG.info("Swagger 接口新建: operationId={}, method={}, path={}",
-                            opId, entry.getHttpMethod(), entry.getPath());
+                    SWAGGER_LOG.info("Swagger 接口新建: operationId={}, method={}, path={}, contentType={}",
+                            opId, entry.getHttpMethod(), entry.getPath(), entry.getContentType());
                 }
                 Api newApi = SwaggerParser.toApiEntity(entry, request.getProjectId(), request.getModuleId());
                 apiMapper.insert(newApi);

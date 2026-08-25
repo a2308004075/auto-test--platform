@@ -210,24 +210,27 @@ public class SwaggerParser {
             }
         }
 
+        // Swagger 未声明 consumes/contentType 时，默认为表单提交
+        if (contentType == null) {
+            contentType = "application/x-www-form-urlencoded";
+        }
+
         // 将请求数据类型写入 Content-Type 请求头
-        if (contentType != null) {
-            boolean hasContentType = false;
-            for (Map<String, Object> h : headerParams) {
-                if ("Content-Type".equalsIgnoreCase((String) h.get("name"))) {
-                    hasContentType = true;
-                    break;
-                }
+        boolean hasContentType = false;
+        for (Map<String, Object> h : headerParams) {
+            if ("Content-Type".equalsIgnoreCase((String) h.get("name"))) {
+                hasContentType = true;
+                break;
             }
-            if (!hasContentType) {
-                Map<String, Object> ct = new LinkedHashMap<>();
-                ct.put("name", "Content-Type");
-                ct.put("type", "string");
-                ct.put("required", false);
-                ct.put("description", "内容类型");
-                ct.put("value", contentType);
-                headerParams.add(ct);
-            }
+        }
+        if (!hasContentType) {
+            Map<String, Object> ct = new LinkedHashMap<>();
+            ct.put("name", "Content-Type");
+            ct.put("type", "string");
+            ct.put("required", false);
+            ct.put("description", "内容类型");
+            ct.put("value", contentType);
+            headerParams.add(ct);
         }
 
         try {

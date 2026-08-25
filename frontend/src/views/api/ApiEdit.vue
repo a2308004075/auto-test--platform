@@ -6,7 +6,7 @@
 <script setup lang="ts">
 /**
  * 接口编辑/新建 - M4
- * 7 Tab：基础信息 / Header 参数 / 请求参数 / 请求体 / 响应定义 / 调试 / 引用关系
+ * 7 Tab：基础信息 / Header 参数 / 请求参数 / 请求体 / 响应参数 / 调试 / 引用关系
  * 对齐原型 api-edit.html（请求参数/响应改为可视化表格编辑，数据仍序列化为 JSON 存储）
  */
 import { ref, reactive, onMounted, computed, watch } from 'vue'
@@ -34,7 +34,7 @@ const { options: paramTypeOptions } = useDict('param_type')
 
 const form = reactive({
   name: '', httpMethod: 'GET', path: '', service: '', moduleId: null as number | null,
-  description: '', requestParams: '[]', requestBody: '{}', responseBody: '[]', headers: '[]',
+  description: '', requestParams: '[]', requestBody: '{}', responseBody: '{}', headers: '[]',
   contentType: 'application/json',
   sourceType: 'MANUAL',
 })
@@ -46,62 +46,18 @@ function parseArr(raw?: string): any[] {
 }
 const queryParams = ref<any[]>([])
 const headerParams = ref<any[]>([])
-const responseFields = ref<any[]>([])
 const bodyText = ref('{}')
-
-// ===== 响应定义模式：手动定义 / 从示例推断 =====
-const schemaMode = ref<'manual' | 'infer'>('manual')
-const inferExample = ref('')
-function inferFields() {
-  try {
-    const parsed = JSON.parse(inferExample.value)
-    const fields: any[] = []
-    const traverse = (obj: any, prefix = '') => {
-      if (obj === null || typeof obj !== 'object') return
-      if (Array.isArray(obj)) {
-        if (obj.length > 0) traverse(obj[0], prefix)
-        return
-      }
-      for (const key in obj) {
-        const val = obj[key]
-        const fieldPath = prefix ? `${prefix}.${key}` : key
-        if (val === null) {
-          fields.push({ name: fieldPath, type: 'string', required: true, description: '' })
-        } else if (Array.isArray(val)) {
-          fields.push({ name: fieldPath, type: 'array', required: true, description: '' })
-          if (val.length > 0 && typeof val[0] === 'object') traverse(val[0], fieldPath + '[]')
-        } else if (typeof val === 'object') {
-          fields.push({ name: fieldPath, type: 'object', required: true, description: '' })
-          traverse(val, fieldPath)
-        } else if (typeof val === 'number') {
-          fields.push({ name: fieldPath, type: 'integer', required: true, description: '' })
-        } else if (typeof val === 'boolean') {
-          fields.push({ name: fieldPath, type: 'boolean', required: true, description: '' })
-        } else {
-          fields.push({ name: fieldPath, type: 'string', required: true, description: '' })
-        }
-      }
-    }
-    traverse(parsed)
-    if (fields.length === 0) { ElMessage.warning('未能从示例中推断出字段'); return }
-    responseFields.value = fields
-    ElMessage.success(`已推断出 ${fields.length} 个字段`)
-  } catch {
-    ElMessage.warning('JSON 格式不正确，请检查示例内容')
-  }
-}
 
 function syncToForm() {
   form.requestParams = JSON.stringify(queryParams.value)
   form.headers = JSON.stringify(headerParams.value)
-  form.responseBody = JSON.stringify(responseFields.value)
   form.requestBody = bodyText.value
   // Content-Type 统一在 Header 参数 tab 管理，同步回 form.contentType 保持后端兼容
   const ct = headerParams.value.find((h: any) => h.name && h.name.toLowerCase() === 'content-type')
   form.contentType = ct ? (ct.value || '') : ''
 }
 
-watch([queryParams, headerParams, responseFields, bodyText], syncToForm, { deep: true })
+watch([queryParams, headerParams, bodyText], syncToForm, { deep: true })
 
 function addRow(arr: any[]) {
   arr.push({ name: '', type: 'string', required: false, description: '', value: '' })
@@ -141,7 +97,6 @@ async function fetchApi() {
     Object.assign(form, res.data)
     queryParams.value = parseArr(form.requestParams)
     headerParams.value = parseArr(form.headers)
-    responseFields.value = parseArr(form.responseBody)
     bodyText.value = form.requestBody || '{}'
     // 将 contentType 合并到 headerParams（统一在 Header 参数 tab 管理）
     if (form.contentType) {
@@ -380,66 +335,15 @@ onMounted(() => {
         <el-input v-else v-model="bodyText" type="textarea" :rows="14" placeholder='{"key":"value"}' style="font-family: monospace; max-width: 800px" />
       </el-tab-pane>
 
-      <!-- Tab: 响应定义 -->
-      <el-tab-pane label="响应定义" name="response">
-        <div class="params-section">
-          <div class="section-head">
-            <h4>响应字段</h4>
-            <el-button size="small" @click="addRow(responseFields)">+ 添加字段</el-button>
-          </div>
-          <!-- 模式切换 -->
-          <div class="schema-mode">
-            <el-button
-              :type="schemaMode === 'manual' ? 'primary' : 'default'"
-              size="small"
-              @click="schemaMode = 'manual'"
-            >手动定义</el-button>
-            <el-button
-              :type="schemaMode === 'infer' ? 'primary' : 'default'"
-              size="small"
-              @click="schemaMode = 'infer'"
-            >从示例推断</el-button>
-          </div>
-          <!-- 手动定义模式：可视化表格编辑 -->
-          <el-table v-if="schemaMode === 'manual'" :data="responseFields" size="small" border style="max-width: 800px">
-            <el-table-column label="字段名" width="200">
-              <template #default="{ row }"><el-input v-model="row.name" size="small" placeholder="如 data.id" style="font-family: monospace" /></template>
-            </el-table-column>
-            <el-table-column label="类型" width="120">
-              <template #default="{ row }">
-                <el-select v-model="row.type" size="small">
-                  <el-option v-for="t in paramTypeOptions" :key="t.value" :value="t.value" :label="t.label" />
-                </el-select>
-              </template>
-            </el-table-column>
-            <el-table-column label="必填" width="70">
-              <template #default="{ row }"><el-switch v-model="row.required" /></template>
-            </el-table-column>
-            <el-table-column label="描述">
-              <template #default="{ row }"><el-input v-model="row.description" size="small" /></template>
-            </el-table-column>
-            <el-table-column label="操作" width="70">
-              <template #default="{ $index }">
-                <el-button link size="small" type="danger" @click="removeRow(responseFields, $index)">删除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-          <!-- 从示例推断模式：粘贴 JSON 自动生成字段 -->
-          <div v-if="schemaMode === 'infer'" class="infer-area" style="max-width: 800px">
-            <p style="color: #909399; font-size: 13px; margin: 0 0 8px">粘贴 JSON 响应示例，系统将自动推断字段定义：</p>
-            <el-input
-              v-model="inferExample"
-              type="textarea"
-              :rows="10"
-              placeholder='{"code":0,"message":"success","data":{"items":[],"total":0}}'
-              style="font-family: monospace"
-            />
-            <div style="margin-top: 8px; display: flex; gap: 8px">
-              <el-button type="primary" size="small" @click="inferFields">推断字段</el-button>
-              <el-button size="small" @click="schemaMode = 'manual'">返回手动编辑</el-button>
-            </div>
-          </div>
-        </div>
+      <!-- Tab: 响应参数 -->
+      <el-tab-pane label="响应参数" name="response">
+        <el-input
+          v-model="form.responseBody"
+          type="textarea"
+          :rows="14"
+          placeholder='{"type":"object","properties":{}}'
+          style="font-family: monospace; max-width: 800px"
+        />
       </el-tab-pane>
 
       <!-- Tab: 调试 -->
@@ -540,11 +444,6 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 600;
   margin: 0 0 8px;
-}
-.schema-mode {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
 }
 .refs-header {
   display: flex;

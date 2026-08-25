@@ -1228,7 +1228,8 @@ CREATE TABLE api_endpoint (
     parameters      JSON          DEFAULT NULL COMMENT '请求参数 [{name,in,type,required,description}]',
     request_body    JSON          DEFAULT NULL COMMENT '请求体 Schema（POST/PUT/PATCH）',
     responses       JSON          DEFAULT NULL COMMENT '响应定义 {statusCode: schema}',
-    content_type    VARCHAR(100)  NOT NULL DEFAULT 'application/json' COMMENT '内容类型',
+    headers         JSON          DEFAULT NULL COMMENT '请求头 [{name,type,required,description,value}]',
+    content_type    VARCHAR(100)  NOT NULL DEFAULT 'application/x-www-form-urlencoded' COMMENT '内容类型（Swagger 未声明 consumes 时默认 form-urlencoded）',
     source_type     ENUM('SWAGGER_IMPORT','MANUAL') NOT NULL DEFAULT 'MANUAL' COMMENT '来源类型',
     is_active       TINYINT(1)    NOT NULL DEFAULT 1 COMMENT '是否启用',
     is_deprecated   TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '是否已废弃（同步后标记）',
@@ -1525,15 +1526,22 @@ class ApiEndpointService:
 
 ```python
 class SwaggerImportService:
-    """Swagger 2.0 JSON 导入解析服务"""
+    """Swagger 2.0 / OpenAPI 3.0 JSON 导入解析服务"""
 
     def parse_swagger(self, swagger_json: dict) -> list[ParsedEndpoint]:
         """
-        解析 Swagger 2.0 JSON，提取所有接口定义
+        解析 Swagger 2.0 / OpenAPI 3.0 JSON，提取所有接口定义
         复用 postman-engine 的 ConvertApiDoc 解析逻辑
+
+        Content-Type 解析规则：
+        - Swagger 2.0: 优先取 operation.consumes[0]，回退到 root.consumes[0]
+        - OpenAPI 3.0: 取 requestBody.content 的第一个 mediaType 键
+        - 以上均未获取到时，默认 "application/x-www-form-urlencoded"
+        - 解析出的 Content-Type 写入 headers JSON 数组，同时存入 contentType 字段
         """
         paths = swagger_json.get("paths", {})
         definitions = swagger_json.get("definitions", {})
+        root_consumes = swagger_json.get("consumes", [])
         parsed = []
         for path, methods in paths.items():
             for method, spec in methods.items():
@@ -1542,15 +1550,44 @@ class SwaggerImportService:
                 params = self._extract_params(spec, definitions)
                 request_body = self._extract_request_body(spec, definitions)
                 responses = self._extract_responses(spec, definitions)
+                content_type = self._resolve_content_type(
+                    spec, root_consumes
+                )
+                headers = self._build_headers(spec, content_type)
                 parsed.append(ParsedEndpoint(
                     path=path, method=method.upper(),
                     name=spec.get("summary", f"{method.upper()} {path}"),
                     description=spec.get("description", ""),
                     parameters=params, request_body=request_body,
-                    responses=responses,
+                    responses=responses, headers=headers,
+                    content_type=content_type,
                     tags=spec.get("tags", [])
                 ))
         return parsed
+
+    def _resolve_content_type(
+        self, spec: dict, root_consumes: list[str]
+    ) -> str:
+        """
+        解析接口的 Content-Type
+        - Swagger 2.0: operation.consumes[0] > root.consumes[0]
+        - OpenAPI 3.0: requestBody.content 的第一个 mediaType
+        - 未获取到时默认 "application/x-www-form-urlencoded"
+        """
+        # OpenAPI 3.0: requestBody.content
+        request_body = spec.get("requestBody")
+        if request_body and "content" in request_body:
+            media_types = list(request_body["content"].keys())
+            if media_types:
+                return media_types[0]
+        # Swagger 2.0: consumes
+        op_consumes = spec.get("consumes", [])
+        if op_consumes:
+            return op_consumes[0]
+        if root_consumes:
+            return root_consumes[0]
+        # 默认
+        return "application/x-www-form-urlencoded"
 
     def _resolve_ref(self, ref: str, definitions: dict) -> dict:
         """解析 $ref 引用，展开嵌套 DTO"""
@@ -1612,17 +1649,25 @@ class SwaggerImportService:
     async def import_endpoints(
         self, db: AsyncSession, project_id: str,
         module_id: str, parsed: list[ParsedEndpoint],
-        selected_indices: list[int]
+        selected_indices: list[int],
+        default_headers: dict | None = None
     ) -> ImportResult:
         """
         增量导入：按 path+method 匹配
-        - 已存在 → 更新参数定义
+        - 已存在 → 更新参数定义、headers、content_type
         - 不存在 → 新增
+        - default_headers: 同步配置的默认请求头，合并到每个接口的 headers 中
+          合并规则：默认请求头覆盖同名已有请求头，但 Content-Type 始终跳过
+          （Content-Type 由 Swagger 规范的 consumes/requestBody 决定，默认请求头不介入）
         """
         added, updated = 0, 0
         endpoints_list = []
         for idx in selected_indices:
             ep = parsed[idx]
+            # 合并默认请求头（Content-Type 始终保留 Swagger 解析值）
+            merged_headers = self._merge_headers(
+                ep.headers, default_headers
+            )
             existing = await db.scalar(
                 select(ApiEndpoint).join(ApiModule).where(
                     ApiModule.project_id == project_id,
@@ -1636,6 +1681,8 @@ class SwaggerImportService:
                 existing.responses = ep.responses
                 existing.name = ep.name
                 existing.description = ep.description
+                existing.headers = merged_headers
+                existing.content_type = ep.content_type
                 existing.source_type = "SWAGGER_IMPORT"
                 updated += 1
                 endpoints_list.append({"status": "updated", "path": ep.path, "method": ep.method})
@@ -1644,13 +1691,43 @@ class SwaggerImportService:
                     module_id=module_id, name=ep.name, path=ep.path,
                     method=ep.method, description=ep.description,
                     parameters=ep.parameters, request_body=ep.request_body,
-                    responses=ep.responses, source_type="SWAGGER_IMPORT"
+                    responses=ep.responses, headers=merged_headers,
+                    content_type=ep.content_type,
+                    source_type="SWAGGER_IMPORT"
                 )
                 db.add(new_ep)
                 added += 1
                 endpoints_list.append({"status": "added", "path": ep.path, "method": ep.method})
         await db.flush()
         return ImportResult(added=added, updated=updated, endpoints=endpoints_list)
+
+    @staticmethod
+    def _merge_headers(
+        existing_headers: list[dict] | None,
+        default_headers: dict | None
+    ) -> list[dict]:
+        """
+        合并默认请求头到已有 headers
+        - 默认请求头覆盖同名已有请求头（大小写不敏感）
+        - Content-Type 始终跳过：由 Swagger 解析值决定，不受默认请求头影响
+        """
+        if not default_headers:
+            return existing_headers or []
+        result = list(existing_headers or [])
+        default_names = {k.lower() for k in default_headers}
+        # 移除已有的同名请求头（Content-Type 除外）
+        result = [
+            h for h in result
+            if h["name"].lower() not in default_names
+            or h["name"].lower() == "content-type"
+        ]
+        # 追加默认请求头（跳过 Content-Type）
+        for k, v in default_headers.items():
+            if k.lower() == "content-type":
+                continue
+            result.append({"name": k, "type": "string",
+                          "required": False, "value": v})
+        return result
 ```
 
 #### 6.3.4 ApiSyncService（接口同步）
@@ -1948,7 +2025,7 @@ async def import_swagger(project_id: str, file: UploadFile,
                          new_group_name: str | None = Form(None),
                          selected_indices: str = Form(...),
                          db: AsyncSession = Depends(get_db)):
-    """Swagger 2.0 JSON 文件导入（三步向导后端接口）"""
+    """Swagger 2.0 / OpenAPI 3.0 JSON 文件导入（三步向导后端接口）"""
 
 @router.post("/sync", response_model=SyncDiffResponse | SyncResultResponse)
 async def sync_apis(project_id: str, file: UploadFile,
@@ -1980,7 +2057,7 @@ async def batch_operation(project_id: str, data: BatchRequest,
 | 1403 | 400 | 系统默认分组不可删除 |
 | 1404 | 409 | 接口被关键字引用，不可删除 |
 | 1405 | 409 | 同分组下 path+method 已存在 |
-| 1406 | 400 | Swagger 文件解析失败（格式错误或非 2.0 版本） |
+| 1406 | 400 | Swagger 文件解析失败（格式错误或非 2.0/OpenAPI 3.0 版本） |
 | 1407 | 400 | 无效的批量操作类型 |
 
 **测试边界：**
@@ -1991,6 +2068,8 @@ async def batch_operation(project_id: str, data: BatchRequest,
 | Swagger 导入 | 文件解析正确性（paths/parameters/definitions/$ref 展开） |
 | Swagger 导入 | 增量导入：已有接口更新参数、新接口追加、不删除多余接口 |
 | Swagger 导入 | 三种分组模式：导入到已有分组 / 创建新分组 / 按 tags 自动拆分 |
+| Swagger 导入 | Content-Type 解析：consumes/requestBody 优先级正确，无声明时默认 form-urlencoded |
+| Swagger 导入 | 默认请求头合并：同名请求头覆盖，Content-Type 始终保留 Swagger 解析值 |
 | 接口同步 | 差异对比：新增/参数变更/已废弃三类识别准确性 |
 | 接口同步 | 执行同步：新增写入、变更更新参数、废弃有依赖标记保留/无依赖删除 |
 | 删除保护 | 有 ApiKeyword 关联时拒绝删除，返回完整依赖链 |

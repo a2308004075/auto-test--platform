@@ -172,7 +172,9 @@ public class PlanExecutor {
                         null, "套件「" + suite.getName() + "」执行完成");
             }
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            // 刻意捕获 Throwable：Error 场景也要将执行记录置为 FAILED 并推送完成事件，
+            // 保证执行状态闭环，避免前端进度条永久停留在 RUNNING
             log.error("执行计划异常: execution={}", executionId, e);
             hasError = true;
         }

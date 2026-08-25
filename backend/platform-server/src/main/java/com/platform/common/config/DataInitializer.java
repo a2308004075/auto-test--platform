@@ -30,7 +30,12 @@ public class DataInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        initAdminUser();
+        // 初始化属"尽力而为"逻辑：失败仅记日志，不阻止服务启动
+        try {
+            initAdminUser();
+        } catch (Exception e) {
+            log.error("启动数据初始化失败，服务继续启动：{}", e.getMessage(), e);
+        }
     }
 
     private void initAdminUser() {

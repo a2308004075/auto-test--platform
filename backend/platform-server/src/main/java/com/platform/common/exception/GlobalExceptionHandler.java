@@ -81,4 +81,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(ErrorCode.INTERNAL_ERROR, "服务器内部错误"));
     }
+
+    /**
+     * Error 级兜底（StackOverflowError、NoClassDefFoundError 等）
+     *
+     * <p>Spring 会优先匹配更精确的 Exception handler，此方法仅在 Error 抛出时生效，
+     * 避免请求线程的 Error 逃逸到容器默认错误页，返回非统一格式响应。
+     */
+    @ExceptionHandler(Throwable.class)
+    public ResponseEntity<ApiResponse<Void>> handleThrowable(Throwable e, HttpServletRequest request) {
+        log.error("服务器严重错误 [{}]: {}", request.getRequestURI(), e.getMessage(), e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(ErrorCode.INTERNAL_ERROR, "服务器内部错误"));
+    }
 }

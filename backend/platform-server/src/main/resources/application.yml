@@ -13,6 +13,14 @@ spring:
       max-lifetime: 1800000
       connection-test-query: SELECT 1
 
+  # RabbitMQ 消费行为（连接配置由 profile 覆盖）
+  # default-requeue-rejected=false：消费失败/消息格式错误的消息直接丢弃，
+  # 防止毒丸消息无限 requeue 重投递刷爆日志并阻塞整个执行队列
+  rabbitmq:
+    listener:
+      simple:
+        default-requeue-rejected: false
+
   # Flyway 数据库迁移
   flyway:
     enabled: true

@@ -52,7 +52,9 @@ public class ExecutionConsumer {
             // 调用 PlanExecutor 执行
             planExecutor.execute(executionId);
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            // 刻意捕获 Throwable：Error 场景（如 StackOverflowError）也要标记执行失败并正常 ACK，
+            // 避免异常逃逸导致消息 requeue 死循环、阻塞后续排队任务
             log.error("执行消息处理异常: executionId={}", executionId, e);
             // 标记为 ERROR
             markError(executionId, e.getMessage());

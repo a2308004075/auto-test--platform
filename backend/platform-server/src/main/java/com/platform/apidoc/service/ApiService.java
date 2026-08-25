@@ -79,11 +79,11 @@ public class ApiService {
         }
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(Api::getName, keyword)
-                    .or().like(Api::getPath, keyword)
+                    .or().apply("path LIKE BINARY {0}", "%" + keyword + "%")
                     .or().like(Api::getService, keyword));
         }
         if (StringUtils.hasText(path)) {
-            wrapper.like(Api::getPath, path);
+            wrapper.apply("path LIKE BINARY {0}", "%" + path + "%");
         }
         if (StringUtils.hasText(httpMethod)) {
             wrapper.eq(Api::getHttpMethod, httpMethod);

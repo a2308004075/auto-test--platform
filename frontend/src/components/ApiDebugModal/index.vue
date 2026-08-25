@@ -13,6 +13,7 @@ import { ref, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getApi, debugApi } from '@/api/apidoc'
 import { getEnvironments } from '@/api/environment'
+import CodeEditor from '@/components/CodeEditor/index.vue'
 
 interface Props {
   modelValue: boolean
@@ -34,16 +35,70 @@ const loading = ref(false)
 const apiInfo = ref<any>(null)
 const environments = ref<any[]>([])
 const debugEnvId = ref<number | null>(null)
-const paramValues = ref<Record<string, string>>({})
+const queryParamValues = ref<Record<string, string>>({})
+const pathParamValues = ref<Record<string, string>>({})
 const headerValues = ref<Record<string, string>>({})
 const debugResult = ref<any>(null)
 const debugLoading = ref(false)
 
+// 请求体编辑
+const debugBodyType = ref('raw')
+const debugRawType = ref('json')
+const debugBody = ref('{}')
+
 const methodColors: Record<string, string> = { GET: '', POST: 'success', PUT: 'warning', DELETE: 'danger', PATCH: 'info' }
+
+const bodyTypeOptions = [
+  { value: 'none', label: 'none' },
+  { value: 'form_data', label: 'form-data' },
+  { value: 'x_www_form_urlencoded', label: 'x-www-form-urlencoded' },
+  { value: 'raw', label: 'raw' },
+  { value: 'binary', label: 'binary' },
+  { value: 'graphql', label: 'GraphQL' },
+]
+const rawTypeOptions = [
+  { value: 'text', label: 'Text' },
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'json', label: 'JSON' },
+  { value: 'html', label: 'HTML' },
+  { value: 'xml', label: 'XML' },
+]
 
 function parseArr(raw?: string): any[] {
   if (!raw) return []
   try { const a = JSON.parse(raw); return Array.isArray(a) ? a : [] } catch { return [] }
+}
+
+function defaultRequestBody(bodyType: string): string {
+  if (bodyType === 'form_data' || bodyType === 'x_www_form_urlencoded' || bodyType === 'binary') {
+    return '[]'
+  }
+  if (bodyType === 'graphql') {
+    return JSON.stringify({ query: '', variables: '{}' }, null, 2)
+  }
+  if (bodyType === 'none') {
+    return ''
+  }
+  return '{}'
+}
+
+function extractJsonBody(text: string): string {
+  try {
+    const obj = JSON.parse(text)
+    return JSON.stringify(obj, null, 2)
+  } catch {
+    return '{}'
+  }
+}
+
+function buildDebugPayloadBody(): string {
+  if (debugBodyType.value === 'none') {
+    return ''
+  }
+  if (debugBodyType.value === 'raw' && debugRawType.value === 'json') {
+    return extractJsonBody(debugBody.value)
+  }
+  return debugBody.value
 }
 
 async function loadApi() {
@@ -55,12 +110,24 @@ async function loadApi() {
     apiInfo.value = res.data
     const qp = parseArr(res.data?.requestParams)
     const hp = parseArr(res.data?.headers)
+    const qv: Record<string, string> = {}
+    qp.forEach((p: any) => { if (p.name) qv[p.name] = '' })
+    queryParamValues.value = qv
+    const pp = (res.data?.path?.match(/\{(\w+)\}/g) || []).map((m: string) => m.slice(1, -1))
     const pv: Record<string, string> = {}
-    qp.forEach((p: any) => { if (p.name) pv[p.name] = '' })
-    paramValues.value = pv
+    pp.forEach((name: string) => { pv[name] = '' })
+    pathParamValues.value = pv
     const hv: Record<string, string> = {}
     hp.forEach((p: any) => { if (p.name) hv[p.name] = p.value || '' })
     headerValues.value = hv
+    // 初始化请求体
+    const bt = res.data?.bodyType || 'raw'
+    debugBodyType.value = bt
+    debugRawType.value = res.data?.rawType || 'json'
+    debugBody.value = res.data?.requestBody || defaultRequestBody(bt)
+    customParams.value = []
+    debugResult.value = null
+    respTabs.value = 'body'
   } catch { ElMessage.error('加载接口失败') } finally { loading.value = false }
 }
 
@@ -89,14 +156,25 @@ watch(() => props.modelValue, (v) => {
 })
 
 async function sendDebug() {
+  if (!debugEnvId.value) {
+    ElMessage.warning('请选择环境')
+    return
+  }
   debugLoading.value = true
   debugResult.value = null
   try {
-    const res: any = await debugApi(props.projectId, props.apiId, {
-      environmentId: debugEnvId.value || undefined,
-      params: getAllParamValues(),
+    const payload: any = {
+      environmentId: debugEnvId.value,
+      pathParams: pathParamValues.value,
+      queryParams: getAllQueryParamValues(),
       headers: headerValues.value,
-    })
+    }
+    if (apiInfo.value?.httpMethod !== 'GET' && debugBodyType.value !== 'none') {
+      payload.body = buildDebugPayloadBody()
+      payload.bodyType = debugBodyType.value
+      payload.rawType = debugRawType.value
+    }
+    const res: any = await debugApi(props.projectId, props.apiId, payload)
     debugResult.value = res.data
   } catch (e: any) {
     debugResult.value = { success: 0, error: e?.response?.data?.message || e?.message || '调试失败' }
@@ -126,13 +204,64 @@ function removeCustomParam(idx: number) {
   customParams.value.splice(idx, 1)
 }
 
-// 合并所有参数值（query + custom + header）
-function getAllParamValues() {
-  const merged: Record<string, string> = { ...paramValues.value }
+// 合并所有 Query 参数值（预定义 + 自定义）
+function getAllQueryParamValues() {
+  const merged: Record<string, string> = { ...queryParamValues.value }
   customParams.value.forEach((p) => {
     if (p.name) merged[p.name] = p.value
   })
   return merged
+}
+
+// 请求体键值对编辑（form-data / x-www-form-urlencoded / binary）
+const debugBodyKvItems = computed({
+  get: () => parseArr(debugBody.value),
+  set: (val) => { debugBody.value = JSON.stringify(val) },
+})
+
+const debugGraphqlQuery = computed({
+  get: () => {
+    try { return JSON.parse(debugBody.value).query || '' } catch { return '' }
+  },
+  set: (val) => {
+    try {
+      const obj = JSON.parse(debugBody.value || '{}')
+      obj.query = val
+      debugBody.value = JSON.stringify(obj, null, 2)
+    } catch {}
+  },
+})
+
+const debugGraphqlVariables = computed({
+  get: () => {
+    try { return JSON.parse(debugBody.value).variables || '{}' } catch { return '{}' }
+  },
+  set: (val) => {
+    try {
+      const obj = JSON.parse(debugBody.value || '{}')
+      obj.variables = val
+      debugBody.value = JSON.stringify(obj, null, 2)
+    } catch {}
+  },
+})
+
+function addBodyRow() {
+  const items = parseArr(debugBody.value)
+  items.push({ name: '', type: 'string', required: false, description: '', value: '' })
+  debugBody.value = JSON.stringify(items)
+}
+function removeBodyRow(idx: number) {
+  const items = parseArr(debugBody.value)
+  items.splice(idx, 1)
+  debugBody.value = JSON.stringify(items)
+}
+
+function formatDebugBody(): string {
+  try {
+    return JSON.stringify(JSON.parse(debugBody.value), null, 2)
+  } catch {
+    return debugBody.value
+  }
 }
 </script>
 
@@ -169,7 +298,7 @@ function getAllParamValues() {
               <el-table-column prop="name" label="参数名" />
               <el-table-column label="值">
                 <template #default="{ row }">
-                  <el-input v-model="paramValues[row.name]" size="small" placeholder="值" />
+                  <el-input v-model="pathParamValues[row.name]" size="small" placeholder="值" />
                 </template>
               </el-table-column>
             </el-table>
@@ -192,7 +321,7 @@ function getAllParamValues() {
               </el-table-column>
               <el-table-column label="值">
                 <template #default="{ row }">
-                  <el-input v-model="paramValues[row.name]" size="small" placeholder="输入值" />
+                  <el-input v-model="queryParamValues[row.name]" size="small" placeholder="输入值" />
                 </template>
               </el-table-column>
             </el-table>
@@ -239,6 +368,49 @@ function getAllParamValues() {
               </el-table-column>
             </el-table>
           </div>
+          <div v-if="apiInfo && apiInfo.httpMethod !== 'GET'" class="param-section">
+            <div class="param-section-title">请求体</div>
+            <div class="body-type-row">
+              <el-radio-group v-model="debugBodyType" size="small">
+                <el-radio-button v-for="b in bodyTypeOptions" :key="b.value" :value="b.value">{{ b.label }}</el-radio-button>
+              </el-radio-group>
+              <el-select v-if="debugBodyType === 'raw'" v-model="debugRawType" size="small" style="width: 130px">
+                <el-option v-for="r in rawTypeOptions" :key="r.value" :value="r.value" :label="r.label" />
+              </el-select>
+              <el-button v-if="debugBodyType === 'raw' && debugRawType === 'json'" size="small" @click="debugBody = formatDebugBody()">格式化</el-button>
+            </div>
+            <div v-if="debugBodyType === 'none'" class="empty-hint">该接口无请求体</div>
+            <div v-else-if="debugBodyType === 'raw'" style="height: 200px">
+              <CodeEditor v-model="debugBody" :language="debugRawType === 'javascript' ? 'javascript' : debugRawType === 'json' ? 'json' : 'text'" :min-height="180" placeholder="请输入请求体" />
+            </div>
+            <div v-else-if="debugBodyType === 'graphql'">
+              <div class="body-editor-row" style="height: 140px">
+                <CodeEditor v-model="debugGraphqlQuery" language="text" :min-height="120" placeholder="请输入 GraphQL Query" />
+              </div>
+              <div class="body-editor-row" style="height: 100px; margin-top: 8px">
+                <CodeEditor v-model="debugGraphqlVariables" language="json" :min-height="80" placeholder="请输入 Variables（JSON）" />
+              </div>
+            </div>
+            <div v-else class="params-section">
+              <div class="section-head">
+                <span class="param-section-title">{{ debugBodyType === 'form_data' ? '表单参数' : debugBodyType === 'binary' ? '二进制参数' : '键值对参数' }}</span>
+                <el-button size="small" @click="addBodyRow">+ 添加参数</el-button>
+              </div>
+              <el-table :data="debugBodyKvItems" size="small" border>
+                <el-table-column label="参数名" width="140">
+                  <template #default="{ row }"><el-input v-model="row.name" size="small" placeholder="参数名" /></template>
+                </el-table-column>
+                <el-table-column label="值">
+                  <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="值" /></template>
+                </el-table-column>
+                <el-table-column label="操作" width="70">
+                  <template #default="{ $index }">
+                    <el-button link size="small" type="danger" @click="removeBodyRow($index)">删除</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
         </div>
 
         <div class="debug-col">
@@ -257,13 +429,10 @@ function getAllParamValues() {
             </div>
             <el-tabs v-model="respTabs" class="resp-tabs">
               <el-tab-pane label="响应体" name="body">
-                <el-input
-                  :model-value="formatResponseBody(debugResult)"
-                  type="textarea" :rows="12" readonly style="font-family: monospace; font-size: 12px"
-                />
+                <pre class="resp-body-code">{{ formatResponseBody(debugResult) }}</pre>
               </el-tab-pane>
               <el-tab-pane label="响应头" name="headers">
-                <el-table v-if="debugResult.responseHeaders" :data="headerEntries" size="small" border style="max-height: 300px; overflow: auto">
+                <el-table v-if="headerEntries.length" :data="headerEntries" size="small" border style="max-height: 300px; overflow: auto">
                   <el-table-column prop="key" label="Header" width="180">
                     <template #default="{ row }">
                       <span style="font-family: monospace; font-weight: 500">{{ row.key }}</span>
@@ -407,5 +576,36 @@ function getAllParamValues() {
 .resp-meta {
   font-size: 12px;
   color: #909399;
+}
+.body-type-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.body-editor-row {
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+}
+.params-section {
+  margin-bottom: 16px;
+}
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.resp-body-code {
+  background: #f5f7fa;
+  padding: 12px;
+  border-radius: 4px;
+  max-height: 300px;
+  overflow: auto;
+  font-size: 12px;
+  font-family: monospace;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 </style>

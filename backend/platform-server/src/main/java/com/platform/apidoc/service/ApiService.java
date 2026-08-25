@@ -28,6 +28,8 @@ import com.platform.project.entity.ApiModule;
 import com.platform.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +50,9 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 public class ApiService {
+
+    /** Swagger 同步/导入专用日志：输出到 swagger.log */
+    private static final Logger SWAGGER_LOG = LoggerFactory.getLogger("com.platform.apidoc.swagger");
 
     private final ApiMapper apiMapper;
     private final ApiKeywordMapper apiKeywordMapper;
@@ -205,12 +210,12 @@ public class ApiService {
 
         SwaggerParser.ParseResult parseResult = SwaggerParser.parse(request.getSwaggerJson());
         List<SwaggerParser.ApiEntry> entries = parseResult.getApis();
-        log.info("Swagger 解析完成，共 {} 个接口，moduleId={}", entries.size(), request.getModuleId());
+        SWAGGER_LOG.info("Swagger 解析完成，共 {} 个接口，moduleId={}", entries.size(), request.getModuleId());
 
         // 合并同步配置中的默认请求头到每个接口
         List<Map<String, Object>> defaultHeaders = toDefaultHeaderItems(request.getDefaultHeaders());
         if (!defaultHeaders.isEmpty()) {
-            log.info("Swagger 导入附加默认请求头: {}", request.getDefaultHeaders());
+            SWAGGER_LOG.info("Swagger 导入附加默认请求头: {}", request.getDefaultHeaders());
             for (SwaggerParser.ApiEntry entry : entries) {
                 entry.setHeaders(mergeHeadersJson(entry.getHeaders(), defaultHeaders));
             }
@@ -232,16 +237,16 @@ public class ApiService {
                 existingByOpId.put(api.getSwaggerOperationId(), api);
             }
         }
-        log.info("Swagger 导入已有接口数={}, operationIds={}", existingByOpId.size(), existingByOpId.keySet());
+        SWAGGER_LOG.info("Swagger 导入已有接口数={}, operationIds={}", existingByOpId.size(), existingByOpId.keySet());
 
         for (SwaggerParser.ApiEntry entry : entries) {
             String opId = entry.getOperationId();
-            log.debug("Swagger 接口处理: operationId={}, method={}, path={}", opId, entry.getHttpMethod(), entry.getPath());
+            SWAGGER_LOG.debug("Swagger 接口处理: operationId={}, method={}, path={}", opId, entry.getHttpMethod(), entry.getPath());
 
             if (opId != null && existingByOpId.containsKey(opId)) {
                 // 更新已有接口
                 Api existingApi = existingByOpId.get(opId);
-                log.info("Swagger 接口更新: operationId={}, oldPath={}, newPath={}",
+                SWAGGER_LOG.info("Swagger 接口更新: operationId={}, oldPath={}, newPath={}",
                         opId, existingApi.getPath(), entry.getPath());
                 existingApi.setName(entry.getName());
                 existingApi.setHttpMethod(entry.getHttpMethod());
@@ -257,10 +262,10 @@ public class ApiService {
             } else {
                 // 创建新接口
                 if (opId == null) {
-                    log.warn("Swagger 接口缺少 operationId，将创建新接口: method={}, path={}",
+                    SWAGGER_LOG.warn("Swagger 接口缺少 operationId，将创建新接口: method={}, path={}",
                             entry.getHttpMethod(), entry.getPath());
                 } else {
-                    log.info("Swagger 接口新建: operationId={}, method={}, path={}",
+                    SWAGGER_LOG.info("Swagger 接口新建: operationId={}, method={}, path={}",
                             opId, entry.getHttpMethod(), entry.getPath());
                 }
                 Api newApi = SwaggerParser.toApiEntity(entry, request.getProjectId(), request.getModuleId());
@@ -269,7 +274,7 @@ public class ApiService {
             }
         }
 
-        log.info("Swagger 导入结果: total={}, created={}, updated={}, moduleId={}",
+        SWAGGER_LOG.info("Swagger 导入结果: total={}, created={}, updated={}, moduleId={}",
                 entries.size(), created, updated, request.getModuleId());
         return SwaggerImportResult.of(entries.size(), created, updated, skipped);
     }
@@ -411,7 +416,7 @@ public class ApiService {
 
         // 自动探测：用户粘贴的是 doc.html 页面时，尝试同源 /v3/api-docs 或 /v2/api-docs
         List<String> candidates = resolveApiDocsUrls(request.getUrl());
-        log.info("Swagger 同步开始，projectId={}, moduleId={}, candidates={}",
+        SWAGGER_LOG.info("Swagger 同步开始，projectId={}, moduleId={}, candidates={}",
                 request.getProjectId(), request.getModuleId(), candidates);
 
         String swaggerJson = null;
@@ -419,11 +424,11 @@ public class ApiService {
         for (String actualUrl : candidates) {
             try {
                 swaggerJson = fetchSwaggerJson(actualUrl, request.getHeaders());
-                log.info("Swagger 文档拉取成功 [{}]，JSON 长度={}", actualUrl, swaggerJson != null ? swaggerJson.length() : 0);
+                SWAGGER_LOG.info("Swagger 文档拉取成功 [{}]，JSON 长度={}", actualUrl, swaggerJson != null ? swaggerJson.length() : 0);
                 break;
             } catch (BusinessException e) {
                 lastException = e;
-                log.debug("Swagger 同步尝试失败 [{}]: {}", actualUrl, e.getMessage());
+                SWAGGER_LOG.debug("Swagger 同步尝试失败 [{}]: {}", actualUrl, e.getMessage());
             }
         }
         if (swaggerJson == null) {
@@ -503,14 +508,14 @@ public class ApiService {
             int statusCode = conn.getResponseCode();
             if (statusCode < 200 || statusCode >= 300) {
                 String errorBody = readStream(conn.getErrorStream());
-                log.debug("Swagger 同步远端返回非 2xx [{}] status={}, body={}", actualUrl, statusCode, errorBody);
+                SWAGGER_LOG.debug("Swagger 同步远端返回非 2xx [{}] status={}, body={}", actualUrl, statusCode, errorBody);
                 throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
                         "HTTP 状态码：" + statusCode + ", 响应：" + errorBody);
             }
 
             String body = readStream(conn.getInputStream());
             String preview = body.length() > 500 ? body.substring(0, 500) + "..." : body;
-            log.info("Swagger 文档响应 [{}] status={}, 内容预览={}", actualUrl, statusCode, preview);
+            SWAGGER_LOG.info("Swagger 文档响应 [{}] status={}, 内容预览={}", actualUrl, statusCode, preview);
 
             // 检测业务级错误响应（HTTP 200 但 body 是 {"code":401,"message":"..."} 之类的包装错误）
             checkBusinessErrorResponse(body, actualUrl);
@@ -520,7 +525,7 @@ public class ApiService {
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.debug("从 URL 获取 OpenAPI/Swagger 文档失败 [{}]: {}", actualUrl, e.getMessage());
+            SWAGGER_LOG.debug("从 URL 获取 OpenAPI/Swagger 文档失败 [{}]: {}", actualUrl, e.getMessage());
             throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, e.getMessage());
         }
     }
@@ -702,7 +707,7 @@ public class ApiService {
                 int code = codeNode.isNumber() ? codeNode.intValue() : -1;
                 if (code != 0 && code != 200) {
                     String message = root.has("message") ? root.get("message").asText() : "未知错误";
-                    log.debug("Swagger 同步检测到业务级错误 [{}] code={}, message={}", actualUrl, code, message);
+                    SWAGGER_LOG.debug("Swagger 同步检测到业务级错误 [{}] code={}, message={}", actualUrl, code, message);
                     throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
                             "服务端返回业务错误（code=" + code + "）：" + message);
                 }

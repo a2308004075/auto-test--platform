@@ -16,6 +16,7 @@ import { getApi, createApi, updateApi, getModules, getApiReferences, debugApi } 
 import { getEnvironments } from '@/api/environment'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
+import { schemaToExample } from '@/utils/schemaToExample'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
 const route = useRoute()
@@ -47,6 +48,15 @@ function parseArr(raw?: string): any[] {
 const queryParams = ref<any[]>([])
 const headerParams = ref<any[]>([])
 const bodyText = ref('{}')
+const bodyMode = ref<'schema' | 'example'>('example')
+const bodyExample = computed(() => {
+  try {
+    const schema = JSON.parse(bodyText.value || '{}')
+    return JSON.stringify(schemaToExample(schema), null, 2)
+  } catch {
+    return '{}'
+  }
+})
 
 function syncToForm() {
   form.requestParams = JSON.stringify(queryParams.value)
@@ -332,7 +342,21 @@ onMounted(() => {
           <div class="empty-icon">📋</div>
           <div>GET 请求不包含请求体</div>
         </div>
-        <el-input v-else v-model="bodyText" type="textarea" :rows="14" placeholder='{"key":"value"}' style="font-family: monospace; max-width: 800px" />
+        <template v-else>
+          <div style="display: flex; gap: 8px; margin-bottom: 12px">
+            <el-button :type="bodyMode === 'example' ? 'primary' : 'default'" size="small" @click="bodyMode = 'example'">示例</el-button>
+            <el-button :type="bodyMode === 'schema' ? 'primary' : 'default'" size="small" @click="bodyMode = 'schema'">Schema</el-button>
+          </div>
+          <el-input
+            v-if="bodyMode === 'schema'"
+            v-model="bodyText"
+            type="textarea"
+            :rows="14"
+            placeholder='{"type":"object","properties":{}}'
+            style="font-family: monospace; max-width: 800px"
+          />
+          <pre v-else class="example-body">{{ bodyExample }}</pre>
+        </template>
       </el-tab-pane>
 
       <!-- Tab: 响应参数 -->
@@ -524,5 +548,20 @@ onMounted(() => {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-all;
+}
+.example-body {
+  background: #f5f7fa;
+  padding: 12px;
+  border-radius: 4px;
+  max-width: 800px;
+  min-height: 280px;
+  max-height: 360px;
+  overflow: auto;
+  font-size: 12px;
+  font-family: monospace;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  border: 1px solid #dcdfe6;
 }
 </style>

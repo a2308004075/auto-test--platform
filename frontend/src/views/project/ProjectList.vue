@@ -7,8 +7,8 @@
 /**
  * 项目列表页（首页） - 对齐 UI 原型 project-list.html
  */
-import { ref, reactive, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getProjects, createProject, updateProject, deleteProject, toggleProjectStatus } from '@/api/project'
 import { useProjectStore, useUserStore } from '@/stores'
@@ -16,6 +16,7 @@ import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
 
 const router = useRouter()
+const route = useRoute()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
 const { hasPermission } = usePermission()
@@ -152,6 +153,14 @@ function handleSearch() {
 }
 
 onMounted(fetchList)
+
+// 在首页直接登录成功后，router.push('/home') 不会触发组件重新挂载，
+// 因此监听登录状态变化，登录完成后重新加载项目列表
+watch(() => userStore.isLoggedIn, (val, oldVal) => {
+  if (val && !oldVal && route.path === '/home') {
+    fetchList()
+  }
+})
 </script>
 
 <template>

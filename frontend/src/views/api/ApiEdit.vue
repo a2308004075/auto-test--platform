@@ -146,6 +146,78 @@ function extractJsonBody(text: string): string {
     return '{}'
   }
 }
+
+function extractTrailingLineComment(line: string): { jsonPart: string; comment: string } | null {
+  let inString = false
+  let escape = false
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    if (escape) {
+      escape = false
+      continue
+    }
+    if (ch === '\\') {
+      escape = true
+      continue
+    }
+    if (ch === '"') {
+      inString = !inString
+      continue
+    }
+    if (!inString && ch === '/' && line[i + 1] === '/') {
+      return { jsonPart: line.slice(0, i), comment: line.slice(i) }
+    }
+  }
+  return null
+}
+
+function formatJson(text: string): string {
+  const lines = text.split('\n')
+  const jsonLines: string[] = []
+  const comments: Map<number, string> = new Map()
+  lines.forEach((line, idx) => {
+    const extracted = extractTrailingLineComment(line)
+    if (extracted) {
+      comments.set(idx, extracted.comment)
+      jsonLines.push(extracted.jsonPart)
+    } else {
+      jsonLines.push(line)
+    }
+  })
+
+  let formatted: string
+  try {
+    formatted = JSON.stringify(JSON.parse(jsonLines.join('\n')), null, 2)
+  } catch {
+    return text
+  }
+
+  const formattedLines = formatted.split('\n')
+  const used = new Set<number>()
+  const result = formattedLines.map((fLine) => {
+    const keyMatch = fLine.match(/"([^"]+)"\s*:/)
+    if (keyMatch) {
+      const key = keyMatch[1]
+      for (const [idx, line] of jsonLines.entries()) {
+        if (used.has(idx)) continue
+        if (line.includes(`"${key}":`)) {
+          const comment = comments.get(idx)
+          if (comment) {
+            used.add(idx)
+            // 对齐：保证注释前至少一个空格
+            return fLine.replace(/\s*$/, '') + ' ' + comment.trimStart()
+          }
+        }
+      }
+    }
+    return fLine
+  })
+
+  comments.forEach((comment, idx) => {
+    if (!used.has(idx)) result.push(comment)
+  })
+  return result.join('\n')
+}
 const queryParams = ref<any[]>([])
 const headerParams = ref<any[]>([])
 
@@ -377,7 +449,7 @@ onMounted(() => {
     <el-tabs v-model="activeTab" @tab-change="(t: string) => onTabChange(t)">
       <!-- Tab: 基础信息 -->
       <el-tab-pane label="基础信息" name="basic">
-        <el-card shadow="never" style="max-width: 800px">
+        <el-card shadow="never">
           <el-form label-position="top">
             <el-row :gutter="16" v-if="isEdit">
               <el-col :span="12">
@@ -518,14 +590,15 @@ onMounted(() => {
             <el-select v-if="form.bodyType === 'raw'" v-model="form.rawType" size="small" style="width: 130px">
               <el-option v-for="r in rawTypeOptions" :key="r.value" :value="r.value" :label="r.label" />
             </el-select>
+            <el-button v-if="form.bodyType === 'raw' && form.rawType === 'json'" size="small" @click="form.requestBody = formatJson(form.requestBody)">格式化</el-button>
           </div>
           <div v-if="form.bodyType === 'none'" class="empty-state" style="padding: 32px">
             <div>该接口无请求体</div>
           </div>
-          <div v-else-if="form.bodyType === 'raw'" style="height: 360px; max-width: 800px">
+          <div v-else-if="form.bodyType === 'raw'" style="height: 360px">
             <CodeEditor v-model="form.requestBody" :language="form.rawType === 'javascript' ? 'javascript' : form.rawType === 'json' ? 'json' : 'text'" :min-height="320" placeholder="请输入请求体..." />
           </div>
-          <div v-else-if="form.bodyType === 'graphql'" style="max-width: 800px">
+          <div v-else-if="form.bodyType === 'graphql'">
             <div class="body-editor-row" style="height: 240px">
               <CodeEditor v-model="graphqlQuery" language="text" :min-height="200" placeholder="请输入 GraphQL Query" />
             </div>
@@ -533,7 +606,7 @@ onMounted(() => {
               <CodeEditor v-model="graphqlVariables" language="json" :min-height="120" placeholder="请输入 Variables（JSON）" />
             </div>
           </div>
-          <div v-else class="params-section" style="max-width: 800px">
+          <div v-else class="params-section">
             <div class="section-head">
               <h4>{{ form.bodyType === 'form_data' ? '表单参数' : form.bodyType === 'binary' ? '二进制参数' : '表单参数' }}</h4>
               <el-button size="small" @click="addRow(bodyKvItems)">+ 添加参数</el-button>
@@ -557,14 +630,14 @@ onMounted(() => {
 
       <!-- Tab: 响应体 -->
       <el-tab-pane label="响应体" name="response">
-        <div style="height: 360px; max-width: 800px">
+        <div style="height: 360px">
           <CodeEditor v-model="form.responseBody" language="javascript" :min-height="320" placeholder="请输入响应体示例..." />
         </div>
       </el-tab-pane>
 
       <!-- Tab: 调试 -->
       <el-tab-pane v-if="isEdit" label="调试" name="debug">
-        <el-card shadow="never" style="max-width: 900px">
+        <el-card shadow="never">
           <div class="debug-env-row">
             <span class="debug-label">选择环境：</span>
             <el-select v-model="debugEnvId" placeholder="选择环境" style="width: 180px">
@@ -574,7 +647,7 @@ onMounted(() => {
           </div>
           <div class="debug-params">
             <h4>Query 参数</h4>
-            <el-table v-if="queryParams.length" :data="queryParams" size="small" border style="max-width: 600px">
+            <el-table v-if="queryParams.length" :data="queryParams" size="small" border>
               <el-table-column label="参数名" width="180">
                 <template #default="{ row }">
                   <span style="font-family: monospace">{{ row.name }}</span>
@@ -597,12 +670,13 @@ onMounted(() => {
               <el-select v-if="debugBodyType === 'raw'" v-model="debugRawType" size="small" style="width: 130px">
                 <el-option v-for="r in rawTypeOptions" :key="r.value" :value="r.value" :label="r.label" />
               </el-select>
+              <el-button v-if="debugBodyType === 'raw' && debugRawType === 'json'" size="small" @click="debugBody = formatJson(debugBody)">格式化</el-button>
             </div>
             <div v-if="debugBodyType === 'none'" class="empty-hint">该接口无请求体</div>
-            <div v-else-if="debugBodyType === 'raw'" style="height: 240px; max-width: 600px">
+            <div v-else-if="debugBodyType === 'raw'" style="height: 240px">
               <CodeEditor v-model="debugBody" :language="debugRawType === 'javascript' ? 'javascript' : debugRawType === 'json' ? 'json' : 'text'" :min-height="200" placeholder="请输入请求体" />
             </div>
-            <div v-else-if="debugBodyType === 'graphql'" style="max-width: 600px">
+            <div v-else-if="debugBodyType === 'graphql'">
               <div class="body-editor-row" style="height: 180px">
                 <CodeEditor v-model="debugGraphqlQuery" language="text" :min-height="140" placeholder="请输入 GraphQL Query" />
               </div>
@@ -610,7 +684,7 @@ onMounted(() => {
                 <CodeEditor v-model="debugGraphqlVariables" language="json" :min-height="80" placeholder="请输入 Variables（JSON）" />
               </div>
             </div>
-            <div v-else class="params-section" style="max-width: 600px">
+            <div v-else class="params-section">
               <div class="section-head">
                 <h4>{{ debugBodyType === 'form_data' ? '表单参数' : '二进制参数' }}</h4>
                 <el-button size="small" @click="addRow(debugBodyKvItems)">+ 添加参数</el-button>
@@ -676,7 +750,7 @@ onMounted(() => {
           <h4 style="margin: 0; font-size: 14px; font-weight: 600">接口关键字引用</h4>
           <el-tag v-if="references.length" type="primary" size="small">{{ references.length }} 个引用</el-tag>
         </div>
-        <el-table v-loading="refsLoading" :data="references" size="small" border style="max-width: 800px; margin-top: 12px">
+        <el-table v-loading="refsLoading" :data="references" size="small" border style="margin-top: 12px">
           <el-table-column prop="keywordName" label="关键字名称" />
           <el-table-column prop="createdBy" label="创建人" width="120" />
           <el-table-column label="修改时间" width="140">
@@ -729,9 +803,6 @@ onMounted(() => {
   font-size: 36px;
   margin-bottom: 8px;
   opacity: 0.4;
-}
-.debug-section {
-  max-width: 900px;
 }
 .body-type-row {
   display: flex;

@@ -34,10 +34,12 @@ public class ApiController {
             @PathVariable Long projectId,
             @RequestParam(required = false) Long moduleId,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String path,
             @RequestParam(required = false) String httpMethod,
+            @RequestParam(required = false) String source,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.ok(apiService.list(projectId, moduleId, keyword, httpMethod, page, pageSize));
+        return ApiResponse.ok(apiService.list(projectId, moduleId, keyword, path, httpMethod, source, page, pageSize));
     }
 
     /**

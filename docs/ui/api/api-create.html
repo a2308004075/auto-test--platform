@@ -1,1 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新建接口 - Postman Platform</title>
+  <link rel="stylesheet" href="../common/shared-styles.css">
+  <style>
+    .edit-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .edit-header .actions { display: flex; gap: 8px; }
+    .edit-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .params-section { margin-bottom: 24px; }
+    .params-section h4 { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .add-param-btn { font-size: 13px; }
+    .schema-editor { background: #fafafa; border: 1px solid var(--border-color-secondary); border-radius: var(--border-radius); padding: 16px; }
+    .schema-mode { display: flex; gap: 8px; margin-bottom: 12px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="layout-header">
+    <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
+    <div class="header-breadcrumb">
+      <span><a href="api-list.html">接口文档</a></span>
+      <span class="sep">&#8250;</span>
+      <span class="current">新建接口</span>
+    </div>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="user-role" title="管理员">A</div>
+        <span class="user-name">管理员</span>
+        <span class="user-arrow">&#9660;</span>
+      </div>
+    </div>
+  </header>
+  <aside class="layout-sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">PT</div>
+      <span class="sidebar-logo-text">Postman Platform</span>
+    </div><nav>
+      <ul class="sidebar-menu">
+        <li class="menu-item"><a href="../project/project-dashboard.html"><span class="icon">📊</span> 项目概览</a></li>
+        <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
+        <li class="menu-item active"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
+      </ul>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
+            <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav></aside>
 
+  <main class="layout-main">
+
+
+    <div class="edit-header">
+      <h1 style="font-size: 18px;">新建接口</h1>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="handleSave()">创建</button>
+        <button class="btn" onclick="location.href='api-list.html'">取消</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" id="editTabs">
+      <div class="tab-item active" onclick="switchTab('basic', this)">基础信息</div>
+      <div class="tab-item" onclick="switchTab('params', this)">请求参数</div>
+      <div class="tab-item" onclick="switchTab('body', this)">请求体</div>
+      <div class="tab-item" onclick="switchTab('response', this)">响应定义</div>
+    </div>
+
+    <!-- Tab: Basic Info -->
+    <div class="tab-content active" id="tab-basic">
+      <div class="card"><div class="card-body">
+        <div class="edit-form-row">
+          <div class="form-group">
+            <label class="form-label" for="接口名称">接口名称 <span style="color:var(--danger)">*</span></label>
+            <input type="text" class="input w-full" placeholder="请输入接口名称" id="接口名称">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="HTTP方法">HTTP 方法</label>
+            <select class="select w-full" id="HTTP方法"><option selected>GET</option><option>POST</option><option>PUT</option><option>DELETE</option><option>PATCH</option></select>
+          </div>
+        </div>
+        <div class="edit-form-row">
+          <div class="form-group">
+            <label class="form-label" for="接口路径">接口路径 <span style="color:var(--danger)">*</span></label>
+            <input type="text" class="input w-full font-mono" placeholder="/api/v1/example" id="接口路径">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="所属分组">所属分组</label>
+            <select class="select w-full" id="所属分组"><option>未分类</option></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="描述">描述</label>
+          <input type="text" class="input w-full" placeholder="接口描述（可选）" id="描述">
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: Request Params -->
+    <div class="tab-content" id="tab-params">
+      <div class="card"><div class="card-body">
+        <div class="params-section">
+          <h4>Path 参数 <span class="text-tertiary text-sm">无</span></h4>
+        </div>
+        <div class="params-section">
+          <h4>Query 参数 <button class="btn btn-sm add-param-btn">+ 添加参数</button></h4>
+          <table>
+            <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th><th style="width:60px">操作</th></tr></thead>
+            <tbody>
+              <tr><td><input type="text" class="input" placeholder="参数名" aria-label="Query参数名" style="width:120px"></td><td><select class="select" aria-label="Query参数类型" style="width:100px"><option selected>string</option><option>integer</option><option>number</option><option>boolean</option></select></td><td><span class="switch" onclick="this.classList.toggle('on')"></span></td><td><input type="text" class="input" placeholder="说明" aria-label="Query参数说明" style="width:200px"></td><td><button class="btn btn-link btn-sm btn-danger">删除</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="params-section">
+          <h4>Header 参数 <button class="btn btn-sm add-param-btn">+ 添加参数</button></h4>
+          <table>
+            <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>值</th><th>说明</th><th style="width:60px">操作</th></tr></thead>
+            <tbody>
+              <tr><td><input type="text" class="input" value="Content-Type" aria-label="Header参数名" style="width:140px"></td><td><select class="select" aria-label="Header参数类型" style="width:100px"><option selected>string</option></select></td><td><span class="switch" onclick="this.classList.toggle('on')"></span></td><td><input type="text" class="input" value="application/json" aria-label="Header参数值" style="width:180px"></td><td><input type="text" class="input" value="内容类型" aria-label="Header参数说明" style="width:140px"></td><td><button class="btn btn-link btn-sm btn-danger">删除</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: Request Body (hidden for GET) -->
+    <div class="tab-content" id="tab-body">
+      <div class="card"><div class="card-body">
+        <div class="empty-state">
+          <div class="icon">📋</div>
+          <div class="text">GET 请求不包含请求体</div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- Tab: Response -->
+    <div class="tab-content" id="tab-response">
+      <div class="card"><div class="card-body">
+        <div class="params-section">
+          <h4>响应体示例</h4>
+          <div class="code-editor" style="min-height: 200px; font-size: 12px;" contenteditable="true" spellcheck="false">{
+  <span class="string">"code"</span>: <span class="number">0</span>,
+  <span class="string">"message"</span>: <span class="string">"success"</span>,
+  <span class="string">"data"</span>: {}
+}</div>
+        </div>
+      </div></div>
+    </div>
+
+  </main>
+
+  <script>
+    function switchTab(name, el) {
+      document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+    }
+
+    /* ===== 保存接口 ===== */
+    function handleSave() {
+      var name = document.getElementById('接口名称').value.trim();
+      var path = document.getElementById('接口路径').value.trim();
+      if (!name || !path) {
+        showToast('请填写必填项', 'error');
+        switchTab('basic', document.querySelector('.tab-item'));
+        return;
+      }
+      showToast('创建成功', 'success');
+      setTimeout(function() {
+        location.href = 'api-list.html';
+      }, 1500);
+    }
+  </script>
+  <script src="../common/nav.js"></script>
+</body>
+</html>

@@ -67,7 +67,8 @@ public class ApiService {
      * 分页查询接口列表
      */
     public PageResponse<ApiInfoResponse> list(Long projectId, Long moduleId, String keyword,
-                                               String httpMethod, int page, int pageSize) {
+                                               String path, String httpMethod, String source,
+                                               int page, int pageSize) {
         LambdaQueryWrapper<Api> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Api::getProjectId, projectId);
 
@@ -81,8 +82,14 @@ public class ApiService {
                     .or().like(Api::getPath, keyword)
                     .or().like(Api::getService, keyword));
         }
+        if (StringUtils.hasText(path)) {
+            wrapper.like(Api::getPath, path);
+        }
         if (StringUtils.hasText(httpMethod)) {
             wrapper.eq(Api::getHttpMethod, httpMethod);
+        }
+        if (StringUtils.hasText(source)) {
+            wrapper.eq(Api::getSourceType, source);
         }
         wrapper.orderByDesc(Api::getCreatedAt);
 

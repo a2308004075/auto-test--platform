@@ -55,6 +55,23 @@ function looksLikeSchema(text: string): boolean {
     return false
   }
 }
+
+function stripJsonComments(text: string): string {
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/.*$/gm, '')
+    .replace(/,\s*([}\]])/g, '$1')
+}
+
+function extractJsonBody(text: string): string {
+  try {
+    const cleaned = stripJsonComments(text)
+    const obj = JSON.parse(cleaned)
+    return JSON.stringify(obj, null, 2)
+  } catch {
+    return '{}'
+  }
+}
 const queryParams = ref<any[]>([])
 const headerParams = ref<any[]>([])
 
@@ -139,21 +156,27 @@ async function fetchReferences() {
 // ===== 调试 =====
 const debugEnvId = ref<number | null>(null)
 const debugParamValues = ref<Record<string, string>>({})
+const debugBody = ref('{}')
 const debugResult = ref<any>(null)
 const debugLoading = ref(false)
 function initDebugParams() {
   const map: Record<string, string> = {}
   queryParams.value.forEach((p) => { map[p.name] = '' })
   debugParamValues.value = map
+  debugBody.value = form.requestBody || '{}'
 }
 async function sendDebug() {
   debugLoading.value = true
   debugResult.value = null
   try {
-    const res: any = await debugApi(projectId.value, apiId.value, {
+    const payload: any = {
       environmentId: debugEnvId.value || undefined,
-      params: debugParamValues.value,
-    })
+      queryParams: debugParamValues.value,
+    }
+    if (form.httpMethod !== 'GET') {
+      payload.body = extractJsonBody(debugBody.value)
+    }
+    const res: any = await debugApi(projectId.value, apiId.value, payload)
     debugResult.value = res.data
   } catch (e: any) {
     debugResult.value = { success: 0, error: e?.response?.data?.message || e?.message || '调试失败' }
@@ -387,6 +410,12 @@ onMounted(() => {
               </el-table-column>
             </el-table>
             <p v-else class="empty-hint">该接口无 Query 参数</p>
+          </div>
+          <div v-if="form.httpMethod !== 'GET'" class="debug-params">
+            <h4>请求体</h4>
+            <div style="height: 240px; max-width: 600px">
+              <CodeEditor v-model="debugBody" language="javascript" :min-height="200" placeholder="请输入请求体 JSON" />
+            </div>
           </div>
           <div v-if="debugResult" class="debug-response">
             <div class="resp-status">

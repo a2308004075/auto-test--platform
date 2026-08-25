@@ -75,4 +75,13 @@ public class ApiModuleController {
         apiService.clearByModule(moduleId);
         return ApiResponse.ok();
     }
+
+    /**
+     * 清空项目下所有接口
+     */
+    @PostMapping("/clear-all-apis")
+    public ApiResponse<Void> clearAllApis(@PathVariable Long projectId) {
+        apiService.clearByProject(projectId);
+        return ApiResponse.ok();
+    }
 }

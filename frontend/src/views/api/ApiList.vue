@@ -13,7 +13,7 @@ import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  getApis, deleteApi, batchDeleteApis, batchMoveApis, getModules, createModule, updateModule, deleteModule, clearModuleApis,
+  getApis, deleteApi, batchDeleteApis, batchMoveApis, getModules, createModule, updateModule, deleteModule, clearModuleApis, clearProjectApis,
 } from '@/api/apidoc'
 import PageHeader from '@/components/PageHeader/index.vue'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
@@ -140,7 +140,8 @@ const contextModule = ref<any>(null)
 function handleNodeContextmenu(e: MouseEvent, data: any) {
   e.preventDefault()
   e.stopPropagation()
-  if (data.isSystem === 1) return
+  // 系统分组仅允许"全部"(id=0)和"未分组"显示清空菜单
+  if (data.isSystem === 1 && data.id !== 0 && data.name !== '未分组') return
   contextModule.value = data
   contextMenuPos.x = e.clientX
   contextMenuPos.y = e.clientY
@@ -188,13 +189,20 @@ function contextClear() {
   if (!contextModule.value) return
   const m = contextModule.value
   closeContextMenu()
+  const isAll = m.id === 0
   ElMessageBox.confirm(
-    `确定清空分组「${m.name}」及其子分组中的所有接口？此操作不可恢复。`,
+    isAll
+      ? '确定清空项目下的所有接口？此操作不可恢复。'
+      : `确定清空分组「${m.name}」及其子分组中的所有接口？此操作不可恢复。`,
     '确认清空',
     { type: 'warning', confirmButtonText: '清空', cancelButtonText: '取消' }
   )
     .then(async () => {
-      await clearModuleApis(projectId.value, m.id)
+      if (isAll) {
+        await clearProjectApis(projectId.value)
+      } else {
+        await clearModuleApis(projectId.value, m.id)
+      }
       ElMessage.success('已清空')
       fetchModules()
       fetchList()
@@ -587,6 +595,10 @@ onBeforeUnmount(() => {
         <!-- 空白区域右键：仅显示"新建分组" -->
         <template v-if="!contextModule">
           <div v-if="hasPermission('project:api:group')" class="context-menu-item" @click="contextCreateGroup">新建分组</div>
+        </template>
+        <!-- 系统分组右键：仅允许清空 -->
+        <template v-else-if="contextModule.isSystem === 1">
+          <div class="context-menu-item danger" @click="contextClear">清空接口</div>
         </template>
         <!-- 用户分组右键 -->
         <template v-else>

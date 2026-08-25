@@ -216,6 +216,19 @@ public class ApiService {
     }
 
     /**
+     * 清空项目下所有接口
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void clearByProject(Long projectId) {
+        LambdaQueryWrapper<Api> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Api::getProjectId, projectId);
+        List<Api> apis = apiMapper.selectList(wrapper);
+        for (Api api : apis) {
+            delete(api.getId());
+        }
+    }
+
+    /**
      * Swagger 导入（增量）
      */
     @Transactional(rollbackFor = Exception.class)

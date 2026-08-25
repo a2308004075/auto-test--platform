@@ -139,6 +139,12 @@ public class ApiService {
         if (request.getRequestBody() != null) {
             api.setRequestBody(request.getRequestBody());
         }
+        if (request.getBodyType() != null) {
+            api.setBodyType(request.getBodyType());
+        }
+        if (request.getRawType() != null) {
+            api.setRawType(request.getRawType());
+        }
         if (request.getResponseBody() != null) {
             api.setResponseBody(request.getResponseBody());
         }
@@ -288,6 +294,8 @@ public class ApiService {
                 existingApi.setService(entry.getService());
                 existingApi.setRequestParams(entry.getRequestParams());
                 existingApi.setRequestBody(entry.getRequestBody());
+                existingApi.setBodyType(entry.getBodyType());
+                existingApi.setRawType(entry.getRawType());
                 existingApi.setResponseBody(entry.getResponseBody());
                 existingApi.setHeaders(entry.getHeaders());
                 existingApi.setContentType(entry.getContentType());
@@ -370,14 +378,20 @@ public class ApiService {
                     conn.setRequestProperty(entry.getKey(), entry.getValue());
                 }
             }
-            conn.setRequestProperty("Content-Type",
-                    api.getContentType() != null ? api.getContentType() : "application/json");
+
+            // 根据请求体格式构造请求体与 Content-Type
+            String bodyType = effectiveBodyType(request, api);
+            String contentType = resolveDebugContentType(bodyType, request.getRawType(), api.getContentType());
+            byte[] bodyBytes = buildDebugBody(bodyType, request.getBody());
+            if (contentType != null && !contentType.isEmpty()) {
+                conn.setRequestProperty("Content-Type", contentType);
+            }
 
             // 发送请求体
-            if (request.getBody() != null && !request.getBody().isEmpty()) {
+            if (bodyBytes != null && bodyBytes.length > 0) {
                 conn.setDoOutput(true);
                 try (OutputStream os = conn.getOutputStream()) {
-                    os.write(request.getBody().getBytes(StandardCharsets.UTF_8));
+                    os.write(bodyBytes);
                 }
             }
 
@@ -414,6 +428,116 @@ public class ApiService {
             ApiDebugResponse response = ApiDebugResponse.error(e.getMessage());
             response.setResponseTimeMs(elapsed);
             return response;
+        }
+    }
+
+    /**
+     * 确定调试时实际使用的请求体格式
+     */
+    private String effectiveBodyType(ApiDebugRequest request, Api api) {
+        if (StringUtils.hasText(request.getBodyType())) {
+            return request.getBodyType();
+        }
+        if (StringUtils.hasText(api.getBodyType())) {
+            return api.getBodyType();
+        }
+        return "raw";
+    }
+
+    /**
+     * 根据请求体格式解析 Content-Type
+     */
+    private String resolveDebugContentType(String bodyType, String rawType, String apiContentType) {
+        if ("none".equals(bodyType)) {
+            return null;
+        }
+        if ("x_www_form_urlencoded".equals(bodyType)) {
+            return "application/x-www-form-urlencoded";
+        }
+        if ("form_data".equals(bodyType) || "binary".equals(bodyType)) {
+            return "multipart/form-data; boundary=----FormBoundary" + System.currentTimeMillis();
+        }
+        if ("graphql".equals(bodyType)) {
+            return "application/json";
+        }
+        // raw：按子类型映射，无子类型时回退接口保存的 Content-Type
+        if ("text".equals(rawType)) {
+            return "text/plain";
+        }
+        if ("javascript".equals(rawType)) {
+            return "application/javascript";
+        }
+        if ("json".equals(rawType)) {
+            return "application/json";
+        }
+        if ("html".equals(rawType)) {
+            return "text/html";
+        }
+        if ("xml".equals(rawType)) {
+            return "application/xml";
+        }
+        return StringUtils.hasText(apiContentType) ? apiContentType : "application/json";
+    }
+
+    /**
+     * 根据请求体格式构造字节数组请求体
+     */
+    private byte[] buildDebugBody(String bodyType, String body) {
+        if (!StringUtils.hasText(body) || "none".equals(bodyType)) {
+            return null;
+        }
+        if ("raw".equals(bodyType) || "graphql".equals(bodyType)) {
+            return body.getBytes(StandardCharsets.UTF_8);
+        }
+        if ("x_www_form_urlencoded".equals(bodyType)) {
+            return buildUrlEncodedBody(body);
+        }
+        if ("form_data".equals(bodyType) || "binary".equals(bodyType)) {
+            return buildMultipartBody(body);
+        }
+        return body.getBytes(StandardCharsets.UTF_8);
+    }
+
+    private byte[] buildUrlEncodedBody(String body) {
+        try {
+            List<Map<String, Object>> items = objectMapper.readValue(body, new TypeReference<List<Map<String, Object>>>() {});
+            StringBuilder sb = new StringBuilder();
+            boolean first = true;
+            for (Map<String, Object> item : items) {
+                String name = item.get("name") == null ? "" : item.get("name").toString();
+                String value = item.get("value") == null ? "" : item.get("value").toString();
+                if (!first) {
+                    sb.append("&");
+                }
+                sb.append(URLEncoder.encode(name, StandardCharsets.UTF_8.name()))
+                        .append("=")
+                        .append(URLEncoder.encode(value, StandardCharsets.UTF_8.name()));
+                first = false;
+            }
+            return sb.toString().getBytes(StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.warn("构造 x-www-form-urlencoded 请求体失败: {}", e.getMessage());
+            return body.getBytes(StandardCharsets.UTF_8);
+        }
+    }
+
+    private byte[] buildMultipartBody(String body) {
+        String boundary = "----FormBoundary" + System.currentTimeMillis();
+        try {
+            List<Map<String, Object>> items = objectMapper.readValue(body, new TypeReference<List<Map<String, Object>>>() {});
+            StringBuilder sb = new StringBuilder();
+            for (Map<String, Object> item : items) {
+                String name = item.get("name") == null ? "" : item.get("name").toString();
+                String value = item.get("value") == null ? "" : item.get("value").toString();
+                sb.append("--").append(boundary).append("\r\n");
+                sb.append("Content-Disposition: form-data; name=\"").append(name).append("\"\r\n\r\n");
+                sb.append(value).append("\r\n");
+            }
+            sb.append("--").append(boundary).append("--\r\n");
+            return sb.toString().getBytes(StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.warn("构造 multipart/form-data 请求体失败: {}", e.getMessage());
+            return body.getBytes(StandardCharsets.UTF_8);
         }
     }
 

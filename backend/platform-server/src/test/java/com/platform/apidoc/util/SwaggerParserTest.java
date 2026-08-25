@@ -172,4 +172,36 @@ class SwaggerParserTest {
         assertTrue(entry.getRequestParams().contains("\"name\":\"name\""));
         assertTrue(entry.getRequestParams().contains("\"type\":\"string\""));
     }
+
+    @Test
+    void parseOpenApi3_bodyTypeByContentType() {
+        String json = "{\n" +
+                "  \"openapi\": \"3.0.1\",\n" +
+                "  \"info\": {\"title\": \"T\", \"version\": \"1\"},\n" +
+                "  \"paths\": {\n" +
+                "    \"/a\": {\"post\": {\"operationId\": \"a\", \"requestBody\": {\"content\": {\"application/json\": {\"schema\": {\"type\": \"object\"}}}}, \"responses\": {\"200\": {\"description\": \"OK\"}}}},\n" +
+                "    \"/b\": {\"post\": {\"operationId\": \"b\", \"requestBody\": {\"content\": {\"multipart/form-data\": {\"schema\": {\"type\": \"object\"}}}}, \"responses\": {\"200\": {\"description\": \"OK\"}}}},\n" +
+                "    \"/c\": {\"post\": {\"operationId\": \"c\", \"requestBody\": {\"content\": {\"application/x-www-form-urlencoded\": {\"schema\": {\"type\": \"object\"}}}}, \"responses\": {\"200\": {\"description\": \"OK\"}}}},\n" +
+                "    \"/d\": {\"post\": {\"operationId\": \"d\", \"requestBody\": {\"content\": {\"application/graphql\": {\"schema\": {\"type\": \"string\"}}}}, \"responses\": {\"200\": {\"description\": \"OK\"}}}}\n" +
+                "  }\n" +
+                "}";
+        SwaggerParser.ParseResult result = SwaggerParser.parse(json);
+        assertEquals(4, result.getApis().size());
+
+        SwaggerParser.ApiEntry rawJson = result.getApis().get(0);
+        assertEquals("raw", rawJson.getBodyType());
+        assertEquals("json", rawJson.getRawType());
+
+        SwaggerParser.ApiEntry formData = result.getApis().get(1);
+        assertEquals("form_data", formData.getBodyType());
+        assertNull(formData.getRawType());
+
+        SwaggerParser.ApiEntry urlEncoded = result.getApis().get(2);
+        assertEquals("x_www_form_urlencoded", urlEncoded.getBodyType());
+        assertNull(urlEncoded.getRawType());
+
+        SwaggerParser.ApiEntry graphql = result.getApis().get(3);
+        assertEquals("graphql", graphql.getBodyType());
+        assertNull(graphql.getRawType());
+    }
 }

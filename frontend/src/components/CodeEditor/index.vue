@@ -302,8 +302,13 @@ function highlightJs(code: string): string {
   return out.join('\n')
 }
 
+function highlightPlain(code: string): string {
+  return esc(code)
+}
+
 const highlightedCode = computed(() => {
-  const fn = props.language === 'javascript' ? highlightJs : highlightGroovy
+  const lang = props.language === 'json' ? 'javascript' : props.language
+  const fn = lang === 'javascript' ? highlightJs : lang === 'text' ? highlightPlain : highlightGroovy
   return fn(code.value) + '\n'
 })
 

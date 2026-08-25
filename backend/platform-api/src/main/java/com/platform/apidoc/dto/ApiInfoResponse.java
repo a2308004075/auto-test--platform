@@ -25,6 +25,8 @@ public class ApiInfoResponse {
     private String servicePrefix;
     private String requestParams;
     private String requestBody;
+    private String bodyType;
+    private String rawType;
     private String responseBody;
     private String headers;
     private String contentType;

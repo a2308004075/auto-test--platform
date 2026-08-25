@@ -44,6 +44,16 @@ public class Api extends BaseEntity {
     private String requestBody;
 
     /**
+     * 请求体格式：none/form_data/x_www_form_urlencoded/raw/binary/graphql
+     */
+    private String bodyType;
+
+    /**
+     * raw 子类型：text/javascript/json/html/xml
+     */
+    private String rawType;
+
+    /**
      * 响应体 Schema（JSON）
      */
     private String responseBody;

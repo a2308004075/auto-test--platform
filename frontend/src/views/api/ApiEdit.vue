@@ -6,7 +6,7 @@
 <script setup lang="ts">
 /**
  * 接口编辑/新建 - M4
- * 7 Tab：基础信息 / Header 参数 / 请求参数 / 请求体 / 响应参数 / 调试 / 引用关系
+ * 7 Tab：基础信息 / Header 参数 / 请求参数 / 请求体 / 响应体 / 调试 / 引用关系
  * 对齐原型 api-edit.html（请求参数/响应改为可视化表格编辑，数据仍序列化为 JSON 存储）
  */
 import { ref, reactive, onMounted, computed, watch } from 'vue'
@@ -37,8 +37,82 @@ const { options: paramTypeOptions } = useDict('param_type')
 const form = reactive({
   name: '', httpMethod: 'GET', path: '', service: '', moduleId: null as number | null,
   description: '', requestParams: '[]', requestBody: '{}', responseBody: '{}', headers: '[]',
-  contentType: 'application/json',
+  contentType: 'application/json', bodyType: 'raw', rawType: 'json',
   sourceType: 'MANUAL',
+})
+
+// 请求体格式选项
+const bodyTypeOptions = [
+  { value: 'none', label: 'none' },
+  { value: 'form_data', label: 'form-data' },
+  { value: 'x_www_form_urlencoded', label: 'x-www-form-urlencoded' },
+  { value: 'raw', label: 'raw' },
+  { value: 'binary', label: 'binary' },
+  { value: 'graphql', label: 'GraphQL' },
+]
+const rawTypeOptions = [
+  { value: 'text', label: 'Text' },
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'json', label: 'JSON' },
+  { value: 'html', label: 'HTML' },
+  { value: 'xml', label: 'XML' },
+]
+
+function defaultRequestBody(bodyType: string): string {
+  if (bodyType === 'form_data' || bodyType === 'x_www_form_urlencoded' || bodyType === 'binary') {
+    return '[]'
+  }
+  if (bodyType === 'graphql') {
+    return JSON.stringify({ query: '', variables: '{}' }, null, 2)
+  }
+  if (bodyType === 'none') {
+    return ''
+  }
+  return '{}'
+}
+
+function mapBodyTypeToContentType(bodyType: string, rawType: string): string {
+  if (bodyType === 'form_data') return 'multipart/form-data'
+  if (bodyType === 'x_www_form_urlencoded') return 'application/x-www-form-urlencoded'
+  if (bodyType === 'binary') return 'application/octet-stream'
+  if (bodyType === 'graphql') return 'application/json'
+  if (rawType === 'text') return 'text/plain'
+  if (rawType === 'javascript') return 'application/javascript'
+  if (rawType === 'json') return 'application/json'
+  if (rawType === 'html') return 'text/html'
+  if (rawType === 'xml') return 'application/xml'
+  return 'application/json'
+}
+
+const bodyKvItems = computed({
+  get: () => parseArr(form.requestBody),
+  set: (val) => { form.requestBody = JSON.stringify(val) },
+})
+
+const graphqlQuery = computed({
+  get: () => {
+    try { return JSON.parse(form.requestBody).query || '' } catch { return '' }
+  },
+  set: (val) => {
+    try {
+      const obj = JSON.parse(form.requestBody || '{}')
+      obj.query = val
+      form.requestBody = JSON.stringify(obj, null, 2)
+    } catch {}
+  },
+})
+
+const graphqlVariables = computed({
+  get: () => {
+    try { return JSON.parse(form.requestBody).variables || '{}' } catch { return '{}' }
+  },
+  set: (val) => {
+    try {
+      const obj = JSON.parse(form.requestBody || '{}')
+      obj.variables = val
+      form.requestBody = JSON.stringify(obj, null, 2)
+    } catch {}
+  },
 })
 
 // ===== 参数可视化编辑（序列化为 JSON 存入 form） =====
@@ -85,6 +159,19 @@ function syncToForm() {
 
 watch([queryParams, headerParams], syncToForm, { deep: true })
 
+// bodyType/rawType 变化时同步 Content-Type 请求头
+watch([() => form.bodyType, () => form.rawType], () => {
+  if (form.httpMethod === 'GET') return
+  const ct = mapBodyTypeToContentType(form.bodyType, form.rawType)
+  form.contentType = ct
+  const idx = headerParams.value.findIndex((h: any) => h.name && h.name.toLowerCase() === 'content-type')
+  if (idx >= 0) {
+    headerParams.value[idx].value = ct
+  } else {
+    headerParams.value.unshift({ name: 'Content-Type', type: 'string', required: false, description: '内容类型', value: ct })
+  }
+})
+
 function addRow(arr: any[]) {
   arr.push({ name: '', type: 'string', required: false, description: '', value: '' })
 }
@@ -121,9 +208,13 @@ async function fetchApi() {
   try {
     const res: any = await getApi(projectId.value, apiId.value)
     Object.assign(form, res.data)
-    if (!form.requestBody) form.requestBody = '{}'
+    if (!form.bodyType) form.bodyType = 'raw'
+    if (!form.rawType) form.rawType = 'json'
+    if (!form.requestBody) form.requestBody = defaultRequestBody(form.bodyType)
     if (looksLikeSchema(form.requestBody)) {
       form.requestBody = schemaToExampleString(JSON.parse(form.requestBody))
+      form.bodyType = 'raw'
+      form.rawType = 'json'
     }
     if (!form.responseBody) form.responseBody = '{}'
     if (looksLikeSchema(form.responseBody)) {
@@ -157,13 +248,59 @@ async function fetchReferences() {
 const debugEnvId = ref<number | null>(null)
 const debugParamValues = ref<Record<string, string>>({})
 const debugBody = ref('{}')
+const debugBodyType = ref('raw')
+const debugRawType = ref('json')
 const debugResult = ref<any>(null)
 const debugLoading = ref(false)
+
+const debugBodyKvItems = computed({
+  get: () => parseArr(debugBody.value),
+  set: (val) => { debugBody.value = JSON.stringify(val) },
+})
+
+const debugGraphqlQuery = computed({
+  get: () => {
+    try { return JSON.parse(debugBody.value).query || '' } catch { return '' }
+  },
+  set: (val) => {
+    try {
+      const obj = JSON.parse(debugBody.value || '{}')
+      obj.query = val
+      debugBody.value = JSON.stringify(obj, null, 2)
+    } catch {}
+  },
+})
+
+const debugGraphqlVariables = computed({
+  get: () => {
+    try { return JSON.parse(debugBody.value).variables || '{}' } catch { return '{}' }
+  },
+  set: (val) => {
+    try {
+      const obj = JSON.parse(debugBody.value || '{}')
+      obj.variables = val
+      debugBody.value = JSON.stringify(obj, null, 2)
+    } catch {}
+  },
+})
+
+function buildDebugPayloadBody(): string {
+  if (debugBodyType.value === 'none') {
+    return ''
+  }
+  if (debugBodyType.value === 'raw' && debugRawType.value === 'json') {
+    return extractJsonBody(debugBody.value)
+  }
+  return debugBody.value
+}
+
 function initDebugParams() {
   const map: Record<string, string> = {}
   queryParams.value.forEach((p) => { map[p.name] = '' })
   debugParamValues.value = map
-  debugBody.value = form.requestBody || '{}'
+  debugBodyType.value = form.bodyType || 'raw'
+  debugRawType.value = form.rawType || 'json'
+  debugBody.value = form.requestBody || defaultRequestBody(debugBodyType.value)
 }
 async function sendDebug() {
   debugLoading.value = true
@@ -173,8 +310,10 @@ async function sendDebug() {
       environmentId: debugEnvId.value || undefined,
       queryParams: debugParamValues.value,
     }
-    if (form.httpMethod !== 'GET') {
-      payload.body = extractJsonBody(debugBody.value)
+    if (form.httpMethod !== 'GET' && debugBodyType.value !== 'none') {
+      payload.body = buildDebugPayloadBody()
+      payload.bodyType = debugBodyType.value
+      payload.rawType = debugRawType.value
     }
     const res: any = await debugApi(projectId.value, apiId.value, payload)
     debugResult.value = res.data
@@ -372,14 +511,52 @@ onMounted(() => {
           <div>GET 请求不包含请求体</div>
         </div>
         <template v-else>
-          <div style="height: 360px; max-width: 800px">
-            <CodeEditor v-model="form.requestBody" language="javascript" :min-height="320" placeholder="请输入请求体示例..." />
+          <div class="body-type-row">
+            <el-radio-group v-model="form.bodyType" size="small">
+              <el-radio-button v-for="b in bodyTypeOptions" :key="b.value" :value="b.value">{{ b.label }}</el-radio-button>
+            </el-radio-group>
+            <el-select v-if="form.bodyType === 'raw'" v-model="form.rawType" size="small" style="width: 130px">
+              <el-option v-for="r in rawTypeOptions" :key="r.value" :value="r.value" :label="r.label" />
+            </el-select>
+          </div>
+          <div v-if="form.bodyType === 'none'" class="empty-state" style="padding: 32px">
+            <div>该接口无请求体</div>
+          </div>
+          <div v-else-if="form.bodyType === 'raw'" style="height: 360px; max-width: 800px">
+            <CodeEditor v-model="form.requestBody" :language="form.rawType === 'javascript' ? 'javascript' : form.rawType === 'json' ? 'json' : 'text'" :min-height="320" placeholder="请输入请求体..." />
+          </div>
+          <div v-else-if="form.bodyType === 'graphql'" style="max-width: 800px">
+            <div class="body-editor-row" style="height: 240px">
+              <CodeEditor v-model="graphqlQuery" language="text" :min-height="200" placeholder="请输入 GraphQL Query" />
+            </div>
+            <div class="body-editor-row" style="height: 160px; margin-top: 12px">
+              <CodeEditor v-model="graphqlVariables" language="json" :min-height="120" placeholder="请输入 Variables（JSON）" />
+            </div>
+          </div>
+          <div v-else class="params-section" style="max-width: 800px">
+            <div class="section-head">
+              <h4>{{ form.bodyType === 'form_data' ? '表单参数' : form.bodyType === 'binary' ? '二进制参数' : '表单参数' }}</h4>
+              <el-button size="small" @click="addRow(bodyKvItems)">+ 添加参数</el-button>
+            </div>
+            <el-table :data="bodyKvItems" size="small" border>
+              <el-table-column label="参数名" width="200">
+                <template #default="{ row }"><el-input v-model="row.name" size="small" placeholder="参数名" /></template>
+              </el-table-column>
+              <el-table-column label="值">
+                <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="值" /></template>
+              </el-table-column>
+              <el-table-column label="操作" width="70">
+                <template #default="{ $index }">
+                  <el-button link size="small" type="danger" @click="removeRow(bodyKvItems, $index)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
           </div>
         </template>
       </el-tab-pane>
 
-      <!-- Tab: 响应参数 -->
-      <el-tab-pane label="响应参数" name="response">
+      <!-- Tab: 响应体 -->
+      <el-tab-pane label="响应体" name="response">
         <div style="height: 360px; max-width: 800px">
           <CodeEditor v-model="form.responseBody" language="javascript" :min-height="320" placeholder="请输入响应体示例..." />
         </div>
@@ -413,8 +590,44 @@ onMounted(() => {
           </div>
           <div v-if="form.httpMethod !== 'GET'" class="debug-params">
             <h4>请求体</h4>
-            <div style="height: 240px; max-width: 600px">
-              <CodeEditor v-model="debugBody" language="javascript" :min-height="200" placeholder="请输入请求体 JSON" />
+            <div class="body-type-row">
+              <el-radio-group v-model="debugBodyType" size="small">
+                <el-radio-button v-for="b in bodyTypeOptions" :key="b.value" :value="b.value">{{ b.label }}</el-radio-button>
+              </el-radio-group>
+              <el-select v-if="debugBodyType === 'raw'" v-model="debugRawType" size="small" style="width: 130px">
+                <el-option v-for="r in rawTypeOptions" :key="r.value" :value="r.value" :label="r.label" />
+              </el-select>
+            </div>
+            <div v-if="debugBodyType === 'none'" class="empty-hint">该接口无请求体</div>
+            <div v-else-if="debugBodyType === 'raw'" style="height: 240px; max-width: 600px">
+              <CodeEditor v-model="debugBody" :language="debugRawType === 'javascript' ? 'javascript' : debugRawType === 'json' ? 'json' : 'text'" :min-height="200" placeholder="请输入请求体" />
+            </div>
+            <div v-else-if="debugBodyType === 'graphql'" style="max-width: 600px">
+              <div class="body-editor-row" style="height: 180px">
+                <CodeEditor v-model="debugGraphqlQuery" language="text" :min-height="140" placeholder="请输入 GraphQL Query" />
+              </div>
+              <div class="body-editor-row" style="height: 120px; margin-top: 8px">
+                <CodeEditor v-model="debugGraphqlVariables" language="json" :min-height="80" placeholder="请输入 Variables（JSON）" />
+              </div>
+            </div>
+            <div v-else class="params-section" style="max-width: 600px">
+              <div class="section-head">
+                <h4>{{ debugBodyType === 'form_data' ? '表单参数' : '二进制参数' }}</h4>
+                <el-button size="small" @click="addRow(debugBodyKvItems)">+ 添加参数</el-button>
+              </div>
+              <el-table :data="debugBodyKvItems" size="small" border>
+                <el-table-column label="参数名" width="180">
+                  <template #default="{ row }"><el-input v-model="row.name" size="small" placeholder="参数名" /></template>
+                </el-table-column>
+                <el-table-column label="值">
+                  <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="值" /></template>
+                </el-table-column>
+                <el-table-column label="操作" width="70">
+                  <template #default="{ $index }">
+                    <el-button link size="small" type="danger" @click="removeRow(debugBodyKvItems, $index)">删除</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
             </div>
           </div>
           <div v-if="debugResult" class="debug-response">
@@ -519,6 +732,16 @@ onMounted(() => {
 }
 .debug-section {
   max-width: 900px;
+}
+.body-type-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.body-editor-row {
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
 }
 .debug-env-row {
   display: flex;

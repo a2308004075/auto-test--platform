@@ -38,4 +38,14 @@ public class ApiDebugRequest {
      * 请求体（JSON 字符串）
      */
     private String body;
+
+    /**
+     * 请求体格式：none/form_data/x_www_form_urlencoded/raw/binary/graphql
+     */
+    private String bodyType;
+
+    /**
+     * raw 子类型：text/javascript/json/html/xml
+     */
+    private String rawType;
 }

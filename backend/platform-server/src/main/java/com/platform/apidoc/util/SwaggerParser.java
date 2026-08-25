@@ -45,6 +45,8 @@ public class SwaggerParser {
         private String description;
         private String requestParams;   // JSON
         private String requestBody;     // JSON
+        private String bodyType;        // none/form_data/x_www_form_urlencoded/raw/binary/graphql
+        private String rawType;         // text/javascript/json/html/xml
         private String responseBody;    // JSON
         private String headers;         // JSON
         private String contentType;    // 默认 Content-Type
@@ -215,6 +217,11 @@ public class SwaggerParser {
             contentType = "application/x-www-form-urlencoded";
         }
 
+        // 根据 Content-Type 推断请求体格式
+        BodyTypeResult bodyTypeResult = resolveBodyType(contentType);
+        entry.setBodyType(bodyTypeResult.getBodyType());
+        entry.setRawType(bodyTypeResult.getRawType());
+
         // 将请求数据类型写入 Content-Type 请求头
         boolean hasContentType = false;
         for (Map<String, Object> h : headerParams) {
@@ -334,6 +341,54 @@ public class SwaggerParser {
     }
 
     /**
+     * 请求体格式推断结果
+     */
+    @Data
+    public static class BodyTypeResult {
+        private String bodyType;
+        private String rawType;
+    }
+
+    /**
+     * 根据 Content-Type 推断请求体格式
+     */
+    private static BodyTypeResult resolveBodyType(String contentType) {
+        BodyTypeResult result = new BodyTypeResult();
+        result.setBodyType("raw");
+        result.setRawType("json");
+        if (contentType == null) {
+            return result;
+        }
+        String ct = contentType.toLowerCase();
+        if (ct.contains("multipart/form-data")) {
+            result.setBodyType("form_data");
+            result.setRawType(null);
+        } else if (ct.contains("application/x-www-form-urlencoded")) {
+            result.setBodyType("x_www_form_urlencoded");
+            result.setRawType(null);
+        } else if (ct.contains("application/graphql")) {
+            result.setBodyType("graphql");
+            result.setRawType(null);
+        } else if (ct.contains("text/plain")) {
+            result.setBodyType("raw");
+            result.setRawType("text");
+        } else if (ct.contains("application/javascript") || ct.contains("text/javascript")) {
+            result.setBodyType("raw");
+            result.setRawType("javascript");
+        } else if (ct.contains("application/json")) {
+            result.setBodyType("raw");
+            result.setRawType("json");
+        } else if (ct.contains("text/html")) {
+            result.setBodyType("raw");
+            result.setRawType("html");
+        } else if (ct.contains("application/xml") || ct.contains("text/xml")) {
+            result.setBodyType("raw");
+            result.setRawType("xml");
+        }
+        return result;
+    }
+
+    /**
      * 将 ApiEntry 转为 Api 实体
      */
     public static Api toApiEntity(ApiEntry entry, Long projectId, Long moduleId) {
@@ -346,6 +401,8 @@ public class SwaggerParser {
         api.setPath(entry.getPath());
         api.setRequestParams(entry.getRequestParams());
         api.setRequestBody(entry.getRequestBody());
+        api.setBodyType(entry.getBodyType());
+        api.setRawType(entry.getRawType());
         api.setResponseBody(entry.getResponseBody());
         api.setHeaders(entry.getHeaders());
         api.setContentType(entry.getContentType());

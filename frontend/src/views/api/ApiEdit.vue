@@ -31,7 +31,6 @@ const modules = ref<any[]>([])
 const environments = ref<any[]>([])
 const { options: httpMethodOptions } = useDict('http_method')
 const { options: paramTypeOptions } = useDict('param_type')
-const { options: contentTypeOptions } = useDict('content_type')
 
 const form = reactive({
   name: '', httpMethod: 'GET', path: '', service: '', moduleId: null as number | null,
@@ -97,6 +96,9 @@ function syncToForm() {
   form.headers = JSON.stringify(headerParams.value)
   form.responseBody = JSON.stringify(responseFields.value)
   form.requestBody = bodyText.value
+  // Content-Type 统一在 Header 参数 tab 管理，同步回 form.contentType 保持后端兼容
+  const ct = headerParams.value.find((h: any) => h.name && h.name.toLowerCase() === 'content-type')
+  form.contentType = ct ? (ct.value || '') : ''
 }
 
 watch([queryParams, headerParams, responseFields, bodyText], syncToForm, { deep: true })
@@ -141,6 +143,13 @@ async function fetchApi() {
     headerParams.value = parseArr(form.headers)
     responseFields.value = parseArr(form.responseBody)
     bodyText.value = form.requestBody || '{}'
+    // 将 contentType 合并到 headerParams（统一在 Header 参数 tab 管理）
+    if (form.contentType) {
+      const hasCT = headerParams.value.some((h: any) => h.name && h.name.toLowerCase() === 'content-type')
+      if (!hasCT) {
+        headerParams.value.unshift({ name: 'Content-Type', type: 'string', required: false, description: '内容类型', value: form.contentType })
+      }
+    }
   } catch { ElMessage.error('加载接口失败') } finally { loading.value = false }
 }
 
@@ -218,6 +227,10 @@ onMounted(() => {
   fetchModules()
   fetchEnvironments()
   fetchApi()
+  // 新建时自动添加 Content-Type 到 Header 参数
+  if (!isEdit.value) {
+    headerParams.value.push({ name: 'Content-Type', type: 'string', required: false, description: '内容类型', value: form.contentType })
+  }
 })
 </script>
 
@@ -273,12 +286,6 @@ onMounted(() => {
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-form-item label="Content-Type">
-              <el-select v-model="form.contentType" filterable allow-create default-first-option
-                         placeholder="选择或输入 Content-Type" style="width: 100%; max-width: 400px">
-                <el-option v-for="t in contentTypeOptions" :key="t.value" :value="t.value" :label="t.label" />
-              </el-select>
-            </el-form-item>
             <el-form-item label="描述">
               <el-input v-model="form.description" type="textarea" :rows="2" placeholder="接口描述（可选）" />
             </el-form-item>

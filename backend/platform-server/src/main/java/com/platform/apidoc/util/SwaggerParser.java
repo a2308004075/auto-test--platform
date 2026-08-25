@@ -345,6 +345,7 @@ public class SwaggerParser {
         api.setRequestBody(entry.getRequestBody());
         api.setResponseBody(entry.getResponseBody());
         api.setHeaders(entry.getHeaders());
+        api.setContentType(entry.getContentType());
         api.setDescription(entry.getDescription());
         api.setSourceType("SWAGGER_IMPORT");
         api.setSwaggerOperationId(entry.getOperationId());

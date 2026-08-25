@@ -836,11 +836,15 @@ public class ApiService {
                 }
             }
 
-            // 默认请求头优先级高于已有同名请求头（用户显式配置，同步时覆盖旧值）
+            // 默认请求头优先级高于已有同名请求头（用户显式配置，同步时覆盖旧值），
+            // 但 Content-Type 除外：它由 Swagger 规范的 requestBody/consumes 决定，默认请求头不应介入
             Set<String> defaultNames = new HashSet<>();
             for (Map<String, Object> h : defaultHeaders) {
                 Object name = h.get("name");
                 if (name != null) {
+                    if ("Content-Type".equalsIgnoreCase(name.toString())) {
+                        continue;
+                    }
                     defaultNames.add(name.toString().toLowerCase());
                 }
             }
@@ -849,7 +853,13 @@ public class ApiService {
                 return name != null && defaultNames.contains(name.toString().toLowerCase());
             });
 
-            headers.addAll(defaultHeaders);
+            for (Map<String, Object> h : defaultHeaders) {
+                Object name = h.get("name");
+                if (name != null && "Content-Type".equalsIgnoreCase(name.toString())) {
+                    continue;
+                }
+                headers.add(h);
+            }
             return headers.isEmpty() ? null : objectMapper.writeValueAsString(headers);
         } catch (Exception e) {
             log.warn("合并默认请求头失败: {}", e.getMessage());

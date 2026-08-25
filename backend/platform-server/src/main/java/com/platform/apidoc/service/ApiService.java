@@ -423,7 +423,7 @@ public class ApiService {
                 break;
             } catch (BusinessException e) {
                 lastException = e;
-                log.warn("Swagger 同步尝试失败 [{}]: {}", actualUrl, e.getMessage());
+                log.debug("Swagger 同步尝试失败 [{}]: {}", actualUrl, e.getMessage());
             }
         }
         if (swaggerJson == null) {
@@ -503,7 +503,7 @@ public class ApiService {
             int statusCode = conn.getResponseCode();
             if (statusCode < 200 || statusCode >= 300) {
                 String errorBody = readStream(conn.getErrorStream());
-                log.warn("Swagger 同步远端返回非 2xx [{}] status={}, body={}", actualUrl, statusCode, errorBody);
+                log.debug("Swagger 同步远端返回非 2xx [{}] status={}, body={}", actualUrl, statusCode, errorBody);
                 throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
                         "HTTP 状态码：" + statusCode + ", 响应：" + errorBody);
             }
@@ -520,7 +520,7 @@ public class ApiService {
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.warn("从 URL 获取 OpenAPI/Swagger 文档失败 [{}]: {}", actualUrl, e.getMessage());
+            log.debug("从 URL 获取 OpenAPI/Swagger 文档失败 [{}]: {}", actualUrl, e.getMessage());
             throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, e.getMessage());
         }
     }
@@ -702,7 +702,7 @@ public class ApiService {
                 int code = codeNode.isNumber() ? codeNode.intValue() : -1;
                 if (code != 0 && code != 200) {
                     String message = root.has("message") ? root.get("message").asText() : "未知错误";
-                    log.warn("Swagger 同步检测到业务级错误 [{}] code={}, message={}", actualUrl, code, message);
+                    log.debug("Swagger 同步检测到业务级错误 [{}] code={}, message={}", actualUrl, code, message);
                     throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
                             "服务端返回业务错误（code=" + code + "）：" + message);
                 }

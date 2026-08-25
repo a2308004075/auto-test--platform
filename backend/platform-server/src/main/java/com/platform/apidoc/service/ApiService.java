@@ -145,6 +145,9 @@ public class ApiService {
         if (request.getHeaders() != null) {
             api.setHeaders(request.getHeaders());
         }
+        if (request.getContentType() != null) {
+            api.setContentType(request.getContentType());
+        }
         if (request.getDescription() != null) {
             api.setDescription(request.getDescription());
         }
@@ -286,6 +289,7 @@ public class ApiService {
                 existingApi.setRequestBody(entry.getRequestBody());
                 existingApi.setResponseBody(entry.getResponseBody());
                 existingApi.setHeaders(entry.getHeaders());
+                existingApi.setContentType(entry.getContentType());
                 existingApi.setDescription(entry.getDescription());
                 apiMapper.updateById(existingApi);
                 updated++;
@@ -365,7 +369,8 @@ public class ApiService {
                     conn.setRequestProperty(entry.getKey(), entry.getValue());
                 }
             }
-            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Content-Type",
+                    api.getContentType() != null ? api.getContentType() : "application/json");
 
             // 发送请求体
             if (request.getBody() != null && !request.getBody().isEmpty()) {

@@ -57,6 +57,11 @@ public class ApiCreateRequest {
      */
     private String headers;
 
+    /**
+     * 默认 Content-Type
+     */
+    private String contentType;
+
     @Size(max = 2000, message = "描述长度不能超过 2000")
     private String description;
 }

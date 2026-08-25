@@ -32,6 +32,7 @@ public class ApiUpdateRequest {
     private String requestBody;
     private String responseBody;
     private String headers;
+    private String contentType;
 
     @Size(max = 2000, message = "描述长度不能超过 2000")
     private String description;

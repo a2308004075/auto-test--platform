@@ -47,6 +47,7 @@ public class SwaggerParser {
         private String requestBody;     // JSON
         private String responseBody;    // JSON
         private String headers;         // JSON
+        private String contentType;    // 默认 Content-Type
     }
 
     /**
@@ -211,6 +212,7 @@ public class SwaggerParser {
 
         // 将请求数据类型写入 Content-Type 请求头
         if (contentType != null) {
+            entry.setContentType(contentType);
             boolean hasContentType = false;
             for (Map<String, Object> h : headerParams) {
                 if ("Content-Type".equalsIgnoreCase((String) h.get("name"))) {
@@ -344,6 +346,7 @@ public class SwaggerParser {
         api.setRequestBody(entry.getRequestBody());
         api.setResponseBody(entry.getResponseBody());
         api.setHeaders(entry.getHeaders());
+        api.setContentType(entry.getContentType());
         api.setDescription(entry.getDescription());
         api.setSourceType("SWAGGER_IMPORT");
         api.setSwaggerOperationId(entry.getOperationId());

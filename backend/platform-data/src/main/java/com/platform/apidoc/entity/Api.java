@@ -53,6 +53,11 @@ public class Api extends BaseEntity {
      */
     private String headers;
 
+    /**
+     * 默认 Content-Type（如 application/json、application/x-www-form-urlencoded）
+     */
+    private String contentType;
+
     private String description;
 
     /**

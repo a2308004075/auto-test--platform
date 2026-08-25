@@ -31,10 +31,12 @@ const modules = ref<any[]>([])
 const environments = ref<any[]>([])
 const { options: httpMethodOptions } = useDict('http_method')
 const { options: paramTypeOptions } = useDict('param_type')
+const { options: contentTypeOptions } = useDict('content_type')
 
 const form = reactive({
   name: '', httpMethod: 'GET', path: '', service: '', moduleId: null as number | null,
   description: '', requestParams: '[]', requestBody: '{}', responseBody: '[]', headers: '[]',
+  contentType: 'application/json',
   sourceType: 'MANUAL',
 })
 
@@ -271,6 +273,12 @@ onMounted(() => {
                 </el-form-item>
               </el-col>
             </el-row>
+            <el-form-item label="Content-Type">
+              <el-select v-model="form.contentType" filterable allow-create default-first-option
+                         placeholder="选择或输入 Content-Type" style="width: 100%; max-width: 400px">
+                <el-option v-for="t in contentTypeOptions" :key="t.value" :value="t.value" :label="t.label" />
+              </el-select>
+            </el-form-item>
             <el-form-item label="描述">
               <el-input v-model="form.description" type="textarea" :rows="2" placeholder="接口描述（可选）" />
             </el-form-item>

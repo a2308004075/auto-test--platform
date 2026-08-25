@@ -27,6 +27,7 @@ public class ApiInfoResponse {
     private String requestBody;
     private String responseBody;
     private String headers;
+    private String contentType;
     private String description;
     private String sourceType;
     private String swaggerOperationId;

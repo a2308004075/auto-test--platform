@@ -114,6 +114,8 @@ public class ApiService {
         BeanUtils.copyProperties(request, api);
         api.setSourceType("MANUAL");
 
+        api.setRequestBody(sanitizeJson(api.getRequestBody()));
+        api.setResponseBody(sanitizeJson(api.getResponseBody()));
         apiMapper.insert(api);
         Map<Long, ApiModule> moduleMap = apiModuleService.getModuleMap(api.getProjectId());
         return toResponse(api, moduleMap);
@@ -165,6 +167,8 @@ public class ApiService {
             api.setDescription(request.getDescription());
         }
 
+        api.setRequestBody(sanitizeJson(api.getRequestBody()));
+        api.setResponseBody(sanitizeJson(api.getResponseBody()));
         apiMapper.updateById(api);
         Map<Long, ApiModule> moduleMap = apiModuleService.getModuleMap(api.getProjectId());
         return toResponse(api, moduleMap);
@@ -414,6 +418,7 @@ public class ApiService {
             ApiDebugResponse response = new ApiDebugResponse();
             response.setStatusCode(statusCode);
             response.setStatusText(conn.getResponseMessage());
+            response.setRequestUrl(urlBuilder.toString());
             response.setResponseBody(responseBody);
             response.setResponseTimeMs(elapsed);
             response.setResponseSizeBytes((long) responseBody.getBytes(StandardCharsets.UTF_8).length);
@@ -817,6 +822,23 @@ public class ApiService {
             throw new BusinessException(ErrorCode.API_NOT_FOUND, "接口不存在：" + apiId);
         }
         return api;
+    }
+
+    /**
+     * 确保值为合法 JSON，否则包装为 JSON 字符串（MySQL JSON 列不接受非 JSON 文本）
+     */
+    private String sanitizeJson(String value) {
+        if (!StringUtils.hasText(value)) return value;
+        try {
+            objectMapper.readTree(value);
+            return value;
+        } catch (Exception e) {
+            try {
+                return objectMapper.writeValueAsString(value);
+            } catch (Exception ex) {
+                return null;
+            }
+        }
     }
 
     private ApiInfoResponse toResponse(Api api, Map<Long, ApiModule> moduleMap) {

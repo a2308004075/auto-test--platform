@@ -17,6 +17,7 @@ public class ApiDebugResponse {
 
     private Integer statusCode;
     private String statusText;
+    private String requestUrl;
     private Map<String, String> responseHeaders;
     private String responseBody;
     private Long responseTimeMs;

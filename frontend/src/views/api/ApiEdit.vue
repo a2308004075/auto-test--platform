@@ -287,10 +287,21 @@ async function fetchApi() {
       form.requestBody = schemaToExampleString(JSON.parse(form.requestBody))
       form.bodyType = 'raw'
       form.rawType = 'json'
+    } else {
+      // 解包后端 sanitizeJson 包装的纯文本（"plain text" → plain text）
+      try {
+        const parsed = JSON.parse(form.requestBody)
+        if (typeof parsed === 'string') form.requestBody = parsed
+      } catch { /* already valid object/array or not JSON */ }
     }
     if (!form.responseBody) form.responseBody = '{}'
     if (looksLikeSchema(form.responseBody)) {
       form.responseBody = schemaToExampleString(JSON.parse(form.responseBody))
+    } else {
+      try {
+        const parsed = JSON.parse(form.responseBody)
+        if (typeof parsed === 'string') form.responseBody = parsed
+      } catch { /* ignore */ }
     }
     queryParams.value = parseArr(form.requestParams)
     headerParams.value = parseArr(form.headers)
@@ -375,6 +386,10 @@ function initDebugParams() {
   debugBody.value = form.requestBody || defaultRequestBody(debugBodyType.value)
 }
 async function sendDebug() {
+  if (!debugEnvId.value) {
+    ElMessage.warning('请选择环境')
+    return
+  }
   debugLoading.value = true
   debugResult.value = null
   try {
@@ -712,6 +727,9 @@ onMounted(() => {
               <span v-if="debugResult.responseTimeMs" class="resp-meta">耗时: {{ debugResult.responseTimeMs }}ms</span>
               <span v-if="debugResult.responseSize" class="resp-meta">大小: {{ debugResult.responseSize }}</span>
             </div>
+            <div v-if="debugResult.requestUrl" class="resp-request-url">
+              <span class="resp-meta">请求 URL: {{ debugResult.requestUrl }}</span>
+            </div>
             <el-tabs v-model="debugRespTab">
               <el-tab-pane label="响应体" name="body">
                 <pre class="resp-body-code">{{ formatDebugBody(debugResult) }}</pre>
@@ -851,6 +869,10 @@ onMounted(() => {
 .resp-meta {
   font-size: 12px;
   color: #909399;
+}
+.resp-request-url {
+  margin-bottom: 8px;
+  word-break: break-all;
 }
 .resp-body-code {
   background: #f5f7fa;

@@ -699,7 +699,11 @@ public class ApiService {
         for (String line : headersText.split("\n")) {
             line = line.trim();
             if (line.isEmpty()) continue;
+            // 同时支持英文冒号 ':' 和中文全角冒号 '：'，避免用户复制粘贴时格式错误
             int idx = line.indexOf(':');
+            if (idx < 0) {
+                idx = line.indexOf('：');
+            }
             if (idx > 0) {
                 headers.put(line.substring(0, idx).trim(), line.substring(idx + 1).trim());
             } else {

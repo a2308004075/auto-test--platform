@@ -11,6 +11,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { QuestionFilled } from '@element-plus/icons-vue'
 import {
   getSyncConfigs, createSyncConfig, updateSyncConfig, deleteSyncConfig,
   syncOneConfig, syncAllConfigs, getModules,
@@ -57,6 +58,35 @@ const formMode = ref<'add' | 'edit'>('add')
 const form = reactive({ id: null as number | null, name: '', url: '', moduleId: null as number | null, headers: '', authUsername: '', authPassword: '' })
 const saving = ref(false)
 
+// 默认请求头键值对编辑（界面友好，保存时序列化为 Key: Value 文本）
+const headerPairs = ref<{ key: string; value: string }[]>([])
+
+function parseHeadersText(text?: string): { key: string; value: string }[] {
+  if (!text) return []
+  const pairs: { key: string; value: string }[] = []
+  for (const raw of text.split('\n')) {
+    const line = raw.trim()
+    if (!line) continue
+    const idx = line.indexOf(':')
+    if (idx > 0) {
+      pairs.push({ key: line.substring(0, idx).trim(), value: line.substring(idx + 1).trim() })
+    }
+  }
+  return pairs
+}
+
+function buildHeadersText(pairs: { key: string; value: string }[]): string {
+  return pairs.filter(p => p.key.trim()).map(p => `${p.key.trim()}: ${p.value}`).join('\n')
+}
+
+function addHeaderRow() {
+  headerPairs.value.push({ key: '', value: '' })
+}
+
+function removeHeaderRow(idx: number) {
+  headerPairs.value.splice(idx, 1)
+}
+
 function openAdd() {
   formMode.value = 'add'
   form.id = null
@@ -64,6 +94,7 @@ function openAdd() {
   form.url = ''
   form.moduleId = null
   form.headers = ''
+  headerPairs.value = []
   form.authUsername = ''
   form.authPassword = ''
   formVisible.value = true
@@ -76,6 +107,7 @@ function openEdit(row: any) {
   form.url = row.url
   form.moduleId = row.moduleId
   form.headers = row.headers || ''
+  headerPairs.value = parseHeadersText(row.headers)
   form.authUsername = row.authUsername || ''
   form.authPassword = row.authPassword || ''
   formVisible.value = true
@@ -87,9 +119,10 @@ async function handleSave() {
   if (!form.moduleId) { ElMessage.warning('请选择目标分组'); return }
   saving.value = true
   try {
+    const headersText = buildHeadersText(headerPairs.value)
     const data = {
       name: form.name, url: form.url, moduleId: form.moduleId!,
-      headers: form.headers || undefined,
+      headers: headersText || undefined,
       authUsername: form.authUsername || undefined,
       authPassword: form.authPassword || undefined,
     }
@@ -187,7 +220,16 @@ onMounted(() => {
     </el-table>
 
     <!-- 新增/编辑同步配置 -->
-    <el-dialog v-model="formVisible" :title="formMode === 'add' ? '新增同步配置' : '编辑同步配置'" width="520px" destroy-on-close append-to-body>
+    <el-dialog v-model="formVisible" width="520px" destroy-on-close append-to-body>
+      <template #header>
+        <span>{{ formMode === 'add' ? '新增同步配置' : '编辑同步配置' }}</span>
+        <el-tooltip
+          content="认证账号/密码仅用于拉取 Swagger 文档；默认请求头会在导入后附加到各接口。系统将自动从 URL 拉取 OpenAPI/Swagger JSON 文档（支持 doc.html 自动探测），以增量方式导入到选定分组。"
+          placement="top"
+        >
+          <el-icon style="margin-left: 8px; vertical-align: middle; cursor: pointer"><QuestionFilled /></el-icon>
+        </el-tooltip>
+      </template>
       <el-form label-position="top">
         <el-form-item label="配置名称" required>
           <el-input v-model="form.name" placeholder="如：测试环境-用户服务" clearable />
@@ -206,13 +248,31 @@ onMounted(() => {
         <el-form-item label="认证密码（可选）">
           <el-input v-model="form.authPassword" type="password" show-password placeholder="用于拉取 Swagger 文档的 Basic Auth 密码" clearable />
         </el-form-item>
-        <el-form-item label="默认请求头（可选）">
-          <el-input v-model="form.headers" type="textarea" :rows="3" placeholder="导入后统一附加到各接口的请求头&#10;每行一个，格式：Key: Value&#10;如 Authorization: ${authorization}" />
+        <el-form-item>
+          <template #label>
+            <span>默认请求头（可选）</span>
+            <el-button size="small" type="primary" @click="addHeaderRow" style="margin-left: 8px">+ 添加请求头</el-button>
+          </template>
+          <div class="header-pairs-section">
+            <div class="header-pairs-header">
+              <span class="header-key-col">请求头 Key</span>
+              <span class="header-value-col">请求头 Value</span>
+              <span class="header-action-col">操作</span>
+            </div>
+            <div v-for="(row, idx) in headerPairs" :key="idx" class="header-pair-row">
+              <div class="header-key-col">
+                <el-input v-model="row.key" size="small" placeholder="如 Authorization" />
+              </div>
+              <div class="header-value-col">
+                <el-input v-model="row.value" size="small" placeholder="如 ${authorization}" />
+              </div>
+              <div class="header-action-col">
+                <el-button link size="small" type="danger" @click="removeHeaderRow(idx)">删除</el-button>
+              </div>
+            </div>
+          </div>
         </el-form-item>
       </el-form>
-      <div style="color: #909399; font-size: 12px; margin-top: -8px">
-        认证账号/密码仅用于拉取 Swagger 文档；默认请求头会在导入后附加到各接口。系统将自动从 URL 拉取 OpenAPI/Swagger JSON 文档（支持 doc.html 自动探测），以增量方式导入到选定分组。
-      </div>
       <template #footer>
         <el-button @click="formVisible = false">取消</el-button>
         <el-button type="primary" :loading="saving" @click="handleSave">保存</el-button>
@@ -220,3 +280,44 @@ onMounted(() => {
     </el-dialog>
   </div>
 </template>
+<style scoped>
+.header-pairs-section {
+  width: 100%;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.header-pairs-header,
+.header-pair-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #ebeef5;
+}
+.header-pairs-header {
+  background-color: #f5f7fa;
+  color: #606266;
+  font-size: 13px;
+  font-weight: 500;
+}
+.header-pair-row:last-child {
+  border-bottom: none;
+}
+.header-key-col {
+  width: 35%;
+  min-width: 140px;
+  flex-shrink: 0;
+  padding-right: 12px;
+}
+.header-value-col {
+  flex: 1;
+  min-width: 140px;
+  padding-right: 12px;
+}
+.header-action-col {
+  width: 70px;
+  flex-shrink: 0;
+  text-align: center;
+}
+</style>

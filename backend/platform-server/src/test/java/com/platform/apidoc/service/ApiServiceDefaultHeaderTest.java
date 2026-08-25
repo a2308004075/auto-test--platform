@@ -176,4 +176,31 @@ class ApiServiceDefaultHeaderTest {
         assertEquals("Authorization: ${authorization}\nX-Request-Source: swagger", saved.getHeaders(),
                 "默认请求头文本应原样持久化");
     }
+
+    @Test
+    void parseHeadersText_supportsChineseColon() throws Exception {
+        ApiMapper apiMapper = mock(ApiMapper.class);
+        ApiKeywordMapper apiKeywordMapper = mock(ApiKeywordMapper.class);
+        KeywordMapper keywordMapper = mock(KeywordMapper.class);
+        ProjectService projectService = mock(ProjectService.class);
+        EnvironmentService environmentService = mock(EnvironmentService.class);
+        ApiModuleService apiModuleService = mock(ApiModuleService.class);
+        ApiSyncConfigMapper apiSyncConfigMapper = mock(ApiSyncConfigMapper.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        ApiService apiService = new ApiService(
+                apiMapper, apiKeywordMapper, keywordMapper,
+                projectService, environmentService, apiModuleService,
+                apiSyncConfigMapper, objectMapper
+        );
+
+        java.lang.reflect.Method method = ApiService.class.getDeclaredMethod("parseHeadersText", String.class);
+        method.setAccessible(true);
+
+        @SuppressWarnings("unchecked")
+        Map<String, String> result = (Map<String, String>) method.invoke(apiService, "Authorization：${authorization}");
+
+        assertNotNull(result);
+        assertEquals("${authorization}", result.get("Authorization"));
+    }
 }

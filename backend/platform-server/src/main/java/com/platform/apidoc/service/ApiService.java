@@ -454,9 +454,15 @@ public class ApiService {
         }
 
         List<String> candidates = new ArrayList<>();
-        // 如果不包含 doc.html，视为已是 JSON 端点，直接返回
+        // 如果不包含 doc.html，视为已是 JSON 端点，直接返回并附加 v2/v3 互备候选
         if (!url.contains("doc.html")) {
             candidates.add(url);
+            // 如果填的是 v3 端点，自动加 v2 作为后备（反之亦然）
+            if (url.contains("/v3/api-docs")) {
+                candidates.add(url.replace("/v3/api-docs", "/v2/api-docs"));
+            } else if (url.contains("/v2/api-docs")) {
+                candidates.add(url.replace("/v2/api-docs", "/v3/api-docs"));
+            }
             return candidates;
         }
 
@@ -505,6 +511,10 @@ public class ApiService {
             String body = readStream(conn.getInputStream());
             String preview = body.length() > 500 ? body.substring(0, 500) + "..." : body;
             log.info("Swagger 文档响应 [{}] status={}, 内容预览={}", actualUrl, statusCode, preview);
+
+            // 检测业务级错误响应（HTTP 200 但 body 是 {"code":401,"message":"..."} 之类的包装错误）
+            checkBusinessErrorResponse(body, actualUrl);
+
             validateSwaggerJson(body, actualUrl);
             return body;
         } catch (BusinessException e) {
@@ -678,6 +688,30 @@ public class ApiService {
             return headers;
         }
         return null;
+    }
+
+    /**
+     * 检测业务级错误响应：某些网关/应用在认证失败时返回 HTTP 200 + JSON 包装错误（如 {"code":401,"message":"..."}）
+     * 检测到此类响应时抛出异常，以便调用方继续尝试下一个候选 URL
+     */
+    private void checkBusinessErrorResponse(String body, String actualUrl) {
+        try {
+            JsonNode root = objectMapper.readTree(body);
+            if (root.has("code")) {
+                JsonNode codeNode = root.get("code");
+                int code = codeNode.isNumber() ? codeNode.intValue() : -1;
+                if (code != 0 && code != 200) {
+                    String message = root.has("message") ? root.get("message").asText() : "未知错误";
+                    log.warn("Swagger 同步检测到业务级错误 [{}] code={}, message={}", actualUrl, code, message);
+                    throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR,
+                            "服务端返回业务错误（code=" + code + "）：" + message);
+                }
+            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            // JSON 解析失败，交给后续 validateSwaggerJson 处理
+        }
     }
 
     private void validateSwaggerJson(String body, String actualUrl) {

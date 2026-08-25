@@ -6,7 +6,7 @@
 <script setup lang="ts">
 /**
  * 接口编辑/新建 - M4
- * 6 Tab：基础信息 / 请求参数 / 请求体 / 响应定义 / 调试 / 引用关系
+ * 7 Tab：基础信息 / Header 参数 / 请求参数 / 请求体 / 响应定义 / 调试 / 引用关系
  * 对齐原型 api-edit.html（请求参数/响应改为可视化表格编辑，数据仍序列化为 JSON 存储）
  */
 import { ref, reactive, onMounted, computed, watch } from 'vue'
@@ -278,6 +278,42 @@ onMounted(() => {
         </el-card>
       </el-tab-pane>
 
+      <!-- Tab: Header 参数 -->
+      <el-tab-pane label="Header 参数" name="headers">
+        <div class="params-section">
+          <div class="section-head">
+            <h4>Header 参数</h4>
+            <el-button size="small" @click="addRow(headerParams)">+ 添加参数</el-button>
+          </div>
+          <el-table :data="headerParams" size="small" border>
+            <el-table-column label="参数名" width="180">
+              <template #default="{ row }"><el-input v-model="row.name" size="small" placeholder="如 Authorization" /></template>
+            </el-table-column>
+            <el-table-column label="类型" width="120">
+              <template #default="{ row }">
+                <el-select v-model="row.type" size="small">
+                  <el-option v-for="t in paramTypeOptions" :key="t.value" :value="t.value" :label="t.label" />
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column label="必填" width="70">
+              <template #default="{ row }"><el-switch v-model="row.required" /></template>
+            </el-table-column>
+            <el-table-column label="值" min-width="300">
+              <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="如 application/json" /></template>
+            </el-table-column>
+            <el-table-column label="说明" width="160">
+              <template #default="{ row }"><el-input v-model="row.description" size="small" /></template>
+            </el-table-column>
+            <el-table-column label="操作" width="70">
+              <template #default="{ $index }">
+                <el-button link size="small" type="danger" @click="removeRow(headerParams, $index)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </el-tab-pane>
+
       <!-- Tab: 请求参数 -->
       <el-tab-pane label="请求参数" name="params">
         <div class="params-section">
@@ -314,38 +350,6 @@ onMounted(() => {
             <el-table-column label="操作" width="70">
               <template #default="{ $index }">
                 <el-button link size="small" type="danger" @click="removeRow(queryParams, $index)">删除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
-        <div class="params-section">
-          <div class="section-head">
-            <h4>Header 参数</h4>
-            <el-button size="small" @click="addRow(headerParams)">+ 添加参数</el-button>
-          </div>
-          <el-table :data="headerParams" size="small" border>
-            <el-table-column label="参数名" width="180">
-              <template #default="{ row }"><el-input v-model="row.name" size="small" placeholder="如 Authorization" /></template>
-            </el-table-column>
-            <el-table-column label="类型" width="120">
-              <template #default="{ row }">
-                <el-select v-model="row.type" size="small">
-                  <el-option v-for="t in paramTypeOptions" :key="t.value" :value="t.value" :label="t.label" />
-                </el-select>
-              </template>
-            </el-table-column>
-            <el-table-column label="必填" width="70">
-              <template #default="{ row }"><el-switch v-model="row.required" /></template>
-            </el-table-column>
-            <el-table-column label="值" min-width="300">
-              <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="如 application/json" /></template>
-            </el-table-column>
-            <el-table-column label="说明" width="160">
-              <template #default="{ row }"><el-input v-model="row.description" size="small" /></template>
-            </el-table-column>
-            <el-table-column label="操作" width="70">
-              <template #default="{ $index }">
-                <el-button link size="small" type="danger" @click="removeRow(headerParams, $index)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -424,7 +428,7 @@ onMounted(() => {
       </el-tab-pane>
 
       <!-- Tab: 调试 -->
-      <el-tab-pane label="调试" name="debug" :disabled="!isEdit">
+      <el-tab-pane v-if="isEdit" label="调试" name="debug">
         <el-card shadow="never" style="max-width: 900px">
           <div class="debug-env-row">
             <span class="debug-label">选择环境：</span>
@@ -490,7 +494,7 @@ onMounted(() => {
       </el-tab-pane>
 
       <!-- Tab: 引用关系 -->
-      <el-tab-pane label="引用关系" name="refs" :disabled="!isEdit">
+      <el-tab-pane v-if="isEdit" label="引用关系" name="refs">
         <div class="refs-header">
           <h4 style="margin: 0; font-size: 14px; font-weight: 600">接口关键字引用</h4>
           <el-tag v-if="references.length" type="primary" size="small">{{ references.length }} 个引用</el-tag>

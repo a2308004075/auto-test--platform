@@ -245,10 +245,6 @@ onMounted(() => {
             <el-option v-for="m in modules.filter((x: any) => x.isSystem !== 1 || x.name === '未分类')" :key="m.id" :value="m.id" :label="m.name" />
           </el-select>
         </el-form-item>
-        <el-form-item label="导入附加默认 host（可选）">
-          <el-input v-model="form.hostPrefix" placeholder="如 ${host}" clearable />
-          <div class="form-item-hint">导入时附加到各接口 URL 前，支持 ${变量} 占位符，留空不附加</div>
-        </el-form-item>
         <el-form-item label="认证账号（可选）">
           <el-input v-model="form.authUsername" placeholder="用于拉取 Swagger 文档的 Basic Auth 账号" clearable />
         </el-form-item>
@@ -257,7 +253,7 @@ onMounted(() => {
         </el-form-item>
         <el-form-item>
           <template #label>
-            <span>默认请求头（可选）</span>
+            <span>导入附加请求头（可选）</span>
             <el-button size="small" type="primary" @click="addHeaderRow" style="margin-left: 8px">+ 添加请求头</el-button>
           </template>
           <div class="header-pairs-section">
@@ -278,6 +274,10 @@ onMounted(() => {
               </div>
             </div>
           </div>
+        </el-form-item>
+        <el-form-item label="导入附加默认 host（可选）">
+          <el-input v-model="form.hostPrefix" placeholder="如 ${host}" clearable />
+          <div class="form-item-hint">导入时附加到各接口 URL 前，支持 ${变量} 占位符，留空不附加</div>
         </el-form-item>
       </el-form>
       <template #footer>

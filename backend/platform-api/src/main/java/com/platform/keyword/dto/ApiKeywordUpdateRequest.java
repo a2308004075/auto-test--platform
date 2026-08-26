@@ -26,6 +26,11 @@ public class ApiKeywordUpdateRequest {
     private String responseAssertion;
 
     /**
+     * 接口关键字分组 ID
+     */
+    private Long groupId;
+
+    /**
      * 分类
      */
     private String category;

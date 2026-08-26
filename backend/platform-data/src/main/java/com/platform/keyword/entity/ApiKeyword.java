@@ -26,6 +26,11 @@ public class ApiKeyword extends BaseEntity {
     private Long apiId;
 
     /**
+     * 接口关键字分组 ID
+     */
+    private Long groupId;
+
+    /**
      * 测试数据（JSON 格式）
      */
     private String testData;

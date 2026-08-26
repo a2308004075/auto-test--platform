@@ -39,9 +39,10 @@ public class ApiKeywordController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) Long moduleId,
+            @RequestParam(required = false) Long groupId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.ok(apiKeywordService.list(projectId, keyword, category, moduleId, page, pageSize));
+        return ApiResponse.ok(apiKeywordService.list(projectId, keyword, category, moduleId, groupId, page, pageSize));
     }
 
     /**

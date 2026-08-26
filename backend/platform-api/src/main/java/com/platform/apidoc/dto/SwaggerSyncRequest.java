@@ -41,6 +41,11 @@ public class SwaggerSyncRequest {
     private Map<String, String> defaultHeaders;
 
     /**
+     * 导入附加默认 host 前缀（可选，如 ${host}，附加到各接口 URL 前）
+     */
+    private String hostPrefix;
+
+    /**
      * 项目 ID（由 Controller 层注入）
      */
     private Long projectId;

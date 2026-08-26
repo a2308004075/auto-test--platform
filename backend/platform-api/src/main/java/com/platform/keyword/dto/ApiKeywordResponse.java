@@ -57,6 +57,16 @@ public class ApiKeywordResponse {
     private String moduleName;
 
     /**
+     * 接口关键字分组 ID
+     */
+    private Long groupId;
+
+    /**
+     * 接口关键字分组名称
+     */
+    private String groupName;
+
+    /**
      * 引用次数（被 Action / 用例引用的次数）
      */
     private Integer referenceCount;

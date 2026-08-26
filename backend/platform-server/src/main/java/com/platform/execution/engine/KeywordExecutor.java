@@ -162,8 +162,21 @@ public class KeywordExecutor {
             body = api.getRequestBody();
         }
 
-        // 路径参数替换（step.params 中的路径变量）
+        // 前导 ${var} host 占位符保持在最前，不参与路径参数替换（替代 baseUrl 的 host）
         String path = api.getPath();
+        String leadingPlaceholder = "";
+        if (path.startsWith("${")) {
+            int end = path.indexOf('}');
+            if (end > 0) {
+                leadingPlaceholder = path.substring(0, end + 1);
+                path = path.substring(end + 1);
+                if (!path.startsWith("/")) {
+                    path = "/" + path;
+                }
+            }
+        }
+
+        // 路径参数替换（step.params 中的路径变量）
         if (step.getParams() != null) {
             for (Map.Entry<String, Object> entry : step.getParams().entrySet()) {
                 String placeholder = "{" + entry.getKey() + "}";
@@ -174,7 +187,7 @@ public class KeywordExecutor {
         }
 
         // 拼接服务前缀与路径
-        String fullPath = joinPath(servicePrefix, path);
+        String fullPath = leadingPlaceholder + joinPath(servicePrefix, path);
 
         // 发送 HTTP 请求
         StepResult result = httpClientEngine.execute(

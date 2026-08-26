@@ -40,3 +40,20 @@ export function debugKeyword(projectId: number, keywordId: number, data: { envir
 export function getKeywordDependencies(projectId: number, keywordId: number) {
   return request.get(`/v1/projects/${projectId}/keywords/${keywordId}/dependencies`)
 }
+
+// 接口关键字分组
+export function getKeywordGroups(projectId: number) {
+  return request.get(`/v1/projects/${projectId}/keyword-groups`)
+}
+
+export function createKeywordGroup(projectId: number, data: any) {
+  return request.post(`/v1/projects/${projectId}/keyword-groups`, data)
+}
+
+export function updateKeywordGroup(projectId: number, groupId: number, data: any) {
+  return request.post(`/v1/projects/${projectId}/keyword-groups/${groupId}`, data)
+}
+
+export function deleteKeywordGroup(projectId: number, groupId: number) {
+  return request.post(`/v1/projects/${projectId}/keyword-groups/${groupId}/delete`)
+}

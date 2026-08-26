@@ -12,8 +12,8 @@
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getKeyword, createKeyword, updateKeyword, getKeywordDependencies } from '@/api/keyword'
-import { getApis, getModules } from '@/api/apidoc'
+import { getKeyword, createKeyword, updateKeyword, getKeywordDependencies, getKeywordGroups } from '@/api/keyword'
+import { getApis } from '@/api/apidoc'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
@@ -32,14 +32,14 @@ const { options: categoryOptions } = useDict('keyword_category')
 const activeTab = ref('basic')
 const loading = ref(false)
 const apis = ref<any[]>([])
-const modules = ref<any[]>([])
+const groups = ref<any[]>([])
 
 // ===== 保存成功弹窗（创建模式） =====
 const saveSuccessVisible = ref(false)
 const savedKeywordName = ref('')
 
 const form = reactive({
-  name: '', apiId: null as number | null, description: '',
+  name: '', apiId: null as number | null, groupId: null as number | null, description: '',
   category: '', tags: '[]',
   testData: '[]', responseAssertion: '{}',
 })
@@ -86,11 +86,11 @@ async function fetchApis() {
   } catch { apis.value = [] }
 }
 
-async function fetchModules() {
+async function fetchGroups() {
   try {
-    const res: any = await getModules(projectId.value)
-    modules.value = res.data || []
-  } catch { modules.value = [] }
+    const res: any = await getKeywordGroups(projectId.value)
+    groups.value = res.data || []
+  } catch { groups.value = [] }
 }
 
 async function fetchKeyword() {
@@ -102,6 +102,7 @@ async function fetchKeyword() {
     Object.assign(form, {
       name: data.name || '',
       apiId: data.apiId ?? null,
+      groupId: data.groupId ?? null,
       description: data.description || '',
       category: data.category || '',
       tags: data.tags || '[]',
@@ -134,11 +135,6 @@ async function fetchDependencies() {
 
 // 关联接口信息
 const currentApi = computed(() => apis.value.find((a: any) => a.id === form.apiId))
-const currentModule = computed(() => {
-  const api = currentApi.value
-  if (!api?.moduleId) return null
-  return modules.value.find((m: any) => m.id === api.moduleId)
-})
 
 // ===== 保存 =====
 async function handleSubmit() {
@@ -168,7 +164,7 @@ function handleSaveSuccessContinue() {
   saveSuccessVisible.value = false
   // 重置表单
   Object.assign(form, {
-    name: '', apiId: null, description: '',
+    name: '', apiId: null, groupId: null, description: '',
     category: '', tags: '[]',
     testData: '[]', responseAssertion: '{}',
   })
@@ -198,7 +194,7 @@ watch(activeTab, (tab) => {
 
 onMounted(() => {
   fetchApis()
-  fetchModules()
+  fetchGroups()
   fetchKeyword()
   fetchDependencies()
 })
@@ -234,14 +230,19 @@ onMounted(() => {
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="标签">
-                <div class="tag-editor">
-                  <el-tag v-for="(t, i) in tags" :key="t" closable size="small" style="margin-right: 4px" @close="removeTag(i)">{{ t }}</el-tag>
-                  <el-input v-model="tagInput" placeholder="+ 添加" size="small" style="width: 100px" @keyup.enter="addTag" />
-                </div>
+              <el-form-item label="关键字分组">
+                <el-select v-model="form.groupId" placeholder="请选择分组" clearable filterable style="width: 100%">
+                  <el-option v-for="g in groups" :key="g.id" :value="g.id" :label="g.name" />
+                </el-select>
               </el-form-item>
             </el-col>
           </el-row>
+          <el-form-item label="标签">
+            <div class="tag-editor">
+              <el-tag v-for="(t, i) in tags" :key="t" closable size="small" style="margin-right: 4px" @close="removeTag(i)">{{ t }}</el-tag>
+              <el-input v-model="tagInput" placeholder="+ 添加" size="small" style="width: 100px" @keyup.enter="addTag" />
+            </div>
+          </el-form-item>
           <el-form-item label="描述">
             <el-input v-model="form.description" type="textarea" :rows="2" />
           </el-form-item>
@@ -253,7 +254,6 @@ onMounted(() => {
         <div v-if="currentApi" class="api-info-bar">
           <el-tag :type="methodColors[currentApi.httpMethod] || 'info'" size="small">{{ currentApi.httpMethod }}</el-tag>
           <code style="font-size: 13px">{{ currentApi.path }}</code>
-          <el-tag v-if="currentModule" size="small" type="info">{{ currentModule.name }}</el-tag>
           <span style="color: #909399">{{ currentApi.description }}</span>
           <el-button link type="primary" style="margin-left: auto" @click="router.push(`/project/${projectId}/apis/${currentApi.id}/edit`)">查看接口 →</el-button>
         </div>

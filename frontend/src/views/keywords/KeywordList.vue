@@ -12,8 +12,11 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getKeywords, deleteKeyword, generateKeyword, updateKeyword, debugKeyword } from '@/api/keyword'
-import { getModules, getApis } from '@/api/apidoc'
+import {
+  getKeywords, deleteKeyword, generateKeyword, updateKeyword, debugKeyword,
+  getKeywordGroups, createKeywordGroup, updateKeywordGroup, deleteKeywordGroup,
+} from '@/api/keyword'
+import { getApis } from '@/api/apidoc'
 import { getEnvironments } from '@/api/environment'
 import PageHeader from '@/components/PageHeader/index.vue'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
@@ -36,50 +39,41 @@ const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 const selectedRows = ref<any[]>([])
 
 // ===== 搜索条件 =====
-const search = reactive({ keyword: '', apiGroup: '', apiName: '', apiPath: '' })
+const search = reactive({ keyword: '', apiName: '', apiPath: '' })
 
-// ===== 分组树（复用接口分组） =====
-const modules = ref<any[]>([])
-const activeModuleId = ref<number>(0) // 0 = 全部
-const moduleMap = computed<Record<number, any>>(() => {
+// ===== 分组树（接口关键字独立分组） =====
+const groups = ref<any[]>([])
+const activeGroupId = ref<number>(0) // 0 = 全部
+const groupMap = computed<Record<number, any>>(() => {
   const m: Record<number, any> = {}
-  modules.value.forEach((mod) => { m[mod.id] = mod })
+  groups.value.forEach((g) => { m[g.id] = g })
   return m
 })
-const moduleTree = computed(() => {
-  const allModules = modules.value
-  const userGroups = allModules.filter((m: any) => m.isSystem !== 1)
-  const systemGroups = allModules.filter((m: any) => m.isSystem === 1 && m.name !== '全部')
-  const buildTree = (parentId: number | null): any[] =>
-    userGroups
-      .filter((m: any) => (m.parentId ?? null) === parentId)
-      .map((m: any) => ({ ...m, children: buildTree(m.id) }))
+const groupTree = computed(() => {
   return [
-    { id: 0, name: '全部', isSystem: 1, apiCount: pagination.total, children: [] },
-    ...systemGroups.map((g: any) => ({ ...g, apiCount: g.apiCount ?? 0, children: [] })),
-    ...buildTree(null),
+    { id: 0, name: '全部', keywordCount: pagination.total, children: [] },
+    ...groups.value.map((g: any) => ({ ...g, keywordCount: g.keywordCount ?? 0, children: [] })),
   ]
 })
-function onModuleNodeClick(data: any) {
-  activeModuleId.value = data.id
+function onGroupNodeClick(data: any) {
+  activeGroupId.value = data.id
   pagination.current = 1
   fetchList()
 }
 
-async function fetchModules() {
+async function fetchGroups() {
   try {
-    const res: any = await getModules(projectId.value)
-    modules.value = res.data || []
-  } catch { modules.value = [] }
+    const res: any = await getKeywordGroups(projectId.value)
+    groups.value = res.data || []
+  } catch { groups.value = [] }
 }
 
 async function fetchList() {
   loading.value = true
   try {
     const res: any = await getKeywords(projectId.value, {
-      moduleId: activeModuleId.value || undefined,
+      groupId: activeGroupId.value || undefined,
       keyword: search.keyword || undefined,
-      apiGroup: search.apiGroup || undefined,
       apiName: search.apiName || undefined,
       apiPath: search.apiPath || undefined,
       page: pagination.current, pageSize: pagination.pageSize,
@@ -91,8 +85,8 @@ async function fetchList() {
 
 function handleSearch() { pagination.current = 1; fetchList() }
 function handleReset() {
-  Object.assign(search, { keyword: '', apiGroup: '', apiName: '', apiPath: '' })
-  activeModuleId.value = 0
+  Object.assign(search, { keyword: '', apiName: '', apiPath: '' })
+  activeGroupId.value = 0
   handleSearch()
 }
 
@@ -130,7 +124,7 @@ const batchGroupVisible = ref(false)
 const batchGroupTarget = ref<number | null>(null)
 const groupNameMap = computed<Record<number, string>>(() => {
   const map: Record<number, string> = {}
-  modules.value.forEach((m: any) => { map[m.id] = m.name })
+  groups.value.forEach((g: any) => { map[g.id] = g.name })
   return map
 })
 function openBatchGroup() {
@@ -141,13 +135,57 @@ async function applyBatchGroup() {
   if (!batchGroupTarget.value) { ElMessage.warning('请选择目标分组'); return }
   try {
     for (const kw of selectedRows.value) {
-      await updateKeyword(projectId.value, kw.id, { ...kw, moduleId: batchGroupTarget.value })
+      await updateKeyword(projectId.value, kw.id, { ...kw, groupId: batchGroupTarget.value })
     }
     ElMessage.success(`已成功将 ${selectedRows.value.length} 条接口关键字的分组修改为「${groupNameMap.value[batchGroupTarget.value]}」`)
     batchGroupVisible.value = false
     clearSelection()
     fetchList()
   } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
+}
+
+// ===== 分组管理 =====
+const manageGroupsVisible = ref(false)
+const editingGroupId = ref<number>(0)
+const groupForm = reactive({ name: '' })
+
+function openManageGroups() {
+  editingGroupId.value = 0
+  groupForm.name = ''
+  manageGroupsVisible.value = true
+}
+function openCreateGroup() {
+  editingGroupId.value = 0
+  groupForm.name = ''
+}
+function openEditGroup(g: any) {
+  editingGroupId.value = g.id
+  groupForm.name = g.name
+}
+async function handleGroupSubmit() {
+  if (!groupForm.name.trim()) { ElMessage.warning('请输入分组名称'); return }
+  try {
+    if (editingGroupId.value) {
+      await updateKeywordGroup(projectId.value, editingGroupId.value, { name: groupForm.name.trim() })
+      ElMessage.success('更新成功')
+    } else {
+      await createKeywordGroup(projectId.value, { name: groupForm.name.trim() })
+      ElMessage.success('创建成功')
+    }
+    groupForm.name = ''
+    editingGroupId.value = 0
+    fetchGroups()
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
+}
+function handleDeleteGroup(g: any) {
+  ElMessageBox.confirm(`确定删除分组「${g.name}」？该分组下的关键字将变为未分组。`, '确认删除', { type: 'warning' })
+    .then(async () => {
+      await deleteKeywordGroup(projectId.value, g.id)
+      ElMessage.success('删除成功')
+      fetchGroups()
+      fetchList()
+    })
+    .catch(() => {})
 }
 
 // ===== 从接口生成 =====
@@ -184,7 +222,7 @@ const defaultColumns: ColumnItem[] = [
   { key: 'apiPath', label: '关联接口路径', locked: true, visible: true },
   { key: 'params', label: '参数', locked: false, visible: false },
   { key: 'response', label: '返回', locked: false, visible: false },
-  { key: 'module', label: '分组', locked: false, visible: false },
+  { key: 'group', label: '关键字分组', locked: false, visible: true },
   { key: 'category', label: '分类', locked: false, visible: false },
   { key: 'tags', label: '标签', locked: false, visible: false },
   { key: 'desc', label: '描述', locked: true, visible: true },
@@ -336,7 +374,7 @@ const highlightedDebugResponse = computed(() => {
   return syntaxHighlightJSON(JSON.stringify(debugResult.value.response, null, 2))
 })
 
-onMounted(() => { fetchModules(); fetchList() })
+onMounted(() => { fetchGroups(); fetchList() })
 </script>
 
 <template>
@@ -347,24 +385,25 @@ onMounted(() => { fetchModules(); fetchList() })
     </PageHeader>
 
     <div class="kw-layout">
-      <!-- 左侧分组树（复用接口分组） -->
+      <!-- 左侧分组树（接口关键字独立分组） -->
       <div class="module-panel">
         <div class="module-head">
-          <span class="module-title">接口分组</span>
+          <span class="module-title">关键字分组</span>
+          <el-button link type="primary" size="small" @click="openManageGroups">管理</el-button>
         </div>
         <div class="module-tree">
           <el-tree
-            :data="moduleTree"
+            :data="groupTree"
             node-key="id"
             :props="{ label: 'name', children: 'children' }"
             :default-expand-all="true"
             :expand-on-click-node="false"
-            @node-click="onModuleNodeClick"
+            @node-click="onGroupNodeClick"
           >
             <template #default="{ data }">
-              <div :class="['module-tree-node', { active: activeModuleId === data.id }]">
+              <div :class="['module-tree-node', { active: activeGroupId === data.id }]">
                 <span class="module-name">{{ data.name }}</span>
-                <span class="module-count">{{ data.apiCount ?? 0 }}</span>
+                <span class="module-count">{{ data.keywordCount ?? 0 }}</span>
               </div>
             </template>
           </el-tree>
@@ -377,12 +416,6 @@ onMounted(() => { fetchModules(); fetchList() })
           <div class="pro-search-field">
             <span class="pro-search-label">接口关键字</span>
             <el-input v-model="search.keyword" placeholder="输入接口关键字" clearable style="width: 180px" @keyup.enter="handleSearch" />
-          </div>
-          <div class="pro-search-field">
-            <span class="pro-search-label">关联接口分组</span>
-            <el-select v-model="search.apiGroup" placeholder="全部分组" clearable style="width: 160px" @change="handleSearch">
-              <el-option v-for="m in modules.filter((m: any) => m.isSystem !== 1)" :key="m.id" :value="m.name" :label="m.name" />
-            </el-select>
           </div>
           <div class="pro-search-field">
             <span class="pro-search-label">关联接口名</span>
@@ -424,7 +457,7 @@ onMounted(() => { fetchModules(); fetchList() })
             </template>
           </el-table-column>
           <el-table-column v-if="isColVisible('apiGroup')" label="关联接口分组" width="140" show-overflow-tooltip>
-            <template #default="{ row }">{{ row.moduleName || moduleMap[row.moduleId]?.name || '--' }}</template>
+            <template #default="{ row }">{{ row.moduleName || '--' }}</template>
           </el-table-column>
           <el-table-column v-if="isColVisible('apiName')" label="关联接口名" width="150" show-overflow-tooltip>
             <template #default="{ row }">{{ row.apiName || '--' }}</template>
@@ -438,8 +471,8 @@ onMounted(() => { fetchModules(); fetchList() })
           <el-table-column v-if="isColVisible('response')" label="返回" width="180" show-overflow-tooltip>
             <template #default="{ row }">{{ parseResponseFields(row.responseAssertion) }}</template>
           </el-table-column>
-          <el-table-column v-if="isColVisible('module')" label="分组" width="120">
-            <template #default="{ row }">{{ row.moduleName || moduleMap[row.moduleId]?.name || '--' }}</template>
+          <el-table-column v-if="isColVisible('group')" label="关键字分组" width="140">
+            <template #default="{ row }">{{ row.groupName || groupMap[row.groupId]?.name || '--' }}</template>
           </el-table-column>
           <el-table-column v-if="isColVisible('category')" label="分类" width="120">
             <template #default="{ row }">
@@ -498,14 +531,14 @@ onMounted(() => { fetchModules(); fetchList() })
       </p>
       <el-form-item label="目标分组" required>
         <el-select v-model="batchGroupTarget" placeholder="请选择分组" filterable style="width: 100%">
-          <el-option v-for="m in modules.filter((m: any) => m.isSystem !== 1)" :key="m.id" :value="m.id" :label="m.name" />
+          <el-option v-for="g in groups" :key="g.id" :value="g.id" :label="g.name" />
         </el-select>
       </el-form-item>
       <div v-if="selectedRows.length" style="margin-top: 12px; padding: 12px; background: #f5f7fa; border-radius: 4px; font-size: 13px; max-height: 120px; overflow-y: auto">
         <div style="color: #909399; margin-bottom: 6px">以下接口关键字的分组将被修改：</div>
         <div v-for="row in selectedRows" :key="row.id" style="padding: 2px 0">
           <span style="color: #606266">{{ row.name }}</span>
-          <span style="margin: 0 6px; color: #c0c4cc; font-size: 12px">{{ row.moduleName || '未分组' }}</span>
+          <span style="margin: 0 6px; color: #c0c4cc; font-size: 12px">{{ row.groupName || '未分组' }}</span>
           <span style="color: #c0c4cc">→</span>
           <span style="color: #409eff; font-weight: 500; margin-left: 4px">{{ batchGroupTarget ? groupNameMap[batchGroupTarget] : '请选择' }}</span>
         </div>
@@ -514,6 +547,27 @@ onMounted(() => { fetchModules(); fetchList() })
         <el-button @click="batchGroupVisible = false">取消</el-button>
         <el-button type="primary" @click="applyBatchGroup">确认修改</el-button>
       </template>
+    </el-dialog>
+
+    <!-- 分组管理弹窗 -->
+    <el-dialog v-model="manageGroupsVisible" title="管理关键字分组" width="520px">
+      <div style="display: flex; gap: 8px; margin-bottom: 12px">
+        <el-input v-model="groupForm.name" placeholder="输入分组名称" @keyup.enter="handleGroupSubmit" />
+        <el-button type="primary" @click="handleGroupSubmit">{{ editingGroupId ? '更新' : '新增' }}</el-button>
+        <el-button v-if="editingGroupId" @click="openCreateGroup">取消编辑</el-button>
+      </div>
+      <el-table :data="groups" size="small" border>
+        <el-table-column prop="name" label="分组名称" show-overflow-tooltip />
+        <el-table-column label="关键字数" width="90" align="center">
+          <template #default="{ row }">{{ row.keywordCount ?? 0 }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="120" align="center">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="openEditGroup(row)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="handleDeleteGroup(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </el-dialog>
 
     <!-- 在线调试弹窗 -->

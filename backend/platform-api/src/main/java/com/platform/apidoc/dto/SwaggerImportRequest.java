@@ -38,4 +38,9 @@ public class SwaggerImportRequest {
      * 导入后统一附加到各接口的请求头（Key: Value）
      */
     private Map<String, String> defaultHeaders;
+
+    /**
+     * 导入附加默认 host 前缀（如 ${host}，附加到各接口 URL 前）
+     */
+    private String hostPrefix;
 }

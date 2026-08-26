@@ -251,9 +251,9 @@ function removeRow(arr: any[], idx: number) {
   arr.splice(idx, 1)
 }
 
-// Path 参数从路径解析（只读展示）
+// Path 参数从路径解析（只读展示，排除前导 ${host} 占位符）
 const pathParams = computed(() => {
-  const matches = form.path.match(/\{(\w+)\}/g) || []
+  const matches = form.path.replace(/^\$\{[^}]*\}/, '').match(/\{(\w+)\}/g) || []
   return matches.map((m) => m.slice(1, -1))
 })
 
@@ -495,7 +495,8 @@ onMounted(() => {
             <el-row :gutter="16">
               <el-col :span="12">
                 <el-form-item label="接口路径" required>
-                  <el-input v-model="form.path" placeholder="/api/v1/example" style="font-family: monospace" />
+                  <el-input v-model="form.path" placeholder="${host}/api/v1/example 或 /api/v1/example" style="font-family: monospace" />
+                  <div class="path-hint">URL 以 ${host} 等占位符开头时，调试/执行将用所选环境的对应变量值作为请求地址</div>
                 </el-form-item>
               </el-col>
               <el-col :span="12">
@@ -811,6 +812,12 @@ onMounted(() => {
   color: #909399;
   font-size: 12px;
   margin: 0;
+}
+.path-hint {
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 4px;
 }
 .empty-state {
   text-align: center;

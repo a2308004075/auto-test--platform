@@ -83,6 +83,8 @@ public final class ErrorCode {
     public static final int KEYWORD_NAME_DUPLICATE = 1501;
     public static final int KEYWORD_DATA_INVALID = 1502;
     public static final int KEYWORD_DEPENDENCY_CONFLICT = 1503;
+    public static final int KEYWORD_GROUP_NOT_FOUND = 1510;
+    public static final int KEYWORD_GROUP_NAME_DUPLICATE = 1511;
 
     // ===== M6 工具方法 (1600-1699) =====
     public static final int TOOL_NOT_FOUND = 1600;
@@ -149,6 +151,7 @@ public final class ErrorCode {
             case SUITE_GROUP_NOT_FOUND:
             case CASE_GROUP_NOT_FOUND:
             case ACTION_GROUP_NOT_FOUND:
+            case KEYWORD_GROUP_NOT_FOUND:
             case ROLE_NOT_FOUND:
             case MENU_NOT_FOUND:
             case DICT_NOT_FOUND:
@@ -162,6 +165,7 @@ public final class ErrorCode {
             case ENV_NAME_DUPLICATE:
             case API_PATH_DUPLICATE:
             case KEYWORD_NAME_DUPLICATE:
+            case KEYWORD_GROUP_NAME_DUPLICATE:
             case SUITE_NAME_DUPLICATE:
             case CASE_NAME_DUPLICATE:
             case SUITE_GROUP_NAME_DUPLICATE:

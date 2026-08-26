@@ -34,6 +34,9 @@ public class ApiSyncConfig extends BaseEntity {
     /** 导入后统一附加到各接口的请求头（多行 Key: Value 文本） */
     private String headers;
 
+    /** 导入附加默认 host 前缀（如 ${host}，支持环境变量占位符） */
+    private String hostPrefix;
+
     /** Swagger 文档认证账号（Basic Auth） */
     private String authUsername;
 

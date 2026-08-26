@@ -271,6 +271,14 @@ public class ApiService {
             }
         }
 
+        // 附加默认 host 前缀到每个接口 URL 前（如 ${host}）
+        if (StringUtils.hasText(request.getHostPrefix())) {
+            SWAGGER_LOG.info("Swagger 导入附加默认 host 前缀: {}", request.getHostPrefix());
+            for (SwaggerParser.ApiEntry entry : entries) {
+                entry.setPath(applyHostPrefix(request.getHostPrefix(), entry.getPath()));
+            }
+        }
+
         int created = 0;
         int updated = 0;
         int skipped = 0;
@@ -353,6 +361,19 @@ public class ApiService {
         String servicePrefix = apiModuleService.resolveServicePrefix(api.getModuleId(), moduleMap);
 
         String path = api.getPath();
+        // 前导占位符：path 以 ${var} 开头时，用该环境变量值替代 baseUrl（host 不写死）
+        String leadingVar = extractLeadingPlaceholder(path);
+        if (leadingVar != null) {
+            String varValue = envVars.get(leadingVar);
+            if (!StringUtils.hasText(varValue)) {
+                return ApiDebugResponse.error("环境变量不存在或未配置：" + leadingVar);
+            }
+            baseUrl = varValue;
+            path = path.substring(path.indexOf('}') + 1);
+            if (!path.startsWith("/")) {
+                path = "/" + path;
+            }
+        }
         // 替换路径参数
         if (request.getPathParams() != null) {
             for (Map.Entry<String, String> entry : request.getPathParams().entrySet()) {
@@ -615,6 +636,7 @@ public class ApiService {
         importRequest.setModuleId(request.getModuleId());
         importRequest.setSwaggerJson(swaggerJson);
         importRequest.setDefaultHeaders(request.getDefaultHeaders());
+        importRequest.setHostPrefix(request.getHostPrefix());
         return importSwagger(importRequest);
     }
 
@@ -730,6 +752,7 @@ public class ApiService {
         config.setUrl(request.getUrl());
         config.setModuleId(request.getModuleId());
         config.setHeaders(request.getHeaders());
+        config.setHostPrefix(request.getHostPrefix());
         config.setAuthUsername(request.getAuthUsername());
         config.setAuthPassword(request.getAuthPassword());
         apiSyncConfigMapper.insert(config);
@@ -745,6 +768,7 @@ public class ApiService {
         config.setUrl(request.getUrl());
         config.setModuleId(request.getModuleId());
         config.setHeaders(request.getHeaders());
+        config.setHostPrefix(request.getHostPrefix());
         config.setAuthUsername(request.getAuthUsername());
         config.setAuthPassword(request.getAuthPassword());
         apiSyncConfigMapper.updateById(config);
@@ -777,6 +801,7 @@ public class ApiService {
         syncRequest.setModuleId(config.getModuleId());
         syncRequest.setHeaders(buildSwaggerAuthHeaders(config));
         syncRequest.setDefaultHeaders(defaultHeaders);
+        syncRequest.setHostPrefix(config.getHostPrefix());
         SwaggerImportResult result = syncFromUrl(syncRequest);
         // 更新最后同步时间
         config.setLastSyncAt(LocalDateTime.now());
@@ -1019,6 +1044,38 @@ public class ApiService {
             log.warn("合并默认请求头失败: {}", e.getMessage());
             return existingJson;
         }
+    }
+
+    /**
+     * 提取路径前导占位符变量名：${var}/rest → var，无前导占位符返回 null
+     */
+    private String extractLeadingPlaceholder(String path) {
+        if (path == null || !path.startsWith("${")) {
+            return null;
+        }
+        int end = path.indexOf('}');
+        if (end <= 1) {
+            return null;
+        }
+        return path.substring(2, end).trim();
+    }
+
+    /**
+     * 附加默认 host 前缀到接口路径前（如 ${host} + /user/list → ${host}/user/list）
+     */
+    private String applyHostPrefix(String hostPrefix, String path) {
+        if (!StringUtils.hasText(hostPrefix) || !StringUtils.hasText(path)) {
+            return path;
+        }
+        String prefix = hostPrefix.trim();
+        String trimmedPath = path.trim();
+        if (prefix.endsWith("/")) {
+            prefix = prefix.substring(0, prefix.length() - 1);
+        }
+        if (!trimmedPath.startsWith("/")) {
+            trimmedPath = "/" + trimmedPath;
+        }
+        return prefix + trimmedPath;
     }
 
     private String joinUrl(String baseUrl, String prefix, String path) {

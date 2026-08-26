@@ -27,6 +27,11 @@ public class ApiKeywordCreateRequest {
     @NotNull(message = "接口 ID 不能为空")
     private Long apiId;
 
+    /**
+     * 接口关键字分组 ID
+     */
+    private Long groupId;
+
     @Size(max = 500, message = "描述长度不能超过 500")
     private String description;
 

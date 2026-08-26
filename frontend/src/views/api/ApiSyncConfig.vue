@@ -55,7 +55,7 @@ async function fetchList() {
 // ===== 新增/编辑弹窗 =====
 const formVisible = ref(false)
 const formMode = ref<'add' | 'edit'>('add')
-const form = reactive({ id: null as number | null, name: '', url: '', moduleId: null as number | null, headers: '', authUsername: '', authPassword: '' })
+const form = reactive({ id: null as number | null, name: '', url: '', moduleId: null as number | null, headers: '', hostPrefix: '', authUsername: '', authPassword: '' })
 const saving = ref(false)
 
 // 默认请求头键值对编辑（界面友好，保存时序列化为 Key: Value 文本）
@@ -95,6 +95,7 @@ function openAdd() {
   form.moduleId = null
   form.headers = ''
   headerPairs.value = []
+  form.hostPrefix = ''
   form.authUsername = ''
   form.authPassword = ''
   formVisible.value = true
@@ -108,6 +109,7 @@ function openEdit(row: any) {
   form.moduleId = row.moduleId
   form.headers = row.headers || ''
   headerPairs.value = parseHeadersText(row.headers)
+  form.hostPrefix = row.hostPrefix || ''
   form.authUsername = row.authUsername || ''
   form.authPassword = row.authPassword || ''
   formVisible.value = true
@@ -123,6 +125,7 @@ async function handleSave() {
     const data = {
       name: form.name, url: form.url, moduleId: form.moduleId!,
       headers: headersText || undefined,
+      hostPrefix: form.hostPrefix || undefined,
       authUsername: form.authUsername || undefined,
       authPassword: form.authPassword || undefined,
     }
@@ -242,6 +245,10 @@ onMounted(() => {
             <el-option v-for="m in modules.filter((x: any) => x.isSystem !== 1 || x.name === '未分类')" :key="m.id" :value="m.id" :label="m.name" />
           </el-select>
         </el-form-item>
+        <el-form-item label="导入附加默认 host（可选）">
+          <el-input v-model="form.hostPrefix" placeholder="如 ${host}" clearable />
+          <div class="form-item-hint">导入时附加到各接口 URL 前，支持 ${变量} 占位符，留空不附加</div>
+        </el-form-item>
         <el-form-item label="认证账号（可选）">
           <el-input v-model="form.authUsername" placeholder="用于拉取 Swagger 文档的 Basic Auth 账号" clearable />
         </el-form-item>
@@ -281,6 +288,12 @@ onMounted(() => {
   </div>
 </template>
 <style scoped>
+.form-item-hint {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
+  margin-top: 4px;
+}
 .header-pairs-section {
   width: 100%;
   border: 1px solid #e4e7ed;

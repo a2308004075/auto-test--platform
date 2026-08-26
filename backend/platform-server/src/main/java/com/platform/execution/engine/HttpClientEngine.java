@@ -48,9 +48,11 @@ public class HttpClientEngine {
         StepResult result = new StepResult();
         long start = System.currentTimeMillis();
 
-        // 构建 URL（baseUrl + path + 变量替换）
+        // 构建 URL（baseUrl + path + 变量替换）；path 以 ${var} 前导占位符开头时由占位符替代 baseUrl
         String baseUrl = context.getBaseUrl() != null ? context.getBaseUrl() : "";
-        String fullUrl = context.resolveVariables(baseUrl + path);
+        String fullUrl = path != null && path.startsWith("${")
+                ? context.resolveVariables(path)
+                : context.resolveVariables(baseUrl + path);
 
         // 构建请求头
         Map<String, String> resolvedHeaders = new LinkedHashMap<>();

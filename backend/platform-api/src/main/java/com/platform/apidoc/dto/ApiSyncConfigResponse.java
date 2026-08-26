@@ -18,6 +18,7 @@ public class ApiSyncConfigResponse {
     private Long moduleId;
     private String moduleName;
     private String headers;
+    private String hostPrefix;
     private String authUsername;
     private String authPassword;
     private LocalDateTime lastSyncAt;

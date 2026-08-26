@@ -25,6 +25,9 @@ public class ApiSyncConfigRequest {
     /** 导入后统一附加到各接口的请求头文本（多行 Key: Value） */
     private String headers;
 
+    /** 导入附加默认 host 前缀（如 ${host}，支持环境变量占位符，可选） */
+    private String hostPrefix;
+
     /** Swagger 文档认证账号（Basic Auth，可选） */
     private String authUsername;
 

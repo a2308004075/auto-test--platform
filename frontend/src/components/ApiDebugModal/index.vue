@@ -14,6 +14,7 @@ import { ElMessage } from 'element-plus'
 import { getApi, debugApi } from '@/api/apidoc'
 import { getEnvironments } from '@/api/environment'
 import CodeEditor from '@/components/CodeEditor/index.vue'
+import { schemaToExampleString } from '@/utils/schemaToExample'
 
 interface Props {
   modelValue: boolean
@@ -69,6 +70,40 @@ function parseArr(raw?: string): any[] {
   try { const a = JSON.parse(raw); return Array.isArray(a) ? a : [] } catch { return [] }
 }
 
+function isJsonSchema(obj: any): boolean {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false
+  const knownTypes = ['object', 'array', 'string', 'integer', 'number', 'boolean']
+  if (knownTypes.includes(obj.type)) return true
+  if (obj.properties && typeof obj.properties === 'object') return true
+  return false
+}
+
+function stripJsonComments(text: string): string {
+  let result = ''
+  let i = 0
+  while (i < text.length) {
+    // 保留字符串字面量中的 //
+    if (text[i] === '"' || text[i] === "'") {
+      const quote = text[i]
+      let j = i + 1
+      while (j < text.length && text[j] !== quote) {
+        if (text[j] === '\\') j++
+        j++
+      }
+      result += text.substring(i, j + 1)
+      i = j + 1
+      continue
+    }
+    if (text[i] === '/' && text[i + 1] === '/') {
+      while (i < text.length && text[i] !== '\n') i++
+      continue
+    }
+    result += text[i]
+    i++
+  }
+  return result
+}
+
 function defaultRequestBody(bodyType: string): string {
   if (bodyType === 'form_data' || bodyType === 'x_www_form_urlencoded' || bodyType === 'binary') {
     return '[]'
@@ -96,7 +131,7 @@ function buildDebugPayloadBody(): string {
     return ''
   }
   if (debugBodyType.value === 'raw' && debugRawType.value === 'json') {
-    return extractJsonBody(debugBody.value)
+    return extractJsonBody(stripJsonComments(debugBody.value))
   }
   return debugBody.value
 }
@@ -120,11 +155,24 @@ async function loadApi() {
     const hv: Record<string, string> = {}
     hp.forEach((p: any) => { if (p.name) hv[p.name] = p.value || '' })
     headerValues.value = hv
-    // 初始化请求体
+    // 初始化请求体：JSON Schema 自动转为示例值
     const bt = res.data?.bodyType || 'raw'
     debugBodyType.value = bt
     debugRawType.value = res.data?.rawType || 'json'
-    debugBody.value = res.data?.requestBody || defaultRequestBody(bt)
+    const rawBody = res.data?.requestBody || ''
+    let initialBody = rawBody || defaultRequestBody(bt)
+    if (bt === 'raw' && debugRawType.value === 'json' && rawBody) {
+      try {
+        const parsed = JSON.parse(rawBody)
+        if (isJsonSchema(parsed)) {
+          initialBody = schemaToExampleString(parsed)
+        }
+      } catch { /* ignore */ }
+    }
+    debugBody.value = initialBody
+    if (bt === 'raw' && debugRawType.value === 'json') {
+      debugBody.value = formatDebugBody()
+    }
     customParams.value = []
     debugResult.value = null
     respTabs.value = 'body'
@@ -152,6 +200,13 @@ watch(() => props.modelValue, (v) => {
   if (v && props.apiId) {
     loadApi()
     loadEnvs()
+  }
+})
+
+// 请求体切换到 raw/JSON 时自动格式化
+watch([debugBodyType, debugRawType], () => {
+  if (debugBodyType.value === 'raw' && debugRawType.value === 'json') {
+    debugBody.value = formatDebugBody()
   }
 })
 
@@ -427,6 +482,10 @@ function formatDebugBody(): string {
               <span v-if="debugResult.responseTimeMs" class="resp-meta">耗时: {{ debugResult.responseTimeMs }}ms</span>
               <span v-if="debugResult.responseSize" class="resp-meta">大小: {{ debugResult.responseSize }}</span>
             </div>
+            <div v-if="debugResult.requestUrl" class="resp-request-url">
+              <span class="resp-meta">请求 URL：</span>
+              <code class="url-code">{{ debugResult.requestUrl }}</code>
+            </div>
             <el-tabs v-model="respTabs" class="resp-tabs">
               <el-tab-pane label="响应体" name="body">
                 <pre class="resp-body-code">{{ formatResponseBody(debugResult) }}</pre>
@@ -510,7 +569,7 @@ function formatDebugBody(): string {
 }
 .debug-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 0.75fr;
   gap: 0;
   border: 1px solid #ebeef5;
   border-radius: 4px;
@@ -576,6 +635,19 @@ function formatDebugBody(): string {
 .resp-meta {
   font-size: 12px;
   color: #909399;
+}
+.resp-request-url {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.url-code {
+  font-family: monospace;
+  color: #606266;
+  word-break: break-all;
+  line-height: 1.5;
 }
 .body-type-row {
   display: flex;

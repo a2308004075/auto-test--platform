@@ -321,13 +321,10 @@ const defaultColumns: ColumnItem[] = [
   { key: 'name', label: '接口名称', locked: true, visible: true },
   { key: 'path', label: '路径', locked: true, visible: true },
   { key: 'method', label: '方法', locked: true, visible: true },
-  { key: 'params', label: '参数', locked: false, visible: false },
-  { key: 'returnType', label: '返回', locked: false, visible: false },
   { key: 'group', label: '分组', locked: false, visible: true },
-  { key: 'prefix', label: '服务前缀', locked: false, visible: false },
   { key: 'desc', label: '描述', locked: true, visible: true },
   { key: 'source', label: '来源', locked: true, visible: true },
-  { key: 'createTime', label: '创建时间', locked: false, visible: false },
+  { key: 'createTime', label: '创建时间', locked: false, visible: true },
   { key: 'action', label: '操作', locked: true, visible: true },
 ]
 const columns = ref<ColumnItem[]>(defaultColumns.map((c) => ({ ...c })))
@@ -343,15 +340,6 @@ function sourceLabel(t?: string) {
   if (!t) return '--'
   return sourceTypeOptions.value.find((s) => s.value === t)?.label || t
 }
-function formatParams(raw?: string) {
-  if (!raw) return '--'
-  try {
-    const arr = JSON.parse(raw)
-    if (Array.isArray(arr) && arr.length) return arr.map((p: any) => p.name || p.key).filter(Boolean).join(', ')
-    return '--'
-  } catch { return '--' }
-}
-
 // ===== 调试弹窗 =====
 const debugVisible = ref(false)
 const debugApiId = ref(0)
@@ -460,23 +448,18 @@ onBeforeUnmount(() => {
           <el-table-column type="selection" width="45" />
           <el-table-column v-if="isColVisible('id')" prop="id" label="ID" width="70" />
           <el-table-column v-if="isColVisible('name')" prop="name" label="接口名称" width="180" show-overflow-tooltip />
-          <el-table-column v-if="isColVisible('path')" prop="path" label="路径" width="220" show-overflow-tooltip />
+          <el-table-column v-if="isColVisible('path')" label="路径" width="220" show-overflow-tooltip>
+            <template #default="{ row }">
+              <span style="font-family: monospace">{{ (row.path || '').replace(/^\$\{[^}]*\}/, '') }}</span>
+            </template>
+          </el-table-column>
           <el-table-column v-if="isColVisible('method')" label="方法" width="80">
             <template #default="{ row }">
               <el-tag :type="methodColors[row.httpMethod] || 'info'" size="small">{{ row.httpMethod }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column v-if="isColVisible('params')" label="参数" width="180" show-overflow-tooltip>
-            <template #default="{ row }">{{ formatParams(row.requestParams) }}</template>
-          </el-table-column>
-          <el-table-column v-if="isColVisible('returnType')" label="返回" width="100">
-            <template #default="{ row }">{{ row.responseBody ? 'JSON' : '--' }}</template>
-          </el-table-column>
           <el-table-column v-if="isColVisible('group')" label="分组" width="120">
             <template #default="{ row }">{{ row.moduleName || moduleMap[row.moduleId]?.name || '--' }}</template>
-          </el-table-column>
-          <el-table-column v-if="isColVisible('prefix')" label="服务前缀" width="120">
-            <template #default="{ row }">{{ row.servicePrefix || '--' }}</template>
           </el-table-column>
           <el-table-column v-if="isColVisible('desc')" prop="description" label="描述" show-overflow-tooltip />
           <el-table-column v-if="isColVisible('source')" label="来源" width="90">

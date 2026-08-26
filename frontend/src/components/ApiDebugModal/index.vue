@@ -49,6 +49,19 @@ const debugBody = ref('{}')
 
 const methodColors: Record<string, string> = { GET: '', POST: 'success', PUT: 'warning', DELETE: 'danger', PATCH: 'info' }
 
+// 调试弹窗顶部显示的完整 URL：host + 服务前缀 + path
+const displayUrl = computed(() => {
+  if (!apiInfo.value) return ''
+  const path = apiInfo.value.path || ''
+  const prefix = apiInfo.value.servicePrefix || ''
+  const leadingMatch = path.match(/^\$\{[^}]*\}/)
+  if (leadingMatch) {
+    const host = leadingMatch[0]
+    return host + prefix + path.slice(host.length)
+  }
+  return prefix + path
+})
+
 const bodyTypeOptions = [
   { value: 'none', label: 'none' },
   { value: 'form_data', label: 'form-data' },
@@ -148,7 +161,8 @@ async function loadApi() {
     const qv: Record<string, string> = {}
     qp.forEach((p: any) => { if (p.name) qv[p.name] = '' })
     queryParamValues.value = qv
-    const pp = (res.data?.path?.match(/\{(\w+)\}/g) || []).map((m: string) => m.slice(1, -1))
+    const pathWithoutPlaceholders = (res.data?.path || '').replace(/\$\{[^}]*\}/g, '')
+    const pp = (pathWithoutPlaceholders.match(/\{(\w+)\}/g) || []).map((m: string) => m.slice(1, -1))
     const pv: Record<string, string> = {}
     pp.forEach((name: string) => { pv[name] = '' })
     pathParamValues.value = pv
@@ -192,7 +206,8 @@ const pathParams = ref<string[]>([])
 watch(apiInfo, (info) => {
   queryParams.value = parseArr(info?.requestParams)
   headerParams.value = parseArr(info?.headers)
-  pathParams.value = (info?.path?.match(/\{(\w+)\}/g) || []).map((m: string) => m.slice(1, -1))
+  const pathWithoutPlaceholders = (info?.path || '').replace(/\$\{[^}]*\}/g, '')
+  pathParams.value = (pathWithoutPlaceholders.match(/\{(\w+)\}/g) || []).map((m: string) => m.slice(1, -1))
 })
 
 // 弹窗打开时加载数据
@@ -331,7 +346,7 @@ function formatDebugBody(): string {
         </div>
         <div class="debug-info-url">
           <el-tag :type="methodColors[apiInfo.httpMethod] || 'info'" size="small">{{ apiInfo.httpMethod }}</el-tag>
-          <code class="api-path">{{ apiInfo.path }}</code>
+          <code class="api-path">{{ displayUrl }}</code>
         </div>
       </div>
 

@@ -119,6 +119,7 @@ async function handleSave() {
   if (!form.name) { ElMessage.warning('请输入配置名称'); return }
   if (!form.url) { ElMessage.warning('请输入文档 URL'); return }
   if (!form.moduleId) { ElMessage.warning('请选择目标分组'); return }
+  if (!form.hostPrefix) { ElMessage.warning('请输入导入附加默认 host'); return }
   saving.value = true
   try {
     const headersText = buildHeadersText(headerPairs.value)
@@ -251,6 +252,10 @@ onMounted(() => {
         <el-form-item label="认证密码（可选）">
           <el-input v-model="form.authPassword" type="password" show-password placeholder="用于拉取 Swagger 文档的 Basic Auth 密码" clearable />
         </el-form-item>
+        <el-form-item label="导入附加默认 host" required>
+          <el-input v-model="form.hostPrefix" placeholder="如 ${host}" clearable />
+          <div class="form-item-hint">导入时附加到各接口 URL 前，支持 ${变量} 占位符，留空不附加</div>
+        </el-form-item>
         <el-form-item>
           <template #label>
             <span>导入附加请求头（可选）</span>
@@ -274,10 +279,6 @@ onMounted(() => {
               </div>
             </div>
           </div>
-        </el-form-item>
-        <el-form-item label="导入附加默认 host（可选）">
-          <el-input v-model="form.hostPrefix" placeholder="如 ${host}" clearable />
-          <div class="form-item-hint">导入时附加到各接口 URL 前，支持 ${变量} 占位符，留空不附加</div>
         </el-form-item>
       </el-form>
       <template #footer>

@@ -35,7 +35,7 @@ const { options: httpMethodOptions } = useDict('http_method')
 const { options: paramTypeOptions } = useDict('param_type')
 
 const form = reactive({
-  name: '', httpMethod: 'GET', path: '', service: '', moduleId: null as number | null,
+  name: '', httpMethod: 'GET', path: '', host: '', service: '', moduleId: null as number | null,
   description: '', requestParams: '[]', requestBody: '{}', responseBody: '{}', headers: '[]',
   contentType: 'application/json', bodyType: 'raw', rawType: 'json',
   sourceType: 'MANUAL',
@@ -251,9 +251,9 @@ function removeRow(arr: any[], idx: number) {
   arr.splice(idx, 1)
 }
 
-// Path 参数从路径解析（只读展示，排除前导 ${host} 占位符）
+// Path 参数从路径解析（只读展示，排除 ${...} 环境变量占位符）
 const pathParams = computed(() => {
-  const matches = form.path.replace(/^\$\{[^}]*\}/, '').match(/\{(\w+)\}/g) || []
+  const matches = form.path.replace(/\$\{[^}]*\}/g, '').match(/\{(\w+)\}/g) || []
   return matches.map((m) => m.slice(1, -1))
 })
 
@@ -280,6 +280,14 @@ async function fetchApi() {
   try {
     const res: any = await getApi(projectId.value, apiId.value)
     Object.assign(form, res.data)
+    // 将 path 中的前导 ${host} 占位符拆分到独立 host 输入框
+    const leading = form.path.match(/^\$\{[^}]*\}/)
+    if (leading) {
+      form.host = leading[0]
+      form.path = form.path.slice(leading[0].length)
+    } else {
+      form.host = ''
+    }
     if (!form.bodyType) form.bodyType = 'raw'
     if (!form.rawType) form.rawType = 'json'
     if (!form.requestBody) form.requestBody = defaultRequestBody(form.bodyType)
@@ -432,11 +440,13 @@ async function handleSubmit() {
   syncToForm()
   if (!form.name || !form.path) { ElMessage.warning('请填写必填项'); activeTab.value = 'basic'; return }
   try {
+    const payload = { ...form, path: (form.host || '') + form.path, projectId: projectId.value }
+    delete (payload as any).host
     if (isEdit.value) {
-      await updateApi(projectId.value, apiId.value, { ...form, projectId: projectId.value })
+      await updateApi(projectId.value, apiId.value, payload)
       ElMessage.success('更新成功')
     } else {
-      await createApi(projectId.value, { ...form, projectId: projectId.value })
+      await createApi(projectId.value, payload)
       ElMessage.success('创建成功')
     }
     router.push(`/project/${projectId.value}/apis`)
@@ -493,12 +503,19 @@ onMounted(() => {
               </el-col>
             </el-row>
             <el-row :gutter="16">
-              <el-col :span="12">
-                <el-form-item label="接口路径" required>
-                  <el-input v-model="form.path" placeholder="${host}/api/v1/example 或 /api/v1/example" style="font-family: monospace" />
-                  <div class="path-hint">URL 以 ${host} 等占位符开头时，调试/执行将用所选环境的对应变量值作为请求地址</div>
+              <el-col :span="6">
+                <el-form-item label="Host">
+                  <el-input v-model="form.host" placeholder="${host}" style="font-family: monospace" />
                 </el-form-item>
               </el-col>
+              <el-col :span="18">
+                <el-form-item label="接口路径" required>
+                  <el-input v-model="form.path" placeholder="/api/v1/example" style="font-family: monospace" />
+                  <div class="path-hint">Host 以 ${host} 等占位符开头时，调试/执行将用所选环境的对应变量值作为请求地址</div>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="16">
               <el-col :span="12">
                 <el-form-item label="所属分组">
                   <el-select v-model="form.moduleId" placeholder="选择分组" style="width: 100%">

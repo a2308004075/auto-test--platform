@@ -29,7 +29,9 @@ import com.platform.execution.mapper.TestResultMapper;
 import com.platform.execution.mapper.TestCaseMapper;
 import com.platform.execution.mapper.TestSuiteMapper;
 import com.platform.keyword.entity.ApiKeyword;
+import com.platform.keyword.entity.ApiKeywordGroup;
 import com.platform.keyword.entity.Keyword;
+import com.platform.keyword.mapper.ApiKeywordGroupMapper;
 import com.platform.keyword.mapper.ApiKeywordMapper;
 import com.platform.keyword.mapper.KeywordMapper;
 import com.platform.project.dto.*;
@@ -63,6 +65,7 @@ public class ProjectService {
     private final KeywordMapper keywordMapper;
     private final ActionMapper actionMapper;
     private final ActionGroupMapper actionGroupMapper;
+    private final ApiKeywordGroupMapper apiKeywordGroupMapper;
     private final TestSuiteMapper testSuiteMapper;
     private final TestCaseMapper testCaseMapper;
     private final TestPlanMapper testPlanMapper;
@@ -157,6 +160,9 @@ public class ProjectService {
 
         createSystemActionGroup(project.getId(), "全部", null, "系统默认分组，包含所有 Action");
         createSystemActionGroup(project.getId(), "未分组", null, "未分组的 Action");
+
+        createSystemKeywordGroup(project.getId(), "全部", null, "系统默认分组，包含所有接口关键字");
+        createSystemKeywordGroup(project.getId(), "未分类", null, "未分类的接口关键字");
 
         return toResponse(project);
     }
@@ -447,6 +453,16 @@ public class ProjectService {
         group.setDescription(description);
         group.setIsSystem(1);
         actionGroupMapper.insert(group);
+    }
+
+    private void createSystemKeywordGroup(Long projectId, String name, Long parentId, String description) {
+        ApiKeywordGroup group = new ApiKeywordGroup();
+        group.setProjectId(projectId);
+        group.setParentId(parentId);
+        group.setName(name);
+        group.setDescription(description);
+        group.setIsSystem(1);
+        apiKeywordGroupMapper.insert(group);
     }
 
     private ProjectResponse toResponse(Project project) {

@@ -303,8 +303,14 @@ public class ApiService {
                     opId, entry.getHttpMethod(), entry.getPath(), entry.getContentType());
 
             if (opId != null && existingByOpId.containsKey(opId)) {
-                // 更新已有接口
+                // 更新已有接口（内容无变化时跳过，避免无谓的数据库写入与更新时间刷新）
                 Api existingApi = existingByOpId.get(opId);
+                if (isSwaggerApiUnchanged(existingApi, entry)) {
+                    SWAGGER_LOG.info("Swagger 接口内容无变化，跳过更新: operationId={}, path={}",
+                            opId, existingApi.getPath());
+                    skipped++;
+                    continue;
+                }
                 SWAGGER_LOG.info("Swagger 接口更新: operationId={}, oldPath={}, newPath={}, contentType={}",
                         opId, existingApi.getPath(), entry.getPath(), entry.getContentType());
                 existingApi.setName(entry.getName());
@@ -336,9 +342,35 @@ public class ApiService {
             }
         }
 
-        SWAGGER_LOG.info("Swagger 导入结果: total={}, created={}, updated={}, moduleId={}",
-                entries.size(), created, updated, request.getModuleId());
+        SWAGGER_LOG.info("Swagger 导入结果: total={}, created={}, updated={}, skipped={}, moduleId={}",
+                entries.size(), created, updated, skipped, request.getModuleId());
         return SwaggerImportResult.of(entries.size(), created, updated, skipped);
+    }
+
+    /**
+     * 判断 Swagger 解析出的接口内容与库中已有接口是否一致（一致则跳过更新）
+     * ponytail: 按序列化字符串逐字段比较，上游文档仅字段顺序变化时会多更新一次，随后即稳定；需要语义级比较时再做 JSON 规范化
+     */
+    private boolean isSwaggerApiUnchanged(Api existingApi, SwaggerParser.ApiEntry entry) {
+        return sameValue(existingApi.getName(), entry.getName())
+                && sameValue(existingApi.getHttpMethod(), entry.getHttpMethod())
+                && sameValue(existingApi.getPath(), entry.getPath())
+                && sameValue(existingApi.getService(), entry.getService())
+                && sameValue(existingApi.getRequestParams(), entry.getRequestParams())
+                && sameValue(existingApi.getRequestBody(), entry.getRequestBody())
+                && sameValue(existingApi.getBodyType(), entry.getBodyType())
+                && sameValue(existingApi.getRawType(), entry.getRawType())
+                && sameValue(existingApi.getResponseBody(), entry.getResponseBody())
+                && sameValue(existingApi.getHeaders(), entry.getHeaders())
+                && sameValue(existingApi.getContentType(), entry.getContentType())
+                && sameValue(existingApi.getDescription(), entry.getDescription());
+    }
+
+    /**
+     * 字符串等值比较：null 与空串/空白视为相同（库中空串与解析器 null 互不触发更新）
+     */
+    private static boolean sameValue(String a, String b) {
+        return Objects.equals(a, b) || (!StringUtils.hasText(a) && !StringUtils.hasText(b));
     }
 
     /**

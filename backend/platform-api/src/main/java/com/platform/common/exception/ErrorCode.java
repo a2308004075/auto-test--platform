@@ -85,6 +85,7 @@ public final class ErrorCode {
     public static final int KEYWORD_DEPENDENCY_CONFLICT = 1503;
     public static final int KEYWORD_GROUP_NOT_FOUND = 1510;
     public static final int KEYWORD_GROUP_NAME_DUPLICATE = 1511;
+    public static final int KEYWORD_GROUP_SYSTEM = 1512;
 
     // ===== M6 工具方法 (1600-1699) =====
     public static final int TOOL_NOT_FOUND = 1600;
@@ -128,7 +129,7 @@ public final class ErrorCode {
 
     // ===== 业务错误码 → HTTP 状态码映射 =====
     private static final int[] UNAUTHORIZED_CODES = {UNAUTHORIZED, ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED};
-    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, CASE_GROUP_SYSTEM, ACTION_GROUP_SYSTEM};
+    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, CASE_GROUP_SYSTEM, ACTION_GROUP_SYSTEM, KEYWORD_GROUP_SYSTEM};
 
     public static int toHttpStatus(int errorCode) {
         for (int code : UNAUTHORIZED_CODES) {

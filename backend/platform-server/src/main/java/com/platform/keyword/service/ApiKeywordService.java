@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -60,6 +61,7 @@ public class ApiKeywordService {
     private final KeywordMapper keywordMapper;
     private final ApiKeywordMapper apiKeywordMapper;
     private final ApiKeywordGroupMapper apiKeywordGroupMapper;
+    private final ApiKeywordGroupService apiKeywordGroupService;
     private final ApiMapper apiMapper;
     private final ApiModuleMapper apiModuleMapper;
     private final ActionNodeMapper actionNodeMapper;
@@ -91,9 +93,10 @@ public class ApiKeywordService {
             }
             wrapper.in(Keyword::getId, keywordIds);
         }
-        // 按接口关键字分组筛选
+        // 按接口关键字分组筛选（含子孙分组）
         if (groupId != null) {
-            List<Long> keywordIds = findKeywordIdsByGroupId(groupId);
+            Set<Long> groupIds = apiKeywordGroupService.getDescendantGroupIds(groupId);
+            List<Long> keywordIds = findKeywordIdsByGroupIds(new ArrayList<>(groupIds));
             if (keywordIds.isEmpty()) {
                 return PageResponse.of(new ArrayList<>(), 0, page, pageSize);
             }
@@ -457,6 +460,16 @@ public class ApiKeywordService {
     private List<Long> findKeywordIdsByGroupId(Long groupId) {
         LambdaQueryWrapper<ApiKeyword> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ApiKeyword::getGroupId, groupId);
+        List<ApiKeyword> aks = apiKeywordMapper.selectList(wrapper);
+        return aks.stream().map(ApiKeyword::getKeywordId).distinct().collect(Collectors.toList());
+    }
+
+    /**
+     * 查询多个接口关键字分组下的所有关键字 ID
+     */
+    private List<Long> findKeywordIdsByGroupIds(List<Long> groupIds) {
+        LambdaQueryWrapper<ApiKeyword> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(ApiKeyword::getGroupId, groupIds);
         List<ApiKeyword> aks = apiKeywordMapper.selectList(wrapper);
         return aks.stream().map(ApiKeyword::getKeywordId).distinct().collect(Collectors.toList());
     }

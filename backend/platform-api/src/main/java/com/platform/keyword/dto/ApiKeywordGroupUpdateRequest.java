@@ -15,6 +15,14 @@ import javax.validation.constraints.Size;
 @Data
 public class ApiKeywordGroupUpdateRequest {
 
+    /**
+     * 父分组 ID（null=根分组）
+     */
+    private Long parentId;
+
     @Size(max = 100, message = "分组名称长度不能超过 100")
     private String name;
+
+    @Size(max = 500, message = "描述长度不能超过 500")
+    private String description;
 }

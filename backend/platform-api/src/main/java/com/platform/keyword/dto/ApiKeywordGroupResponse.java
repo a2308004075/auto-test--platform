@@ -17,13 +17,16 @@ public class ApiKeywordGroupResponse {
 
     private Long id;
     private Long projectId;
+    private Long parentId;
     private String name;
+    private String description;
+    private Integer isSystem;
     private Long createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     /**
-     * 分组下关键字数量
+     * 分组下关键字数量（含子孙分组）
      */
     private Integer keywordCount;
 }

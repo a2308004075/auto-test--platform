@@ -9,14 +9,14 @@
  * 左侧复用接口分组树 + 右侧高级搜索 + 批量操作(删除/修改分组) + 表字段调整 + 在线调试 + 智能分页
  * 对齐原型 keyword-list.html
  */
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getKeywords, deleteKeyword, generateKeyword, updateKeyword, debugKeyword,
   getKeywordGroups, createKeywordGroup, updateKeywordGroup, deleteKeywordGroup,
 } from '@/api/keyword'
-import { getApis } from '@/api/apidoc'
+import { getApis, getModules } from '@/api/apidoc'
 import { getEnvironments } from '@/api/environment'
 import PageHeader from '@/components/PageHeader/index.vue'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
@@ -44,16 +44,47 @@ const search = reactive({ keyword: '', apiName: '', apiPath: '' })
 // ===== 分组树（接口关键字独立分组） =====
 const groups = ref<any[]>([])
 const activeGroupId = ref<number>(0) // 0 = 全部
+const filterText = ref('')
 const groupMap = computed<Record<number, any>>(() => {
   const m: Record<number, any> = {}
   groups.value.forEach((g) => { m[g.id] = g })
   return m
 })
+// 批量移动可选分组（用户分组 + 未分类系统分组）
+const moveTargetGroups = computed(() =>
+  groups.value.filter((g) => g.isSystem !== 1 || g.name === '未分类'),
+)
+// 分组树：全部(虚拟) + 系统分组(未分类等，排除全部) + 用户分组按 parentId 建树
 const groupTree = computed(() => {
+  const userGroups = groups.value.filter((g) => g.isSystem !== 1)
+  const buildTree = (parentId: number | null): any[] =>
+    userGroups
+      .filter((g) => (g.parentId ?? null) === parentId)
+      .map((g) => ({ ...g, keywordCount: g.keywordCount ?? 0, children: buildTree(g.id) }))
+  const systemGroups = groups.value
+    .filter((g) => g.isSystem === 1 && g.name !== '全部')
+    .map((g) => ({ ...g, keywordCount: g.keywordCount ?? 0, children: [] }))
   return [
-    { id: 0, name: '全部', keywordCount: pagination.total, children: [] },
-    ...groups.value.map((g: any) => ({ ...g, keywordCount: g.keywordCount ?? 0, children: [] })),
+    { id: 0, name: '全部', isSystem: 1, keywordCount: pagination.total, children: [] },
+    ...systemGroups,
+    ...buildTree(null),
   ]
+})
+// 根据搜索关键字过滤分组树
+const filteredGroupTree = computed(() => {
+  const kw = filterText.value.trim().toLowerCase()
+  if (!kw) return groupTree.value
+  const matchRecursive = (nodes: any[]): any[] => {
+    const result: any[] = []
+    for (const node of nodes) {
+      const childMatches = matchRecursive(node.children || [])
+      if (node.name.toLowerCase().includes(kw) || childMatches.length > 0) {
+        result.push({ ...node, children: childMatches.length > 0 ? childMatches : node.children })
+      }
+    }
+    return result
+  }
+  return matchRecursive(groupTree.value)
 })
 function onGroupNodeClick(data: any) {
   activeGroupId.value = data.id
@@ -139,7 +170,9 @@ async function applyBatchGroup() {
     }
     ElMessage.success(`已成功将 ${selectedRows.value.length} 条接口关键字的分组修改为「${groupNameMap.value[batchGroupTarget.value]}」`)
     batchGroupVisible.value = false
+    batchGroupTarget.value = null
     clearSelection()
+    fetchGroups()
     fetchList()
   } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
 }
@@ -147,38 +180,48 @@ async function applyBatchGroup() {
 // ===== 分组管理 =====
 const manageGroupsVisible = ref(false)
 const editingGroupId = ref<number>(0)
-const groupForm = reactive({ name: '' })
+const groupForm = reactive({ name: '', parentId: null as number | null, description: '' })
 
-function openManageGroups() {
-  editingGroupId.value = 0
-  groupForm.name = ''
-  manageGroupsVisible.value = true
-}
 function openCreateGroup() {
   editingGroupId.value = 0
   groupForm.name = ''
+  groupForm.parentId = null
+  groupForm.description = ''
 }
 function openEditGroup(g: any) {
+  if (g.isSystem === 1) {
+    ElMessage.warning('系统默认分组不可编辑')
+    return
+  }
   editingGroupId.value = g.id
   groupForm.name = g.name
+  groupForm.parentId = g.parentId ?? null
+  groupForm.description = g.description || ''
 }
 async function handleGroupSubmit() {
   if (!groupForm.name.trim()) { ElMessage.warning('请输入分组名称'); return }
+  const payload = { name: groupForm.name.trim(), parentId: groupForm.parentId, description: groupForm.description?.trim() || undefined }
   try {
     if (editingGroupId.value) {
-      await updateKeywordGroup(projectId.value, editingGroupId.value, { name: groupForm.name.trim() })
+      await updateKeywordGroup(projectId.value, editingGroupId.value, payload)
       ElMessage.success('更新成功')
     } else {
-      await createKeywordGroup(projectId.value, { name: groupForm.name.trim() })
+      await createKeywordGroup(projectId.value, payload)
       ElMessage.success('创建成功')
     }
     groupForm.name = ''
+    groupForm.parentId = null
+    groupForm.description = ''
     editingGroupId.value = 0
     fetchGroups()
   } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
 }
 function handleDeleteGroup(g: any) {
-  ElMessageBox.confirm(`确定删除分组「${g.name}」？该分组下的关键字将变为未分组。`, '确认删除', { type: 'warning' })
+  if (g.isSystem === 1) {
+    ElMessage.warning('系统默认分组不可删除')
+    return
+  }
+  ElMessageBox.confirm(`确定删除分组「${g.name}」？该分组下的关键字将变为未分类。`, '确认删除', { type: 'warning' })
     .then(async () => {
       await deleteKeywordGroup(projectId.value, g.id)
       ElMessage.success('删除成功')
@@ -188,16 +231,116 @@ function handleDeleteGroup(g: any) {
     .catch(() => {})
 }
 
+// ===== 右键上下文菜单 =====
+const contextMenuVisible = ref(false)
+const contextMenuPos = reactive({ x: 0, y: 0 })
+const contextGroup = ref<any>(null)
+
+function closeContextMenu() {
+  contextMenuVisible.value = false
+  contextGroup.value = null
+}
+function onPanelContextMenu(e: MouseEvent) {
+  e.preventDefault()
+  contextGroup.value = null
+  contextMenuPos.x = e.clientX
+  contextMenuPos.y = e.clientY
+  contextMenuVisible.value = true
+}
+function onNodeContextMenu(e: MouseEvent, data: any) {
+  e.preventDefault()
+  e.stopPropagation()
+  contextGroup.value = data
+  contextMenuPos.x = e.clientX
+  contextMenuPos.y = e.clientY
+  contextMenuVisible.value = true
+}
+function contextCreateGroup() {
+  closeContextMenu()
+  openCreateGroup()
+  manageGroupsVisible.value = true
+}
+function contextCreateChild() {
+  if (!contextGroup.value) return
+  closeContextMenu()
+  editingGroupId.value = 0
+  groupForm.name = ''
+  groupForm.parentId = contextGroup.value.id
+  groupForm.description = ''
+  manageGroupsVisible.value = true
+}
+function contextEdit() {
+  if (!contextGroup.value) return
+  closeContextMenu()
+  openEditGroup(contextGroup.value)
+  manageGroupsVisible.value = true
+}
+function contextDelete() {
+  if (!contextGroup.value) return
+  closeContextMenu()
+  handleDeleteGroup(contextGroup.value)
+}
+
+onMounted(() => {
+  document.addEventListener('click', closeContextMenu)
+  fetchGroups()
+  fetchList()
+})
+onUnmounted(() => {
+  document.removeEventListener('click', closeContextMenu)
+})
+
 // ===== 从接口生成 =====
 const generateVisible = ref(false)
 const generateLoading = ref(false)
 const apis = ref<any[]>([])
+const modules = ref<any[]>([])
 const selectedApiId = ref<number>(0)
+const groupedApis = computed(() => {
+  const allModules = modules.value
+  const allApis = apis.value
+  // Group APIs by moduleId
+  const apisByMod: Record<number, any[]> = {}
+  allApis.forEach((a: any) => {
+    const mid = a.moduleId || 0
+    if (!apisByMod[mid]) apisByMod[mid] = []
+    apisByMod[mid].push(a)
+  })
+  // Build tree from modules (exclude '全部' virtual node)
+  const rootMods = allModules
+    .filter((m: any) => m.name !== '全部' && (m.parentId == null || m.parentId === 0))
+    .map((m: any) => ({ ...m, childModules: [] as any[] }))
+  const rootMap: Record<number, any> = {}
+  rootMods.forEach((m: any) => { rootMap[m.id] = m })
+  allModules
+    .filter((m: any) => m.parentId != null && m.parentId !== 0 && rootMap[m.parentId])
+    .forEach((m: any) => { rootMap[m.parentId].childModules.push(m) })
+  // Build result: each root module with its direct APIs + child modules with their APIs
+  return rootMods
+    .map((root: any) => ({
+      label: root.name,
+      apis: apisByMod[root.id] || [],
+      children: (root.childModules || [])
+        .map((child: any) => ({ label: child.name, apis: apisByMod[child.id] || [] }))
+        .filter((c: any) => c.apis.length > 0),
+    }))
+    .filter((g: any) => g.apis.length > 0 || g.children.length > 0)
+    .concat(
+      apisByMod[0]?.length ? [{ label: '未分类', apis: apisByMod[0], children: [] }] : [],
+    )
+})
 async function openGenerate() {
   try {
-    const res: any = await getApis(projectId.value, { page: 1, pageSize: 100 })
-    apis.value = res.data?.items || []
-  } catch { apis.value = [] }
+    const [apiRes, modRes]: any[] = await Promise.all([
+      getApis(projectId.value, { page: 1, pageSize: 100 }),
+      getModules(projectId.value),
+    ])
+    apis.value = apiRes.data?.items || []
+    modules.value = modRes.data || []
+  } catch {
+    apis.value = []
+    modules.value = []
+  }
   selectedApiId.value = 0
   generateVisible.value = true
 }
@@ -373,8 +516,6 @@ const highlightedDebugResponse = computed(() => {
   if (!debugResult.value) return ''
   return syntaxHighlightJSON(JSON.stringify(debugResult.value.response, null, 2))
 })
-
-onMounted(() => { fetchGroups(); fetchList() })
 </script>
 
 <template>
@@ -386,14 +527,21 @@ onMounted(() => { fetchGroups(); fetchList() })
 
     <div class="kw-layout">
       <!-- 左侧分组树（接口关键字独立分组） -->
-      <div class="module-panel">
+      <div class="module-panel" @contextmenu="onPanelContextMenu">
         <div class="module-head">
           <span class="module-title">关键字分组</span>
-          <el-button link type="primary" size="small" @click="openManageGroups">管理</el-button>
         </div>
+        <el-input
+          v-model="filterText"
+          class="tree-search"
+          placeholder="搜索分组"
+          clearable
+          size="small"
+          prefix-icon="Search"
+        />
         <div class="module-tree">
           <el-tree
-            :data="groupTree"
+            :data="filteredGroupTree"
             node-key="id"
             :props="{ label: 'name', children: 'children' }"
             :default-expand-all="true"
@@ -401,8 +549,12 @@ onMounted(() => { fetchGroups(); fetchList() })
             @node-click="onGroupNodeClick"
           >
             <template #default="{ data }">
-              <div :class="['module-tree-node', { active: activeGroupId === data.id }]">
+              <div
+                :class="['module-tree-node', { active: activeGroupId === data.id }]"
+                @contextmenu.stop="onNodeContextMenu($event, data)"
+              >
                 <span class="module-name">{{ data.name }}</span>
+                <span v-if="data.isSystem === 1" class="module-lock" title="系统默认分组">🔒</span>
                 <span class="module-count">{{ data.keywordCount ?? 0 }}</span>
               </div>
             </template>
@@ -515,7 +667,12 @@ onMounted(() => { fetchGroups(); fetchList() })
     <el-dialog v-model="generateVisible" title="从接口快速生成关键字" width="500px">
       <el-form-item label="选择接口">
         <el-select v-model="selectedApiId" placeholder="选择要生成关键字的接口" filterable style="width: 100%">
-          <el-option v-for="api in apis" :key="api.id" :value="api.id" :label="`[${api.httpMethod}] ${api.name}`" />
+          <el-option-group v-for="group in groupedApis" :key="group.label" :label="group.label">
+            <el-option v-for="api in group.apis" :key="api.id" :value="api.id" :label="`[${api.httpMethod}] ${api.name}`" />
+            <el-option-group v-for="child in group.children" :key="child.label" :label="`  ${child.label}`">
+              <el-option v-for="api in child.apis" :key="api.id" :value="api.id" :label="`[${api.httpMethod}] ${api.name}`" />
+            </el-option-group>
+          </el-option-group>
         </el-select>
       </el-form-item>
       <template #footer>
@@ -531,14 +688,14 @@ onMounted(() => { fetchGroups(); fetchList() })
       </p>
       <el-form-item label="目标分组" required>
         <el-select v-model="batchGroupTarget" placeholder="请选择分组" filterable style="width: 100%">
-          <el-option v-for="g in groups" :key="g.id" :value="g.id" :label="g.name" />
+          <el-option v-for="g in moveTargetGroups" :key="g.id" :value="g.id" :label="g.name" />
         </el-select>
       </el-form-item>
       <div v-if="selectedRows.length" style="margin-top: 12px; padding: 12px; background: #f5f7fa; border-radius: 4px; font-size: 13px; max-height: 120px; overflow-y: auto">
         <div style="color: #909399; margin-bottom: 6px">以下接口关键字的分组将被修改：</div>
         <div v-for="row in selectedRows" :key="row.id" style="padding: 2px 0">
           <span style="color: #606266">{{ row.name }}</span>
-          <span style="margin: 0 6px; color: #c0c4cc; font-size: 12px">{{ row.groupName || '未分组' }}</span>
+          <span style="margin: 0 6px; color: #c0c4cc; font-size: 12px">{{ row.groupName || '未分类' }}</span>
           <span style="color: #c0c4cc">→</span>
           <span style="color: #409eff; font-weight: 500; margin-left: 4px">{{ batchGroupTarget ? groupNameMap[batchGroupTarget] : '请选择' }}</span>
         </div>
@@ -549,25 +706,20 @@ onMounted(() => { fetchGroups(); fetchList() })
       </template>
     </el-dialog>
 
-    <!-- 分组管理弹窗 -->
-    <el-dialog v-model="manageGroupsVisible" title="管理关键字分组" width="520px">
-      <div style="display: flex; gap: 8px; margin-bottom: 12px">
-        <el-input v-model="groupForm.name" placeholder="输入分组名称" @keyup.enter="handleGroupSubmit" />
-        <el-button type="primary" @click="handleGroupSubmit">{{ editingGroupId ? '更新' : '新增' }}</el-button>
-        <el-button v-if="editingGroupId" @click="openCreateGroup">取消编辑</el-button>
-      </div>
-      <el-table :data="groups" size="small" border>
-        <el-table-column prop="name" label="分组名称" show-overflow-tooltip />
-        <el-table-column label="关键字数" width="90" align="center">
-          <template #default="{ row }">{{ row.keywordCount ?? 0 }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="120" align="center">
-          <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="openEditGroup(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDeleteGroup(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+    <!-- 分组新建/编辑弹窗 -->
+    <el-dialog v-model="manageGroupsVisible" :title="editingGroupId ? '编辑分组' : '新建分组'" width="460px">
+      <el-form label-position="top">
+        <el-form-item label="分组名称" required>
+          <el-input v-model="groupForm.name" placeholder="如：用户管理服务" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="groupForm.description" type="textarea" :rows="2" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="manageGroupsVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleGroupSubmit">确定</el-button>
+      </template>
     </el-dialog>
 
     <!-- 在线调试弹窗 -->
@@ -652,6 +804,32 @@ onMounted(() => { fetchGroups(); fetchList() })
       </template>
     </el-dialog>
 
+    <!-- 右键上下文菜单 -->
+    <Teleport to="body">
+      <div
+        v-if="contextMenuVisible"
+        class="context-menu"
+        :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
+        @click.stop
+      >
+        <!-- 空白区域右键：仅显示"新建分组" -->
+        <template v-if="!contextGroup">
+          <div class="context-menu-item" @click="contextCreateGroup">新建分组</div>
+        </template>
+        <!-- 系统分组右键：不允许编辑和删除，仅提示 -->
+        <template v-else-if="contextGroup.isSystem === 1">
+          <div class="context-menu-item disabled">系统分组不可操作</div>
+        </template>
+        <!-- 用户分组右键 -->
+        <template v-else>
+          <div class="context-menu-item" @click="contextCreateChild">新建子分组</div>
+          <div class="context-menu-divider" />
+          <div class="context-menu-item" @click="contextEdit">编辑</div>
+          <div class="context-menu-item danger" @click="contextDelete">删除</div>
+        </template>
+      </div>
+    </Teleport>
+
   </div>
 </template>
 
@@ -678,6 +856,13 @@ onMounted(() => { fetchGroups(); fetchList() })
   font-weight: 600;
   font-size: 14px;
   color: #303133;
+}
+.tree-search {
+  margin: 8px 0;
+}
+.tree-search :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+  border-radius: 4px;
 }
 .module-tree {
   max-height: 560px;
@@ -718,6 +903,12 @@ onMounted(() => { fetchGroups(); fetchList() })
   color: #909399;
   flex-shrink: 0;
 }
+.module-lock {
+  font-size: 10px;
+  color: #c0c4cc;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
 .kw-content {
   flex: 1;
   min-width: 0;
@@ -727,6 +918,47 @@ onMounted(() => { fetchGroups(); fetchList() })
   justify-content: flex-end;
   margin-bottom: 8px;
 }
+
+/* 右键上下文菜单 */
+.context-menu {
+  position: fixed;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px 0;
+  min-width: 130px;
+  z-index: 9999;
+}
+.context-menu-item {
+  padding: 7px 14px;
+  font-size: 13px;
+  color: #303133;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+}
+.context-menu-item:hover {
+  background: #f5f7fa;
+}
+.context-menu-item.danger {
+  color: #f56c6c;
+}
+.context-menu-item.danger:hover {
+  background: #fef0f0;
+}
+.context-menu-item.disabled {
+  color: #c0c4cc;
+  cursor: not-allowed;
+}
+.context-menu-divider {
+  height: 1px;
+  background: #ebeef5;
+  margin: 4px 0;
+}
+
 /* 在线调试弹窗样式 */
 .debug-api-bar {
   padding: 10px 12px;

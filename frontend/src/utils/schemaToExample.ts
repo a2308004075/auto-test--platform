@@ -24,7 +24,8 @@ export function schemaToExample(schema: any): any {
   }
 
   if (type === 'array') {
-    return []
+    const items = schema.items ? schemaToExample(schema.items) : null
+    return items != null ? [items] : []
   }
 
   if (type === 'string') return ''
@@ -78,6 +79,12 @@ export function schemaToExampleString(schema: any, indent = 0): string {
   }
 
   if (type === 'array') {
+    if (schema.items) {
+      const inner = schemaToExampleString(schema.items, indent + 2)
+      const prefix = ' '.repeat(indent)
+      const innerPrefix = ' '.repeat(indent + 2)
+      return `[\n${innerPrefix}${inner}\n${prefix}]`
+    }
     return '[]'
   }
 

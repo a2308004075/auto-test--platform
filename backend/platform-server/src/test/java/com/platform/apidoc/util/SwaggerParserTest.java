@@ -173,6 +173,73 @@ class SwaggerParserTest {
         assertTrue(entry.getRequestParams().contains("\"type\":\"string\""));
     }
 
+    /**
+     * 递归 $ref 解析自检：数组 items、嵌套 properties、循环引用
+     */
+    private static final String RECURSIVE_REF_JSON = "{\n" +
+            "  \"openapi\": \"3.0.1\",\n" +
+            "  \"info\": {\"title\": \"T\", \"version\": \"1\"},\n" +
+            "  \"paths\": {\n" +
+            "    \"/modbusVirtual/updateReadHoldingRegisters\": {\n" +
+            "      \"post\": {\n" +
+            "        \"operationId\": \"updateReadHoldingRegisters\",\n" +
+            "        \"requestBody\": {\"content\": {\"application/json\": {\"schema\": {\"type\": \"array\", \"items\": {\"$ref\": \"#/components/schemas/UpdateHoldingRegistersDTO\"}}}}},\n" +
+            "        \"responses\": {\"200\": {\"description\": \"OK\"}}\n" +
+            "      }\n" +
+            "    },\n" +
+            "    \"/user/create\": {\n" +
+            "      \"post\": {\n" +
+            "        \"operationId\": \"createUser\",\n" +
+            "        \"requestBody\": {\"content\": {\"application/json\": {\"schema\": {\"$ref\": \"#/components/schemas/UserVO\"}}}},\n" +
+            "        \"responses\": {\"200\": {\"description\": \"OK\"}}\n" +
+            "      }\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"components\": {\n" +
+            "    \"schemas\": {\n" +
+            "      \"UpdateHoldingRegistersDTO\": {\"type\": \"object\", \"properties\": {\"id\": {\"type\": \"integer\"}, \"port\": {\"type\": \"integer\"}, \"slaveId\": {\"type\": \"integer\"}}},\n" +
+            "      \"UserVO\": {\"type\": \"object\", \"properties\": {\"name\": {\"type\": \"string\"}, \"role\": {\"$ref\": \"#/components/schemas/RoleVO\"}, \"tags\": {\"type\": \"array\", \"items\": {\"$ref\": \"#/components/schemas/TagVO\"}}}},\n" +
+            "      \"RoleVO\": {\"type\": \"object\", \"properties\": {\"id\": {\"type\": \"integer\"}, \"parent\": {\"$ref\": \"#/components/schemas/RoleVO\"}}},\n" +
+            "      \"TagVO\": {\"type\": \"object\", \"properties\": {\"label\": {\"type\": \"string\"}}}\n" +
+            "    }\n" +
+            "  }\n" +
+            "}";
+
+    @Test
+    void resolveRef_arrayItemsExpanded() {
+        SwaggerParser.ParseResult result = SwaggerParser.parse(RECURSIVE_REF_JSON);
+        SwaggerParser.ApiEntry entry = result.getApis().get(0);
+        // 数组 items 的 $ref 应被展开为实际 schema
+        assertTrue(entry.getRequestBody().contains("\"type\":\"array\""));
+        assertTrue(entry.getRequestBody().contains("\"items\":"));
+        assertTrue(entry.getRequestBody().contains("\"id\":"));
+        assertTrue(entry.getRequestBody().contains("\"port\":"));
+        assertTrue(entry.getRequestBody().contains("\"slaveId\":"));
+        assertFalse(entry.getRequestBody().contains("$ref"), "数组 items 的 $ref 应被展开");
+    }
+
+    @Test
+    void resolveRef_nestedPropertiesExpanded() {
+        SwaggerParser.ParseResult result = SwaggerParser.parse(RECURSIVE_REF_JSON);
+        SwaggerParser.ApiEntry entry = result.getApis().get(1);
+        // 嵌套属性的 $ref 应被递归展开
+        assertTrue(entry.getRequestBody().contains("\"name\":"));
+        // properties.role 的 $ref 展开
+        assertTrue(entry.getRequestBody().contains("\"role\":"));
+        assertTrue(entry.getRequestBody().contains("\"label\":"), "嵌套数组 items 的 $ref 也应展开");
+        // 除循环引用外不应有残留 $ref（RoleVO.parent 自引用保留）
+        assertTrue(entry.getRequestBody().indexOf("$ref") == entry.getRequestBody().lastIndexOf("$ref"),
+                "只应保留循环引用的 $ref（RoleVO.parent）");
+    }
+
+    @Test
+    void resolveRef_circularReferenceTerminated() {
+        SwaggerParser.ParseResult result = SwaggerParser.parse(RECURSIVE_REF_JSON);
+        SwaggerParser.ApiEntry entry = result.getApis().get(1);
+        // RoleVO.parent 自引用不应导致死循环，且应保留 $ref 标记
+        assertTrue(entry.getRequestBody().contains("#/components/schemas/RoleVO"));
+    }
+
     @Test
     void parseOpenApi3_bodyTypeByContentType() {
         String json = "{\n" +

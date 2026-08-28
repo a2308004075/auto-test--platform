@@ -139,9 +139,14 @@ function extractParamsFromApi(api: any): any[] {
           }
         } catch { /* ignore */ }
       }
-    } else if (bodyType === 'raw') {
-      // JSON/文本整体：作为单个 Body 字段，预设值从接口文档 requestBody 带入
-      const rawType = api.rawType || 'json'
+    } else if (bodyType === 'raw' || bodyType === 'graphql' || bodyType === 'binary') {
+      // JSON/文本/GraphQL/二进制整体：作为单个 Body 字段，预设值从接口文档 requestBody 带入
+      let rawType = api.rawType
+      if (!rawType) {
+        if (bodyType === 'graphql') rawType = 'graphql'
+        else if (bodyType === 'binary') rawType = 'binary'
+        else rawType = 'json'
+      }
       let bodyValue = ''
       if (api.requestBody) {
         try {
@@ -153,7 +158,7 @@ function extractParamsFromApi(api: any): any[] {
       }
       params.push({
         name: '__body__',
-        type: rawType === 'json' ? 'json' : 'string',
+        type: rawType === 'json' || rawType === 'graphql' ? 'json' : 'string',
         value: bodyValue,
         description: `请求体 (${rawType})`,
         in: 'body',

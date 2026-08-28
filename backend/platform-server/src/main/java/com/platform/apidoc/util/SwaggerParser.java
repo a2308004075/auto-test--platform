@@ -7,6 +7,7 @@ package com.platform.apidoc.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.platform.apidoc.entity.Api;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -293,28 +294,61 @@ public class SwaggerParser {
 
     /**
      * 解析 $ref 引用（兼容 #/definitions/Name 和 #/components/schemas/Name）
+     * 递归展开所有嵌套引用，通过 visited 集合防止循环引用死循环
      */
     private static JsonNode resolveRef(JsonNode node, Map<String, JsonNode> definitions) {
+        return doResolveRef(node, definitions, new HashSet<String>());
+    }
+
+    private static JsonNode doResolveRef(JsonNode node, Map<String, JsonNode> definitions, Set<String> visited) {
         if (node == null) {
             return null;
         }
+        // 1. 直接 $ref：查找定义并递归展开
         if (node.has("$ref")) {
             String ref = node.get("$ref").asText();
-            // #/definitions/ClassName
-            String defName = ref.substring(ref.lastIndexOf('/') + 1);
-            JsonNode resolved = definitions.get(defName);
-            return resolved != null ? resolved : node;
-        }
-        // 递归解析数组 items
-        if (node.has("items")) {
-            JsonNode items = node.get("items");
-            if (items.has("$ref")) {
-                String ref = items.get("$ref").asText();
+            if (!visited.add(ref)) {
+                return node; // 循环引用，保留原始 $ref
+            }
+            try {
                 String defName = ref.substring(ref.lastIndexOf('/') + 1);
                 JsonNode resolved = definitions.get(defName);
                 if (resolved != null) {
-                    // 创建新节点替换 items
-                    return node;
+                    return doResolveRef(resolved, definitions, visited);
+                }
+                return node;
+            } finally {
+                visited.remove(ref);
+            }
+        }
+        // 2. 递归解析数组 items
+        if (node.has("items")) {
+            JsonNode resolvedItems = doResolveRef(node.get("items"), definitions, visited);
+            if (resolvedItems != node.get("items")) {
+                ObjectNode copy = (ObjectNode) node.deepCopy();
+                copy.set("items", resolvedItems);
+                return copy;
+            }
+        }
+        // 3. 递归解析对象 properties
+        if (node.has("properties")) {
+            JsonNode properties = node.get("properties");
+            if (properties.isObject()) {
+                ObjectNode copy = null;
+                Iterator<String> fieldNames = properties.fieldNames();
+                while (fieldNames.hasNext()) {
+                    String fieldName = fieldNames.next();
+                    JsonNode prop = properties.get(fieldName);
+                    JsonNode resolvedProp = doResolveRef(prop, definitions, visited);
+                    if (resolvedProp != prop) {
+                        if (copy == null) {
+                            copy = (ObjectNode) node.deepCopy();
+                        }
+                        ((ObjectNode) copy.get("properties")).set(fieldName, resolvedProp);
+                    }
+                }
+                if (copy != null) {
+                    return copy;
                 }
             }
         }

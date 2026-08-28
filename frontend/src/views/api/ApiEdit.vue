@@ -124,7 +124,12 @@ function parseArr(raw?: string): any[] {
 function looksLikeSchema(text: string): boolean {
   try {
     const obj = JSON.parse(text)
-    return obj && typeof obj === 'object' && 'type' in obj && 'properties' in obj
+    if (!obj || typeof obj !== 'object') return false
+    // 对象 schema：有 type + properties
+    if ('type' in obj && 'properties' in obj) return true
+    // 数组 schema：有 type=array + items
+    if (obj.type === 'array' && obj.items) return true
+    return false
   } catch {
     return false
   }

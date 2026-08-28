@@ -298,11 +298,7 @@ const defaultColumns: ColumnItem[] = [
   { key: 'apiGroup', label: '关联接口分组', locked: true, visible: true },
   { key: 'apiName', label: '关联接口名', locked: true, visible: true },
   { key: 'apiPath', label: '关联接口路径', locked: true, visible: true },
-  { key: 'params', label: '参数', locked: false, visible: false },
-  { key: 'response', label: '返回', locked: false, visible: false },
   { key: 'group', label: '关键字分组', locked: false, visible: true },
-  { key: 'category', label: '分类', locked: false, visible: false },
-  { key: 'tags', label: '标签', locked: false, visible: false },
   { key: 'desc', label: '描述', locked: true, visible: true },
   { key: 'createTime', label: '创建时间', locked: false, visible: false },
   { key: 'refCount', label: '被引用次数', locked: false, visible: false },
@@ -317,26 +313,6 @@ function resetColumns() {
 }
 
 // ===== 格式化辅助 =====
-function parseTags(raw?: string): string[] {
-  if (!raw) return []
-  try { const a = JSON.parse(raw); return Array.isArray(a) ? a : [] } catch { return [] }
-}
-function parseParamNames(raw?: string): string {
-  if (!raw) return '--'
-  try {
-    const arr = JSON.parse(raw)
-    if (!Array.isArray(arr)) return '--'
-    return arr.map((p: any) => p.name).filter(Boolean).join(', ') || '--'
-  } catch { return '--' }
-}
-function parseResponseFields(raw?: string): string {
-  if (!raw) return '--'
-  try {
-    const obj = JSON.parse(raw)
-    if (!obj?.fields) return '--'
-    return obj.fields.map((f: any) => f.path).filter(Boolean).join(', ') || '--'
-  } catch { return '--' }
-}
 function parseAssertions(raw?: string): any[] {
   if (!raw) return []
   try {
@@ -508,12 +484,10 @@ const highlightedDebugResponse = computed(() => {
             <span class="pro-search-label">关联接口名</span>
             <el-input v-model="search.apiName" placeholder="输入关联接口名" clearable style="width: 160px" @keyup.enter="handleSearch" />
           </div>
-          <template #collapse>
-            <div class="pro-search-field">
-              <span class="pro-search-label">关联接口路径</span>
-              <el-input v-model="search.apiPath" placeholder="输入关联接口路径" clearable style="width: 200px" @keyup.enter="handleSearch" />
-            </div>
-          </template>
+          <div class="pro-search-field">
+            <span class="pro-search-label">关联接口路径</span>
+            <el-input v-model="search.apiPath" placeholder="输入关联接口路径" clearable style="width: 200px" @keyup.enter="handleSearch" />
+          </div>
         </ProSearchCard>
 
         <div class="table-toolbar">
@@ -552,26 +526,8 @@ const highlightedDebugResponse = computed(() => {
           <el-table-column v-if="isColVisible('apiPath')" label="关联接口路径" width="240" show-overflow-tooltip>
             <template #default="{ row }"><code style="font-size: 12px; color: #909399">{{ row.apiPath || '--' }}</code></template>
           </el-table-column>
-          <el-table-column v-if="isColVisible('params')" label="参数" width="180" show-overflow-tooltip>
-            <template #default="{ row }">{{ parseParamNames(row.testData) }}</template>
-          </el-table-column>
-          <el-table-column v-if="isColVisible('response')" label="返回" width="180" show-overflow-tooltip>
-            <template #default="{ row }">{{ parseResponseFields(row.responseAssertion) }}</template>
-          </el-table-column>
           <el-table-column v-if="isColVisible('group')" label="关键字分组" width="140">
             <template #default="{ row }">{{ row.groupName || groupMap[row.groupId]?.name || '--' }}</template>
-          </el-table-column>
-          <el-table-column v-if="isColVisible('category')" label="分类" width="120">
-            <template #default="{ row }">
-              <el-tag v-if="row.category" size="small">{{ row.category }}</el-tag>
-              <span v-else style="color: #c0c4cc">--</span>
-            </template>
-          </el-table-column>
-          <el-table-column v-if="isColVisible('tags')" label="标签" width="200">
-            <template #default="{ row }">
-              <el-tag v-for="t in parseTags(row.tags)" :key="t" size="small" type="info" style="margin-right: 4px">{{ t }}</el-tag>
-              <span v-if="!parseTags(row.tags).length" style="color: #c0c4cc">--</span>
-            </template>
           </el-table-column>
           <el-table-column v-if="isColVisible('desc')" prop="description" label="描述" show-overflow-tooltip />
           <el-table-column v-if="isColVisible('createTime')" label="创建时间" width="120">

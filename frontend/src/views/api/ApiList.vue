@@ -340,6 +340,11 @@ function sourceLabel(t?: string) {
   if (!t) return '--'
   return sourceTypeOptions.value.find((s) => s.value === t)?.label || t
 }
+// 描述列：最多显示 10 个字符，超出用省略号，悬浮 title 显示全文
+function descText(v?: string) {
+  const s = v || ''
+  return s.length > 10 ? s.slice(0, 10) + '...' : s
+}
 // ===== 调试弹窗 =====
 const debugVisible = ref(false)
 const debugApiId = ref(0)
@@ -461,7 +466,11 @@ onBeforeUnmount(() => {
           <el-table-column v-if="isColVisible('group')" label="分组" width="120">
             <template #default="{ row }">{{ row.moduleName || moduleMap[row.moduleId]?.name || '--' }}</template>
           </el-table-column>
-          <el-table-column v-if="isColVisible('desc')" prop="description" label="描述" show-overflow-tooltip />
+          <el-table-column v-if="isColVisible('desc')" label="描述" min-width="180">
+            <template #default="{ row }">
+              <span :title="row.description">{{ descText(row.description) }}</span>
+            </template>
+          </el-table-column>
           <el-table-column v-if="isColVisible('source')" label="来源" width="90">
             <template #default="{ row }">{{ sourceLabel(row.sourceType) }}</template>
           </el-table-column>

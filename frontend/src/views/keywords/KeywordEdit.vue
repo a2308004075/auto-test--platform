@@ -200,7 +200,7 @@ async function refreshParams() {
 // 新建模式：选择接口后自动填充参数（已整合到 selectApi 函数）
 
 // ===== 断言字段可视化编辑（序列化为 JSON 存入 form.responseAssertion） =====
-const expectedStatusCode = ref('')
+const expectedStatusCode = ref('200')
 const assertionFields = ref<any[]>([])
 watch([expectedStatusCode, assertionFields], () => {
   form.responseAssertion = JSON.stringify({
@@ -253,7 +253,7 @@ async function fetchKeyword() {
       expectedStatusCode.value = assertion.statusCode || ''
       assertionFields.value = Array.isArray(assertion.fields) ? assertion.fields : []
     } catch {
-      expectedStatusCode.value = ''
+      expectedStatusCode.value = '200'
       assertionFields.value = []
     }
     referenceCount.value = data.referenceCount ?? 0
@@ -358,7 +358,7 @@ function handleSaveSuccessContinue() {
   })
   testDataRows.value = []
   assertionFields.value = []
-  expectedStatusCode.value = ''
+  expectedStatusCode.value = '200'
   activeTab.value = 'basic'
   router.replace({ hash: '' })
 }
@@ -654,7 +654,7 @@ onMounted(() => {
     </div>
 
     <!-- 保存成功弹窗（创建模式） -->
-    <el-dialog v-model="saveSuccessVisible" title="保存接口关键字" width="380px" :close-on-click-modal="false">
+    <el-dialog v-model="saveSuccessVisible" class="save-success-dialog" title="保存接口关键字" width="320px" :close-on-click-modal="false">
       <p style="font-size: 14px; color: #606266; line-height: 1.6; text-align: center;">
         接口关键字 <strong>{{ savedKeywordName }}</strong> 保存成功！
       </p>

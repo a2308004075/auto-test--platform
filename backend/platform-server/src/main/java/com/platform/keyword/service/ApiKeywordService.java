@@ -333,11 +333,17 @@ public class ApiKeywordService {
             debugRequest.setQueryParams(remainingParams);
         } else {
             // POST / PUT / PATCH 使用 JSON body
-            try {
-                debugRequest.setBody(objectMapper.writeValueAsString(remainingParams));
-            } catch (Exception e) {
-                log.warn("关键字测试数据序列化为 JSON 失败: {}", e.getMessage());
-                debugRequest.setBody("");
+            // ponytail: __body__ 整体参数直接发送原始 JSON，而非包装为 {"__body__": "..."}
+            if (remainingParams.size() == 1 && remainingParams.containsKey("__body__")) {
+                String bodyValue = remainingParams.get("__body__");
+                debugRequest.setBody(StringUtils.hasText(bodyValue) ? bodyValue : "");
+            } else {
+                try {
+                    debugRequest.setBody(objectMapper.writeValueAsString(remainingParams));
+                } catch (Exception e) {
+                    log.warn("关键字测试数据序列化为 JSON 失败: {}", e.getMessage());
+                    debugRequest.setBody("");
+                }
             }
         }
 

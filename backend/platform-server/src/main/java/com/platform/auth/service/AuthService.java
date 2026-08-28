@@ -6,10 +6,12 @@
 package com.platform.auth.service;
 
 import com.platform.auth.dto.*;
+import com.platform.auth.entity.GlobalSettings;
 import com.platform.auth.entity.LoginLog;
 import com.platform.auth.entity.TokenBlacklist;
 import com.platform.auth.entity.User;
 import com.platform.auth.entity.UserRole;
+import com.platform.auth.mapper.GlobalSettingsMapper;
 import com.platform.auth.mapper.LoginLogMapper;
 import com.platform.auth.mapper.TokenBlacklistMapper;
 import com.platform.auth.mapper.UserMapper;
@@ -45,6 +47,7 @@ public class AuthService {
     private final UserRoleMapper userRoleMapper;
     private final TokenBlacklistMapper tokenBlacklistMapper;
     private final LoginLogMapper loginLogMapper;
+    private final GlobalSettingsMapper globalSettingsMapper;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
     private final CaptchaService captchaService;
@@ -56,11 +59,16 @@ public class AuthService {
     private static final String SUPER_ADMIN_DISPLAY_NAME = "超级管理员";
     /** 内置超级管理员角色编码（superAdmin 账号专属，高于 ADMIN） */
     private static final String BUILTIN_ROLE_CODE = "SUPER_ADMIN";
+    /** 登录有效时长配置键（天，全局统一） */
+    private static final String CONFIG_LOGIN_VALIDITY_DAYS = "session.login_validity_days";
+    /** 登录有效时长回退默认值（天） */
+    private static final int DEFAULT_LOGIN_VALIDITY_DAYS = 5;
 
     public AuthService(UserMapper userMapper,
                        UserRoleMapper userRoleMapper,
                        TokenBlacklistMapper tokenBlacklistMapper,
                        LoginLogMapper loginLogMapper,
+                       GlobalSettingsMapper globalSettingsMapper,
                        JwtTokenProvider jwtTokenProvider,
                        PasswordEncoder passwordEncoder,
                        CaptchaService captchaService,
@@ -69,10 +77,37 @@ public class AuthService {
         this.userRoleMapper = userRoleMapper;
         this.tokenBlacklistMapper = tokenBlacklistMapper;
         this.loginLogMapper = loginLogMapper;
+        this.globalSettingsMapper = globalSettingsMapper;
         this.jwtTokenProvider = jwtTokenProvider;
         this.passwordEncoder = passwordEncoder;
         this.captchaService = captchaService;
         this.roleService = roleService;
+    }
+
+    /**
+     * 读取登录有效时长（毫秒）
+     *
+     * <p>从全局配置 session.login_validity_days 读取（单位：天），对所有用户统一生效；
+     * 配置缺失或非法时回退默认 {@value DEFAULT_LOGIN_VALIDITY_DAYS} 天。
+     *
+     * @return 有效时长（毫秒）
+     */
+    private long getLoginValidityMs() {
+        int days = DEFAULT_LOGIN_VALIDITY_DAYS;
+        try {
+            GlobalSettings settings = globalSettingsMapper.selectByConfigKey(CONFIG_LOGIN_VALIDITY_DAYS);
+            if (settings != null && settings.getConfigValue() != null) {
+                int parsed = Integer.parseInt(settings.getConfigValue().trim());
+                if (parsed >= 1) {
+                    days = parsed;
+                } else {
+                    log.warn("登录有效时长配置非法: {}，回退默认 {} 天", settings.getConfigValue(), DEFAULT_LOGIN_VALIDITY_DAYS);
+                }
+            }
+        } catch (NumberFormatException e) {
+            log.warn("登录有效时长配置解析失败，回退默认 {} 天", DEFAULT_LOGIN_VALIDITY_DAYS);
+        }
+        return days * 24L * 60L * 60L * 1000L;
     }
 
     /**
@@ -129,8 +164,9 @@ public class AuthService {
         if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
             roleCode = BUILTIN_ROLE_CODE;
         }
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), roleCode);
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
+        long validityMs = getLoginValidityMs();
+        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), roleCode, validityMs);
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), validityMs);
 
         // 更新最后登录时间
         user.setLastLoginAt(LocalDateTime.now());
@@ -142,7 +178,7 @@ public class AuthService {
         LoginResponse response = new LoginResponse();
         response.setAccessToken(accessToken);
         response.setRefreshToken(refreshToken);
-        response.setExpiresIn(jwtTokenProvider.getAccessTokenExpireMs() / 1000);
+        response.setExpiresIn(validityMs / 1000);
         response.setUser(toUserBrief(user));
 
         log.info("用户登录成功: username={}", user.getUsername());
@@ -186,11 +222,12 @@ public class AuthService {
         if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
             roleCode = BUILTIN_ROLE_CODE;
         }
-        String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), roleCode);
+        long validityMs = getLoginValidityMs();
+        String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), roleCode, validityMs);
 
         TokenResponse response = new TokenResponse();
         response.setAccessToken(newAccessToken);
-        response.setExpiresIn(jwtTokenProvider.getAccessTokenExpireMs() / 1000);
+        response.setExpiresIn(validityMs / 1000);
 
         log.debug("Token 刷新成功: userId={}", userId);
         return response;

@@ -195,7 +195,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 
 #### 职责
 
-- 提供用户名 + 密码登录认证，基于 JWT 双 Token 机制（Access Token 2h + Refresh Token 7d）
+- 提供用户名 + 密码登录认证，基于 JWT 双 Token 机制，Token 有效期由全局配置统一控制（session.login_validity_days，所有用户统一，默认 5 天）
 - 实现 RBAC 角色权限控制：ADMIN（全权限）/ USER（测试操作权限）
 - 管理员对用户的 CRUD 管理（创建、编辑、禁用、删除、重置密码）
 - 个人资料管理（基本信息编辑、修改密码、登录记录查看）
@@ -896,7 +896,7 @@ Keyword
 
 | 要求 | 实现方式 | 影响模块 |
 |---|---|---|
-| JWT 双 Token | Access Token 2h + Refresh Token 7d | M1 |
+| JWT 双 Token | Token 有效期由全局配置统一控制（session.login_validity_days，默认 5 天），登录/黑名单/用户状态逐请求校验 | M1 |
 | 密码安全 | bcrypt 加密，最少 8 位 | M1 |
 | RBAC | ADMIN 全权限 / USER 测试操作权限 | M1，所有模块权限守卫 |
 | admin 账号保护 | 不可改名/改角色/禁用/删除 | M1 |

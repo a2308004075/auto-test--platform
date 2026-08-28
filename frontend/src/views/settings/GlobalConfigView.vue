@@ -27,6 +27,11 @@ const retentionForm = reactive({
   reportRetentionDays: '90',
 })
 
+// 登录设置表单
+const loginForm = reactive({
+  loginValidityDays: '5',
+})
+
 // 通知配置表单
 const notificationForm = reactive({
   smtpHost: '',
@@ -67,6 +72,7 @@ async function fetchSettings() {
     }
     configMap.value = map
     // 映射到表单
+    loginForm.loginValidityDays = map['session.login_validity_days'] ?? '5'
     retentionForm.logRetentionDays = map['log.retention_days'] ?? '30'
     retentionForm.reportRetentionDays = map['report.retention_days'] ?? '90'
     notificationForm.smtpHost = map['notification.smtp.host'] ?? ''
@@ -83,19 +89,25 @@ async function fetchSettings() {
   }
 }
 
-// ===== 保存保留策略 =====
+// ===== 保存保留策略（含登录有效时长） =====
 async function handleSaveRetention() {
   retentionSaving.value = true
   try {
     const logVal = parseInt(retentionForm.logRetentionDays, 10)
     const reportVal = parseInt(retentionForm.reportRetentionDays, 10)
+    const validityVal = parseInt(loginForm.loginValidityDays, 10)
     if (isNaN(logVal) || logVal < 0 || isNaN(reportVal) || reportVal < 0) {
       ElMessage.error('保留天数必须为非负整数')
+      return
+    }
+    if (isNaN(validityVal) || validityVal < 1) {
+      ElMessage.error('登录有效时长必须为不小于 1 的整数（天）')
       return
     }
     await Promise.all([
       updateSetting('log.retention_days', { configValue: retentionForm.logRetentionDays }),
       updateSetting('report.retention_days', { configValue: retentionForm.reportRetentionDays }),
+      updateSetting('session.login_validity_days', { configValue: loginForm.loginValidityDays }),
     ])
     ElMessage.success('保留策略 保存成功')
   } catch (e: any) {
@@ -172,7 +184,7 @@ onMounted(() => { fetchSettings() })
     <div class="config-card">
       <div class="config-card-header">保留策略</div>
       <div class="config-card-body">
-        <div class="config-form-grid">
+        <div class="config-form-grid" style="grid-template-columns: 1fr 1fr 1fr;">
           <div class="config-form-group">
             <label class="config-form-label">日志保留天数</label>
             <div class="config-input-with-suffix">
@@ -184,6 +196,13 @@ onMounted(() => { fetchSettings() })
             <label class="config-form-label">报告保留天数</label>
             <div class="config-input-with-suffix">
               <el-input-number v-model="retentionForm.reportRetentionDays" :min="0" :controls="false" style="width: 120px;" />
+              <span class="config-suffix">天</span>
+            </div>
+          </div>
+          <div class="config-form-group">
+            <label class="config-form-label">登录有效时长</label>
+            <div class="config-input-with-suffix">
+              <el-input-number v-model="loginForm.loginValidityDays" :min="1" :controls="false" style="width: 120px;" />
               <span class="config-suffix">天</span>
             </div>
           </div>

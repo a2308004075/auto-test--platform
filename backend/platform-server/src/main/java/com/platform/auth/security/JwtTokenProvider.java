@@ -45,37 +45,60 @@ public class JwtTokenProvider {
     }
 
     /**
-     * 创建 Access Token
+     * 创建 Access Token（使用配置文件中的默认有效期）
      *
      * @param userId 用户 ID
      * @param role   用户角色
      * @return JWT Access Token
      */
     public String createAccessToken(Long userId, String role) {
+        return createAccessToken(userId, role, accessTokenExpireMs);
+    }
+
+    /**
+     * 创建 Access Token（指定有效期，用于登录有效时长全局配置）
+     *
+     * @param userId   用户 ID
+     * @param role     用户角色
+     * @param expireMs 有效期（毫秒）
+     * @return JWT Access Token
+     */
+    public String createAccessToken(Long userId, String role, long expireMs) {
         return Jwts.builder()
                 .setId(UUID.randomUUID().toString())
                 .setSubject(String.valueOf(userId))
                 .claim(CLAIM_ROLE, role)
                 .claim(CLAIM_TYPE, TOKEN_TYPE_ACCESS)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpireMs))
+                .setExpiration(new Date(System.currentTimeMillis() + expireMs))
                 .signWith(getSigningKey())
                 .compact();
     }
 
     /**
-     * 创建 Refresh Token
+     * 创建 Refresh Token（使用配置文件中的默认有效期）
      *
      * @param userId 用户 ID
      * @return JWT Refresh Token
      */
     public String createRefreshToken(Long userId) {
+        return createRefreshToken(userId, refreshTokenExpireMs);
+    }
+
+    /**
+     * 创建 Refresh Token（指定有效期，用于登录有效时长全局配置）
+     *
+     * @param userId   用户 ID
+     * @param expireMs 有效期（毫秒）
+     * @return JWT Refresh Token
+     */
+    public String createRefreshToken(Long userId, long expireMs) {
         return Jwts.builder()
                 .setId(UUID.randomUUID().toString())
                 .setSubject(String.valueOf(userId))
                 .claim(CLAIM_TYPE, TOKEN_TYPE_REFRESH)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + refreshTokenExpireMs))
+                .setExpiration(new Date(System.currentTimeMillis() + expireMs))
                 .signWith(getSigningKey())
                 .compact();
     }

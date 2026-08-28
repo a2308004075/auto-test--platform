@@ -292,8 +292,8 @@ public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    private static final long ACCESS_TOKEN_EXPIRE_MS = 120 * 60 * 1000L;  // 2 小时
-    private static final long REFRESH_TOKEN_EXPIRE_MS = 7 * 24 * 60 * 60 * 1000L;  // 7 天
+    // Token 有效期：登录时读取全局配置 session.login_validity_days（天，所有用户统一，默认 5 天），
+    // Access 与 Refresh Token 采用同一有效期；配置缺失或非法时回退默认 5 天
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secretKey.getBytes());

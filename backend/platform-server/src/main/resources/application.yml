@@ -48,10 +48,10 @@ mybatis-plus:
       logic-delete-value: 0
       logic-not-delete-value: 1
 
-# JWT 配置
+# JWT 配置（有效期为回退默认值，运行时以 global_settings 中 session.login_validity_days 为准，默认 5 天）
 jwt:
-  access-token-expire-ms: 7200000
-  refresh-token-expire-ms: 604800000
+  access-token-expire-ms: 432000000
+  refresh-token-expire-ms: 432000000
 
 # 执行引擎配置
 execution:

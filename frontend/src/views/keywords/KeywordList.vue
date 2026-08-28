@@ -213,6 +213,7 @@ async function handleGroupSubmit() {
     groupForm.parentId = null
     groupForm.description = ''
     editingGroupId.value = 0
+    manageGroupsVisible.value = false
     fetchGroups()
   } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
 }
@@ -229,6 +230,68 @@ function handleDeleteGroup(g: any) {
       fetchList()
     })
     .catch(() => {})
+}
+
+// ===== 从接口生成 =====
+const generateVisible = ref(false)
+const generateLoading = ref(false)
+const apis = ref<any[]>([])
+const modules = ref<any[]>([])
+const selectedApiId = ref<number>(0)
+const groupedApis = computed(() => {
+  const allModules = modules.value
+  const allApis = apis.value
+  const apisByMod: Record<number, any[]> = {}
+  allApis.forEach((a: any) => {
+    const mid = a.moduleId || 0
+    if (!apisByMod[mid]) apisByMod[mid] = []
+    apisByMod[mid].push(a)
+  })
+  const rootMods = allModules
+    .filter((m: any) => m.name !== '全部' && (m.parentId == null || m.parentId === 0))
+    .map((m: any) => ({ ...m, childModules: [] as any[] }))
+  const rootMap: Record<number, any> = {}
+  rootMods.forEach((m: any) => { rootMap[m.id] = m })
+  allModules
+    .filter((m: any) => m.parentId != null && m.parentId !== 0 && rootMap[m.parentId])
+    .forEach((m: any) => { rootMap[m.parentId].childModules.push(m) })
+  return rootMods
+    .map((root: any) => ({
+      label: root.name,
+      apis: apisByMod[root.id] || [],
+      children: (root.childModules || [])
+        .map((child: any) => ({ label: child.name, apis: apisByMod[child.id] || [] }))
+        .filter((c: any) => c.apis.length > 0),
+    }))
+    .filter((g: any) => g.apis.length > 0 || g.children.length > 0)
+    .concat(
+      apisByMod[0]?.length ? [{ label: '未分类', apis: apisByMod[0], children: [] }] : [],
+    )
+})
+async function openGenerate() {
+  try {
+    const [apiRes, modRes]: any[] = await Promise.all([
+      getApis(projectId.value, { page: 1, pageSize: 100 }),
+      getModules(projectId.value),
+    ])
+    apis.value = apiRes.data?.items || []
+    modules.value = modRes.data || []
+  } catch {
+    apis.value = []
+    modules.value = []
+  }
+  selectedApiId.value = 0
+  generateVisible.value = true
+}
+async function handleGenerate() {
+  if (!selectedApiId.value) { ElMessage.warning('请选择接口'); return }
+  generateLoading.value = true
+  try {
+    await generateKeyword(projectId.value, selectedApiId.value)
+    ElMessage.success('生成成功')
+    generateVisible.value = false
+    fetchList()
+  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '生成失败') } finally { generateLoading.value = false }
 }
 
 // ===== 右键上下文菜单 =====
@@ -289,71 +352,6 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', closeContextMenu)
 })
-
-// ===== 从接口生成 =====
-const generateVisible = ref(false)
-const generateLoading = ref(false)
-const apis = ref<any[]>([])
-const modules = ref<any[]>([])
-const selectedApiId = ref<number>(0)
-const groupedApis = computed(() => {
-  const allModules = modules.value
-  const allApis = apis.value
-  // Group APIs by moduleId
-  const apisByMod: Record<number, any[]> = {}
-  allApis.forEach((a: any) => {
-    const mid = a.moduleId || 0
-    if (!apisByMod[mid]) apisByMod[mid] = []
-    apisByMod[mid].push(a)
-  })
-  // Build tree from modules (exclude '全部' virtual node)
-  const rootMods = allModules
-    .filter((m: any) => m.name !== '全部' && (m.parentId == null || m.parentId === 0))
-    .map((m: any) => ({ ...m, childModules: [] as any[] }))
-  const rootMap: Record<number, any> = {}
-  rootMods.forEach((m: any) => { rootMap[m.id] = m })
-  allModules
-    .filter((m: any) => m.parentId != null && m.parentId !== 0 && rootMap[m.parentId])
-    .forEach((m: any) => { rootMap[m.parentId].childModules.push(m) })
-  // Build result: each root module with its direct APIs + child modules with their APIs
-  return rootMods
-    .map((root: any) => ({
-      label: root.name,
-      apis: apisByMod[root.id] || [],
-      children: (root.childModules || [])
-        .map((child: any) => ({ label: child.name, apis: apisByMod[child.id] || [] }))
-        .filter((c: any) => c.apis.length > 0),
-    }))
-    .filter((g: any) => g.apis.length > 0 || g.children.length > 0)
-    .concat(
-      apisByMod[0]?.length ? [{ label: '未分类', apis: apisByMod[0], children: [] }] : [],
-    )
-})
-async function openGenerate() {
-  try {
-    const [apiRes, modRes]: any[] = await Promise.all([
-      getApis(projectId.value, { page: 1, pageSize: 100 }),
-      getModules(projectId.value),
-    ])
-    apis.value = apiRes.data?.items || []
-    modules.value = modRes.data || []
-  } catch {
-    apis.value = []
-    modules.value = []
-  }
-  selectedApiId.value = 0
-  generateVisible.value = true
-}
-async function handleGenerate() {
-  if (!selectedApiId.value) { ElMessage.warning('请选择接口'); return }
-  generateLoading.value = true
-  try {
-    await generateKeyword(projectId.value, selectedApiId.value)
-    ElMessage.success('生成成功')
-    generateVisible.value = false
-    fetchList()
-  } catch (e: any) { ElMessage.error(e?.response?.data?.message || '生成失败') } finally { generateLoading.value = false }
-}
 
 // ===== 表字段调整 =====
 const defaultColumns: ColumnItem[] = [
@@ -546,6 +544,7 @@ const highlightedDebugResponse = computed(() => {
             :props="{ label: 'name', children: 'children' }"
             :default-expand-all="true"
             :expand-on-click-node="false"
+            :indent="0"
             @node-click="onGroupNodeClick"
           >
             <template #default="{ data }">
@@ -867,21 +866,23 @@ const highlightedDebugResponse = computed(() => {
 .module-tree {
   max-height: 560px;
   overflow-y: auto;
-  margin-top: 8px;
+  margin: 8px -12px 0;
 }
 .module-tree :deep(.el-tree-node__content) {
   height: auto;
-  padding: 2px 0;
+  padding: 0;
+  width: 100%;
 }
 .module-tree-node {
   display: flex;
   align-items: center;
   flex: 1;
-  padding: 2px 4px;
-  border-radius: 4px;
+  padding: 4px 12px;
+  border-radius: 0;
   font-size: 13px;
   gap: 6px;
   width: 100%;
+  box-sizing: border-box;
 }
 .module-tree-node:hover {
   background: #f5f7fa;

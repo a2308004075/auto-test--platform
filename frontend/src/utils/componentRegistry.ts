@@ -29,6 +29,7 @@ export const componentMap: Record<string, () => Promise<any>> = {
   // ===== 关键字模块 =====
   'keywords/KeywordList': () => import('@/views/keywords/KeywordList.vue'),
   'keywords/KeywordEdit': () => import('@/views/keywords/KeywordEdit.vue'),
+  'keywords/KeywordGenerate': () => import('@/views/keywords/KeywordGenerate.vue'),
 
   // ===== 工具模块 =====
   'tool/ToolList': () => import('@/views/tool/ToolList.vue'),

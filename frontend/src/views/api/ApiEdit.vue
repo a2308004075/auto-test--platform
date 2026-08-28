@@ -9,6 +9,7 @@
  * 7 Tab：基础信息 / Header 参数 / 请求参数 / 请求体 / 响应体 / 调试 / 引用关系
  * 对齐原型 api-edit.html（请求参数/响应改为可视化表格编辑，数据仍序列化为 JSON 存储）
  */
+defineOptions({ name: 'ApiEdit' })
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

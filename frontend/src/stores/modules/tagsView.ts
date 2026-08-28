@@ -29,8 +29,10 @@ export const useTagsViewStore = defineStore('tagsView', () => {
   function addView(view: TagView) {
     if (visitedViews.value.some(v => v.path === view.path)) return
     visitedViews.value.push(view)
-    if (view.name && !cachedViews.value.includes(view.name)) {
-      cachedViews.value.push(view.name)
+    // 优先使用组件自身名称（defineOptions），确保同一组件的多条路由共享同一缓存槽
+    const componentName = (view as any).componentName || view.name
+    if (componentName && !cachedViews.value.includes(componentName)) {
+      cachedViews.value.push(componentName)
     }
   }
 

@@ -40,10 +40,14 @@ function addCurrentTag() {
   const name = (route.name as string) || ''
   const title = (route.meta?.title as string) || ''
   if (name && title) {
+    // 仅缓存显式设置了 defineOptions({ name }) 的组件
+    const matched = route.matched[route.matched.length - 1]
+    const componentName = (matched?.components?.default as any)?.name || ''
     tagsViewStore.addView({
       name,
       path: route.path,
       title,
+      componentName,
       affix: name === 'ProjectList',
     } as TagView)
   }

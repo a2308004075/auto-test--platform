@@ -9,6 +9,7 @@
  * 5 Tab：基础信息 / 关联接口 / 测试数据 / 预期响应 / 引用关系
  * 对齐原型 keyword-edit.html（测试数据/断言为可视化表格编辑，数据序列化为 JSON 存储）
  */
+defineOptions({ name: 'KeywordEdit' })
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

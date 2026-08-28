@@ -19,10 +19,12 @@ const tagsViewStore = useTagsViewStore()
   <main class="app-main">
     <router-view v-slot="{ Component }">
       <transition name="fade-transform" mode="out-in">
-        <component
-          :is="Component"
-          :key="route.path + tagsViewStore.refreshKeys[route.path]"
-        />
+        <keep-alive :include="tagsViewStore.cachedViews">
+          <component
+            :is="Component"
+            :key="route.path + tagsViewStore.refreshKeys[route.path]"
+          />
+        </keep-alive>
       </transition>
     </router-view>
   </main>

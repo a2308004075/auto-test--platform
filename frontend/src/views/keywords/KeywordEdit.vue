@@ -18,6 +18,7 @@ import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
 import { Refresh } from '@element-plus/icons-vue'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
+import { schemaToExampleString } from '@/utils/schemaToExample'
 
 const route = useRoute()
 const router = useRouter()
@@ -67,33 +68,16 @@ const bodyRow = computed(() => bodyParams.value.find(r => r.name === '__body__')
 const bodyKvParams = computed(() => bodyParams.value.filter(r => r.name !== '__body__'))
 
 /**
- * 将 JSON Schema（type: object + properties）转为带默认值和行内注释的可读 JSON
+ * 将 JSON Schema（object/array）转为带默认值和行内注释的可读 JSON，非 Schema 原样返回
  */
 function schemaToReadableJson(schema: any): string {
-  if (!schema || schema.type !== 'object' || !schema.properties) {
-    // 非 Schema 格式，原样返回
-    return typeof schema === 'string' ? schema : JSON.stringify(schema, null, 2)
+  const isSchema = schema && typeof schema === 'object'
+    && ((schema.type === 'object' && schema.properties) || (schema.type === 'array' && schema.items))
+  if (isSchema) {
+    return schemaToExampleString(schema)
   }
-  const entries = Object.entries(schema.properties)
-  if (!entries.length) return '{}'
-
-  const lines = entries.map(([key, prop]: [string, any]) => {
-    const typeStr = prop.type || 'string'
-    let defaultVal: any
-    if (typeStr === 'integer' || typeStr === 'number') defaultVal = 0
-    else if (typeStr === 'boolean') defaultVal = false
-    else if (typeStr === 'array') defaultVal = '[]'
-    else defaultVal = ''
-
-    const desc = prop.description || ''
-    const comment = desc ? ` // ${typeStr}，${desc}` : ` // ${typeStr}`
-    const valStr = (typeStr === 'integer' || typeStr === 'number' || typeStr === 'boolean')
-      ? String(defaultVal)
-      : `"${defaultVal}"`
-    return `  "${key}": ${valStr}${comment}`
-  })
-
-  return `{\n${lines.join(',\n')}\n}`
+  // 非 Schema 格式，原样返回
+  return typeof schema === 'string' ? schema : JSON.stringify(schema, null, 2)
 }
 
 function extractParamsFromApi(api: any): any[] {

@@ -8,13 +8,11 @@ package com.platform.tool.dto;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 @Data
 public class ToolMethodCreateRequest {
 
-    @NotNull(message = "项目 ID 不能为空")
     private Long projectId;
 
     @NotBlank(message = "工具名称不能为空")

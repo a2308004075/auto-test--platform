@@ -17,7 +17,6 @@ import javax.validation.constraints.Size;
 @Data
 public class ApiKeywordCreateRequest {
 
-    @NotNull(message = "项目 ID 不能为空")
     private Long projectId;
 
     @NotBlank(message = "关键字名称不能为空")

@@ -197,8 +197,29 @@ public class ActionExecutor {
 
         // 解析节点 config 中的参数
         Map<String, Object> configMap = parseConfig(node.getConfig());
-        if (!configMap.isEmpty()) {
-            step.setParams(configMap);
+        Map<String, Object> params = null;
+
+        // 新格式：参数存储在 config.params 子对象中
+        Object paramsObj = configMap.get("params");
+        if (paramsObj instanceof Map) {
+            params = new LinkedHashMap<>((Map<String, Object>) paramsObj);
+        } else if (!configMap.isEmpty()) {
+            // 向后兼容：旧格式将整个 config 作为参数，排除内部元数据键
+            params = new LinkedHashMap<>(configMap);
+            params.remove("save_as");
+            params.remove("refKeywordId");
+            params.remove("refToolId");
+            params.remove("nextNode");
+            params.remove("trueNext");
+            params.remove("falseNext");
+            params.remove("condition");
+            params.remove("count");
+            params.remove("expression");
+            params.remove("params");
+        }
+
+        if (params != null && !params.isEmpty()) {
+            step.setParams(params);
         }
 
         return keywordExecutor.execute(step, context);

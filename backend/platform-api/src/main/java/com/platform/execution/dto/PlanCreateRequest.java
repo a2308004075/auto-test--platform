@@ -8,7 +8,6 @@ package com.platform.execution.dto;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
 /**
@@ -17,7 +16,6 @@ import java.util.List;
 @Data
 public class PlanCreateRequest {
 
-    @NotNull(message = "项目 ID 不能为空")
     private Long projectId;
 
     @NotBlank(message = "计划名称不能为空")

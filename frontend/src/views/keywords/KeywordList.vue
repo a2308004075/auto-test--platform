@@ -31,6 +31,17 @@ const projectId = computed(() => Number(route.params.id))
 
 const methodColors: Record<string, string> = { GET: '', POST: 'success', PUT: 'warning', DELETE: 'danger', PATCH: 'info' }
 
+// 列表中仅显示 path，去除前导 ${host} 等环境变量占位符
+function displayApiPath(path: string | undefined): string {
+  return (path || '').replace(/^\$\{[^}]*\}/, '')
+}
+
+// 文本截断，超过指定长度显示省略号
+function truncateText(text: string | undefined, maxLen: number): string {
+  const s = text || ''
+  return s.length > maxLen ? s.slice(0, maxLen) + '...' : s
+}
+
 // ===== 列表数据 =====
 const loading = ref(false)
 const list = ref<any[]>([])
@@ -38,7 +49,7 @@ const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 const selectedRows = ref<any[]>([])
 
 // ===== 搜索条件 =====
-const search = reactive({ keyword: '', apiName: '', apiPath: '' })
+const search = reactive({ keyword: '', apiPath: '' })
 
 // ===== 分组树（接口关键字独立分组） =====
 const groups = ref<any[]>([])
@@ -104,7 +115,6 @@ async function fetchList() {
     const res: any = await getKeywords(projectId.value, {
       groupId: activeGroupId.value || undefined,
       keyword: search.keyword || undefined,
-      apiName: search.apiName || undefined,
       apiPath: search.apiPath || undefined,
       page: pagination.current, pageSize: pagination.pageSize,
     })
@@ -115,7 +125,7 @@ async function fetchList() {
 
 function handleSearch() { pagination.current = 1; fetchList() }
 function handleReset() {
-  Object.assign(search, { keyword: '', apiName: '', apiPath: '' })
+  Object.assign(search, { keyword: '', apiPath: '' })
   activeGroupId.value = 0
   handleSearch()
 }
@@ -262,23 +272,23 @@ function contextCreateGroup() {
 }
 function contextCreateChild() {
   if (!contextGroup.value) return
-  closeContextMenu()
   editingGroupId.value = 0
   groupForm.name = ''
   groupForm.parentId = contextGroup.value.id
   groupForm.description = ''
   manageGroupsVisible.value = true
+  closeContextMenu()
 }
 function contextEdit() {
   if (!contextGroup.value) return
-  closeContextMenu()
   openEditGroup(contextGroup.value)
   manageGroupsVisible.value = true
+  closeContextMenu()
 }
 function contextDelete() {
   if (!contextGroup.value) return
-  closeContextMenu()
   handleDeleteGroup(contextGroup.value)
+  closeContextMenu()
 }
 
 onMounted(() => {
@@ -296,7 +306,7 @@ const defaultColumns: ColumnItem[] = [
   { key: 'name', label: '接口关键字', locked: true, visible: true },
   { key: 'method', label: '方法', locked: false, visible: false },
   { key: 'apiGroup', label: '关联接口分组', locked: true, visible: true },
-  { key: 'apiName', label: '关联接口名', locked: true, visible: true },
+  { key: 'apiName', label: '关联接口名', locked: true, visible: false },
   { key: 'apiPath', label: '关联接口路径', locked: true, visible: true },
   { key: 'group', label: '分组', locked: false, visible: true },
   { key: 'desc', label: '描述', locked: true, visible: true },
@@ -481,10 +491,6 @@ const highlightedDebugResponse = computed(() => {
             <el-input v-model="search.keyword" placeholder="输入接口关键字" clearable style="width: 180px" @keyup.enter="handleSearch" />
           </div>
           <div class="pro-search-field">
-            <span class="pro-search-label">关联接口名</span>
-            <el-input v-model="search.apiName" placeholder="输入关联接口名" clearable style="width: 160px" @keyup.enter="handleSearch" />
-          </div>
-          <div class="pro-search-field">
             <span class="pro-search-label">关联接口路径</span>
             <el-input v-model="search.apiPath" placeholder="输入关联接口路径" clearable style="width: 200px" @keyup.enter="handleSearch" />
           </div>
@@ -511,7 +517,9 @@ const highlightedDebugResponse = computed(() => {
         <el-table :data="list" v-loading="loading" border stripe style="width: 100%" @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="45" />
           <el-table-column v-if="isColVisible('id')" prop="id" label="ID" width="70" show-overflow-tooltip />
-          <el-table-column v-if="isColVisible('name')" prop="name" label="接口关键字" width="160" show-overflow-tooltip />
+          <el-table-column v-if="isColVisible('name')" label="接口关键字" min-width="420">
+            <template #default="{ row }"><span :title="row.name">{{ truncateText(row.name, 50) || '--' }}</span></template>
+          </el-table-column>
           <el-table-column v-if="isColVisible('method')" label="方法" width="80">
             <template #default="{ row }">
               <el-tag :type="methodColors[row.httpMethod] || 'info'" size="small">{{ row.httpMethod || '--' }}</el-tag>
@@ -524,19 +532,21 @@ const highlightedDebugResponse = computed(() => {
             <template #default="{ row }">{{ row.apiName || '--' }}</template>
           </el-table-column>
           <el-table-column v-if="isColVisible('apiPath')" label="关联接口路径" width="240" show-overflow-tooltip>
-            <template #default="{ row }"><code style="font-size: 12px; color: #909399">{{ row.apiPath || '--' }}</code></template>
+            <template #default="{ row }"><code style="font-size: 12px; color: #909399">{{ displayApiPath(row.apiPath) || '--' }}</code></template>
           </el-table-column>
           <el-table-column v-if="isColVisible('group')" label="分组" width="140">
             <template #default="{ row }">{{ row.groupName || groupMap[row.groupId]?.name || '--' }}</template>
           </el-table-column>
-          <el-table-column v-if="isColVisible('desc')" prop="description" label="描述" show-overflow-tooltip />
+          <el-table-column v-if="isColVisible('desc')" label="描述" show-overflow-tooltip>
+            <template #default="{ row }"><span :title="row.description">{{ truncateText(row.description, 10) || '--' }}</span></template>
+          </el-table-column>
           <el-table-column v-if="isColVisible('createTime')" label="创建时间" width="120">
             <template #default="{ row }">{{ row.createdAt?.substring(0, 10) }}</template>
           </el-table-column>
           <el-table-column v-if="isColVisible('refCount')" label="被引用次数" width="100">
             <template #default="{ row }">{{ row.referenceCount ?? 0 }}</template>
           </el-table-column>
-          <el-table-column v-if="isColVisible('action')" label="操作" width="180" fixed="right">
+          <el-table-column v-if="isColVisible('action')" label="操作" width="140" fixed="right">
             <template #default="{ row }">
               <el-button v-if="hasPermission('project:keyword:edit')" type="primary" link size="small" @click="router.push(`/project/${projectId}/keywords/${row.id}/edit`)">编辑</el-button>
               <el-button type="primary" link size="small" @click="openDebug(row)">调试</el-button>

@@ -15,7 +15,7 @@ import { ref, reactive, onMounted, onBeforeUnmount, computed, nextTick } from 'v
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAction, updateAction } from '@/api/action'
-import { getKeywords } from '@/api/keyword'
+import { getKeywords, getKeyword } from '@/api/keyword'
 import { getTools } from '@/api/tool'
 import { usePermission } from '@/composables/usePermission'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
@@ -70,6 +70,13 @@ let graphInitialized = false
 const nodes = ref<any[]>([])
 const selectedNode = ref<any>(null)
 const selectedCellData = ref<any>(null)
+
+// ===== API 关键字数据源（用于下拉选择和默认参数加载） =====
+const apiKeywordList = ref<any[]>([])
+
+// ===== 参数映射（API_KEYWORD 节点的外部传参） =====
+const nodeParamRows = ref<{ key: string; value: string }[]>([])
+const defaultParamRows = ref<{ key: string; value: string }[]>([])
 
 // 缩放百分比
 const zoomPercent = ref(100)
@@ -161,8 +168,9 @@ async function fetchElementData() {
     ])
     // 接口关键字
     const kwItems = (kwRes.data?.items || []).map((k: any) => ({
-      name: k.name, type: 'API_KEYWORD', shape: 'node-api',
+      id: k.id, name: k.name, type: 'API_KEYWORD', shape: 'node-api',
     }))
+    apiKeywordList.value = kwRes.data?.items || []
     elementCategories.value[0].items = kwItems
     elementCategories.value[0].badge = kwItems.length
     // 工具方法
@@ -357,6 +365,20 @@ async function initGraph() {
         actual: data.actual || '',
         expected: data.expected || '',
         description: data.description || '',
+      }
+      // 解析 API_KEYWORD 节点的参数映射
+      if (data.nodeType === 'API_KEYWORD') {
+        const cfg = typeof data.config === 'string' ? JSON.parse(data.config || '{}') : (data.config || {})
+        const paramsObj = cfg.params || {}
+        nodeParamRows.value = Object.entries(paramsObj).map(([key, value]) => ({ key, value: String(value) }))
+        if (data.refKeywordId) {
+          loadKeywordDefaultParams(data.refKeywordId)
+        } else {
+          defaultParamRows.value = []
+        }
+      } else {
+        nodeParamRows.value = []
+        defaultParamRows.value = []
       }
     }
   })
@@ -561,7 +583,7 @@ function renderExistingNodes() {
 }
 
 // ===== 添加节点 =====
-function addNode(type: string, shape: string, name: string) {
+function addNode(type: string, shape: string, name: string, keywordId?: number) {
   if (!graph) return
   const container = containerRef.value
   if (!container) return
@@ -571,20 +593,20 @@ function addNode(type: string, shape: string, name: string) {
     shape,
     x: snap(center.x - 100),
     y: snap(center.y - 27),
-    data: { nodeType: type, label: name },
+    data: { nodeType: type, label: name, refKeywordId: keywordId || null },
   })
   setNodeLabel(node, name)
   ElMessage.success(`已添加节点：${name}`)
 }
 
 // 双击添加
-function onElementDblClick(item: { name: string; type: string; shape: string }) {
-  addNode(item.type, item.shape, item.name)
+function onElementDblClick(item: { id?: number; name: string; type: string; shape: string }) {
+  addNode(item.type, item.shape, item.name, item.id)
 }
 
 // 拖拽添加
 let dragGhost: HTMLElement | null = null
-function onElementDragStart(e: DragEvent, item: { name: string; type: string; shape: string }) {
+function onElementDragStart(e: DragEvent, item: { id?: number; name: string; type: string; shape: string }) {
   if (!graph) return
   e.dataTransfer!.effectAllowed = 'copy'
   e.dataTransfer!.setData('text/plain', JSON.stringify(item))
@@ -621,7 +643,7 @@ function onCanvasDrop(e: DragEvent) {
       shape: data.shape,
       x: snap(local.x - 100),
       y: snap(local.y - 27),
-      data: { nodeType: data.type, label: data.name },
+      data: { nodeType: data.type, label: data.name, refKeywordId: data.id || null },
     })
     setNodeLabel(node, data.name)
   } catch { /* ignore */ }
@@ -771,7 +793,7 @@ const insertFilteredItems = computed(() => {
   return results
 })
 
-function insertNodeFromMenu(item: { name: string; type: string; shape: string }) {
+function insertNodeFromMenu(item: { id?: number; name: string; type: string; shape: string }) {
   if (!graph) return
   insertMenuVisible.value = false
   // 将右键位置转换为画布坐标
@@ -780,7 +802,7 @@ function insertNodeFromMenu(item: { name: string; type: string; shape: string })
     shape: item.shape,
     x: snap(local.x - 100),
     y: snap(local.y - 27),
-    data: { nodeType: item.type, label: item.name },
+    data: { nodeType: item.type, label: item.name, refKeywordId: item.id || null },
   })
   setNodeLabel(node, item.name)
   ElMessage.success(`已添加节点：${item.name}`)
@@ -803,7 +825,15 @@ function saveNodeConfig() {
     config.description = selectedNode.value.description || ''
   } else if (type === 'API_KEYWORD' || type === 'TOOL_METHOD' || type === 'ACTION') {
     config.save_as = selectedNode.value.saveAs || ''
-    if (type === 'API_KEYWORD') config.refKeywordId = selectedNode.value.refKeywordId || null
+    if (type === 'API_KEYWORD') {
+      config.refKeywordId = selectedNode.value.refKeywordId || null
+      // 存储外部传参到 config.params
+      const params: Record<string, string> = {}
+      for (const row of nodeParamRows.value) {
+        if (row.key.trim()) params[row.key.trim()] = row.value
+      }
+      config.params = params
+    }
     if (type === 'TOOL_METHOD') config.refToolId = selectedNode.value.refToolId || null
   }
 
@@ -855,6 +885,53 @@ async function handleSave() {
     ElMessage.error(e?.response?.data?.message || '保存失败')
   } finally {
     saving.value = false
+  }
+}
+
+// ===== API_KEYWORD 节点：加载关键字默认参数 =====
+async function loadKeywordDefaultParams(kwId: number) {
+  if (!kwId) { defaultParamRows.value = []; return }
+  try {
+    const res: any = await getKeyword(projectId.value, kwId)
+    const kw = res.data
+    if (kw?.testData) {
+      const arr = JSON.parse(kw.testData)
+      if (Array.isArray(arr)) {
+        defaultParamRows.value = arr
+          .filter((r: any) => r.name && r.name !== '__body__')
+          .map((r: any) => ({ key: r.name, value: r.value || '' }))
+        return
+      }
+    }
+  } catch { /* ignore */ }
+  defaultParamRows.value = []
+}
+
+function onKeywordSelectChange(kwId: number) {
+  if (!kwId) { defaultParamRows.value = []; return }
+  // 自动更新节点标签为关键字名称
+  const kw = apiKeywordList.value.find((k: any) => k.id === kwId)
+  if (kw && selectedNode.value) {
+    selectedNode.value.label = kw.name
+  }
+  loadKeywordDefaultParams(kwId)
+}
+
+function addNodeParamRow() {
+  nodeParamRows.value.push({ key: '', value: '' })
+}
+
+function removeNodeParamRow(index: number) {
+  nodeParamRows.value.splice(index, 1)
+}
+
+// 用默认值填充当前参数行
+function fillFromDefaults() {
+  const existingKeys = new Set(nodeParamRows.value.map(r => r.key))
+  for (const def of defaultParamRows.value) {
+    if (!existingKeys.has(def.key)) {
+      nodeParamRows.value.push({ key: def.key, value: def.value })
+    }
   }
 }
 
@@ -1161,15 +1238,54 @@ onBeforeUnmount(() => {
               <template v-if="selectedNode.type === 'API_KEYWORD'">
                 <h4>节点属性：接口关键字</h4>
                 <el-form label-position="top" size="small">
-                  <el-form-item label="接口关键字">
-                    <el-input v-model="selectedNode.label" />
-                  </el-form-item>
-                  <el-form-item label="引用关键字 ID">
-                    <el-input-number v-model="selectedNode.refKeywordId" :min="0" style="width: 100%" />
+                  <el-form-item label="选择接口关键字">
+                    <el-select
+                      v-model="selectedNode.refKeywordId"
+                      placeholder="选择接口关键字"
+                      filterable
+                      clearable
+                      style="width: 100%"
+                      @change="onKeywordSelectChange"
+                    >
+                      <el-option
+                        v-for="kw in apiKeywordList"
+                        :key="kw.id"
+                        :value="kw.id"
+                        :label="kw.name"
+                      />
+                    </el-select>
                   </el-form-item>
                   <el-form-item label="save_as 变量名">
                     <el-input v-model="selectedNode.saveAs" placeholder="如：api_result" />
                   </el-form-item>
+
+                  <!-- 接口关键字默认参数（只读参考） -->
+                  <div v-if="defaultParamRows.length" class="param-defaults">
+                    <div class="param-defaults-header">
+                      <span>接口默认参数</span>
+                      <el-button link size="small" @click="fillFromDefaults">填充为传参</el-button>
+                    </div>
+                    <div v-for="(row, ri) in defaultParamRows" :key="ri" class="param-default-row">
+                      <span class="pd-key">{{ row.key }}</span>
+                      <span class="pd-value">{{ row.value || '(空)' }}</span>
+                    </div>
+                  </div>
+
+                  <!-- 外部传参编辑 -->
+                  <el-form-item label="外部传参" style="margin-top: 8px">
+                    <div class="param-mapping">
+                      <div v-for="(row, ri) in nodeParamRows" :key="ri" class="param-mapping-row">
+                        <el-input v-model="row.key" size="small" placeholder="参数名" style="width:80px;font-size:11px;" />
+                        <el-input v-model="row.value" size="small" placeholder="参数值，支持 ${var}" style="flex:1;font-size:11px;" />
+                        <el-button type="danger" link size="small" @click="removeNodeParamRow(ri)">×</el-button>
+                      </div>
+                      <el-button size="small" link @click="addNodeParamRow">+ 添加参数</el-button>
+                    </div>
+                    <div style="color: #909399; font-size: 11px; margin-top: 4px">
+                      值支持 ${变量名} 引用 Action 入参或上下文变量
+                    </div>
+                  </el-form-item>
+
                   <el-button size="small" type="primary" @click="saveNodeConfig">保存</el-button>
                 </el-form>
               </template>
@@ -1632,6 +1748,46 @@ onBeforeUnmount(() => {
   font-size: 28px;
   margin-bottom: 8px;
   opacity: 0.4;
+}
+
+/* 参数映射表 */
+.param-mapping { display: flex; flex-direction: column; gap: 4px; }
+.param-mapping-row { display: flex; gap: 4px; align-items: center; }
+
+/* 接口默认参数只读区域 */
+.param-defaults {
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+.param-defaults-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 6px;
+}
+.param-default-row {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  padding: 2px 0;
+}
+.pd-key {
+  font-family: monospace;
+  color: #e6a23c;
+  font-weight: 500;
+  min-width: 70px;
+}
+.pd-value {
+  color: #909399;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
 

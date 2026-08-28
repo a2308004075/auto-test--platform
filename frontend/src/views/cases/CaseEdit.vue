@@ -13,7 +13,7 @@ import { reactive, ref, onMounted, computed, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getCase, createCase, updateCase, debugCase } from '@/api/case'
-import { getKeywords } from '@/api/keyword'
+import { getKeywords, getKeyword } from '@/api/keyword'
 import { getActions } from '@/api/action'
 import { getEnvironments } from '@/api/environment'
 import { useDict } from '@/composables/useDict'
@@ -268,6 +268,13 @@ function removeCanvasStep(index: number) {
 function selectCanvasStep(index: number) {
   selectedStepIndex.value = index
   syncStepParamRows()
+  // 加载选中步骤的关键字默认参数
+  const step = stepsArray.value[index]
+  if (step?.keywordId) {
+    loadStepKeywordDefaults(step.keywordId)
+  } else {
+    stepDefaultParams.value = []
+  }
 }
 
 // ===== 属性面板 args 参数映射（键值表格式，对齐原型） =====
@@ -299,6 +306,47 @@ function addStepParamRow() {
 
 function removeStepParamRow(index: number) {
   stepParamRows.value.splice(index, 1)
+  commitStepParamRows()
+}
+
+// ===== 步骤关键字默认参数（只读参考） =====
+const stepDefaultParams = ref<{ key: string; value: string }[]>([])
+
+async function loadStepKeywordDefaults(kwId: number) {
+  if (!kwId) { stepDefaultParams.value = []; return }
+  try {
+    const res: any = await getKeyword(projectId.value, kwId)
+    const kw = res.data
+    if (kw?.testData) {
+      const arr = JSON.parse(kw.testData)
+      if (Array.isArray(arr)) {
+        stepDefaultParams.value = arr
+          .filter((r: any) => r.name && r.name !== '__body__')
+          .map((r: any) => ({ key: r.name, value: r.value || '' }))
+        return
+      }
+    }
+  } catch { /* ignore */ }
+  stepDefaultParams.value = []
+}
+
+function onStepKeywordChange(kwId: number) {
+  syncStepsToJson()
+  if (kwId) {
+    loadStepKeywordDefaults(kwId)
+  } else {
+    stepDefaultParams.value = []
+  }
+}
+
+// 用默认值填充当前参数行（仅填充尚未定义的参数）
+function fillStepFromDefaults() {
+  const existingKeys = new Set(stepParamRows.value.map(r => r.key))
+  for (const def of stepDefaultParams.value) {
+    if (!existingKeys.has(def.key)) {
+      stepParamRows.value.push({ key: def.key, value: def.value })
+    }
+  }
   commitStepParamRows()
 }
 
@@ -728,10 +776,23 @@ watch(activeTab, (v) => {
                     <el-input v-model="stepsArray[selectedStepIndex].name" @input="syncStepsToJson" />
                   </el-form-item>
                   <el-form-item label="关键字">
-                    <el-select v-model="stepsArray[selectedStepIndex].keywordId" placeholder="选择关键字" filterable style="width:100%" @change="syncStepsToJson">
+                    <el-select v-model="stepsArray[selectedStepIndex].keywordId" placeholder="选择关键字" filterable style="width:100%" @change="onStepKeywordChange">
                       <el-option v-for="kw in [...apiKeywords, ...toolKeywords, ...actionKeywords]" :key="kw.id" :value="kw.id" :label="kw.name" />
                     </el-select>
                   </el-form-item>
+
+                  <!-- 接口关键字默认参数（只读参考） -->
+                  <div v-if="stepDefaultParams.length" class="param-defaults">
+                    <div class="param-defaults-header">
+                      <span>接口默认参数</span>
+                      <el-button link size="small" @click="fillStepFromDefaults">填充为传参</el-button>
+                    </div>
+                    <div v-for="(row, ri) in stepDefaultParams" :key="ri" class="param-default-row">
+                      <span class="pd-key">{{ row.key }}</span>
+                      <span class="pd-value">{{ row.value || '(空)' }}</span>
+                    </div>
+                  </div>
+
                   <el-form-item label="args 参数映射">
                     <div class="param-mapping">
                       <div v-for="(row, ri) in stepParamRows" :key="ri" class="param-mapping-row">
@@ -1120,4 +1181,40 @@ watch(activeTab, (v) => {
 /* args 参数映射表 */
 .param-mapping { display: flex; flex-direction: column; gap: 4px; }
 .param-mapping-row { display: flex; gap: 4px; align-items: center; }
+
+/* 接口默认参数只读区域 */
+.param-defaults {
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+.param-defaults-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 6px;
+}
+.param-default-row {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  padding: 2px 0;
+}
+.pd-key {
+  font-family: monospace;
+  color: #e6a23c;
+  font-weight: 500;
+  min-width: 70px;
+}
+.pd-value {
+  color: #909399;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 </style>

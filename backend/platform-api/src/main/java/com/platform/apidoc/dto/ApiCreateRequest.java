@@ -17,7 +17,6 @@ import javax.validation.constraints.Size;
 @Data
 public class ApiCreateRequest {
 
-    @NotNull(message = "项目 ID 不能为空")
     private Long projectId;
 
     @NotNull(message = "分组 ID 不能为空")

@@ -19,6 +19,7 @@ import { getEnvironments } from '@/api/environment'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
 import PageHeader from '@/components/PageHeader/index.vue'
+import { tryFormatJson, jsonSyntaxError } from '@/utils/jsonFormat'
 
 const route = useRoute()
 const router = useRouter()
@@ -439,9 +440,12 @@ function initCreateMode() {
 
 // ===== 格式化 =====
 function formatJson(field: 'setupSteps' | 'teardownSteps' | 'steps') {
-  try {
-    (form as any)[field] = JSON.stringify(JSON.parse((form as any)[field] || '[]'), null, 2)
-  } catch { ElMessage.warning('JSON 格式错误，无法格式化') }
+  const formatted = tryFormatJson((form as any)[field] || '[]')
+  if (formatted === null) {
+    ElMessage.warning(`JSON 语法错误：${jsonSyntaxError((form as any)[field] || '[]')}`)
+    return
+  }
+  ;(form as any)[field] = formatted
 }
 
 function validateJson(): boolean {

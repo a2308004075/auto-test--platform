@@ -19,6 +19,7 @@ import { usePermission } from '@/composables/usePermission'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
 import CodeEditor from '@/components/CodeEditor/index.vue'
 import { schemaToExampleString } from '@/utils/schemaToExample'
+import { formatJson } from '@/utils/jsonFormat'
 
 const route = useRoute()
 const router = useRouter()
@@ -152,77 +153,6 @@ function extractJsonBody(text: string): string {
   }
 }
 
-function extractTrailingLineComment(line: string): { jsonPart: string; comment: string } | null {
-  let inString = false
-  let escape = false
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i]
-    if (escape) {
-      escape = false
-      continue
-    }
-    if (ch === '\\') {
-      escape = true
-      continue
-    }
-    if (ch === '"') {
-      inString = !inString
-      continue
-    }
-    if (!inString && ch === '/' && line[i + 1] === '/') {
-      return { jsonPart: line.slice(0, i), comment: line.slice(i) }
-    }
-  }
-  return null
-}
-
-function formatJson(text: string): string {
-  const lines = text.split('\n')
-  const jsonLines: string[] = []
-  const comments: Map<number, string> = new Map()
-  lines.forEach((line, idx) => {
-    const extracted = extractTrailingLineComment(line)
-    if (extracted) {
-      comments.set(idx, extracted.comment)
-      jsonLines.push(extracted.jsonPart)
-    } else {
-      jsonLines.push(line)
-    }
-  })
-
-  let formatted: string
-  try {
-    formatted = JSON.stringify(JSON.parse(jsonLines.join('\n')), null, 2)
-  } catch {
-    return text
-  }
-
-  const formattedLines = formatted.split('\n')
-  const used = new Set<number>()
-  const result = formattedLines.map((fLine) => {
-    const keyMatch = fLine.match(/"([^"]+)"\s*:/)
-    if (keyMatch) {
-      const key = keyMatch[1]
-      for (const [idx, line] of jsonLines.entries()) {
-        if (used.has(idx)) continue
-        if (line.includes(`"${key}":`)) {
-          const comment = comments.get(idx)
-          if (comment) {
-            used.add(idx)
-            // 对齐：保证注释前至少一个空格
-            return fLine.replace(/\s*$/, '') + ' ' + comment.trimStart()
-          }
-        }
-      }
-    }
-    return fLine
-  })
-
-  comments.forEach((comment, idx) => {
-    if (!used.has(idx)) result.push(comment)
-  })
-  return result.join('\n')
-}
 const queryParams = ref<any[]>([])
 const headerParams = ref<any[]>([])
 

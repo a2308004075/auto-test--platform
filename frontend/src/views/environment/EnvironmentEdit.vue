@@ -16,6 +16,7 @@ import { getEnvironment, updateEnvironment } from '@/api/environment'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
 import CodeEditor from '@/components/CodeEditor/index.vue'
 import { useProjectStore } from '@/stores/modules/project'
+import { tryFormatJson, jsonSyntaxError } from '@/utils/jsonFormat'
 
 const route = useRoute()
 const router = useRouter()
@@ -81,11 +82,12 @@ function removeRow(index: number) {
 
 function formatJson(row: VarRow) {
   if (!row.varValue.trim()) return
-  try {
-    row.varValue = JSON.stringify(JSON.parse(row.varValue), null, 2)
-  } catch {
-    ElMessage.warning('JSON 格式不正确')
+  const formatted = tryFormatJson(row.varValue)
+  if (formatted === null) {
+    ElMessage.warning(`JSON 语法错误：${jsonSyntaxError(row.varValue)}`)
+    return
   }
+  row.varValue = formatted
 }
 
 /**

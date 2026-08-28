@@ -18,7 +18,9 @@ import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
 import { Refresh } from '@element-plus/icons-vue'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
+import CodeEditor from '@/components/CodeEditor/index.vue'
 import { schemaToExampleString } from '@/utils/schemaToExample'
+import { formatJson } from '@/utils/jsonFormat'
 
 const route = useRoute()
 const router = useRouter()
@@ -271,6 +273,13 @@ async function fetchDependencies() {
 // 关联接口信息
 const currentApi = computed(() => apis.value.find((a: any) => a.id === form.apiId))
 
+// 显示路径：服务前缀 + path（去除前导 ${host} 环境变量占位符）
+function apiDisplayPath(api: any): string {
+  const path = (api.path || '').replace(/^\$\{[^}]*\}/, '')
+  const prefix = (api.servicePrefix || '').replace(/\/+$/, '')
+  return prefix + path
+}
+
 // ===== 左侧接口选择面板（按分组显示） =====
 const apiSearch = ref('')
 const expandedGroups = ref<number[]>([])
@@ -417,7 +426,7 @@ onMounted(() => {
                   <el-tag :type="methodColors[api.httpMethod] || 'info'" size="small" effect="dark">{{ api.httpMethod }}</el-tag>
                   <span class="api-item-name">{{ api.name }}</span>
                 </div>
-                <div class="api-item-path">{{ api.path }}</div>
+                <div class="api-item-path">{{ apiDisplayPath(api) }}</div>
               </div>
             </div>
           </div>
@@ -432,12 +441,12 @@ onMounted(() => {
         <el-tabs v-model="activeTab">
           <!-- Tab: 基础信息 -->
           <el-tab-pane label="基础信息" name="basic">
-            <el-form label-position="top" style="max-width: 800px">
+            <el-form label-position="top">
               <!-- 第一行：关联接口 -->
               <el-form-item label="关联接口" required>
                 <div v-if="currentApi" class="api-info-bar">
                   <el-tag :type="methodColors[currentApi.httpMethod] || 'info'" size="small">{{ currentApi.httpMethod }}</el-tag>
-                  <code style="font-size: 13px">{{ currentApi.path }}</code>
+                  <code style="font-size: 13px">{{ apiDisplayPath(currentApi) }}</code>
                   <span style="color: #909399">{{ currentApi.description }}</span>
                   <el-button link type="primary" style="margin-left: auto" @click="router.push(`/project/${projectId}/apis/${currentApi.id}/edit`)">查看接口 →</el-button>
                 </div>
@@ -544,9 +553,17 @@ onMounted(() => {
               <!-- 请求体 -->
               <div class="params-section">
                 <h4>请求体</h4>
-                <!-- raw/json body: textarea 编辑器 -->
+                <!-- raw/json body: 富文本编辑器 + 格式化；其他类型: textarea -->
                 <template v-if="bodyRow">
-                  <el-input v-model="bodyRow.value" type="textarea" :rows="8" placeholder='如 {"key": "value"}' style="font-family: monospace" />
+                  <div v-if="bodyRow.type === 'json'">
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 8px">
+                      <el-button size="small" @click="bodyRow.value = formatJson(bodyRow.value)">格式化</el-button>
+                    </div>
+                    <div style="height: 240px">
+                      <CodeEditor v-model="bodyRow.value" language="json" :min-height="200" placeholder='如 {"key": "value"}' />
+                    </div>
+                  </div>
+                  <el-input v-else v-model="bodyRow.value" type="textarea" :rows="8" placeholder='如 {"key": "value"}' style="font-family: monospace" />
                 </template>
                 <!-- form body: KV 表格 -->
                 <template v-else-if="bodyKvParams.length">
@@ -595,7 +612,7 @@ onMounted(() => {
                 <el-input v-model="expectedStatusCode" placeholder="如 200" style="width: 80px" />
                 <el-button size="small" @click="assertionFields.push({ path: '', expected: '', description: '' })">+ 添加断言字段</el-button>
               </div>
-              <el-table :data="assertionFields" size="small" border style="max-width: 800px; margin-top: 12px">
+              <el-table :data="assertionFields" size="small" border style="margin-top: 12px">
                 <el-table-column label="字段路径" width="200">
                   <template #default="{ row }"><el-input v-model="row.path" size="small" placeholder="如 data.token" style="font-family: monospace" /></template>
                 </el-table-column>
@@ -620,7 +637,7 @@ onMounted(() => {
               <h4 style="margin: 0; font-size: 14px; font-weight: 600">引用关系详情</h4>
               <el-tag type="primary" size="small">{{ referenceCount }} 个引用</el-tag>
             </div>
-            <el-table v-loading="referenceLoading" :data="referenceList" size="small" style="max-width: 800px">
+            <el-table v-loading="referenceLoading" :data="referenceList" size="small">
               <el-table-column label="引用类型" width="120">
                 <template #default="{ row }">
                   <el-tag :type="row.refType === 'ACTION' ? 'primary' : 'success'" size="small">

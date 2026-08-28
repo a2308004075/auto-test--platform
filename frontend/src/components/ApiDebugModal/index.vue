@@ -15,6 +15,7 @@ import { getApi, debugApi } from '@/api/apidoc'
 import { getEnvironments } from '@/api/environment'
 import CodeEditor from '@/components/CodeEditor/index.vue'
 import { schemaToExampleString } from '@/utils/schemaToExample'
+import { formatJson } from '@/utils/jsonFormat'
 
 interface Props {
   modelValue: boolean
@@ -185,7 +186,7 @@ async function loadApi() {
     }
     debugBody.value = initialBody
     if (bt === 'raw' && debugRawType.value === 'json') {
-      debugBody.value = formatDebugBody()
+      debugBody.value = formatJson(debugBody.value)
     }
     customParams.value = []
     debugResult.value = null
@@ -221,7 +222,7 @@ watch(() => props.modelValue, (v) => {
 // 请求体切换到 raw/JSON 时自动格式化
 watch([debugBodyType, debugRawType], () => {
   if (debugBodyType.value === 'raw' && debugRawType.value === 'json') {
-    debugBody.value = formatDebugBody()
+    debugBody.value = formatJson(debugBody.value)
   }
 })
 
@@ -324,14 +325,6 @@ function removeBodyRow(idx: number) {
   const items = parseArr(debugBody.value)
   items.splice(idx, 1)
   debugBody.value = JSON.stringify(items)
-}
-
-function formatDebugBody(): string {
-  try {
-    return JSON.stringify(JSON.parse(debugBody.value), null, 2)
-  } catch {
-    return debugBody.value
-  }
 }
 </script>
 
@@ -447,7 +440,7 @@ function formatDebugBody(): string {
               <el-select v-if="debugBodyType === 'raw'" v-model="debugRawType" size="small" style="width: 130px">
                 <el-option v-for="r in rawTypeOptions" :key="r.value" :value="r.value" :label="r.label" />
               </el-select>
-              <el-button v-if="debugBodyType === 'raw' && debugRawType === 'json'" size="small" @click="debugBody = formatDebugBody()">格式化</el-button>
+              <el-button v-if="debugBodyType === 'raw' && debugRawType === 'json'" size="small" @click="debugBody = formatJson(debugBody.value)">格式化</el-button>
             </div>
             <div v-if="debugBodyType === 'none'" class="empty-hint">该接口无请求体</div>
             <div v-else-if="debugBodyType === 'raw'" style="height: 200px">

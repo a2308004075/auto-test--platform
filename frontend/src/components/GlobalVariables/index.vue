@@ -9,6 +9,7 @@ import { ElMessage } from 'element-plus'
 import { InfoFilled } from '@element-plus/icons-vue'
 import { getProjectVariables, updateProjectVariables } from '@/api/environment'
 import CodeEditor from '@/components/CodeEditor/index.vue'
+import { tryFormatJson, jsonSyntaxError } from '@/utils/jsonFormat'
 
 const props = defineProps<{
   projectId: number
@@ -53,11 +54,12 @@ function removeRow(index: number) {
 
 function formatJson(row: VarRow) {
   if (!row.varValue.trim()) return
-  try {
-    row.varValue = JSON.stringify(JSON.parse(row.varValue), null, 2)
-  } catch {
-    ElMessage.warning('JSON 格式不正确')
+  const formatted = tryFormatJson(row.varValue)
+  if (formatted === null) {
+    ElMessage.warning(`JSON 语法错误：${jsonSyntaxError(row.varValue)}`)
+    return
   }
+  row.varValue = formatted
 }
 
 function validateVariables(): boolean {

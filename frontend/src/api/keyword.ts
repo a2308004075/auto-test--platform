@@ -29,10 +29,6 @@ export function deleteKeyword(projectId: number, keywordId: number) {
   return request.post(`/v1/projects/${projectId}/keywords/${keywordId}/delete`)
 }
 
-export function generateKeyword(projectId: number, apiId: number) {
-  return request.post(`/v1/projects/${projectId}/keywords/generate`, null, { params: { apiId } })
-}
-
 export function debugKeyword(projectId: number, keywordId: number, data: { environmentId: number }) {
   return request.post(`/v1/projects/${projectId}/keywords/${keywordId}/debug`, data)
 }

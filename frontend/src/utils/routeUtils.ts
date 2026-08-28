@@ -114,7 +114,6 @@ export function addSupplementaryRoutes(router: Router, layoutName: string): void
     // ===== 关键字模块 =====
     { path: 'project/:id/keywords/new',               component: 'keywords/KeywordEdit',      title: '新建关键字' },
     { path: 'project/:id/keywords/:keywordId/edit',   component: 'keywords/KeywordEdit',      title: '编辑关键字' },
-    { path: 'project/:id/keywords/generate',          component: 'keywords/KeywordGenerate',  title: '从接口生成关键字' },
 
     // ===== 工具模块 =====
     { path: 'project/:id/tools/new',              component: 'tool/ToolEdit',  title: '新建工具方法' },

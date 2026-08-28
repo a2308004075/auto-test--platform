@@ -16,9 +16,13 @@ interface Props {
   title: string
   /** 返回路由（可选，不传则 router.back()） */
   backRoute?: string
+  /** 是否显示返回按钮（默认显示） */
+  showBack?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  showBack: true,
+})
 const router = useRouter()
 
 function handleBack() {
@@ -33,7 +37,7 @@ function handleBack() {
 <template>
   <div class="edit-page-header">
     <div class="edit-page-header-left">
-      <el-button type="primary" link @click="handleBack">← 返回</el-button>
+      <el-button v-if="showBack" type="primary" link @click="handleBack">← 返回</el-button>
       <h2 class="edit-page-title">{{ title }}</h2>
     </div>
     <div class="edit-page-header-right">

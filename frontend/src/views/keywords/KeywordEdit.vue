@@ -343,14 +343,8 @@ async function handleSubmit() {
   } catch (e: any) { ElMessage.error(e?.response?.data?.message || '操作失败') }
 }
 
-// ===== 保存成功弹窗操作 =====
-function handleSaveSuccessBack() {
-  saveSuccessVisible.value = false
-  router.push(`/project/${projectId.value}/keywords`)
-}
-function handleSaveSuccessContinue() {
-  saveSuccessVisible.value = false
-  // 重置表单
+// ===== 重置表单（新建模式使用） =====
+function resetForm() {
   Object.assign(form, {
     name: '', apiId: null, groupId: null, description: '',
     tags: '[]',
@@ -360,8 +354,31 @@ function handleSaveSuccessContinue() {
   assertionFields.value = []
   expectedStatusCode.value = '200'
   activeTab.value = 'basic'
+  referenceCount.value = 0
+  referenceList.value = []
+  saveSuccessVisible.value = false
+  savedKeywordName.value = ''
   router.replace({ hash: '' })
 }
+
+// ===== 保存成功弹窗操作 =====
+function handleSaveSuccessBack() {
+  saveSuccessVisible.value = false
+  router.push(`/project/${projectId.value}/keywords`)
+}
+function handleSaveSuccessContinue() {
+  saveSuccessVisible.value = false
+  resetForm()
+}
+
+// 路由参数变化时重置/加载数据（解决从编辑页切换到新建页的缓存问题）
+watch(() => route.params.keywordId, () => {
+  if (!isEdit.value) {
+    resetForm()
+  }
+  fetchKeyword()
+  fetchDependencies()
+})
 
 // ===== Hash 锚点自动切换 Tab =====
 const validTabs = ['basic', 'testdata', 'response', 'refs']
@@ -389,7 +406,7 @@ onMounted(() => {
 
 <template>
   <div v-loading="loading">
-    <EditPageHeader :title="isEdit ? '编辑接口关键字' : '新建接口关键字'">
+    <EditPageHeader :title="isEdit ? '编辑接口关键字' : '新建接口关键字'" :show-back="false">
       <el-button v-if="hasPermission('project:keyword:edit')" type="primary" @click="handleSubmit">保存</el-button>
       <el-button @click="router.back()">取消</el-button>
     </EditPageHeader>
@@ -654,9 +671,9 @@ onMounted(() => {
     </div>
 
     <!-- 保存成功弹窗（创建模式） -->
-    <el-dialog v-model="saveSuccessVisible" class="save-success-dialog" title="保存接口关键字" width="320px" :close-on-click-modal="false">
+    <el-dialog v-model="saveSuccessVisible" class="save-success-dialog" title="保存成功" width="500px" :close-on-click-modal="false">
       <p style="font-size: 14px; color: #606266; line-height: 1.6; text-align: center;">
-        接口关键字 <strong>{{ savedKeywordName }}</strong> 保存成功！
+        <strong>{{ savedKeywordName }}</strong> 保存成功！
       </p>
       <template #footer>
         <el-button @click="handleSaveSuccessBack">返回列表</el-button>

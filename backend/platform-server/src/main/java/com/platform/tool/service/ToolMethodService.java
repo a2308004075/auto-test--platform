@@ -8,9 +8,7 @@ package com.platform.tool.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.platform.action.entity.Action;
-import com.platform.action.entity.ActionNode;
 import com.platform.action.mapper.ActionMapper;
-import com.platform.action.mapper.ActionNodeMapper;
 import com.platform.common.dto.ReferenceDetailResponse;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
@@ -35,7 +33,6 @@ import java.util.List;
 public class ToolMethodService {
 
     private final ToolMethodMapper toolMethodMapper;
-    private final ActionNodeMapper actionNodeMapper;
     private final ActionMapper actionMapper;
     private final GroovySandboxExecutor groovySandboxExecutor;
     private final ProjectService projectService;
@@ -170,25 +167,17 @@ public class ToolMethodService {
         findById(toolId);
         List<ReferenceDetailResponse> result = new ArrayList<>();
 
-        LambdaQueryWrapper<ActionNode> nodeWrapper = new LambdaQueryWrapper<>();
-        nodeWrapper.eq(ActionNode::getRefToolId, toolId);
-        List<ActionNode> nodes = actionNodeMapper.selectList(nodeWrapper);
-        List<Long> actionIds = new ArrayList<>();
-        for (ActionNode node : nodes) {
-            if (!actionIds.contains(node.getActionId())) {
-                actionIds.add(node.getActionId());
-            }
-        }
-        for (Long actionId : actionIds) {
-            Action action = actionMapper.selectById(actionId);
-            if (action != null) {
-                ReferenceDetailResponse ref = new ReferenceDetailResponse();
-                ref.setRefType("ACTION");
-                ref.setRefId(action.getId());
-                ref.setRefName(action.getName());
-                ref.setRefDescription(action.getDescription());
-                result.add(ref);
-            }
+        // 搜索 action.nodes JSON 列中的 refToolId 引用
+        LambdaQueryWrapper<Action> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(Action::getNodes, "\"refToolId\":" + toolId);
+        List<Action> actions = actionMapper.selectList(wrapper);
+        for (Action action : actions) {
+            ReferenceDetailResponse ref = new ReferenceDetailResponse();
+            ref.setRefType("ACTION");
+            ref.setRefId(action.getId());
+            ref.setRefName(action.getName());
+            ref.setRefDescription(action.getDescription());
+            result.add(ref);
         }
 
         return result;

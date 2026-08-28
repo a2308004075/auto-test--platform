@@ -10,9 +10,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.platform.action.entity.Action;
-import com.platform.action.entity.ActionNode;
 import com.platform.action.mapper.ActionMapper;
-import com.platform.action.mapper.ActionNodeMapper;
 import com.platform.apidoc.dto.ApiDebugRequest;
 import com.platform.apidoc.dto.ApiDebugResponse;
 import com.platform.apidoc.entity.Api;
@@ -64,7 +62,6 @@ public class ApiKeywordService {
     private final ApiKeywordGroupService apiKeywordGroupService;
     private final ApiMapper apiMapper;
     private final ApiModuleMapper apiModuleMapper;
-    private final ActionNodeMapper actionNodeMapper;
     private final ActionMapper actionMapper;
     private final TestCaseMapper testCaseMapper;
     private final ProjectService projectService;
@@ -218,10 +215,8 @@ public class ApiKeywordService {
     public void delete(Long keywordId) {
         Keyword kw = findKeywordById(keywordId);
 
-        // 删除保护检查 - 被 action_node 引用时不可删除
-        LambdaQueryWrapper<ActionNode> nodeWrapper = new LambdaQueryWrapper<>();
-        nodeWrapper.eq(ActionNode::getRefKeywordId, keywordId);
-        long actionRefCount = actionNodeMapper.selectCount(nodeWrapper);
+        // 删除保护检查 - 被 Action 节点引用时不可删除
+        long actionRefCount = countActionReferences(keywordId);
         if (actionRefCount > 0) {
             throw new BusinessException(ErrorCode.KEYWORD_DEPENDENCY_CONFLICT,
                     "关键字被 " + actionRefCount + " 个 Action 节点引用，无法删除");
@@ -357,27 +352,15 @@ public class ApiKeywordService {
         findKeywordById(keywordId);
         List<ReferenceDetailResponse> result = new ArrayList<>();
 
-        // 查询 Action 节点引用
-        LambdaQueryWrapper<ActionNode> nodeWrapper = new LambdaQueryWrapper<>();
-        nodeWrapper.eq(ActionNode::getRefKeywordId, keywordId);
-        List<ActionNode> nodes = actionNodeMapper.selectList(nodeWrapper);
-        // 去重 Action ID
-        List<Long> actionIds = nodes.stream()
-                .map(ActionNode::getActionId)
-                .distinct()
-                .collect(Collectors.toList());
-        if (!actionIds.isEmpty()) {
-            for (Long actionId : actionIds) {
-                Action action = actionMapper.selectById(actionId);
-                if (action != null) {
-                    ReferenceDetailResponse ref = new ReferenceDetailResponse();
-                    ref.setRefType("ACTION");
-                    ref.setRefId(action.getId());
-                    ref.setRefName(action.getName());
-                    ref.setRefDescription(action.getDescription());
-                    result.add(ref);
-                }
-            }
+        // 查询 Action 节点引用（搜索 nodes JSON 列中的 refKeywordId）
+        List<Action> refActions = findActionsReferencingKeyword(keywordId);
+        for (Action action : refActions) {
+            ReferenceDetailResponse ref = new ReferenceDetailResponse();
+            ref.setRefType("ACTION");
+            ref.setRefId(action.getId());
+            ref.setRefName(action.getName());
+            ref.setRefDescription(action.getDescription());
+            result.add(ref);
         }
 
         // 查询测试用例引用
@@ -481,6 +464,24 @@ public class ApiKeywordService {
     }
 
     /**
+     * 统计引用指定关键字的 Action 数量（搜索 action.nodes JSON 列中的 refKeywordId）
+     */
+    private long countActionReferences(Long keywordId) {
+        LambdaQueryWrapper<Action> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(Action::getNodes, "\"refKeywordId\":" + keywordId);
+        return actionMapper.selectCount(wrapper);
+    }
+
+    /**
+     * 查找引用指定关键字的所有 Action（搜索 action.nodes JSON 列中的 refKeywordId）
+     */
+    private List<Action> findActionsReferencingKeyword(Long keywordId) {
+        LambdaQueryWrapper<Action> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(Action::getNodes, "\"refKeywordId\":" + keywordId);
+        return actionMapper.selectList(wrapper);
+    }
+
+    /**
      * 统计引用指定关键字的测试用例数量（搜索 steps / setup_steps / teardown_steps JSON）
      */
     private long countTestCaseReferences(Long keywordId) {
@@ -505,10 +506,8 @@ public class ApiKeywordService {
         resp.setUpdatedBy(kw.getUpdatedBy());
         resp.setCreatedAt(kw.getCreatedAt());
         resp.setUpdatedAt(kw.getUpdatedAt());
-        // 计算引用次数：action_node 引用 + test_case 步骤引用
-        LambdaQueryWrapper<ActionNode> nodeWrapper = new LambdaQueryWrapper<>();
-        nodeWrapper.eq(ActionNode::getRefKeywordId, kw.getId());
-        long actionRefCount = actionNodeMapper.selectCount(nodeWrapper);
+        // 计算引用次数：Action 节点引用 + test_case 步骤引用
+        long actionRefCount = countActionReferences(kw.getId());
         long caseRefCount = countTestCaseReferences(kw.getId());
         resp.setReferenceCount((int) (actionRefCount + caseRefCount));
 

@@ -162,7 +162,7 @@ public class ProjectService {
         createSystemActionGroup(project.getId(), "未分组", null, "未分组的 Action");
 
         createSystemKeywordGroup(project.getId(), "全部", null, "系统默认分组，包含所有接口关键字");
-        createSystemKeywordGroup(project.getId(), "未分类", null, "未分类的接口关键字");
+        createSystemKeywordGroup(project.getId(), "未分组", null, "未分组的接口关键字");
 
         return toResponse(project);
     }

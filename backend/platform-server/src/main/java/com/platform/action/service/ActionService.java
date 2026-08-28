@@ -14,7 +14,6 @@ import com.platform.action.dto.*;
 import com.platform.action.entity.Action;
 import com.platform.action.entity.ActionNode;
 import com.platform.action.mapper.ActionMapper;
-import com.platform.action.mapper.ActionNodeMapper;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
 import com.platform.common.response.PageResponse;
@@ -46,7 +45,6 @@ import java.util.Map.Entry;
 public class ActionService {
 
     private final ActionMapper actionMapper;
-    private final ActionNodeMapper actionNodeMapper;
     private final KeywordMapper keywordMapper;
     private final TestCaseMapper testCaseMapper;
     private final ProjectService projectService;
@@ -130,9 +128,6 @@ public class ActionService {
 
         actionMapper.insert(action);
 
-        // 保存节点到 action_node 表
-        saveNodes(action.getId(), request.getNodes());
-
         return toResponse(action);
     }
 
@@ -174,9 +169,6 @@ public class ActionService {
                 throw new BusinessException(ErrorCode.ACTION_NODE_SERIALIZE_FAILED,
                         "节点序列化失败：" + e.getMessage());
             }
-            // 重建节点
-            deleteNodes(actionId);
-            saveNodes(actionId, request.getNodes());
         }
 
         actionMapper.updateById(action);
@@ -207,7 +199,6 @@ public class ActionService {
             }
         }
 
-        deleteNodes(actionId);
         actionMapper.deleteById(actionId);
     }
 
@@ -234,11 +225,8 @@ public class ActionService {
     public ActionDebugResponse debug(Long actionId, ActionDebugRequest request) {
         Action action = findById(actionId);
 
-        // 获取节点列表（用于结果展示）
-        LambdaQueryWrapper<ActionNode> nodeWrapper = new LambdaQueryWrapper<>();
-        nodeWrapper.eq(ActionNode::getActionId, actionId)
-                .orderByAsc(ActionNode::getPositionY);
-        List<ActionNode> nodes = actionNodeMapper.selectList(nodeWrapper);
+        // 从 JSON 反序列化节点列表
+        List<ActionNode> nodes = parseNodes(action.getNodes());
 
         if (nodes.isEmpty()) {
             return ActionDebugResponse.fail("Action 没有节点");
@@ -400,28 +388,20 @@ public class ActionService {
         return false;
     }
 
-    private void saveNodes(Long actionId, List<ActionNodeDTO> nodeDTOs) {
-        if (nodeDTOs == null || nodeDTOs.isEmpty()) {
-            return;
+    /**
+     * 从 action.nodes JSON 字符串反序列化节点列表
+     */
+    private List<ActionNode> parseNodes(String nodesJson) {
+        if (nodesJson == null || nodesJson.isEmpty()) {
+            return Collections.emptyList();
         }
-        for (ActionNodeDTO dto : nodeDTOs) {
-            ActionNode node = new ActionNode();
-            node.setActionId(actionId);
-            node.setNodeKey(dto.getNodeKey());
-            node.setNodeType(dto.getNodeType());
-            node.setRefKeywordId(dto.getRefKeywordId());
-            node.setRefToolId(dto.getRefToolId());
-            node.setConfig(dto.getConfig());
-            node.setPositionX(dto.getPositionX());
-            node.setPositionY(dto.getPositionY());
-            actionNodeMapper.insert(node);
+        try {
+            ActionNode[] arr = objectMapper.readValue(nodesJson, ActionNode[].class);
+            return Arrays.asList(arr);
+        } catch (Exception e) {
+            log.warn("反序列化 Action 节点失败: {}", e.getMessage());
+            return Collections.emptyList();
         }
-    }
-
-    private void deleteNodes(Long actionId) {
-        LambdaQueryWrapper<ActionNode> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ActionNode::getActionId, actionId);
-        actionNodeMapper.delete(wrapper);
     }
 
     /**

@@ -5,17 +5,15 @@
  */
 package com.platform.action.entity;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.platform.common.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * Action 节点实体
+ * Action 节点 POJO（从 action.nodes JSON 反序列化，无独立数据库表）
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("action_node")
 public class ActionNode extends BaseEntity {
 
     private Long actionId;

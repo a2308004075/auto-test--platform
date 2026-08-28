@@ -51,11 +51,11 @@ const moduleMap = computed<Record<number, any>>(() => {
   modules.value.forEach((mod) => { m[mod.id] = mod })
   return m
 })
-// 批量移动可选分组（用户分组 + 未分类系统分组）
+// 批量移动可选分组（用户分组 + 未分组系统分组）
 const moveTargetModules = computed(() =>
-  modules.value.filter((m) => m.isSystem !== 1 || m.name === '未分类')
+  modules.value.filter((m) => m.isSystem !== 1 || m.name === '未分组')
 )
-// 分组树：全部(虚拟) + 系统分组(未分类等，排除全部) + 用户分组按 parentId 建树
+// 分组树：全部(虚拟) + 系统分组(未分组等，排除全部) + 用户分组按 parentId 建树
 const moduleTree = computed(() => {
   const userGroups = modules.value.filter((m) => m.isSystem !== 1)
   const buildTree = (parentId: number | null): any[] =>
@@ -244,7 +244,7 @@ const batchMovePreview = computed(() => {
     name: r.name,
     method: r.httpMethod,
     path: r.path,
-    oldGroup: r.moduleName || moduleMap.value[r.moduleId]?.name || '未分类',
+    oldGroup: r.moduleName || moduleMap.value[r.moduleId]?.name || '未分组',
     newGroup: target?.name || '',
   }))
 })

@@ -243,7 +243,7 @@ onMounted(() => {
         </el-form-item>
         <el-form-item label="目标分组" required>
           <el-select v-model="form.moduleId" placeholder="选择导入目标分组" filterable style="width: 100%">
-            <el-option v-for="m in modules.filter((x: any) => x.isSystem !== 1 || x.name === '未分类')" :key="m.id" :value="m.id" :label="m.name" />
+            <el-option v-for="m in modules.filter((x: any) => x.isSystem !== 1)" :key="m.id" :value="m.id" :label="m.name" />
           </el-select>
         </el-form-item>
         <el-form-item label="认证账号（可选）">

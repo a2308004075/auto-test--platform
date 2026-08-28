@@ -49,11 +49,11 @@ const groupMap = computed<Record<number, any>>(() => {
   groups.value.forEach((g) => { m[g.id] = g })
   return m
 })
-// 批量移动可选分组（用户分组 + 未分类系统分组）
+// 批量移动可选分组（用户分组 + 未分组系统分组）
 const moveTargetGroups = computed(() =>
-  groups.value.filter((g) => g.isSystem !== 1 || g.name === '未分类'),
+  groups.value.filter((g) => g.isSystem !== 1 || g.name === '未分组'),
 )
-// 分组树：全部(虚拟) + 系统分组(未分类等，排除全部) + 用户分组按 parentId 建树
+// 分组树：全部(虚拟) + 系统分组(未分组等，排除全部) + 用户分组按 parentId 建树
 const groupTree = computed(() => {
   const userGroups = groups.value.filter((g) => g.isSystem !== 1)
   const buildTree = (parentId: number | null): any[] =>
@@ -221,7 +221,7 @@ function handleDeleteGroup(g: any) {
     ElMessage.warning('系统默认分组不可删除')
     return
   }
-  ElMessageBox.confirm(`确定删除分组「${g.name}」？该分组下的关键字将变为未分类。`, '确认删除', { type: 'warning' })
+  ElMessageBox.confirm(`确定删除分组「${g.name}」？该分组下的关键字将变为未分组。`, '确认删除', { type: 'warning' })
     .then(async () => {
       await deleteKeywordGroup(projectId.value, g.id)
       ElMessage.success('删除成功')
@@ -298,7 +298,7 @@ const defaultColumns: ColumnItem[] = [
   { key: 'apiGroup', label: '关联接口分组', locked: true, visible: true },
   { key: 'apiName', label: '关联接口名', locked: true, visible: true },
   { key: 'apiPath', label: '关联接口路径', locked: true, visible: true },
-  { key: 'group', label: '关键字分组', locked: false, visible: true },
+  { key: 'group', label: '分组', locked: false, visible: true },
   { key: 'desc', label: '描述', locked: true, visible: true },
   { key: 'createTime', label: '创建时间', locked: false, visible: false },
   { key: 'refCount', label: '被引用次数', locked: false, visible: false },
@@ -439,7 +439,7 @@ const highlightedDebugResponse = computed(() => {
       <!-- 左侧分组树（接口关键字独立分组） -->
       <div class="module-panel" @contextmenu="onPanelContextMenu">
         <div class="module-head">
-          <span class="module-title">关键字分组</span>
+          <span class="module-title">分组</span>
         </div>
         <el-input
           v-model="filterText"
@@ -526,7 +526,7 @@ const highlightedDebugResponse = computed(() => {
           <el-table-column v-if="isColVisible('apiPath')" label="关联接口路径" width="240" show-overflow-tooltip>
             <template #default="{ row }"><code style="font-size: 12px; color: #909399">{{ row.apiPath || '--' }}</code></template>
           </el-table-column>
-          <el-table-column v-if="isColVisible('group')" label="关键字分组" width="140">
+          <el-table-column v-if="isColVisible('group')" label="分组" width="140">
             <template #default="{ row }">{{ row.groupName || groupMap[row.groupId]?.name || '--' }}</template>
           </el-table-column>
           <el-table-column v-if="isColVisible('desc')" prop="description" label="描述" show-overflow-tooltip />
@@ -568,7 +568,7 @@ const highlightedDebugResponse = computed(() => {
         <div style="color: #909399; margin-bottom: 6px">以下接口关键字的分组将被修改：</div>
         <div v-for="row in selectedRows" :key="row.id" style="padding: 2px 0">
           <span style="color: #606266">{{ row.name }}</span>
-          <span style="margin: 0 6px; color: #c0c4cc; font-size: 12px">{{ row.groupName || '未分类' }}</span>
+          <span style="margin: 0 6px; color: #c0c4cc; font-size: 12px">{{ row.groupName || '未分组' }}</span>
           <span style="color: #c0c4cc">→</span>
           <span style="color: #409eff; font-weight: 500; margin-left: 4px">{{ batchGroupTarget ? groupNameMap[batchGroupTarget] : '请选择' }}</span>
         </div>

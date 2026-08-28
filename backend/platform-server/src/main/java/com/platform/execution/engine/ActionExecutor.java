@@ -5,12 +5,10 @@
  */
 package com.platform.execution.engine;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.platform.action.entity.Action;
 import com.platform.action.entity.ActionNode;
-import com.platform.action.mapper.ActionNodeMapper;
 import com.platform.tool.dto.ToolTestResult;
 import com.platform.tool.service.GroovySandboxExecutor;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +33,6 @@ import java.util.*;
 @Slf4j
 public class ActionExecutor {
 
-    private final ActionNodeMapper actionNodeMapper;
     private final KeywordExecutor keywordExecutor;
     private final GroovySandboxExecutor groovySandboxExecutor;
     private final ObjectMapper objectMapper;
@@ -49,11 +46,8 @@ public class ActionExecutor {
      * @return 执行结果
      */
     public StepResult executeAction(Action action, Map<String, Object> params, ExecutionContext context) {
-        // 查询节点列表
-        LambdaQueryWrapper<ActionNode> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ActionNode::getActionId, action.getId())
-                .orderByAsc(ActionNode::getPositionY);
-        List<ActionNode> nodes = actionNodeMapper.selectList(wrapper);
+        // 从 JSON 反序列化节点列表
+        List<ActionNode> nodes = parseNodes(action.getNodes());
 
         if (nodes.isEmpty()) {
             return StepResult.error("Action 没有节点：" + action.getId());
@@ -137,6 +131,22 @@ public class ActionExecutor {
         respDetail.put("nodeResults", nodeResults);
         result.setResponse(respDetail);
         return result;
+    }
+
+    /**
+     * 从 action.nodes JSON 字符串反序列化节点列表
+     */
+    private List<ActionNode> parseNodes(String nodesJson) {
+        if (nodesJson == null || nodesJson.isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            ActionNode[] arr = objectMapper.readValue(nodesJson, ActionNode[].class);
+            return Arrays.asList(arr);
+        } catch (Exception e) {
+            log.warn("反序列化 Action 节点失败: {}", e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     // ───────────────────── 节点执行 ─────────────────────

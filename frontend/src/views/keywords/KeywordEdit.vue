@@ -32,7 +32,6 @@ const isEdit = computed(() => !!keywordId.value)
 
 const methodColors: Record<string, string> = { GET: '', POST: 'success', PUT: 'warning', DELETE: 'danger', PATCH: 'info' }
 const { options: paramTypeOptions } = useDict('param_type')
-const { options: categoryOptions } = useDict('keyword_category')
 
 const activeTab = ref('basic')
 const loading = ref(false)
@@ -46,7 +45,7 @@ const savedKeywordName = ref('')
 
 const form = reactive({
   name: '', apiId: null as number | null, groupId: null as number | null, description: '',
-  category: '', tags: '[]',
+  tags: '[]',
   testData: '[]', responseAssertion: '{}',
 })
 const referenceCount = ref(0)
@@ -243,7 +242,6 @@ async function fetchKeyword() {
       apiId: data.apiId ?? null,
       groupId: data.groupId ?? null,
       description: data.description || '',
-      category: data.category || '',
       tags: data.tags || '[]',
       testData: data.testData || '[]',
       responseAssertion: data.responseAssertion || '{}',
@@ -301,7 +299,7 @@ const groupedApis = computed(() => {
     const mid = api.moduleId || 0
     if (!map.has(mid)) {
       map.set(mid, {
-        module: modMap.get(mid) || { id: 0, name: '未分类', isSystem: 1 },
+        module: modMap.get(mid) || { id: 0, name: '未分组', isSystem: 1 },
         items: [],
       })
     }
@@ -330,7 +328,6 @@ async function selectApi(api: any) {
 // ===== 保存 =====
 async function handleSubmit() {
   if (!form.name) { ElMessage.warning('请填写关键字名称'); activeTab.value = 'basic'; return }
-  if (!form.category) { ElMessage.warning('请选择分类'); activeTab.value = 'basic'; return }
   if (!form.apiId) { ElMessage.warning('请在左侧选择关联接口'); return }
   try {
     const payload = { ...form, projectId: projectId.value }
@@ -356,7 +353,7 @@ function handleSaveSuccessContinue() {
   // 重置表单
   Object.assign(form, {
     name: '', apiId: null, groupId: null, description: '',
-    category: '', tags: '[]',
+    tags: '[]',
     testData: '[]', responseAssertion: '{}',
   })
   testDataRows.value = []
@@ -455,22 +452,11 @@ onMounted(() => {
               <el-form-item label="关键字名称" required>
                 <el-input v-model="form.name" placeholder="请输入关键字名称" />
               </el-form-item>
-              <el-row :gutter="16">
-                <el-col :span="12">
-                  <el-form-item label="分类" required>
-                    <el-select v-model="form.category" placeholder="请选择分类" filterable allow-create default-first-option style="width: 100%">
-                      <el-option v-for="opt in categoryOptions" :key="opt.value" :value="opt.value" :label="opt.label" />
-                    </el-select>
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="关键字分组">
-                    <el-select v-model="form.groupId" placeholder="请选择分组" clearable filterable style="width: 100%">
-                      <el-option v-for="g in groups" :key="g.id" :value="g.id" :label="g.name" />
-                    </el-select>
-                  </el-form-item>
-                </el-col>
-              </el-row>
+              <el-form-item label="分组">
+                <el-select v-model="form.groupId" placeholder="请选择分组" clearable filterable style="width: 100%">
+                  <el-option v-for="g in groups.filter((g) => g.isSystem !== 1)" :key="g.id" :value="g.id" :label="g.name" />
+                </el-select>
+              </el-form-item>
               <el-form-item label="描述">
                 <el-input v-model="form.description" type="textarea" :rows="2" />
               </el-form-item>

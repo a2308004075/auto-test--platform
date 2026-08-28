@@ -197,8 +197,8 @@ const pathParams = computed(() => {
 async function fetchModules() {
   try {
     const res: any = await getModules(projectId.value)
-    // 排除"全部"系统分组（接口不应直接归属"全部"），保留"未分类"及其他用户分组
-    modules.value = (res.data || []).filter((m: any) => !(m.isSystem === 1 && m.name === '全部'))
+    // 排除系统分组（"全部"/"未分组"不能作为接口的具体归属）
+    modules.value = (res.data || []).filter((m: any) => m.isSystem !== 1)
     if (!form.moduleId && modules.value.length) form.moduleId = modules.value[0].id
   } catch { modules.value = [] }
 }

@@ -9,21 +9,70 @@
  * 左侧分组树（按 category 动态构建）+ 右侧高级搜索 + 批量操作 + 表字段调整 + 智能分页
  * 对齐原型 tool-list.html
  */
-import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTools, deleteTool, testTool, updateTool } from '@/api/tool'
+import { usePermission } from '@/composables/usePermission'
 import PageHeader from '@/components/PageHeader/index.vue'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
 import BatchBar from '@/components/BatchBar/index.vue'
 import ColumnSettings, { type ColumnItem } from '@/components/ColumnSettings/index.vue'
 import ProPagination from '@/components/ProPagination/index.vue'
-import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
 const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
+
+// ===== 右键菜单 =====
+const contextMenuVisible = ref(false)
+const contextMenuPos = reactive({ x: 0, y: 0 })
+const contextNode = ref<any>(null)
+
+function handleNodeContextmenu(e: MouseEvent, node: any) {
+  e.preventDefault()
+  e.stopPropagation()
+  contextNode.value = node
+  contextMenuPos.x = e.clientX
+  contextMenuPos.y = e.clientY
+  contextMenuVisible.value = true
+}
+
+function closeContextMenu() {
+  contextMenuVisible.value = false
+  contextNode.value = null
+}
+
+function contextClear() {
+  if (!contextNode.value) return
+  const node = contextNode.value
+  closeContextMenu()
+  const isAll = node.id === 'ALL'
+  ElMessageBox.confirm(
+    isAll
+      ? '确定清空项目下的所有工具方法？此操作不可恢复。'
+      : `确定清空「${node.name}」分类下的所有工具方法？此操作不可恢复。`,
+    '确认清空',
+    { type: 'warning', confirmButtonText: '清空', cancelButtonText: '取消' },
+  )
+    .then(async () => {
+      let targets: any[]
+      if (isAll) {
+        targets = allTools.value
+      } else if (node.id === 'UNGROUPED') {
+        targets = allTools.value.filter((t) => !t.category || t.category === 'CUSTOM' || t.category === 'BUILTIN')
+      } else {
+        targets = allTools.value.filter((t) => t.category === node.id)
+      }
+      for (const tool of targets) {
+        await deleteTool(projectId.value, tool.id)
+      }
+      ElMessage.success('已清空')
+      fetchAllTools()
+    })
+    .catch(() => {})
+}
 
 // ===== 全量数据（用于构建分组树和客户端筛选） =====
 const allTools = ref<any[]>([])
@@ -250,7 +299,13 @@ async function handleTest() {
   } finally { testLoading.value = false }
 }
 
-onMounted(fetchAllTools)
+onMounted(() => {
+  fetchAllTools()
+  document.addEventListener('click', closeContextMenu)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', closeContextMenu)
+})
 </script>
 
 <template>
@@ -264,7 +319,7 @@ onMounted(fetchAllTools)
       <!-- 左侧分组树 -->
       <div class="module-panel">
         <div class="module-head">
-          <span class="module-title">工具分组</span>
+          <span class="module-title">分组</span>
         </div>
         <div class="module-tree-search">
           <el-input
@@ -281,8 +336,10 @@ onMounted(fetchAllTools)
             :key="node.id"
             :class="['module-tree-node', { active: activeCategory === node.id }]"
             @click="onCategoryClick(node)"
+            @contextmenu.prevent.stop="handleNodeContextmenu($event, node)"
           >
             <span class="module-name">{{ node.name }}</span>
+            <span v-if="node.isSystem" class="module-lock" title="系统默认分组">🔒</span>
             <span class="module-count">{{ node.count }}</span>
           </div>
         </div>
@@ -418,6 +475,18 @@ onMounted(fetchAllTools)
         <el-button type="primary" :loading="testLoading" :disabled="testParams.length === 0" @click="handleTest">▶ 执行测试</el-button>
       </template>
     </el-dialog>
+
+    <!-- 右键上下文菜单 -->
+    <Teleport to="body">
+      <div
+        v-if="contextMenuVisible"
+        class="context-menu"
+        :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
+        @click.stop
+      >
+        <div class="context-menu-item danger" @click="contextClear">清空关键字</div>
+      </div>
+    </Teleport>
 
     <!-- 批量修改分组弹窗 -->
     <el-dialog v-model="batchGroupVisible" title="批量修改分组" width="420px">
@@ -589,5 +658,42 @@ onMounted(fetchAllTools)
   margin: 0 6px;
   color: var(--el-text-color-disabled, #c0c4cc);
   font-size: 12px;
+}
+
+/* 右键上下文菜单 */
+.context-menu {
+  position: fixed;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px 0;
+  min-width: 130px;
+  z-index: 9999;
+}
+.context-menu-item {
+  padding: 7px 14px;
+  font-size: 13px;
+  color: #303133;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+}
+.context-menu-item:hover {
+  background: #f5f7fa;
+}
+.context-menu-item.danger {
+  color: #f56c6c;
+}
+.context-menu-item.danger:hover {
+  background: #fef0f0;
+}
+.module-lock {
+  font-size: 10px;
+  color: #c0c4cc;
+  flex-shrink: 0;
+  margin-left: 2px;
 }
 </style>

@@ -329,7 +329,7 @@ public class ApiKeywordService {
 
     /**
      * 接口关键字在线调试
-     * <p>按关键字保存的 testData 作为请求参数，调用关联接口的真实请求。</p>
+     * <p>请求传入 testData 时以其作为请求参数（调试覆盖），否则使用关键字保存的 testData，调用关联接口的真实请求。</p>
      */
     public ApiDebugResponse debug(Long keywordId, ApiKeywordDebugRequest request) {
         findKeywordById(keywordId);
@@ -343,8 +343,9 @@ public class ApiKeywordService {
             return ApiDebugResponse.error("关联接口不存在");
         }
 
-        // 解析关键字保存的测试数据
-        Map<String, String> testDataMap = parseTestData(apiKeyword.getTestData());
+        // 解析测试数据：优先使用调试请求传入的覆盖值，未传则用关键字保存值
+        Map<String, String> testDataMap = parseTestData(
+                StringUtils.hasText(request.getTestData()) ? request.getTestData() : apiKeyword.getTestData());
 
         // 提取路径参数：路径中 {xxx} 占位符对应的参数从 testData 中剔除
         Map<String, String> pathParams = new LinkedHashMap<>();

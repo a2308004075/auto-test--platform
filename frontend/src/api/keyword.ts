@@ -29,7 +29,7 @@ export function deleteKeyword(projectId: number, keywordId: number) {
   return request.post(`/v1/projects/${projectId}/keywords/${keywordId}/delete`)
 }
 
-export function debugKeyword(projectId: number, keywordId: number, data: { environmentId: number }) {
+export function debugKeyword(projectId: number, keywordId: number, data: { environmentId: number, testData?: string }) {
   return request.post(`/v1/projects/${projectId}/keywords/${keywordId}/debug`, data)
 }
 

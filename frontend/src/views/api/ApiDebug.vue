@@ -43,7 +43,8 @@ async function fetchApi() {
   try {
     const res: any = await getApi(projectId.value, apiId.value)
     apiInfo.value = res.data || {}
-    queryParams.value = parseArr(res.data?.requestParams)
+    // 过滤 in=path 的参数：Path 参数不进 Query 区，避免调试时重复传参
+    queryParams.value = parseArr(res.data?.requestParams).filter((p: any) => p.in !== 'path')
     headerParams.value = parseArr(res.data?.headers)
     const pv: Record<string, string> = {}
     queryParams.value.forEach((p: any) => { if (p.name) pv[p.name] = '' })

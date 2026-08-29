@@ -18,6 +18,8 @@ import {
   clearKeywordGroupKeywords, clearAllKeywords,
 } from '@/api/keyword'
 import { getEnvironments } from '@/api/environment'
+import CodeEditor from '@/components/CodeEditor/index.vue'
+import { formatJson } from '@/utils/jsonFormat'
 import PageHeader from '@/components/PageHeader/index.vue'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
 import BatchBar from '@/components/BatchBar/index.vue'
@@ -375,6 +377,12 @@ const debugRow = ref<any>(null)
 const debugParams = ref<any[]>([])
 const debugResult = ref<any>(null)
 const debugEnvironments = ref<any[]>([])
+
+// ===== 调试参数分区（结构与编辑页“请求参数”对齐；无 in 字段的旧数据归入 Query 区兑底） =====
+const debugPathParams = computed(() => debugParams.value.filter(p => p.in === 'path'))
+const debugQueryParams = computed(() => debugParams.value.filter(p => p.in !== 'path' && p.in !== 'body'))
+const debugBodyRow = computed(() => debugParams.value.find(p => p.in === 'body' && p.name === '__body__'))
+const debugBodyKvParams = computed(() => debugParams.value.filter(p => p.in === 'body' && p.name !== '__body__'))
 const debugEnvId = ref<number | null>(null)
 
 async function openDebug(row: any) {
@@ -402,7 +410,10 @@ async function executeDebug() {
   debugLoading.value = true
   debugResult.value = null
   try {
-    const res: any = await debugKeyword(projectId.value, debugRow.value.id, { environmentId: debugEnvId.value })
+    const res: any = await debugKeyword(projectId.value, debugRow.value.id, {
+      environmentId: debugEnvId.value,
+      testData: JSON.stringify(debugParams.value),
+    })
     const data = res.data || {}
     let responseBody: any = data.responseBody
     if (typeof responseBody === 'string') {
@@ -655,19 +666,74 @@ const highlightedDebugResponse = computed(() => {
           {{ debugLoading ? '请求中...' : (debugResult ? '重新发送' : '发送请求') }}
         </el-button>
       </div>
-      <!-- 请求参数 -->
+      <!-- 请求参数（分区结构对齐编辑页：Path / Query / 请求体，仅值可编辑） -->
       <div class="debug-section-title">请求参数</div>
-      <el-table :data="debugParams" size="small" border style="margin-bottom: 16px">
-        <el-table-column label="参数名" width="140">
-          <template #default="{ row }"><code>{{ row.name }}</code></template>
-        </el-table-column>
-        <el-table-column label="类型" width="80">
-          <template #default="{ row }"><el-tag size="small">{{ row.type || 'string' }}</el-tag></template>
-        </el-table-column>
-        <el-table-column label="测试值">
-          <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="测试值" /></template>
-        </el-table-column>
-      </el-table>
+      <div v-if="debugParams.length" style="margin-bottom: 16px">
+        <!-- Path 参数 -->
+        <div v-if="debugPathParams.length" class="debug-param-section">
+          <h4>Path 参数</h4>
+          <el-table :data="debugPathParams" size="small" border>
+            <el-table-column label="参数名" width="150">
+              <template #default="{ row }"><span class="debug-path-name">{{ '{' + row.name + '}' }}</span></template>
+            </el-table-column>
+            <el-table-column label="类型" width="90">
+              <template #default="{ row }"><el-tag size="small">{{ row.type || 'string' }}</el-tag></template>
+            </el-table-column>
+            <el-table-column label="测试值" min-width="180">
+              <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="测试值" /></template>
+            </el-table-column>
+            <el-table-column label="说明" min-width="110">
+              <template #default="{ row }"><span class="debug-param-desc">{{ row.description || '--' }}</span></template>
+            </el-table-column>
+          </el-table>
+        </div>
+        <!-- Query 参数 -->
+        <div v-if="debugQueryParams.length" class="debug-param-section">
+          <h4>Query 参数</h4>
+          <el-table :data="debugQueryParams" size="small" border>
+            <el-table-column label="参数名" width="150">
+              <template #default="{ row }"><code>{{ row.name }}</code></template>
+            </el-table-column>
+            <el-table-column label="类型" width="90">
+              <template #default="{ row }"><el-tag size="small">{{ row.type || 'string' }}</el-tag></template>
+            </el-table-column>
+            <el-table-column label="测试值" min-width="180">
+              <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="测试值" /></template>
+            </el-table-column>
+            <el-table-column label="说明" min-width="110">
+              <template #default="{ row }"><span class="debug-param-desc">{{ row.description || '--' }}</span></template>
+            </el-table-column>
+          </el-table>
+        </div>
+        <!-- 请求体 -->
+        <div v-if="debugBodyRow || debugBodyKvParams.length" class="debug-param-section">
+          <h4>请求体</h4>
+          <template v-if="debugBodyRow">
+            <div v-if="debugBodyRow.type === 'json'" style="display: flex; justify-content: flex-end; margin-bottom: 8px">
+              <el-button size="small" @click="debugBodyRow.value = formatJson(debugBodyRow.value)">格式化</el-button>
+            </div>
+            <div v-if="debugBodyRow.type === 'json'" style="height: 200px">
+              <CodeEditor v-model="debugBodyRow.value" language="json" :min-height="160" placeholder='如 {"key": "value"}' />
+            </div>
+            <el-input v-else v-model="debugBodyRow.value" type="textarea" :rows="6" placeholder='如 {"key": "value"}' style="font-family: monospace" />
+          </template>
+          <el-table v-else :data="debugBodyKvParams" size="small" border>
+            <el-table-column label="参数名" width="150">
+              <template #default="{ row }"><code>{{ row.name }}</code></template>
+            </el-table-column>
+            <el-table-column label="类型" width="90">
+              <template #default="{ row }"><el-tag size="small">{{ row.type || 'string' }}</el-tag></template>
+            </el-table-column>
+            <el-table-column label="测试值" min-width="180">
+              <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="测试值" /></template>
+            </el-table-column>
+            <el-table-column label="说明" min-width="110">
+              <template #default="{ row }"><span class="debug-param-desc">{{ row.description || '--' }}</span></template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+      <p v-else class="debug-param-desc" style="margin-bottom: 16px">该关键字无请求参数</p>
       <!-- 响应结果 -->
       <div v-if="debugLoading || debugResult" class="debug-result-section">
         <!-- 加载中状态 -->
@@ -894,6 +960,23 @@ const highlightedDebugResponse = computed(() => {
   font-weight: 600;
   color: #303133;
   margin-bottom: 8px;
+}
+/* 调试弹窗请求参数分区（对齐编辑页样式） */
+.debug-param-section {
+  margin-bottom: 16px;
+}
+.debug-param-section h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.debug-path-name {
+  font-family: monospace;
+  color: #e6a23c;
+}
+.debug-param-desc {
+  color: #909399;
+  font-size: 12px;
 }
 .debug-result-section {
   margin-top: 4px;

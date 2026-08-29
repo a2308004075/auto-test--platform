@@ -100,7 +100,8 @@ function extractParamsFromApi(api: any): any[] {
       const reqParams = JSON.parse(api.requestParams)
       if (Array.isArray(reqParams)) {
         reqParams.forEach((p: any) => {
-          if (p.name) {
+          // 跳过 in=path 的参数：Path 参数已在上方从 URL {xxx} 提取，避免重复
+          if (p.name && p.in !== 'path') {
             params.push({ name: p.name, type: p.type || 'string', value: p.value || '', description: p.description || '', in: 'query', required: !!p.required })
           }
         })
@@ -402,6 +403,51 @@ onMounted(() => {
   fetchKeyword()
   fetchDependencies()
 })
+
+// ===== 查看接口详情弹窗 =====
+const apiDetailVisible = ref(false)
+
+const apiDetailQueryParams = computed(() => {
+  if (!currentApi.value) return []
+  return parseArr(currentApi.value.requestParams).filter((p: any) => p.in !== 'path')
+})
+
+const apiDetailHeaders = computed(() => parseArr(currentApi.value?.headers))
+
+function looksLikeSchema(text: any): boolean {
+  if (!text || typeof text !== 'object') return false
+  if (text.type === 'object' && text.properties) return true
+  if (text.type === 'array' && text.items) return true
+  return false
+}
+
+const apiDetailFormattedBody = computed(() => {
+  if (!currentApi.value?.requestBody) return ''
+  try {
+    const parsed = JSON.parse(currentApi.value.requestBody)
+    if (typeof parsed === 'string') return parsed
+    if (looksLikeSchema(parsed)) return schemaToExampleString(parsed)
+    return JSON.stringify(parsed, null, 2)
+  } catch {
+    return currentApi.value.requestBody
+  }
+})
+
+const apiDetailFormattedResponse = computed(() => {
+  if (!currentApi.value?.responseBody) return ''
+  try {
+    const parsed = JSON.parse(currentApi.value.responseBody)
+    if (typeof parsed === 'string') return parsed
+    if (looksLikeSchema(parsed)) return schemaToExampleString(parsed)
+    return JSON.stringify(parsed, null, 2)
+  } catch {
+    return currentApi.value.responseBody
+  }
+})
+
+function openApiDetail() {
+  apiDetailVisible.value = true
+}
 </script>
 
 <template>
@@ -412,8 +458,8 @@ onMounted(() => {
     </EditPageHeader>
 
     <div class="keyword-edit-layout">
-      <!-- 左侧：选择接口（按分组显示） -->
-      <div class="api-selector-panel">
+      <!-- 左侧：选择接口（按分组显示，仅新建时显示） -->
+      <div v-if="!isEdit" class="api-selector-panel">
         <div class="panel-header">
           <h3>选择接口</h3>
           <el-input v-model="apiSearch" placeholder="搜索接口..." size="small" clearable prefix-icon="Search" style="margin-top: 8px" />
@@ -463,7 +509,7 @@ onMounted(() => {
                   <el-tag :type="methodColors[currentApi.httpMethod] || 'info'" size="small">{{ currentApi.httpMethod }}</el-tag>
                   <code style="font-size: 13px">{{ apiDisplayPath(currentApi) }}</code>
                   <span style="color: #909399">{{ currentApi.description }}</span>
-                  <el-button link type="primary" style="margin-left: auto" @click="router.push(`/project/${projectId}/apis/${currentApi.id}/edit`)">查看接口 →</el-button>
+                  <el-button link type="primary" style="margin-left: auto" @click="openApiDetail">查看接口 →</el-button>
                 </div>
               </el-form-item>
               <el-form-item label="关键字名称" required>
@@ -682,6 +728,64 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- 接口详情弹窗 -->
+    <el-dialog v-model="apiDetailVisible" title="接口详情" width="780px">
+      <template v-if="currentApi">
+        <el-descriptions :column="2" border size="small">
+          <el-descriptions-item label="接口名称">{{ currentApi.name }}</el-descriptions-item>
+          <el-descriptions-item label="HTTP 方法">
+            <el-tag :type="methodColors[currentApi.httpMethod] || 'info'" size="small">{{ currentApi.httpMethod }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="接口路径" :span="2">
+            <code style="font-size: 13px">{{ apiDisplayPath(currentApi) }}</code>
+          </el-descriptions-item>
+          <el-descriptions-item label="描述" :span="2">{{ currentApi.description || '-' }}</el-descriptions-item>
+        </el-descriptions>
+
+        <!-- Header 参数 -->
+        <div class="detail-section">
+          <h4>Header 参数</h4>
+          <el-table v-if="apiDetailHeaders.length" :data="apiDetailHeaders" size="small" border>
+            <el-table-column prop="name" label="参数名" width="160" />
+            <el-table-column prop="type" label="类型" width="80" />
+            <el-table-column label="必填" width="60"><template #default="{ row }">{{ row.required ? '是' : '否' }}</template></el-table-column>
+            <el-table-column prop="value" label="值" />
+            <el-table-column prop="description" label="说明" />
+          </el-table>
+          <p v-else class="empty-hint">无 Header 参数</p>
+        </div>
+
+        <!-- 请求参数 -->
+        <div class="detail-section">
+          <h4>请求参数</h4>
+          <el-table v-if="apiDetailQueryParams.length" :data="apiDetailQueryParams" size="small" border>
+            <el-table-column prop="name" label="参数名" width="160" />
+            <el-table-column prop="type" label="类型" width="80" />
+            <el-table-column label="必填" width="60"><template #default="{ row }">{{ row.required ? '是' : '否' }}</template></el-table-column>
+            <el-table-column prop="description" label="说明" />
+          </el-table>
+          <p v-else class="empty-hint">无 Query 参数</p>
+        </div>
+
+        <!-- 请求体 -->
+        <div v-if="currentApi.httpMethod !== 'GET'" class="detail-section">
+          <h4>请求体</h4>
+          <pre v-if="apiDetailFormattedBody" class="detail-code-block">{{ apiDetailFormattedBody }}</pre>
+          <p v-else class="empty-hint">无请求体</p>
+        </div>
+
+        <!-- 响应体 -->
+        <div class="detail-section">
+          <h4>响应体</h4>
+          <pre v-if="apiDetailFormattedResponse" class="detail-code-block">{{ apiDetailFormattedResponse }}</pre>
+          <p v-else class="empty-hint">无响应体</p>
+        </div>
+      </template>
+      <template #footer>
+        <el-button @click="apiDetailVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 保存成功弹窗（创建模式） -->
     <el-dialog v-model="saveSuccessVisible" class="save-success-dialog" title="保存成功" width="500px" :close-on-click-modal="false">
       <p style="font-size: 14px; color: #606266; line-height: 1.6; text-align: center;">
@@ -885,5 +989,25 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   margin-bottom: 16px;
+}
+.detail-section {
+  margin-top: 16px;
+}
+.detail-section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.detail-code-block {
+  background: #f5f7fa;
+  padding: 12px;
+  border-radius: 4px;
+  max-height: 240px;
+  overflow: auto;
+  font-size: 12px;
+  font-family: monospace;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 </style>

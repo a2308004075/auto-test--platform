@@ -247,7 +247,8 @@ async function fetchApi() {
         if (typeof parsed === 'string') form.responseBody = parsed
       } catch { /* ignore */ }
     }
-    queryParams.value = parseArr(form.requestParams)
+    // 过滤 in=path 的参数：Path 参数从路径单独解析展示，不进 Query 区
+    queryParams.value = parseArr(form.requestParams).filter((p: any) => p.in !== 'path')
     headerParams.value = parseArr(form.headers)
     // 将 contentType 合并到 headerParams（统一在 Header 参数 tab 管理）
     if (form.contentType) {
@@ -274,6 +275,7 @@ async function fetchReferences() {
 // ===== 调试 =====
 const debugEnvId = ref<number | null>(null)
 const debugParamValues = ref<Record<string, string>>({})
+const debugPathParamValues = ref<Record<string, string>>({})
 const debugBody = ref('{}')
 const debugBodyType = ref('raw')
 const debugRawType = ref('json')
@@ -325,6 +327,9 @@ function initDebugParams() {
   const map: Record<string, string> = {}
   queryParams.value.forEach((p) => { map[p.name] = '' })
   debugParamValues.value = map
+  const pm: Record<string, string> = {}
+  pathParams.value.forEach((p) => { pm[p] = '' })
+  debugPathParamValues.value = pm
   debugBodyType.value = form.bodyType || 'raw'
   debugRawType.value = form.rawType || 'json'
   debugBody.value = form.requestBody || defaultRequestBody(debugBodyType.value)
@@ -339,6 +344,7 @@ async function sendDebug() {
   try {
     const payload: any = {
       environmentId: debugEnvId.value || undefined,
+      pathParams: debugPathParamValues.value,
       queryParams: debugParamValues.value,
     }
     if (form.httpMethod !== 'GET' && debugBodyType.value !== 'none') {
@@ -613,6 +619,17 @@ onMounted(() => {
               <el-option v-for="env in environments" :key="env.id" :value="env.id" :label="env.name" />
             </el-select>
             <el-button type="primary" :loading="debugLoading" @click="sendDebug">发送请求</el-button>
+          </div>
+          <div v-if="pathParams.length" class="debug-params">
+            <h4>Path 参数</h4>
+            <el-table :data="pathParams.map(p => ({ name: p }))" size="small" border>
+              <el-table-column prop="name" label="参数名" />
+              <el-table-column label="值">
+                <template #default="{ row }">
+                  <el-input v-model="debugPathParamValues[row.name]" size="small" placeholder="值" />
+                </template>
+              </el-table-column>
+            </el-table>
           </div>
           <div class="debug-params">
             <h4>Query 参数</h4>

@@ -157,7 +157,8 @@ async function loadApi() {
   try {
     const res: any = await getApi(props.projectId, props.apiId)
     apiInfo.value = res.data
-    const qp = parseArr(res.data?.requestParams)
+    // 过滤 in=path 的参数：Path 参数单独从路径解析，不进 Query 区
+    const qp = parseArr(res.data?.requestParams).filter((p: any) => p.in !== 'path')
     const hp = parseArr(res.data?.headers)
     const qv: Record<string, string> = {}
     qp.forEach((p: any) => { if (p.name) qv[p.name] = '' })
@@ -205,7 +206,8 @@ const queryParams = ref<any[]>([])
 const headerParams = ref<any[]>([])
 const pathParams = ref<string[]>([])
 watch(apiInfo, (info) => {
-  queryParams.value = parseArr(info?.requestParams)
+  // 过滤 in=path 的参数，与 loadApi 保持一致
+  queryParams.value = parseArr(info?.requestParams).filter((p: any) => p.in !== 'path')
   headerParams.value = parseArr(info?.headers)
   const pathWithoutPlaceholders = (info?.path || '').replace(/\$\{[^}]*\}/g, '')
   pathParams.value = (pathWithoutPlaceholders.match(/\{(\w+)\}/g) || []).map((m: string) => m.slice(1, -1))

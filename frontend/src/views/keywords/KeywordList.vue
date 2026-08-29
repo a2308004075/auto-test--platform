@@ -45,6 +45,17 @@ function truncateText(text: string | undefined, maxLen: number): string {
   return s.length > maxLen ? s.slice(0, maxLen) + '...' : s
 }
 
+// 将请求体 JSON 文本中的 $ref{xxx} 占位符按同行注释类型替换为默认值
+function replaceRefPlaceholders(body: string): string {
+  return body.replace(/\$ref\{[^}]+\}(\s*\/\/\s*(integer|string|boolean|number))/gi, (_, suffix: string, type: string) => {
+    const t = type.toLowerCase()
+    if (t === 'integer' || t === 'number') return `0${suffix}`
+    if (t === 'boolean') return `false${suffix}`
+    if (t === 'string') return `""${suffix}`
+    return _
+  })
+}
+
 // ===== 列表数据 =====
 const loading = ref(false)
 const list = ref<any[]>([])
@@ -335,7 +346,6 @@ const defaultColumns: ColumnItem[] = [
   { key: 'name', label: '接口关键字', locked: true, visible: true },
   { key: 'method', label: '方法', locked: false, visible: false },
   { key: 'apiGroup', label: '关联接口分组', locked: true, visible: true },
-  { key: 'apiName', label: '关联接口名', locked: true, visible: false },
   { key: 'apiPath', label: '关联接口路径', locked: true, visible: true },
   { key: 'group', label: '分组', locked: false, visible: true },
   { key: 'desc', label: '描述', locked: true, visible: true },
@@ -393,6 +403,11 @@ async function openDebug(row: any) {
   try {
     const data = JSON.parse(row.testData || '[]')
     debugParams.value = Array.isArray(data) ? data.map((p: any) => ({ ...p })) : []
+    debugParams.value.forEach((p: any) => {
+      if (p.in === 'body' && p.name === '__body__' && typeof p.value === 'string') {
+        p.value = replaceRefPlaceholders(p.value)
+      }
+    })
   } catch { debugParams.value = [] }
   try {
     const res: any = await getEnvironments(projectId.value)
@@ -566,9 +581,6 @@ const highlightedDebugResponse = computed(() => {
           <el-table-column v-if="isColVisible('apiGroup')" label="关联接口分组" width="140" show-overflow-tooltip>
             <template #default="{ row }">{{ row.moduleName || '--' }}</template>
           </el-table-column>
-          <el-table-column v-if="isColVisible('apiName')" label="关联接口名" width="150" show-overflow-tooltip>
-            <template #default="{ row }">{{ row.apiName || '--' }}</template>
-          </el-table-column>
           <el-table-column v-if="isColVisible('apiPath')" label="关联接口路径" width="240" show-overflow-tooltip>
             <template #default="{ row }"><code style="font-size: 12px; color: #909399">{{ displayApiPath(row.apiPath) || '--' }}</code></template>
           </el-table-column>
@@ -644,17 +656,18 @@ const highlightedDebugResponse = computed(() => {
     </el-dialog>
 
     <!-- 在线调试弹窗 -->
-    <el-dialog v-model="debugVisible" :title="`在线调试${debugRow ? '：' + debugRow.name : ''}`" width="680px">
+    <el-dialog v-model="debugVisible" title="在线调试" width="680px">
       <!-- 关键字信息摘要 -->
-      <div v-if="debugRow" style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px; font-size: 13px">
+      <div v-if="debugRow" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; font-size: 13px">
         <div><span style="color: #909399">ID：</span><code style="font-family: monospace; font-size: 13px; color: #303133">{{ debugRow.id }}</code></div>
+        <div><span style="color: #909399">接口关键字名称：</span><span style="font-weight: 500; color: #303133">{{ debugRow.name || '--' }}</span></div>
         <div><span style="color: #909399">关联接口分组：</span><el-tag size="small" type="info">{{ debugRow.moduleName || '--' }}</el-tag></div>
-      </div>
-      <!-- 接口信息栏 -->
-      <div v-if="debugRow" class="debug-api-bar">
-        <el-tag :type="methodColors[debugRow.httpMethod] || 'info'" size="small">{{ debugRow.httpMethod || '--' }}</el-tag>
-        <code style="font-size: 13px">{{ debugRow.apiPath || '--' }}</code>
-        <span style="color: #909399; margin-left: auto">{{ debugRow.description }}</span>
+        <div class="debug-api-bar">
+          <span style="color: #909399">关联接口：</span>
+          <el-tag :type="methodColors[debugRow.httpMethod] || 'info'" size="small">{{ debugRow.httpMethod || '--' }}</el-tag>
+          <code style="font-size: 13px">{{ debugRow.apiPath || '--' }}</code>
+          <span style="color: #909399; margin-left: auto">{{ debugRow.description }}</span>
+        </div>
       </div>
       <!-- 环境选择 + 执行按钮 -->
       <div class="debug-env-row">
@@ -947,7 +960,6 @@ const highlightedDebugResponse = computed(() => {
   align-items: center;
   gap: 10px;
   font-size: 13px;
-  margin-bottom: 16px;
 }
 .debug-env-row {
   display: flex;

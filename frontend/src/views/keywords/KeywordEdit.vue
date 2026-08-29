@@ -205,10 +205,10 @@ const expectedStatusCode = ref('200')
 const assertionFields = ref<any[]>([])
 watch([expectedStatusCode, assertionFields], () => {
   form.responseAssertion = JSON.stringify({
-    statusCode: expectedStatusCode.value || undefined,
+    statusCode: expectedStatusCode.value || '200',
     fields: assertionFields.value,
   })
-}, { deep: true })
+}, { deep: true, immediate: true })
 
 // ===== 数据加载 =====
 async function fetchApis() {
@@ -251,7 +251,7 @@ async function fetchKeyword() {
     // 解析断言
     try {
       const assertion = JSON.parse(form.responseAssertion)
-      expectedStatusCode.value = assertion.statusCode || ''
+      expectedStatusCode.value = assertion.statusCode || '200'
       assertionFields.value = Array.isArray(assertion.fields) ? assertion.fields : []
     } catch {
       expectedStatusCode.value = '200'
@@ -503,14 +503,20 @@ function openApiDetail() {
           <!-- Tab: 基础信息 -->
           <el-tab-pane label="基础信息" name="basic">
             <el-form label-position="top">
-              <!-- 第一行：关联接口 -->
+              <!-- 关联接口名称 -->
+              <div style="position: relative">
+                <el-form-item label="关联接口名称" required>
+                  <el-input :model-value="currentApi?.name || ''" disabled placeholder="选择接口后自动显示" />
+                </el-form-item>
+                <el-button v-if="currentApi" link type="primary" style="position: absolute; top: 0; right: 0" @click="openApiDetail">查看接口 →</el-button>
+              </div>
+              <!-- 关联接口 -->
               <el-form-item label="关联接口" required>
-                <div v-if="currentApi" class="api-info-bar">
-                  <el-tag :type="methodColors[currentApi.httpMethod] || 'info'" size="small">{{ currentApi.httpMethod }}</el-tag>
-                  <code style="font-size: 13px">{{ apiDisplayPath(currentApi) }}</code>
-                  <span style="color: #909399">{{ currentApi.description }}</span>
-                  <el-button link type="primary" style="margin-left: auto" @click="openApiDetail">查看接口 →</el-button>
-                </div>
+                <el-input
+                  :model-value="currentApi ? `${currentApi.httpMethod} ${apiDisplayPath(currentApi)}` : ''"
+                  disabled
+                  placeholder="选择接口后自动显示"
+                />
               </el-form-item>
               <el-form-item label="关键字名称" required>
                 <el-input v-model="form.name" placeholder="请输入关键字名称" />
@@ -694,7 +700,7 @@ function openApiDetail() {
           </el-tab-pane>
 
           <!-- Tab: 引用关系 -->
-          <el-tab-pane label="引用关系" name="refs" :disabled="!isEdit">
+          <el-tab-pane v-if="isEdit" label="引用关系" name="refs">
             <div class="refs-header">
               <h4 style="margin: 0; font-size: 14px; font-weight: 600">引用关系详情</h4>
               <el-tag type="primary" size="small">{{ referenceCount }} 个引用</el-tag>

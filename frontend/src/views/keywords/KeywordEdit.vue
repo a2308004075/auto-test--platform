@@ -13,8 +13,9 @@ defineOptions({ name: 'KeywordEdit' })
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getKeyword, createKeyword, updateKeyword, getKeywordDependencies, getKeywordGroups } from '@/api/keyword'
+import { getKeyword, createKeyword, updateKeyword, getKeywordDependencies, getKeywordGroups, debugKeyword } from '@/api/keyword'
 import { getApis, getApi, getModules } from '@/api/apidoc'
+import { getEnvironments } from '@/api/environment'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
 import { Refresh } from '@element-plus/icons-vue'
@@ -382,7 +383,7 @@ watch(() => route.params.keywordId, () => {
 })
 
 // ===== Hash 锚点自动切换 Tab =====
-const validTabs = ['basic', 'testdata', 'response', 'refs']
+const validTabs = ['basic', 'testdata', 'response', 'refs', 'debug']
 watch(() => route.hash, (hash) => {
   const tab = hash.replace('#', '')
   if (tab && validTabs.includes(tab)) {
@@ -402,6 +403,118 @@ onMounted(() => {
   fetchGroups()
   fetchKeyword()
   fetchDependencies()
+  loadDebugEnvironments()
+})
+
+// ===== 在线调试 =====
+const debugLoading = ref(false)
+const debugResult = ref<any>(null)
+const debugEnvironments = ref<any[]>([])
+const debugEnvId = ref<number | null>(null)
+
+async function loadDebugEnvironments() {
+  try {
+    const res: any = await getEnvironments(projectId.value)
+    debugEnvironments.value = res.data || []
+  } catch { debugEnvironments.value = [] }
+}
+
+// 去除 JSON 字符串中的行内注释，避免后端解析失败
+function stripJsonComments(json: string): string {
+  return json.replace(/\/\/.*$/gm, '')
+}
+
+async function executeDebug() {
+  if (!isEdit.value) { ElMessage.warning('请先保存关键字'); return }
+  if (!form.apiId) { ElMessage.warning('请先选择关联接口'); return }
+  if (!debugEnvId.value) { ElMessage.warning('请选择执行环境'); return }
+  debugLoading.value = true
+  debugResult.value = null
+  try {
+    const testData = testDataRows.value.map((p: any) => {
+      if (p.in === 'body' && p.name === '__body__' && typeof p.value === 'string') {
+        return { ...p, value: stripJsonComments(p.value) }
+      }
+      return p
+    })
+    const res: any = await debugKeyword(projectId.value, keywordId.value, {
+      environmentId: debugEnvId.value,
+      testData: JSON.stringify(testData),
+    })
+    const data = res.data || {}
+    let responseBody: any = data.responseBody
+    if (typeof responseBody === 'string') {
+      try { responseBody = JSON.parse(responseBody) } catch { responseBody = { raw: data.responseBody } }
+    }
+    debugResult.value = {
+      success: data.success === 1,
+      statusCode: data.statusCode ?? 0,
+      response: responseBody,
+      duration: data.responseTimeMs ?? 0,
+    }
+  } catch (e: any) {
+    debugResult.value = { success: false, statusCode: 500, response: { error: e?.response?.data?.message || e?.message || '请求失败' }, duration: 0 }
+  } finally { debugLoading.value = false }
+}
+
+function parseAssertions(raw?: string): any[] {
+  if (!raw) return []
+  try {
+    const obj = JSON.parse(raw)
+    return Array.isArray(obj?.fields) ? obj.fields : []
+  } catch { return [] }
+}
+
+function getNestedValue(obj: any, path: string): any {
+  if (!obj || !path) return undefined
+  const parts = path.split('.')
+  let current = obj
+  for (const part of parts) {
+    if (current == null) return undefined
+    current = current[part]
+  }
+  return current
+}
+
+const debugAssertions = computed(() => {
+  if (!debugResult.value) return []
+  const assertions = parseAssertions(form.responseAssertion)
+  return assertions.map((a: any) => {
+    const actual = getNestedValue(debugResult.value.response, a.path)
+    const expectedValue = a.expected || '非空即可'
+    const actualValue = actual != null ? String(actual) : '--'
+    const pass = expectedValue === '非空即可' ? actual != null : actualValue === expectedValue
+    return { ...a, actual: actualValue, pass }
+  })
+})
+
+const debugEnvName = computed(() => {
+  if (!debugEnvId.value) return ''
+  const env = debugEnvironments.value.find((e: any) => e.id === debugEnvId.value)
+  return env?.name || ''
+})
+
+function syntaxHighlightJSON(json: string): string {
+  return json
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, (match) => {
+      let cls = 'json-num'
+      if (/^"/.test(match)) {
+        cls = /:$/.test(match) ? 'json-key' : 'json-str'
+      } else if (/true|false/.test(match)) {
+        cls = 'json-bool'
+      } else if (/null/.test(match)) {
+        cls = 'json-null'
+      }
+      return `<span class="${cls}">${match}</span>`
+    })
+}
+
+const highlightedDebugResponse = computed(() => {
+  if (!debugResult.value) return ''
+  return syntaxHighlightJSON(JSON.stringify(debugResult.value.response, null, 2))
 })
 
 // ===== 查看接口详情弹窗 =====
@@ -696,6 +809,131 @@ function openApiDetail() {
                   </template>
                 </el-table-column>
               </el-table>
+            </div>
+          </el-tab-pane>
+
+          <!-- Tab: 调试 -->
+          <el-tab-pane label="调试" name="debug">
+            <template v-if="isEdit">
+              <!-- 环境选择 + 执行按钮 -->
+              <div class="debug-env-row">
+                <span style="font-size: 13px; color: #606266">执行环境：</span>
+                <el-select v-model="debugEnvId" placeholder="选择环境" style="width: 160px" size="small">
+                  <el-option v-for="env in debugEnvironments" :key="env.id" :value="env.id" :label="env.name" />
+                </el-select>
+                <el-button type="primary" :loading="debugLoading" @click="executeDebug" style="margin-left: auto">
+                  {{ debugLoading ? '请求中...' : (debugResult ? '重新发送' : '发送请求') }}
+                </el-button>
+              </div>
+              <!-- 请求参数 -->
+              <div class="debug-section-title">请求参数</div>
+              <div v-if="testDataRows.length" style="margin-bottom: 16px">
+                <!-- Path 参数 -->
+                <div v-if="pathParams.length" class="debug-param-section">
+                  <h4>Path 参数</h4>
+                  <el-table :data="pathParams" size="small" border>
+                    <el-table-column label="参数名" width="150">
+                      <template #default="{ row }"><span class="debug-path-name">{{ '{' + row.name + '}' }}</span></template>
+                    </el-table-column>
+                    <el-table-column label="类型" width="90">
+                      <template #default="{ row }"><el-tag size="small">{{ row.type || 'string' }}</el-tag></template>
+                    </el-table-column>
+                    <el-table-column label="测试值" min-width="180">
+                      <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="测试值" /></template>
+                    </el-table-column>
+                    <el-table-column label="说明" min-width="110">
+                      <template #default="{ row }"><span class="debug-param-desc">{{ row.description || '--' }}</span></template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+                <!-- Query 参数 -->
+                <div v-if="queryParams.length" class="debug-param-section">
+                  <h4>Query 参数</h4>
+                  <el-table :data="queryParams" size="small" border>
+                    <el-table-column label="参数名" width="150">
+                      <template #default="{ row }"><code>{{ row.name }}</code></template>
+                    </el-table-column>
+                    <el-table-column label="类型" width="90">
+                      <template #default="{ row }"><el-tag size="small">{{ row.type || 'string' }}</el-tag></template>
+                    </el-table-column>
+                    <el-table-column label="测试值" min-width="180">
+                      <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="测试值" /></template>
+                    </el-table-column>
+                    <el-table-column label="说明" min-width="110">
+                      <template #default="{ row }"><span class="debug-param-desc">{{ row.description || '--' }}</span></template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+                <!-- 请求体 -->
+                <div v-if="bodyRow || bodyKvParams.length" class="debug-param-section">
+                  <h4>请求体</h4>
+                  <template v-if="bodyRow">
+                    <div v-if="bodyRow.type === 'json'" style="display: flex; justify-content: flex-end; margin-bottom: 8px">
+                      <el-button size="small" @click="bodyRow.value = formatJson(bodyRow.value)">格式化</el-button>
+                    </div>
+                    <div v-if="bodyRow.type === 'json'" style="height: 200px">
+                      <CodeEditor v-model="bodyRow.value" language="json" :min-height="160" placeholder='如 {"key": "value"}' />
+                    </div>
+                    <el-input v-else v-model="bodyRow.value" type="textarea" :rows="6" placeholder='如 {"key": "value"}' style="font-family: monospace" />
+                  </template>
+                  <el-table v-else :data="bodyKvParams" size="small" border>
+                    <el-table-column label="参数名" width="150">
+                      <template #default="{ row }"><code>{{ row.name }}</code></template>
+                    </el-table-column>
+                    <el-table-column label="类型" width="90">
+                      <template #default="{ row }"><el-tag size="small">{{ row.type || 'string' }}</el-tag></template>
+                    </el-table-column>
+                    <el-table-column label="测试值" min-width="180">
+                      <template #default="{ row }"><el-input v-model="row.value" size="small" placeholder="测试值" /></template>
+                    </el-table-column>
+                    <el-table-column label="说明" min-width="110">
+                      <template #default="{ row }"><span class="debug-param-desc">{{ row.description || '--' }}</span></template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+              </div>
+              <p v-else class="debug-param-desc" style="margin-bottom: 16px">该关键字无请求参数</p>
+              <!-- 响应结果 -->
+              <div v-if="debugLoading || debugResult" class="debug-result-section">
+                <div v-if="debugLoading && !debugResult" class="debug-result-header loading">
+                  <span class="debug-spin-icon">&#8635;</span>
+                  <span>正在发送请求...</span>
+                </div>
+                <template v-else-if="debugResult">
+                  <div :class="['debug-result-header', debugResult.success ? 'success' : 'fail']">
+                    <span style="font-weight: 600">{{ debugResult.success ? '&#10003;' : '&#10007;' }} {{ debugResult.statusCode }}</span>
+                    <span>{{ debugResult.success ? '请求成功' : '请求失败' }}</span>
+                    <span style="margin-left: auto; color: #909399">耗时 {{ debugResult.duration }}ms</span>
+                    <span style="color: #909399">环境：{{ debugEnvName }}</span>
+                  </div>
+                  <div class="debug-section-title" style="margin-top: 10px">响应体</div>
+                  <pre class="debug-response-box" v-html="highlightedDebugResponse"></pre>
+                  <div v-if="debugAssertions.length" class="debug-assertions">
+                    <div class="debug-section-title" style="margin-top: 12px">断言结果</div>
+                    <el-table :data="debugAssertions" size="small" border>
+                      <el-table-column label="断言字段" width="200">
+                        <template #default="{ row }"><code>{{ row.path }}</code></template>
+                      </el-table-column>
+                      <el-table-column label="预期值" width="120">
+                        <template #default="{ row }">{{ row.expected || '非空即可' }}</template>
+                      </el-table-column>
+                      <el-table-column label="实际值">
+                        <template #default="{ row }">{{ row.actual }}</template>
+                      </el-table-column>
+                      <el-table-column label="结果" width="80">
+                        <template #default="{ row }">
+                          <span :style="{ color: row.pass ? '#67c23a' : '#f56c6c', fontWeight: 500 }">
+                            {{ row.pass ? '&#10003; 通过' : '&#10007; 失败' }}
+                          </span>
+                        </template>
+                      </el-table-column>
+                    </el-table>
+                  </div>
+                </template>
+              </div>
+            </template>
+            <div v-else class="empty-state" style="padding: 48px">
+              <p class="empty-hint">新建模式下请先保存关键字，保存后可进入调试</p>
             </div>
           </el-tab-pane>
 
@@ -1015,5 +1253,93 @@ function openApiDetail() {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* 在线调试 */
+.debug-env-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.debug-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 8px;
+}
+.debug-param-section {
+  margin-bottom: 16px;
+}
+.debug-param-section h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.debug-path-name {
+  font-family: monospace;
+  color: #e6a23c;
+}
+.debug-param-desc {
+  color: #909399;
+  font-size: 12px;
+}
+.debug-result-section {
+  margin-top: 4px;
+}
+.debug-result-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.debug-result-header.success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+.debug-result-header.fail {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+.debug-result-header.loading {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #2563eb;
+}
+.debug-spin-icon {
+  display: inline-block;
+  animation: debug-spin 0.8s linear infinite;
+  font-size: 14px;
+}
+@keyframes debug-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.debug-response-box {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: 4px;
+  padding: 12px 14px;
+  font-family: 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+}
+.debug-response-box :deep(.json-key) { color: #89b4fa; }
+.debug-response-box :deep(.json-str) { color: #a6e3a1; }
+.debug-response-box :deep(.json-num) { color: #fab387; }
+.debug-response-box :deep(.json-bool) { color: #cba6f7; }
+.debug-response-box :deep(.json-null) { color: #9399b2; }
+.debug-assertions {
+  margin-top: 10px;
 }
 </style>

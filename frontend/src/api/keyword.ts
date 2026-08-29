@@ -53,3 +53,11 @@ export function updateKeywordGroup(projectId: number, groupId: number, data: any
 export function deleteKeywordGroup(projectId: number, groupId: number) {
   return request.post(`/v1/projects/${projectId}/keyword-groups/${groupId}/delete`)
 }
+
+export function clearKeywordGroupKeywords(projectId: number, groupId: number) {
+  return request.post(`/v1/projects/${projectId}/keyword-groups/${groupId}/clear-keywords`)
+}
+
+export function clearAllKeywords(projectId: number) {
+  return request.post(`/v1/projects/${projectId}/keyword-groups/clear-all-keywords`)
+}

@@ -239,6 +239,49 @@ public class ApiKeywordService {
     }
 
     /**
+     * 清空分组及其子孙分组中的所有关键字（被引用的关键字跳过）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void clearByGroup(Long groupId) {
+        Set<Long> groupIds = apiKeywordGroupService.getDescendantGroupIds(groupId);
+        List<Long> keywordIds = findKeywordIdsByGroupIds(new ArrayList<>(groupIds));
+        if (keywordIds.isEmpty()) {
+            return;
+        }
+        deleteUnreferenced(keywordMapper.selectBatchIds(keywordIds));
+    }
+
+    /**
+     * 清空项目下所有接口关键字（被引用的关键字跳过）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void clearByProject(Long projectId) {
+        LambdaQueryWrapper<Keyword> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Keyword::getProjectId, projectId)
+                .eq(Keyword::getType, "API");
+        deleteUnreferenced(keywordMapper.selectList(wrapper));
+    }
+
+    /**
+     * 批量删除未被引用的关键字，被 Action 节点或测试用例引用的跳过
+     */
+    private void deleteUnreferenced(List<Keyword> keywords) {
+        if (keywords.isEmpty()) {
+            return;
+        }
+        // ponytail: 引用检查为 JSON 列 like 查询只能逐条计数；量大时可引入冗余引用计数列
+        for (Keyword kw : keywords) {
+            if (countActionReferences(kw.getId()) > 0 || countTestCaseReferences(kw.getId()) > 0) {
+                continue;
+            }
+            LambdaQueryWrapper<ApiKeyword> apiKwWrapper = new LambdaQueryWrapper<>();
+            apiKwWrapper.eq(ApiKeyword::getKeywordId, kw.getId());
+            apiKeywordMapper.delete(apiKwWrapper);
+            keywordMapper.deleteById(kw.getId());
+        }
+    }
+
+    /**
      * 从接口快速生成关键字
      */
     @Transactional(rollbackFor = Exception.class)

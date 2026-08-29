@@ -10,6 +10,7 @@ import com.platform.keyword.dto.ApiKeywordGroupCreateRequest;
 import com.platform.keyword.dto.ApiKeywordGroupResponse;
 import com.platform.keyword.dto.ApiKeywordGroupUpdateRequest;
 import com.platform.keyword.service.ApiKeywordGroupService;
+import com.platform.keyword.service.ApiKeywordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,7 @@ import java.util.List;
 public class ApiKeywordGroupController {
 
     private final ApiKeywordGroupService apiKeywordGroupService;
+    private final ApiKeywordService apiKeywordService;
 
     /**
      * 查询分组列表
@@ -61,6 +63,25 @@ public class ApiKeywordGroupController {
     public ApiResponse<Void> delete(@PathVariable Long projectId,
                                     @PathVariable Long groupId) {
         apiKeywordGroupService.delete(groupId);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * 清空分组内所有关键字（含子孙分组）
+     */
+    @PostMapping("/{groupId}/clear-keywords")
+    public ApiResponse<Void> clearKeywords(@PathVariable Long projectId,
+                                           @PathVariable Long groupId) {
+        apiKeywordService.clearByGroup(groupId);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * 清空项目下所有接口关键字
+     */
+    @PostMapping("/clear-all-keywords")
+    public ApiResponse<Void> clearAllKeywords(@PathVariable Long projectId) {
+        apiKeywordService.clearByProject(projectId);
         return ApiResponse.ok();
     }
 }

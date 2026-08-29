@@ -15,6 +15,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getKeywords, deleteKeyword, updateKeyword, debugKeyword,
   getKeywordGroups, createKeywordGroup, updateKeywordGroup, deleteKeywordGroup,
+  clearKeywordGroupKeywords, clearAllKeywords,
 } from '@/api/keyword'
 import { getEnvironments } from '@/api/environment'
 import PageHeader from '@/components/PageHeader/index.vue'
@@ -260,6 +261,8 @@ function onPanelContextMenu(e: MouseEvent) {
 function onNodeContextMenu(e: MouseEvent, data: any) {
   e.preventDefault()
   e.stopPropagation()
+  // 系统分组仅允许"全部"(id=0)和"未分组"显示清空菜单
+  if (data.isSystem === 1 && data.id !== 0 && data.name !== '未分组') return
   contextGroup.value = data
   contextMenuPos.x = e.clientX
   contextMenuPos.y = e.clientY
@@ -289,6 +292,30 @@ function contextDelete() {
   if (!contextGroup.value) return
   handleDeleteGroup(contextGroup.value)
   closeContextMenu()
+}
+function contextClear() {
+  if (!contextGroup.value) return
+  const g = contextGroup.value
+  closeContextMenu()
+  const isAll = g.id === 0
+  ElMessageBox.confirm(
+    isAll
+      ? '确定清空项目下的所有关键字？此操作不可恢复。'
+      : `确定清空分组「${g.name}」及其子分组中的所有关键字？此操作不可恢复。`,
+    '确认清空',
+    { type: 'warning', confirmButtonText: '清空', cancelButtonText: '取消' },
+  )
+    .then(async () => {
+      if (isAll) {
+        await clearAllKeywords(projectId.value)
+      } else {
+        await clearKeywordGroupKeywords(projectId.value, g.id)
+      }
+      ElMessage.success('已清空')
+      fetchGroups()
+      fetchList()
+    })
+    .catch(() => {})
 }
 
 onMounted(() => {
@@ -699,15 +726,16 @@ const highlightedDebugResponse = computed(() => {
         <template v-if="!contextGroup">
           <div class="context-menu-item" @click="contextCreateGroup">新建分组</div>
         </template>
-        <!-- 系统分组右键：不允许编辑和删除，仅提示 -->
+        <!-- 系统分组右键：仅允许清空 -->
         <template v-else-if="contextGroup.isSystem === 1">
-          <div class="context-menu-item disabled">系统分组不可操作</div>
+          <div class="context-menu-item danger" @click="contextClear">清空关键字</div>
         </template>
         <!-- 用户分组右键 -->
         <template v-else>
           <div class="context-menu-item" @click="contextCreateChild">新建子分组</div>
           <div class="context-menu-divider" />
           <div class="context-menu-item" @click="contextEdit">编辑</div>
+          <div class="context-menu-item danger" @click="contextClear">清空关键字</div>
           <div class="context-menu-item danger" @click="contextDelete">删除</div>
         </template>
       </div>

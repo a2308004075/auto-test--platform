@@ -39,6 +39,14 @@ function handleNodeContextmenu(e: MouseEvent, node: any) {
   contextMenuVisible.value = true
 }
 
+function handleBlankContextmenu(e: MouseEvent) {
+  e.preventDefault()
+  contextNode.value = null
+  contextMenuPos.x = e.clientX
+  contextMenuPos.y = e.clientY
+  contextMenuVisible.value = true
+}
+
 function closeContextMenu() {
   contextMenuVisible.value = false
   contextNode.value = null
@@ -72,6 +80,68 @@ function contextClear() {
       fetchAllTools()
     })
     .catch(() => {})
+}
+
+function contextCreateGroup() {
+  closeContextMenu()
+  ElMessageBox.prompt('请输入分组名称', '新建分组', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    inputPattern: /\S+/,
+    inputErrorMessage: '分组名称不能为空',
+  }).then(async ({ value }) => {
+    const name = value.trim()
+    const ungrouped = allTools.value.filter((t) => !t.category || t.category === 'CUSTOM' || t.category === 'BUILTIN')
+    if (ungrouped.length === 0) {
+      ElMessage.info('当前没有未分组的工具方法，分组会在工具方法被分配到该分组时自动创建')
+      return
+    }
+    for (const tool of ungrouped) {
+      await updateTool(projectId.value, tool.id, { ...tool, category: name })
+    }
+    ElMessage.success('已创建分组「' + name + '」')
+    fetchAllTools()
+  }).catch(() => {})
+}
+
+function contextEdit() {
+  if (!contextNode.value) return
+  const node = contextNode.value
+  closeContextMenu()
+  ElMessageBox.prompt('请输入新的分组名称', '编辑分组', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    inputValue: node.name,
+    inputPattern: /\S+/,
+    inputErrorMessage: '分组名称不能为空',
+  }).then(async ({ value }) => {
+    const newName = value.trim()
+    if (newName === node.name) return
+    const tools = allTools.value.filter((t) => t.category === node.id)
+    for (const tool of tools) {
+      await updateTool(projectId.value, tool.id, { ...tool, category: newName })
+    }
+    ElMessage.success('已重命名为「' + newName + '」')
+    fetchAllTools()
+  }).catch(() => {})
+}
+
+function contextDelete() {
+  if (!contextNode.value) return
+  const node = contextNode.value
+  closeContextMenu()
+  ElMessageBox.confirm(
+    `确定删除分组「${node.name}」？该分组下的工具方法将被删除且不可恢复。`,
+    '确认删除',
+    { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' },
+  ).then(async () => {
+    const targets = allTools.value.filter((t) => t.category === node.id)
+    for (const tool of targets) {
+      await deleteTool(projectId.value, tool.id)
+    }
+    ElMessage.success('已删除')
+    fetchAllTools()
+  }).catch(() => {})
 }
 
 // ===== 全量数据（用于构建分组树和客户端筛选） =====
@@ -317,7 +387,7 @@ onBeforeUnmount(() => {
 
     <div class="kw-layout">
       <!-- 左侧分组树 -->
-      <div class="module-panel">
+      <div class="module-panel" @contextmenu="handleBlankContextmenu">
         <div class="module-head">
           <span class="module-title">分组</span>
         </div>
@@ -484,7 +554,22 @@ onBeforeUnmount(() => {
         :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
         @click.stop
       >
-        <div class="context-menu-item danger" @click="contextClear">清空关键字</div>
+        <!-- 空白区域右键 -->
+        <template v-if="!contextNode">
+          <div class="context-menu-item" @click="contextCreateGroup">新建分组</div>
+        </template>
+        <!-- 系统分组右键：仅清空 -->
+        <template v-else-if="contextNode.isSystem">
+          <div class="context-menu-item danger" @click="contextClear">清空关键字</div>
+        </template>
+        <!-- 用户分组右键 -->
+        <template v-else>
+          <div class="context-menu-item" @click="contextCreateGroup">新建子分组</div>
+          <div class="context-menu-divider" />
+          <div class="context-menu-item" @click="contextEdit">编辑</div>
+          <div class="context-menu-item danger" @click="contextClear">清空关键字</div>
+          <div class="context-menu-item danger" @click="contextDelete">删除</div>
+        </template>
       </div>
     </Teleport>
 
@@ -689,6 +774,11 @@ onBeforeUnmount(() => {
 }
 .context-menu-item.danger:hover {
   background: #fef0f0;
+}
+.context-menu-divider {
+  height: 1px;
+  background: #ebeef5;
+  margin: 4px 0;
 }
 .module-lock {
   font-size: 10px;

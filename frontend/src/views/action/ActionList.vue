@@ -554,8 +554,7 @@ onBeforeUnmount(() => {
           </el-table-column>
           <template #empty>
             <div style="padding: 48px 20px; color: #909399">
-              <div style="font-size: 32px; margin-bottom: 8px; opacity: 0.4">⚡</div>
-              <div>暂无匹配的 Action关键字数据</div>
+              <div>暂无数据</div>
             </div>
           </template>
         </el-table>
@@ -574,14 +573,6 @@ onBeforeUnmount(() => {
       <el-form label-position="top">
         <el-form-item label="分组名称" required>
           <el-input v-model="groupForm.name" placeholder="如：用户管理服务" />
-        </el-form-item>
-        <el-form-item label="父分组">
-          <el-select v-model="groupForm.parentId" placeholder="无（根分组）" clearable style="width: 100%">
-            <el-option
-              v-for="g in userGroups.filter((x: any) => x.id !== editingGroupId)"
-              :key="g.id" :value="g.id" :label="g.name"
-            />
-          </el-select>
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="groupForm.description" type="textarea" :rows="2" />

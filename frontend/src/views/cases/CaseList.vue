@@ -522,8 +522,7 @@ onBeforeUnmount(() => {
           </el-table-column>
           <template #empty>
             <div style="padding:48px 20px;text-align:center;color:#909399">
-              <div style="font-size:32px;margin-bottom:8px;opacity:.4">📋</div>
-              <div>暂无匹配的用例数据</div>
+              <div>暂无数据</div>
             </div>
           </template>
         </el-table>
@@ -531,8 +530,7 @@ onBeforeUnmount(() => {
         <!-- 卡片视图 -->
         <div v-else v-loading="loading" class="case-card-grid">
           <div v-if="list.length === 0" class="card-empty">
-            <div style="font-size:32px;margin-bottom:8px;opacity:.4">📋</div>
-            <div>暂无匹配的用例数据</div>
+            <div>暂无数据</div>
           </div>
           <div v-for="item in list" :key="item.id" class="case-card" @click="handleEdit(item)">
             <div class="case-card-header">

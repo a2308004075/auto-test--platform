@@ -55,6 +55,14 @@ export function deleteActionGroup(projectId: number, groupId: number) {
   return request.post(`/v1/projects/${projectId}/action-groups/${groupId}/delete`)
 }
 
+export function clearActionGroupActions(projectId: number, groupId: number) {
+  return request.post(`/v1/projects/${projectId}/action-groups/${groupId}/clear-actions`)
+}
+
+export function clearAllActions(projectId: number) {
+  return request.post(`/v1/projects/${projectId}/action-groups/clear-all-actions`)
+}
+
 export function batchMoveActions(projectId: number, targetGroupId: number, actionIds: number[]) {
   return request.post(`/v1/projects/${projectId}/actions/batch-move`, { targetGroupId, actionIds })
 }

@@ -315,7 +315,48 @@ public class ActionService {
         return result;
     }
 
+    /**
+     * 清空分组及其子孙分组中的所有 Action（被引用的跳过）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void clearByGroup(Long groupId) {
+        Set<Long> groupIds = actionGroupService.getDescendantGroupIds(groupId);
+        LambdaQueryWrapper<Action> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(Action::getGroupId, groupIds);
+        deleteUnreferenced(actionMapper.selectList(wrapper));
+    }
+
+    /**
+     * 清空项目下所有 Action（被引用的跳过）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void clearByProject(Long projectId) {
+        LambdaQueryWrapper<Action> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Action::getProjectId, projectId);
+        deleteUnreferenced(actionMapper.selectList(wrapper));
+    }
+
     // ───────────────────── 私有方法 ─────────────────────
+
+    /**
+     * 批量删除未被引用的 Action，被测试用例引用的跳过
+     */
+    private void deleteUnreferenced(List<Action> actions) {
+        if (actions == null || actions.isEmpty()) {
+            return;
+        }
+        // ponytail: 引用检查为 JSON 列 like 查询只能逐条计数；量大时可引入冗余引用计数列
+        for (Action action : actions) {
+            Keyword actionKeyword = findActionKeyword(action.getId());
+            if (actionKeyword != null && countTestCaseReferences(actionKeyword.getId()) > 0) {
+                continue;
+            }
+            if (actionKeyword != null) {
+                keywordMapper.deleteById(actionKeyword.getId());
+            }
+            actionMapper.deleteById(action.getId());
+        }
+    }
 
     private Action findById(Long actionId) {
         Action action = actionMapper.selectById(actionId);

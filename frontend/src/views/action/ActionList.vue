@@ -15,6 +15,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getActions, createAction, deleteAction,
   getActionGroups, createActionGroup, updateActionGroup, deleteActionGroup, batchMoveActions,
+  clearActionGroupActions, clearAllActions,
 } from '@/api/action'
 import PageHeader from '@/components/PageHeader/index.vue'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
@@ -167,7 +168,8 @@ const contextGroup = ref<any>(null)
 function handleNodeContextmenu(e: MouseEvent, data: any) {
   e.preventDefault()
   e.stopPropagation()
-  if (data.isSystem === 1) return
+  // 系统分组仅允许"全部"(id=0)和"未分组"显示清空菜单
+  if (data.isSystem === 1 && data.id !== 0 && data.name !== '未分组') return
   contextGroup.value = data
   contextMenuPos.x = e.clientX
   contextMenuPos.y = e.clientY
@@ -209,6 +211,31 @@ function contextEdit() {
 function contextDelete() {
   if (contextGroup.value) handleDeleteGroup(contextGroup.value)
   closeContextMenu()
+}
+
+function contextClear() {
+  if (!contextGroup.value) return
+  const g = contextGroup.value
+  closeContextMenu()
+  const isAll = g.id === 0
+  ElMessageBox.confirm(
+    isAll
+      ? '确定清空项目下的所有 Action 关键字？此操作不可恢复。'
+      : `确定清空分组「${g.name}」及其子分组中的所有 Action 关键字？此操作不可恢复。`,
+    '确认清空',
+    { type: 'warning', confirmButtonText: '清空', cancelButtonText: '取消' },
+  )
+    .then(async () => {
+      if (isAll) {
+        await clearAllActions(projectId.value)
+      } else {
+        await clearActionGroupActions(projectId.value, g.id)
+      }
+      ElMessage.success('已清空')
+      fetchGroups()
+      fetchList()
+    })
+    .catch(() => {})
 }
 
 // ===== 分组 CRUD =====
@@ -352,7 +379,6 @@ onBeforeUnmount(() => {
       <div class="group-panel" @contextmenu="handleBlankContextmenu">
         <div class="group-head">
           <span class="group-title">分组</span>
-          <el-button v-if="hasPermission('project:action:group')" size="small" type="primary" link @click="openCreateGroup()">+ 新建</el-button>
         </div>
         <div class="tree-search">
           <el-input v-model="filterText" size="small" placeholder="搜索分组..." clearable @input="(v: string) => treeRef?.filter(v)" />
@@ -607,11 +633,16 @@ onBeforeUnmount(() => {
         <template v-if="!contextGroup">
           <div class="context-menu-item" @click="contextCreateGroup">新建分组</div>
         </template>
+        <!-- 系统分组右键：仅允许清空 -->
+        <template v-else-if="contextGroup.isSystem === 1">
+          <div class="context-menu-item danger" @click="contextClear">清空关键字</div>
+        </template>
         <!-- 用户分组右键 -->
         <template v-else>
           <div class="context-menu-item" @click="contextCreateChild">新建子分组</div>
           <div class="context-menu-divider" />
           <div class="context-menu-item" @click="contextEdit">编辑</div>
+          <div class="context-menu-item danger" @click="contextClear">清空关键字</div>
           <div class="context-menu-item danger" @click="contextDelete">删除</div>
         </template>
       </div>

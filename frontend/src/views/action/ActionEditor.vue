@@ -222,7 +222,7 @@ function getNodeMarkup(color: string, icon: string, iconBg: string) {
             style: `width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${iconBg};color:${color};font-size:12px;font-weight:700;`,
             textContent: icon,
           },
-          { tagName: 'strong', style: 'font-size:13px;color:rgba(0,0,0,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;min-width:0;', selector: 'label', attrs: { 'data-label': '1' } },
+          { tagName: 'strong', style: 'font-size:9px;color:rgba(0,0,0,.85);white-space:nowrap;line-height:1.4;display:block;min-width:0;', selector: 'label', attrs: { 'data-label': '1' } },
         ],
       }],
     },
@@ -347,49 +347,70 @@ async function initGraph() {
     },
   } as any)
 
-  // 监听选中
-  graph.on('cell:selected', ({ cell }: any) => {
-    if (cell.isNode()) {
-      const data = cell.getData() || {}
-      selectedCellData.value = data
-      selectedNode.value = {
-        id: cell.id,
-        type: data.nodeType || 'API_KEYWORD',
-        label: data.label || '',
-        config: data.config || {},
-        refKeywordId: data.refKeywordId || null,
-        refToolId: data.refToolId || null,
-        saveAs: data.save_as || '',
-        condition: data.condition || '',
-        assertType: data.assertType || 'equal',
-        actual: data.actual || '',
-        expected: data.expected || '',
-        description: data.description || '',
-      }
-      // 解析 API_KEYWORD 节点的参数映射
-      if (data.nodeType === 'API_KEYWORD') {
-        const cfg = typeof data.config === 'string' ? JSON.parse(data.config || '{}') : (data.config || {})
-        const paramsObj = cfg.params || {}
-        nodeParamRows.value = Object.entries(paramsObj).map(([key, value]) => ({ key, value: String(value) }))
-        if (data.refKeywordId) {
-          loadKeywordDefaultParams(data.refKeywordId)
-        } else {
-          defaultParamRows.value = []
-        }
+  // 提取节点选中数据
+  function selectNodeByCell(cell: any) {
+    if (!cell || !cell.isNode || !cell.isNode()) return
+    const data = cell.getData() || {}
+    selectedCellData.value = data
+    selectedNode.value = {
+      id: cell.id,
+      type: data.nodeType || 'API_KEYWORD',
+      label: data.label || '',
+      config: data.config || {},
+      refKeywordId: data.refKeywordId || null,
+      refToolId: data.refToolId || null,
+      saveAs: data.save_as || '',
+      condition: data.condition || '',
+      assertType: data.assertType || 'equal',
+      actual: data.actual || '',
+      expected: data.expected || '',
+      description: data.description || '',
+    }
+    // 解析 API_KEYWORD 节点的参数映射
+    if (data.nodeType === 'API_KEYWORD') {
+      const cfg = typeof data.config === 'string' ? JSON.parse(data.config || '{}') : (data.config || {})
+      const paramsObj = cfg.params || {}
+      nodeParamRows.value = Object.entries(paramsObj).map(([key, value]) => ({ key, value: String(value) }))
+      if (data.refKeywordId) {
+        loadKeywordDefaultParams(data.refKeywordId)
       } else {
-        nodeParamRows.value = []
         defaultParamRows.value = []
       }
+    } else {
+      nodeParamRows.value = []
+      defaultParamRows.value = []
+    }
+    togglePorts(cell, true)
+  }
+
+  // 监听选中
+  graph.on('cell:selected', ({ cell }: any) => {
+    selectNodeByCell(cell)
+  })
+
+  // 节点点击兜底：确保单选模式下也能触发属性面板
+  graph.on('node:click', ({ node }: any) => {
+    if (selectedNode.value?.id === node.id) return
+    graph.select(node)
+    selectNodeByCell(node)
+  })
+
+  graph.on('cell:unselected', ({ cell }: any) => {
+    togglePorts(cell, false)
+    if (selectedNode.value?.id === cell.id) {
+      selectedNode.value = null
+      selectedCellData.value = null
     }
   })
 
-  graph.on('cell:unselected', () => {
+  graph.on('blank:click', () => {
+    if (selectedNode.value) {
+      const cell = graph.getCellById(selectedNode.value.id)
+      togglePorts(cell, false)
+    }
+    graph.cleanSelection()
     selectedNode.value = null
     selectedCellData.value = null
-  })
-
-  graph.on('blank:click', () => {
-    graph.cleanSelection()
     insertMenuVisible.value = false
   })
 
@@ -492,14 +513,27 @@ function togglePorts(node: any, visible: boolean) {
   } catch { /* ignore */ }
 }
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+function chunkText(text: string, size = 10): string[] {
+  const chunks: string[] = []
+  for (let i = 0; i < text.length; i += size) {
+    chunks.push(text.slice(i, i + size))
+  }
+  return chunks.length ? chunks : ['']
+}
+
+function buildLabelHtml(text: string, lineLen = 10): string {
+  return chunkText(text, lineLen).map(escapeHtml).join('<br>')
+}
+
 function setNodeLabel(node: any, text: string) {
   if (!node || !text) return
   const data = node.getData() || {}
   data.label = text
   node.setData(data, { silent: true })
-  // 自适应宽度
-  const maxChars = 20
-  const displayText = text.length > maxChars ? text.substring(0, maxChars) + '…' : text
   setTimeout(() => {
     try {
       const view = graph.findViewByCell(node)
@@ -507,9 +541,16 @@ function setNodeLabel(node: any, text: string) {
       if (el) {
         const labelEl = el.querySelector('[data-label]')
         if (labelEl) {
-          labelEl.textContent = displayText
+          const shape = node.shape
+          if (shape === 'node-assert' || shape === 'node-logic') {
+            // 菱形节点保持单行省略，避免破坏图形
+            const maxChars = 20
+            labelEl.textContent = text.length > maxChars ? text.substring(0, maxChars) + '…' : text
+          } else {
+            labelEl.innerHTML = buildLabelHtml(text, 10)
+          }
           labelEl.title = text
-          // 节点宽度自适应：根据 label 内容计算所需宽度
+          // 节点尺寸自适应
           autoResizeNode(node, labelEl)
         }
       }
@@ -517,31 +558,51 @@ function setNodeLabel(node: any, text: string) {
   }, 100)
 }
 
-// 节点宽度自适应
+// 节点尺寸自适应（方形节点：宽高；菱形节点：保持默认）
 function autoResizeNode(node: any, labelEl: HTMLElement) {
   if (!node || !labelEl) return
   try {
+    const shape = node.shape
+    if (shape === 'node-assert' || shape === 'node-logic') return
+
+    const text = node.getData()?.label || ''
+    const lineLen = 10
+    const lines = chunkText(text, lineLen)
+    const lineHeight = 13
     const minWidth = 120
     const maxWidth = 320
     const padding = 64 // icon + left-bar + margins
-    // 测量 label 文本宽度（创建临时元素）
+
+    // 测量每行文本宽度，取最宽一行
     const measureEl = document.createElement('span')
-    measureEl.style.cssText = 'visibility:hidden;position:absolute;font-size:13px;font-weight:600;white-space:nowrap;'
-    measureEl.textContent = labelEl.textContent || ''
+    measureEl.style.cssText = 'visibility:hidden;position:absolute;font-size:9px;font-weight:600;white-space:nowrap;'
     document.body.appendChild(measureEl)
-    const textWidth = measureEl.getBoundingClientRect().width
+    let maxLineWidth = 0
+    lines.forEach((line) => {
+      measureEl.textContent = line
+      maxLineWidth = Math.max(maxLineWidth, measureEl.getBoundingClientRect().width)
+    })
     measureEl.remove()
-    const targetWidth = Math.min(maxWidth, Math.max(minWidth, Math.ceil(textWidth + padding)))
+
+    const targetWidth = Math.min(maxWidth, Math.max(minWidth, Math.ceil(maxLineWidth + padding)))
+    const baseHeight = 54
+    const targetHeight = baseHeight + Math.max(0, lines.length - 1) * lineHeight
     const currentSize = node.size()
-    if (currentSize.width !== targetWidth) {
-      node.resize(targetWidth, currentSize.height)
-      // 同步 foreignObject 宽度
-      const foEl = graph.findViewByCell(node)?.el?.querySelector('foreignObject')
-      if (foEl) foEl.setAttribute('width', String(targetWidth))
-      const rootEl = graph.findViewByCell(node)?.el?.querySelector('[data-node-root]')
+    if (currentSize.width !== targetWidth || currentSize.height !== targetHeight) {
+      node.resize(targetWidth, targetHeight)
+      // 同步 foreignObject 与根容器尺寸
+      const view = graph.findViewByCell(node)
+      const foEl = view?.el?.querySelector('foreignObject')
+      if (foEl) {
+        foEl.setAttribute('width', String(targetWidth))
+        foEl.setAttribute('height', String(targetHeight))
+      }
+      const rootEl = view?.el?.querySelector('[data-node-root]')
       if (rootEl) {
         rootEl.setAttribute('width', String(targetWidth))
+        rootEl.setAttribute('height', String(targetHeight))
         ;(rootEl as HTMLElement).style.width = '100%'
+        ;(rootEl as HTMLElement).style.height = '100%'
       }
     }
   } catch { /* ignore */ }
@@ -1282,7 +1343,7 @@ onBeforeUnmount(() => {
                       <el-button size="small" link @click="addNodeParamRow">+ 添加参数</el-button>
                     </div>
                     <div style="color: #909399; font-size: 11px; margin-top: 4px">
-                      值支持 ${变量名} 引用 Action 入参或上下文变量
+                      参数名需与关键字内 $ref{参数名} 接收点或路径 {参数名} 占位符对应；值支持 ${变量名} 引用 Action 入参或上下文变量
                     </div>
                   </el-form-item>
 

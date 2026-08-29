@@ -802,6 +802,9 @@ watch(activeTab, (v) => {
                       </div>
                       <el-button size="small" link @click="addStepParamRow">+ 添加参数</el-button>
                     </div>
+                    <div style="color: #909399; font-size: 11px; margin-top: 4px">
+                      参数名需与关键字内 $ref{参数名} 接收点或路径 {参数名} 占位符对应；值支持 ${变量名} 引用上下文变量
+                    </div>
                   </el-form-item>
                   <el-form-item label="save_as">
                     <el-input v-model="stepsArray[selectedStepIndex].saveAs" placeholder="变量名" @input="syncStepsToJson" />

@@ -222,7 +222,7 @@ public class ApiService {
     }
 
     /**
-     * 清空分组及其子孙分组中的所有接口
+     * 清空分组及其子孙分组中的所有接口（被关键字引用的接口跳过）
      */
     @Transactional(rollbackFor = Exception.class)
     public void clearByModule(Long moduleId) {
@@ -230,21 +230,42 @@ public class ApiService {
         LambdaQueryWrapper<Api> wrapper = new LambdaQueryWrapper<>();
         wrapper.in(Api::getModuleId, moduleIds);
         List<Api> apis = apiMapper.selectList(wrapper);
-        for (Api api : apis) {
-            delete(api.getId());
-        }
+        deleteUnreferenced(apis);
     }
 
     /**
-     * 清空项目下所有接口
+     * 清空项目下所有接口（被关键字引用的接口跳过）
      */
     @Transactional(rollbackFor = Exception.class)
     public void clearByProject(Long projectId) {
         LambdaQueryWrapper<Api> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Api::getProjectId, projectId);
         List<Api> apis = apiMapper.selectList(wrapper);
+        deleteUnreferenced(apis);
+    }
+
+    /**
+     * 批量删除未被关键字引用的接口，被引用的跳过
+     */
+    private void deleteUnreferenced(List<Api> apis) {
+        if (apis.isEmpty()) {
+            return;
+        }
+        List<Long> apiIds = new ArrayList<>();
         for (Api api : apis) {
-            delete(api.getId());
+            apiIds.add(api.getId());
+        }
+        // 一次性查出被 ApiKeyword 引用的接口 ID，避免逐条计数
+        LambdaQueryWrapper<ApiKeyword> kwWrapper = new LambdaQueryWrapper<>();
+        kwWrapper.in(ApiKeyword::getApiId, apiIds).select(ApiKeyword::getApiId);
+        Set<Long> referencedIds = new HashSet<>();
+        for (ApiKeyword kw : apiKeywordMapper.selectList(kwWrapper)) {
+            referencedIds.add(kw.getApiId());
+        }
+        for (Api api : apis) {
+            if (!referencedIds.contains(api.getId())) {
+                apiMapper.deleteById(api.getId());
+            }
         }
     }
 
@@ -902,6 +923,11 @@ public class ApiService {
         ApiInfoResponse response = new ApiInfoResponse();
         BeanUtils.copyProperties(api, response);
         response.setServicePrefix(apiModuleService.resolveServicePrefix(api.getModuleId(), moduleMap));
+        // ponytail: 逐条 count 引用次数；列表数据量增大时改为批量统计
+        LambdaQueryWrapper<ApiKeyword> refWrapper = new LambdaQueryWrapper<>();
+        refWrapper.eq(ApiKeyword::getApiId, api.getId());
+        long refCount = apiKeywordMapper.selectCount(refWrapper);
+        response.setRefCount((int) refCount);
         return response;
     }
 

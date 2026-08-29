@@ -482,6 +482,18 @@ onMounted(() => {
 
           <!-- Tab: 请求参数 -->
           <el-tab-pane label="请求参数" name="testdata">
+            <!-- 参数接收说明 -->
+            <el-alert type="info" :closable="false" class="param-receive-alert">
+              <template #title>参数如何接收：统一 $ref{参数名} 语法</template>
+              <p>被 Action 关键字（节点「外部传参」）或测试用例（步骤「args 参数映射」）引用时，本关键字通过 <code>$ref{参数名}</code> 声明接收点，引用方传入「参数名=值」实参，执行时按名替换：</p>
+              <ul>
+                <li>请求体、请求头的值中写 <code>$ref{参数名}</code> → 执行时用同名实参替换，未传则替换为空</li>
+                <li>路径中的 <code>{参数名}</code>（接口定义固有 REST 占位符）→ 同样按参数名接收实参</li>
+                <li>实参值支持 <code>${变量名}</code> 占位符，请求发出前由执行上下文替换</li>
+              </ul>
+              <p>下方「预设值」作为缺省实参参与执行：引用方未传某参数时，使用此处预设值兜底；否则以引用方传入的实参为准。</p>
+            </el-alert>
+
             <!-- 刷新按钮 -->
             <div style="display: flex; justify-content: flex-end; margin-bottom: 12px">
               <el-button v-if="form.apiId" size="small" type="primary" plain @click="refreshParams">
@@ -837,6 +849,26 @@ onMounted(() => {
   font-size: 13px;
   align-items: center;
   width: 100%;
+}
+.param-receive-alert {
+  margin-bottom: 12px;
+}
+.param-receive-alert :deep(p) {
+  margin: 4px 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.param-receive-alert :deep(ul) {
+  margin: 4px 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.param-receive-alert :deep(code) {
+  background: #f0f2f5;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 12px;
 }
 .empty-hint {
   color: #909399;

@@ -30,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 关键字执行器
@@ -46,6 +48,12 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 public class KeywordExecutor {
+
+    /**
+     * $ref{参数名} 占位符：接口关键字内声明的参数接收点，
+     * 执行时用引用方（Action/测试用例）传入的同名实参替换
+     */
+    private static final Pattern REF_PATTERN = Pattern.compile("\\$ref\\{([^}]+)}");
 
     private final KeywordMapper keywordMapper;
     private final ApiKeywordMapper apiKeywordMapper;
@@ -137,29 +145,36 @@ public class KeywordExecutor {
             }
         }
 
-        // 合并 step.params 中的额外 headers
-        if (step.getParams() != null) {
-            Object extraHeaders = step.getParams().get("headers");
-            if (extraHeaders instanceof Map) {
-                ((Map<String, Object>) extraHeaders).forEach((k, v) ->
-                        headers.put(k, v != null ? v.toString() : ""));
+        // 解析关键字级缺省实参（testData 中的预设值）与关键字级请求体模板（__body__ 行）
+        Map<String, Object> defaultParams = new LinkedHashMap<>();
+        String keywordBodyTemplate = null;
+        if (apiKeyword.getTestData() != null && !apiKeyword.getTestData().isEmpty()) {
+            try {
+                List<Map<String, Object>> rows = objectMapper.readValue(apiKeyword.getTestData(),
+                        new TypeReference<List<Map<String, Object>>>() {});
+                for (Map<String, Object> row : rows) {
+                    String name = row.get("name") != null ? row.get("name").toString() : null;
+                    Object value = row.get("value");
+                    if ("__body__".equals(name)) {
+                        keywordBodyTemplate = value != null ? value.toString() : null;
+                    } else if (name != null && !name.isEmpty()) {
+                        defaultParams.put(name, value);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("解析关键字 testData 失败: {}", e.getMessage());
             }
         }
 
-        // 构建请求体
-        String body = null;
+        // 请求体：优先使用关键字级 __body__ 模板，否则回退接口定义的 requestBody
+        String body = keywordBodyTemplate != null && !keywordBodyTemplate.isEmpty()
+                ? keywordBodyTemplate
+                : (api.getRequestBody() != null && !api.getRequestBody().isEmpty() ? api.getRequestBody() : null);
+
+        // 合并缺省实参与引用方实参（引用方覆盖）
+        Map<String, Object> refParams = new LinkedHashMap<>(defaultParams);
         if (step.getParams() != null) {
-            Object bodyParam = step.getParams().get("body");
-            if (bodyParam != null) {
-                try {
-                    body = bodyParam instanceof String ? (String) bodyParam : objectMapper.writeValueAsString(bodyParam);
-                } catch (Exception e) {
-                    body = bodyParam.toString();
-                }
-            }
-        }
-        if (body == null && api.getRequestBody() != null && !api.getRequestBody().isEmpty()) {
-            body = api.getRequestBody();
+            refParams.putAll(step.getParams());
         }
 
         // 前导 ${var} host 占位符保持在最前，不参与路径参数替换（替代 baseUrl 的 host）
@@ -176,18 +191,20 @@ public class KeywordExecutor {
             }
         }
 
-        // 路径参数替换（step.params 中的路径变量）
-        if (step.getParams() != null) {
-            for (Map.Entry<String, Object> entry : step.getParams().entrySet()) {
-                String placeholder = "{" + entry.getKey() + "}";
-                if (path.contains(placeholder) && entry.getValue() != null) {
-                    path = path.replace(placeholder, entry.getValue().toString());
-                }
+        // 路径参数替换：路径中的 {参数名} 占位符（REST 惯例，接口定义固有）按名接收实参
+        for (Map.Entry<String, Object> entry : refParams.entrySet()) {
+            String placeholder = "{" + entry.getKey() + "}";
+            if (path.contains(placeholder) && entry.getValue() != null) {
+                path = path.replace(placeholder, entry.getValue().toString());
             }
         }
 
         // 拼接服务前缀与路径
         String fullPath = leadingPlaceholder + joinPath(servicePrefix, path);
+
+        // $ref{参数名} 替换：请求头值与请求体中声明的接收点，用引用方实参（优先）或关键字缺省实参填充
+        headers.replaceAll((k, v) -> resolveRefs(v, refParams));
+        body = resolveRefs(body, refParams);
 
         // 发送 HTTP 请求
         StepResult result = httpClientEngine.execute(
@@ -333,6 +350,27 @@ public class KeywordExecutor {
         // 使用 SpringContextHolder 获取 CaseExecutor 避免循环依赖
         CaseExecutor caseExecutor = SpringContextHolder.getBean(CaseExecutor.class);
         return caseExecutor.execute(testCase, context);
+    }
+
+    /**
+     * $ref{参数名} 替换：用引用方传入的同名实参替换关键字内声明的参数接收点
+     *
+     * <p>统一参数接收语法：接口关键字的请求头值、请求体中写 $ref{参数名}，
+     * 执行时以 step.params（引用方实参）按名替换；未传入的参数替换为空串。
+     */
+    static String resolveRefs(String text, Map<String, Object> params) {
+        if (text == null || text.isEmpty() || params == null || params.isEmpty()) {
+            return text;
+        }
+        Matcher matcher = REF_PATTERN.matcher(text);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            String key = matcher.group(1).trim();
+            Object val = params.get(key);
+            matcher.appendReplacement(sb, val != null ? Matcher.quoteReplacement(val.toString()) : "");
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
     }
 
     private String joinPath(String prefix, String path) {

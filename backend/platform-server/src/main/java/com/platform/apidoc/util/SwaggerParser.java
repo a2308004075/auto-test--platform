@@ -203,6 +203,9 @@ public class SwaggerParser {
             }
         }
 
+        // 同名参数去重：优先保留 path 参数，避免 Swagger 文档重复定义导致 path/query 同时出现
+        params = deduplicateParams(params);
+
         // Swagger 2.0: 从 consumes 获取请求数据类型
         if (!isOpenApi3) {
             JsonNode consumes = operation.get("consumes");
@@ -353,6 +356,25 @@ public class SwaggerParser {
             }
         }
         return node;
+    }
+
+    /**
+     * 同名参数去重：若 Swagger 文档把同一字段同时声明为 path/query/formData，
+     * 优先保留 path 参数，其余按首次出现保留。
+     */
+    private static List<Map<String, Object>> deduplicateParams(List<Map<String, Object>> params) {
+        Map<String, Map<String, Object>> map = new LinkedHashMap<>();
+        for (Map<String, Object> p : params) {
+            String name = (String) p.get("name");
+            if (name == null) {
+                continue;
+            }
+            Map<String, Object> existing = map.get(name);
+            if (existing == null || "path".equals(p.get("in"))) {
+                map.put(name, p);
+            }
+        }
+        return new ArrayList<>(map.values());
     }
 
     private static String getTextValue(JsonNode node, String field) {

@@ -271,4 +271,49 @@ class SwaggerParserTest {
         assertEquals("graphql", graphql.getBodyType());
         assertNull(graphql.getRawType());
     }
+
+    /**
+     * 同名参数去重：path 与 query 同时声明时，优先保留 path 参数
+     */
+    @Test
+    void parseSwagger2_duplicatePathAndQueryParams_keepPath() {
+        String json = "{\n" +
+                "  \"swagger\": \"2.0\",\n" +
+                "  \"info\": {\"title\": \"角色服务\", \"version\": \"1.0\"},\n" +
+                "  \"basePath\": \"/api\",\n" +
+                "  \"paths\": {\n" +
+                "    \"/role/{id}/delete\": {\n" +
+                "      \"post\": {\n" +
+                "        \"tags\": [\"角色\"],\n" +
+                "        \"summary\": \"删除角色\",\n" +
+                "        \"operationId\": \"deleteRole\",\n" +
+                "        \"parameters\": [\n" +
+                "          {\"name\": \"id\", \"in\": \"query\", \"type\": \"integer\", \"required\": false},\n" +
+                "          {\"name\": \"id\", \"in\": \"path\", \"type\": \"integer\", \"required\": true}\n" +
+                "        ],\n" +
+                "        \"responses\": {\"200\": {\"description\": \"OK\"}}\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}";
+        SwaggerParser.ParseResult result = SwaggerParser.parse(json);
+        assertEquals(1, result.getApis().size());
+
+        SwaggerParser.ApiEntry entry = result.getApis().get(0);
+        assertNotNull(entry.getRequestParams());
+        // 只应保留一个 id，且为 path 参数
+        assertEquals(1, countOccurrences(entry.getRequestParams(), "\"name\":\"id\""));
+        assertTrue(entry.getRequestParams().contains("\"in\":\"path\""));
+        assertFalse(entry.getRequestParams().contains("\"in\":\"query\""));
+    }
+
+    private static int countOccurrences(String text, String pattern) {
+        int count = 0;
+        int idx = 0;
+        while ((idx = text.indexOf(pattern, idx)) != -1) {
+            count++;
+            idx += pattern.length();
+        }
+        return count;
+    }
 }

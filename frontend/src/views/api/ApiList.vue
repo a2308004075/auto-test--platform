@@ -325,6 +325,7 @@ const defaultColumns: ColumnItem[] = [
   { key: 'desc', label: '描述', locked: true, visible: true },
   { key: 'source', label: '来源', locked: true, visible: true },
   { key: 'createTime', label: '创建时间', locked: false, visible: true },
+  { key: 'refCount', label: '被引用次数', locked: false, visible: true },
   { key: 'action', label: '操作', locked: true, visible: true },
 ]
 const columns = ref<ColumnItem[]>(defaultColumns.map((c) => ({ ...c })))
@@ -466,9 +467,9 @@ onBeforeUnmount(() => {
           <el-table-column v-if="isColVisible('group')" label="分组" width="120">
             <template #default="{ row }">{{ row.moduleName || moduleMap[row.moduleId]?.name || '--' }}</template>
           </el-table-column>
-          <el-table-column v-if="isColVisible('desc')" label="描述" min-width="120">
+          <el-table-column v-if="isColVisible('desc')" label="描述" width="180">
             <template #default="{ row }">
-              <span :title="row.description">{{ descText(row.description) }}</span>
+              <span :title="row.description" style="white-space: nowrap;">{{ descText(row.description) }}</span>
             </template>
           </el-table-column>
           <el-table-column v-if="isColVisible('source')" label="来源" width="120">
@@ -476,6 +477,9 @@ onBeforeUnmount(() => {
           </el-table-column>
           <el-table-column v-if="isColVisible('createTime')" label="创建时间" width="120">
             <template #default="{ row }">{{ row.createdAt?.substring(0, 10) }}</template>
+          </el-table-column>
+          <el-table-column v-if="isColVisible('refCount')" label="被引用次数" width="110" align="center">
+            <template #default="{ row }">{{ row.refCount ?? 0 }}</template>
           </el-table-column>
           <el-table-column v-if="isColVisible('action')" label="操作" width="170" fixed="right">
             <template #default="{ row }">

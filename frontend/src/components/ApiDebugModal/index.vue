@@ -440,7 +440,7 @@ function removeBodyRow(idx: number) {
               <el-select v-if="debugBodyType === 'raw'" v-model="debugRawType" size="small" style="width: 130px">
                 <el-option v-for="r in rawTypeOptions" :key="r.value" :value="r.value" :label="r.label" />
               </el-select>
-              <el-button v-if="debugBodyType === 'raw' && debugRawType === 'json'" size="small" @click="debugBody = formatJson(debugBody.value)">格式化</el-button>
+              <el-button v-if="debugBodyType === 'raw' && debugRawType === 'json'" size="small" @click="debugBody = formatJson(debugBody)">格式化</el-button>
             </div>
             <div v-if="debugBodyType === 'none'" class="empty-hint">该接口无请求体</div>
             <div v-else-if="debugBodyType === 'raw'" style="height: 200px">

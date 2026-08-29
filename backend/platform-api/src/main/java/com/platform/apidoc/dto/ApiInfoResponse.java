@@ -33,6 +33,7 @@ public class ApiInfoResponse {
     private String description;
     private String sourceType;
     private String swaggerOperationId;
+    private Integer refCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

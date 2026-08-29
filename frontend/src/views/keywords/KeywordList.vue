@@ -45,6 +45,11 @@ function truncateText(text: string | undefined, maxLen: number): string {
   return s.length > maxLen ? s.slice(0, maxLen) + '...' : s
 }
 
+// 去除 JSON 字符串中的行内注释，避免后端解析失败
+function stripJsonComments(json: string): string {
+  return json.replace(/\/\/.*$/gm, '')
+}
+
 // ===== 列表数据 =====
 const loading = ref(false)
 const list = ref<any[]>([])
@@ -409,9 +414,15 @@ async function executeDebug() {
   debugLoading.value = true
   debugResult.value = null
   try {
+    const testData = debugParams.value.map((p: any) => {
+      if (p.in === 'body' && p.name === '__body__' && typeof p.value === 'string') {
+        return { ...p, value: stripJsonComments(p.value) }
+      }
+      return p
+    })
     const res: any = await debugKeyword(projectId.value, debugRow.value.id, {
       environmentId: debugEnvId.value,
-      testData: JSON.stringify(debugParams.value),
+      testData: JSON.stringify(testData),
     })
     const data = res.data || {}
     let responseBody: any = data.responseBody

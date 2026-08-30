@@ -111,6 +111,12 @@
             <artifactId>groovy</artifactId>
         </dependency>
 
+        <!-- Groovy JSON 模块（JsonSlurper，工具方法解析入参 JSON） -->
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-json</artifactId>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

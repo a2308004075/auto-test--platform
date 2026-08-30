@@ -47,8 +47,6 @@ const groupMap = computed<Record<number, any>>(() => {
   groups.value.forEach((g) => { m[g.id] = g })
   return m
 })
-// 用户分组（非系统），用于父分组下拉
-const userGroups = computed(() => groups.value.filter((g) => g.isSystem !== 1))
 // 批量移动可选分组（用户分组 + 未分组系统分组）
 const moveTargetGroups = computed(() =>
   groups.value.filter((g) => g.isSystem !== 1 || g.name === '未分组')

@@ -132,6 +132,13 @@
                 <version>${groovy.version}</version>
             </dependency>
 
+            <!-- Groovy JSON 模块（JsonSlurper，工具方法解析入参 JSON） -->
+            <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy-json</artifactId>
+                <version>${groovy.version}</version>
+            </dependency>
+
             <!-- 校验 API（供 api 模块 DTO 使用 javax.validation 注解） -->
             <dependency>
                 <groupId>javax.validation</groupId>

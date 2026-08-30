@@ -18,7 +18,7 @@ import { getApis, getApi, getModules } from '@/api/apidoc'
 import { getEnvironments } from '@/api/environment'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, InfoFilled } from '@element-plus/icons-vue'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
 import CodeEditor from '@/components/CodeEditor/index.vue'
 import { schemaToExampleString } from '@/utils/schemaToExample'
@@ -647,16 +647,27 @@ function openApiDetail() {
 
           <!-- Tab: 请求参数 -->
           <el-tab-pane label="请求参数" name="testdata">
-            <!-- 参数接收说明 -->
+            <!-- 参数接收说明：正文一句话概括，详细用法悬浮 ℹ 图标查看 -->
             <el-alert type="info" :closable="false" class="param-receive-alert">
-              <template #title>参数如何接收：统一 $ref{参数名} 语法</template>
-              <p>被 Action 关键字（节点「外部传参」）或测试用例（步骤「args 参数映射」）引用时，本关键字通过 <code>$ref{参数名}</code> 声明接收点，引用方传入「参数名=值」实参，执行时按名替换：</p>
-              <ul>
-                <li>请求体、请求头的值中写 <code>$ref{参数名}</code> → 执行时用同名实参替换，未传则替换为空</li>
-                <li>路径中的 <code>{参数名}</code>（接口定义固有 REST 占位符）→ 同样按参数名接收实参</li>
-                <li>实参值支持 <code>${变量名}</code> 占位符，请求发出前由执行上下文替换</li>
-              </ul>
-              <p>下方「预设值」作为缺省实参参与执行：引用方未传某参数时，使用此处预设值兜底；否则以引用方传入的实参为准。</p>
+              <template #title>
+                <span>入参与出参说明</span>
+                <el-tooltip placement="bottom" effect="light">
+                  <template #content>
+                    <div style="max-width: 400px; line-height: 1.8; padding: 2px 0;">
+                      <div style="font-weight: 600; margin-bottom: 6px;">入参：接收外部传入参数</div>
+                      <div>① 声明接收点：在请求头、请求体的值中写 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">$ref{参数名}</code>；路径中的 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">{参数名}</code>（REST 占位符）同样按名接收</div>
+                      <div>② 传入实参：引用方（Action 节点「外部传参」或用例步骤「args 参数映射」）传入同名实参，执行时按名替换</div>
+                      <div>③ 优先级：引用方实参 ＞ 下方预设值 ＞ 空串</div>
+                      <div style="margin-top: 12px; font-weight: 600; margin-bottom: 6px;">出参：返回值传给外部</div>
+                      <div>① 引用方在步骤参数中配置 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">output</code> 字段，格式 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">"变量名": "$.json路径"</code></div>
+                      <div>② 执行后从响应体按路径提取值存入上下文变量，后续步骤用 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${变量名}</code> 引用</div>
+                      <div style="margin-top: 6px; color: #999;">示例：配置 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">"token": "$.data.token"</code>，后续步骤用 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${token}</code> 取值</div>
+                    </div>
+                  </template>
+                  <el-icon class="param-help-icon"><InfoFilled /></el-icon>
+                </el-tooltip>
+              </template>
+              <p>入参：用 <code>$ref{参数名}</code> 接收外部实参，未传时用下方预设值兜底；出参：引用方配置 <code>output</code> 从响应体提取值，后续用 <code>${变量名}</code> 引用。完整用法请悬浮上方 ℹ 图标查看。</p>
             </el-alert>
 
             <!-- 刷新按钮 -->
@@ -1206,17 +1217,18 @@ function openApiDetail() {
   font-size: 12px;
   line-height: 1.6;
 }
-.param-receive-alert :deep(ul) {
-  margin: 4px 0;
-  padding-left: 18px;
-  font-size: 12px;
-  line-height: 1.8;
-}
 .param-receive-alert :deep(code) {
   background: #f0f2f5;
   padding: 0 4px;
   border-radius: 3px;
   font-size: 12px;
+}
+.param-help-icon {
+  color: #909399;
+  cursor: pointer;
+  font-size: 15px;
+  margin-left: 4px;
+  vertical-align: middle;
 }
 .empty-hint {
   color: #909399;

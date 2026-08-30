@@ -13,6 +13,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getTool, createTool, updateTool, testTool, getTools, getToolDependencies } from '@/api/tool'
+import { InfoFilled } from '@element-plus/icons-vue'
 import CodeEditor from '@/components/CodeEditor/index.vue'
 import { usePermission } from '@/composables/usePermission'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
@@ -47,7 +48,7 @@ async function fetchCategoryOptions() {
 // ===== 表单 =====
 const referenceList = ref<any[]>([])
 const referenceLoading = ref(false)
-const DEFAULT_CODE = '// 在此编写 Groovy 代码\n// 可使用 request, response, context, vars 等内置变量\n\ndef execute() {\n    return "Hello"\n}'
+const DEFAULT_CODE = '// 在此编写 Groovy 代码\n// 入参：def 函数的形参，如 def add(int a, int b)\n// 出参：函数 return 的值即返回结果\n\ndef execute() {\n    return "Hello"\n}'
 const form = reactive({
   name: '',
   category: '',
@@ -332,6 +333,30 @@ onMounted(() => {
               </div>
             </div>
           </template>
+          <!-- 入参/出参说明 -->
+          <el-alert type="info" :closable="false" class="param-receive-alert">
+            <template #title>
+              <span>入参与出参说明</span>
+              <el-tooltip placement="bottom" effect="light">
+                <template #content>
+                  <div style="max-width: 400px; line-height: 1.8; padding: 2px 0;">
+                    <div style="font-weight: 600; margin-bottom: 6px;">入参：接收外部传入参数</div>
+                    <div>以 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">def</code> 函数编写，形参即入参；带 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">= 默认值</code> 的参数自动识别为可选。在线测试时在"测试参数"表格中按参数名填入测试值。</div>
+                    <div style="margin-top: 4px;">也可不定义函数，直接解析内置变量 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">input</code>（JSON 字符串）：<code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">new groovy.json.JsonSlurper().parseText(input)</code></div>
+                    <div style="margin-top: 12px; font-weight: 600; margin-bottom: 6px;">出参：返回值传给外部</div>
+                    <div>函数 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">return</code> 的值（或脚本最后一个表达式的值）即为返回结果，执行后可在"执行结果"中查看。</div>
+                  </div>
+                </template>
+                <el-icon class="param-help-icon"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </template>
+            <p><b>入参：</b>以 <code>def</code> 函数编写，形参即入参，参数名与类型自动识别，测试时按参数名填值：</p>
+            <ul>
+              <li>必填参数：<code>def add(int a, int b)</code>；可选参数：<code>def add(int a, int b = 10)</code>（带默认值自动视为可选）</li>
+              <li>未定义函数时，可直接解析内置变量 <code>input</code>（JSON 字符串）获取全部参数</li>
+            </ul>
+            <p style="margin-top: 6px"><b>出参：</b>函数 <code>return</code> 的值（或脚本最后一个表达式的值）即为返回结果，执行后在"执行结果"中查看。</p>
+          </el-alert>
           <CodeEditor v-model="form.code" :min-height="320" language="groovy"
             placeholder="请输入 Groovy 代码..." />
         </el-card>
@@ -462,6 +487,33 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.param-receive-alert {
+  margin-bottom: 12px;
+}
+.param-receive-alert :deep(p) {
+  margin: 4px 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.param-receive-alert :deep(ul) {
+  margin: 4px 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.param-receive-alert :deep(code) {
+  background: #f0f2f5;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+.param-help-icon {
+  color: #909399;
+  cursor: pointer;
+  font-size: 15px;
+  margin-left: 4px;
+  vertical-align: middle;
 }
 .lang-badge {
   font-size: 11px;

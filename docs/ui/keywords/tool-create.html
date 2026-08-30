@@ -104,6 +104,12 @@
       <div class="card">
         <div class="card-header"><span class="form-label" style="margin-bottom:0;">代码编辑 <span class="required">*</span></span><span style="display:flex;gap:4px;margin-left:auto;"><span style="font-size:11px;background:#306998;color:#FFD43B;padding:1px 8px;border-radius:3px;font-weight:600;margin-right:8px;line-height:20px;">Python</span><button class="btn btn-sm" onclick="insertTemplate()">插入模板</button><button class="btn btn-sm" onclick="formatCode()">格式化</button></span></div>
         <div class="card-body" style="padding:0;">
+          <!-- 入参/出参说明 -->
+          <div style="padding:12px 16px;background:#f0f7ff;border-bottom:1px solid var(--border);font-size:12px;line-height:1.8;color:var(--text-secondary);">
+            <div style="font-weight:600;color:var(--text-primary);margin-bottom:4px;">入参与出参说明</div>
+            <div><b>入参：</b>以 <code style="background:#f0f2f5;padding:0 4px;border-radius:3px;">def</code> 函数编写，形参即入参，参数名与类型自动识别，测试时按参数名填值；带 <code style="background:#f0f2f5;padding:0 4px;border-radius:3px;">= 默认值</code> 的参数自动视为可选。</div>
+            <div><b>出参：</b>函数 <code style="background:#f0f2f5;padding:0 4px;border-radius:3px;">return</code> 的值（或脚本最后一个表达式的值）即为返回结果，执行后在"执行结果"中查看。</div>
+          </div>
           <div class="py-editor-wrap" style="display:flex;min-height:240px;background:#1e1e1e;border-radius:0 0 6px 6px;overflow:hidden;">
             <div id="lineNumbers" style="padding:16px 0;text-align:right;user-select:none;color:#858585;font:13px/1.6 Consolas,'Courier New',monospace;min-width:40px;background:#1e1e1e;border-right:1px solid #333;"></div>
             <div style="position:relative;flex:1;min-height:240px;">

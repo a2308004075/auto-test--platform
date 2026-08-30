@@ -15,7 +15,9 @@ import org.codehaus.groovy.control.CompilerConfiguration;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
 
 /**
@@ -27,6 +29,17 @@ import java.util.concurrent.*;
 public class GroovySandboxExecutor {
 
     private static final long TIMEOUT_SECONDS = 30;
+
+    /**
+     * 形参声明中允许 as 转换的简单类型白名单
+     *
+     * <p>限定为 Groovy 内置类型，避免对未知类型做 as 转换导致脚本编译失败。
+     */
+    private static final Set<String> CASTABLE_TYPES = new HashSet<>(Arrays.asList(
+            "int", "Integer", "long", "Long", "short", "Short", "byte", "Byte",
+            "float", "Float", "double", "Double", "boolean", "Boolean",
+            "char", "Character", "String", "CharSequence", "Object"
+    ));
 
     /**
      * 危险操作黑名单关键字
@@ -103,12 +116,25 @@ public class GroovySandboxExecutor {
                 // 无参函数：直接调用
                 codeToExecute = code + "\n" + funcName + "()";
             } else {
-                // 有参函数：解析 JSON 输入并按参数顺序传递
+                // 有参函数：解析 JSON 输入；对象输入（{"参数名": 值}）按参数名取值，数组输入按位置取值（兼容旧格式）
                 String[] paramParts = paramsPart.split(",");
                 StringBuilder argsList = new StringBuilder();
                 for (int i = 0; i < paramParts.length; i++) {
                     if (i > 0) argsList.append(", ");
-                    argsList.append("__args[").append(i).append("]");
+                    String paramName = extractParamName(paramParts[i]);
+                    String expr;
+                    if (paramName != null) {
+                        expr = "__args instanceof Map ? __args.get('" + paramName + "') : __args[" + i + "]";
+                    } else {
+                        expr = "__args[" + i + "]";
+                    }
+                    // 按形参声明类型转换实参（前端测试值均为字符串，"12" 需转 int 等场景）
+                    String paramType = extractParamType(paramParts[i]);
+                    if (paramType != null) {
+                        argsList.append("(").append(expr).append(") as ").append(paramType);
+                    } else {
+                        argsList.append(expr);
+                    }
                 }
                 codeToExecute = code + "\ndef __args = new groovy.json.JsonSlurper().parseText(input)\n"
                         + funcName + "(" + argsList + ")";
@@ -121,6 +147,47 @@ public class GroovySandboxExecutor {
         long elapsed = System.currentTimeMillis() - start;
         String output = result != null ? result.toString() : "null";
         return ToolTestResult.ok(output, elapsed);
+    }
+
+    /**
+     * 从形参声明片段中解析参数名
+     *
+     * <p>兼容 "String prefix" / "int length" / "prefix" / "int length = 10" 等写法，
+     * 取最后一段标识符；无法解析出合法标识符时返回 null（调用方回退为按位置取值）。
+     */
+    private String extractParamName(String paramPart) {
+        String p = paramPart.trim();
+        int eqIndex = p.indexOf('=');
+        if (eqIndex >= 0) {
+            p = p.substring(0, eqIndex).trim();
+        }
+        if (p.isEmpty()) {
+            return null;
+        }
+        String[] segs = p.split("\\s+");
+        String last = segs[segs.length - 1].trim();
+        return last.matches("\\w+") ? last : null;
+    }
+
+    /**
+     * 从形参声明片段中解析类型声明（仅限白名单内的简单类型）
+     *
+     * <p>"int length" → "int"；"length" / "int length = 10"（剥离默认值后无类型）→ null。
+     * 泛型等复杂声明（"Map&lt;String, Object&gt; m"）与未知类型返回 null，
+     * 不做 as 转换（未知类型 as 转换会导致脚本编译失败）。
+     */
+    private String extractParamType(String paramPart) {
+        String p = paramPart.trim();
+        int eqIndex = p.indexOf('=');
+        if (eqIndex >= 0) {
+            p = p.substring(0, eqIndex).trim();
+        }
+        String[] segs = p.split("\\s+");
+        if (segs.length < 2) {
+            return null;
+        }
+        String type = segs[0].trim();
+        return CASTABLE_TYPES.contains(type) ? type : null;
     }
 
     /**

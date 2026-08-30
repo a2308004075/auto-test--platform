@@ -23,7 +23,7 @@ echo 等待 Redis 就绪 ...
 ping -n 4 127.0.0.1 >nul
 
 echo [3/3] 启动 RabbitMQ ...
-start "RabbitMQ" cmd /k "call D:\develop\auto-test-platform\docs\script\start-rabbitmq.bat"
+start "RabbitMQ" cmd /k "call D:\develop\auto-test--platform\docs\script\start-rabbitmq.bat"
 
 echo.
 echo ============================================

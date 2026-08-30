@@ -350,12 +350,6 @@ onMounted(() => {
                 <el-icon class="param-help-icon"><InfoFilled /></el-icon>
               </el-tooltip>
             </template>
-            <p><b>入参：</b>以 <code>def</code> 函数编写，形参即入参，参数名与类型自动识别，测试时按参数名填值：</p>
-            <ul>
-              <li>必填参数：<code>def add(int a, int b)</code>；可选参数：<code>def add(int a, int b = 10)</code>（带默认值自动视为可选）</li>
-              <li>未定义函数时，可直接解析内置变量 <code>input</code>（JSON 字符串）获取全部参数</li>
-            </ul>
-            <p style="margin-top: 6px"><b>出参：</b>函数 <code>return</code> 的值（或脚本最后一个表达式的值）即为返回结果，执行后在"执行结果"中查看。</p>
           </el-alert>
           <CodeEditor v-model="form.code" :min-height="320" language="groovy"
             placeholder="请输入 Groovy 代码..." />

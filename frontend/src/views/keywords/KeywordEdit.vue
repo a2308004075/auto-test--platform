@@ -647,27 +647,26 @@ function openApiDetail() {
 
           <!-- Tab: 请求参数 -->
           <el-tab-pane label="请求参数" name="testdata">
-            <!-- 参数接收说明：正文一句话概括，详细用法悬浮 ℹ 图标查看 -->
+            <!-- 参数接收说明：标题 + 悬浮查看详情 -->
             <el-alert type="info" :closable="false" class="param-receive-alert">
               <template #title>
                 <span>入参与出参说明</span>
                 <el-tooltip placement="bottom" effect="light">
                   <template #content>
                     <div style="max-width: 400px; line-height: 1.8; padding: 2px 0;">
-                      <div style="font-weight: 600; margin-bottom: 6px;">入参：接收外部传入参数</div>
-                      <div>① 声明接收点：在请求头、请求体的值中写 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">$ref{参数名}</code>；路径中的 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">{参数名}</code>（REST 占位符）同样按名接收</div>
-                      <div>② 传入实参：引用方（Action 节点「外部传参」或用例步骤「args 参数映射」）传入同名实参，执行时按名替换</div>
-                      <div>③ 优先级：引用方实参 ＞ 下方预设值 ＞ 空串</div>
-                      <div style="margin-top: 12px; font-weight: 600; margin-bottom: 6px;">出参：返回值传给外部</div>
-                      <div>① 引用方在步骤参数中配置 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">output</code> 字段，格式 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">"变量名": "$.json路径"</code></div>
-                      <div>② 执行后从响应体按路径提取值存入上下文变量，后续步骤用 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${变量名}</code> 引用</div>
-                      <div style="margin-top: 6px; color: #999;">示例：配置 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">"token": "$.data.token"</code>，后续步骤用 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${token}</code> 取值</div>
+                      <div style="font-weight: 600; margin-bottom: 6px;">入参：外部传入的值会替换 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">$ref{参数名}</code></div>
+                      <div>• 在请求头、请求体或路径中写 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">$ref{参数名}</code></div>
+                      <div>• 调用方传入同名参数即可替换</div>
+                      <div>• 没传时先用下方预设值，再没有则为空</div>
+                      <div style="margin-top: 12px; font-weight: 600; margin-bottom: 6px;">出参：把返回值存成变量供后续步骤使用</div>
+                      <div>• 在参数中配置 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">output</code>：<code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">"变量名": "$.json路径"</code></div>
+                      <div>• 后续步骤用 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${变量名}</code> 引用</div>
+                      <div style="margin-top: 6px; color: #999;">示例：配置 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">"token": "$.data.token"</code>，后续用 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${token}</code> 取值</div>
                     </div>
                   </template>
                   <el-icon class="param-help-icon"><InfoFilled /></el-icon>
                 </el-tooltip>
               </template>
-              <p>入参：用 <code>$ref{参数名}</code> 接收外部实参，未传时用下方预设值兜底；出参：引用方配置 <code>output</code> 从响应体提取值，后续用 <code>${变量名}</code> 引用。完整用法请悬浮上方 ℹ 图标查看。</p>
             </el-alert>
 
             <!-- 刷新按钮 -->

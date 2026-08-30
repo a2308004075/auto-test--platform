@@ -436,8 +436,8 @@ onBeforeUnmount(() => {
           @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="45" />
           <el-table-column v-if="isColVisible('id')" prop="id" label="ID" width="70" />
-          <el-table-column v-if="isColVisible('name')" prop="name" label="工具方法" width="300" show-overflow-tooltip />
-          <el-table-column v-if="isColVisible('category')" label="分组" width="120">
+          <el-table-column v-if="isColVisible('name')" prop="name" label="工具方法" width="350" show-overflow-tooltip />
+          <el-table-column v-if="isColVisible('category')" label="分组" width="160">
             <template #default="{ row }">
               <el-tag v-if="row.category && row.category !== 'CUSTOM' && row.category !== 'BUILTIN'"
                 size="small">{{ row.category }}</el-tag>

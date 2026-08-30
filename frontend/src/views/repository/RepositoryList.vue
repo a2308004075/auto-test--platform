@@ -1,11 +1,11 @@
 <!--
  @author HXN
  @date 2026-08-30
- @description 项目源代码列表视图
+ @description 源代码列表视图
 -->
 <script setup lang="ts">
 /**
- * 项目源代码 - Git 仓库登记与代码拉取
+ * 源代码 - Git 仓库登记与代码拉取
  */
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
@@ -216,7 +216,7 @@ onMounted(fetchList)
   <div>
     <!-- 页面头部 -->
     <div class="page-header">
-      <h2>项目源代码</h2>
+      <h2>源代码</h2>
       <el-button v-if="hasPermission('project:repo:add')" type="primary" @click="openCreate">
         + 新建仓库
       </el-button>

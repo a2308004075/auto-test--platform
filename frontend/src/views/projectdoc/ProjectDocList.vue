@@ -141,7 +141,6 @@ const uploadVisible = ref(false)
 const uploading = ref(false)
 const uploadForm = reactive({ groupId: 0, docName: '', description: '' })
 const uploadFile = ref<File | null>(null)
-const uploadRef = ref()
 
 function openUpload() {
   Object.assign(uploadForm, {
@@ -569,7 +568,6 @@ onBeforeUnmount(() => {
       <el-form label-position="top">
         <el-form-item label="文件" required>
           <el-upload
-            ref="uploadRef"
             drag
             :auto-upload="false"
             :limit="1"

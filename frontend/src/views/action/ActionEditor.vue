@@ -18,6 +18,7 @@ import { getAction, updateAction } from '@/api/action'
 import { getKeywords, getKeyword } from '@/api/keyword'
 import { getTools } from '@/api/tool'
 import { usePermission } from '@/composables/usePermission'
+import { InfoFilled } from '@element-plus/icons-vue'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
 const route = useRoute()
@@ -1081,6 +1082,29 @@ onBeforeUnmount(() => {
       <!-- Tab: I/O 参数 -->
       <el-tab-pane label="I/O 参数" name="params">
         <el-card>
+          <!-- 入参/出参说明：标题 + 悬浮查看详情 -->
+          <el-alert type="info" :closable="false" class="param-receive-alert">
+            <template #title>
+              <span>入参与出参说明</span>
+              <el-tooltip placement="bottom" effect="light">
+                <template #content>
+                  <div style="max-width: 400px; line-height: 1.8; padding: 2px 0;">
+                    <div style="font-weight: 600; margin-bottom: 6px;">入参：调用此 Action 时传入的值</div>
+                    <div>• 在上方定义参数名、类型、是否必填和默认值</div>
+                    <div>• 流程中的节点通过 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${参数名}</code> 引用入参</div>
+                    <div>• 未传时使用默认值；必填且无默认值的参数缺失会报错</div>
+                    <div style="margin-top: 12px; font-weight: 600; margin-bottom: 6px;">出参：Action 执行后对外暴露的变量</div>
+                    <div>• 流程中的节点通过 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">save_as</code> 将结果保存为上下文变量</div>
+                    <div>• 在上方声明的输出参数名需与 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">save_as</code> 变量名一致</div>
+                    <div>• 执行结束后，仅声明的输出参数会作为 Action 的正式输出</div>
+                    <div style="margin-top: 6px; color: #999;">示例：节点 save_as 设为 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">token</code>，出参声明名称也填 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">token</code></div>
+                  </div>
+                </template>
+                <el-icon class="param-help-icon"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </template>
+          </el-alert>
+
           <div style="display: flex; gap: 0; margin-bottom: 12px">
             <el-button
               :type="ioSubTab === 'input' ? 'primary' : 'default'"
@@ -1849,6 +1873,27 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.param-receive-alert {
+  margin-bottom: 12px;
+}
+.param-receive-alert :deep(p) {
+  margin: 4px 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.param-receive-alert :deep(code) {
+  background: #f0f2f5;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+.param-help-icon {
+  color: #909399;
+  cursor: pointer;
+  font-size: 15px;
+  margin-left: 4px;
+  vertical-align: middle;
 }
 </style>
 

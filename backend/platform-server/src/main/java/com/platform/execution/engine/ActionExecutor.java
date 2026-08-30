@@ -53,11 +53,40 @@ public class ActionExecutor {
             return StepResult.error("Action 没有节点：" + action.getId());
         }
 
-        // 将输入参数注入到 context 变量
-        if (params != null) {
-            for (Map.Entry<String, Object> entry : params.entrySet()) {
-                context.setVariable(entry.getKey(), entry.getValue());
+        // 输入参数校验与默认值注入（基于 inputParams 定义）
+        if (params == null) {
+            params = new LinkedHashMap<>();
+        }
+        if (action.getInputParams() != null && !action.getInputParams().isEmpty()) {
+            try {
+                List<Map<String, Object>> inputDefs = objectMapper.readValue(
+                        action.getInputParams(), new TypeReference<List<Map<String, Object>>>() {});
+                for (Map<String, Object> paramDef : inputDefs) {
+                    String name = (String) paramDef.get("name");
+                    if (name == null || name.isEmpty()) continue;
+                    Boolean required = paramDef.get("required") instanceof Boolean
+                            ? (Boolean) paramDef.get("required") : false;
+                    String defaultValue = paramDef.get("defaultValue") != null
+                            ? paramDef.get("defaultValue").toString() : null;
+
+                    if (!params.containsKey(name) || params.get(name) == null
+                            || "".equals(params.get(name))) {
+                        if (required && (defaultValue == null || defaultValue.isEmpty())) {
+                            return StepResult.error("缺少必填输入参数: " + name
+                                    + " (Action: " + action.getName() + ")");
+                        }
+                        if (defaultValue != null && !defaultValue.isEmpty()) {
+                            params.put(name, defaultValue);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("解析 Action 入参定义失败，跳过校验: {}", e.getMessage());
             }
+        }
+        // 将输入参数注入到 context 变量
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            context.setVariable(entry.getKey(), entry.getValue());
         }
 
         // 按拓扑排序执行（positionY + 连线依赖）
@@ -222,7 +251,60 @@ public class ActionExecutor {
             step.setParams(params);
         }
 
-        return keywordExecutor.execute(step, context);
+        // 提取 save_as 配置
+        String saveAs = (String) configMap.get("save_as");
+
+        StepResult result = keywordExecutor.execute(step, context);
+
+        // save_as：将节点执行结果保存到上下文变量，供后续节点通过 ${变量名} 引用
+        if (saveAs != null && !saveAs.isEmpty() && result.getResponse() != null) {
+            storeSaveAs(saveAs, node.getNodeType(), result, context);
+        }
+
+        return result;
+    }
+
+    /**
+     * 根据节点类型，将执行结果保存到上下文变量
+     *
+     * <ul>
+     *   <li>API_KEYWORD → 保存响应体（body），若 body 为 JSON 则自动解析为 Map</li>
+     *   <li>TOOL_METHOD → 保存 Groovy return 返回值</li>
+     *   <li>ACTION → 保存子 Action 执行结果</li>
+     * </ul>
+     */
+    @SuppressWarnings("unchecked")
+    private void storeSaveAs(String saveAs, String nodeType, StepResult result, ExecutionContext context) {
+        String type = nodeType != null ? nodeType.toUpperCase() : "";
+        Map<String, Object> response = result.getResponse();
+
+        switch (type) {
+            case "API_KEYWORD": {
+                Object body = response.get("body");
+                if (body != null) {
+                    try {
+                        context.setVariable(saveAs,
+                                objectMapper.readValue(body.toString(), new TypeReference<Map<String, Object>>() {}));
+                    } catch (Exception e) {
+                        // body 不是 JSON 对象，直接保存原始字符串
+                        context.setVariable(saveAs, body);
+                    }
+                }
+                break;
+            }
+            case "TOOL_METHOD": {
+                Object output = response.get("output");
+                if (output != null) {
+                    context.setVariable(saveAs, output);
+                }
+                break;
+            }
+            default: {
+                // ACTION 等其他类型：保存完整响应 Map
+                context.setVariable(saveAs, response);
+                break;
+            }
+        }
     }
 
     /**

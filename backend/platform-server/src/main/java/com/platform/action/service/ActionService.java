@@ -8,6 +8,7 @@ package com.platform.action.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.platform.action.dto.*;
@@ -282,6 +283,32 @@ public class ActionService {
         vars.remove("_loopIndex");
         if (!vars.isEmpty()) {
             output.put("variables", vars);
+        }
+
+        // 按 outputParams 声明筛选输出参数（若未定义则输出全部上下文变量）
+        if (action.getOutputParams() != null && !action.getOutputParams().isEmpty()) {
+            try {
+                List<Map<String, Object>> outputDefs = objectMapper.readValue(
+                        action.getOutputParams(), new TypeReference<List<Map<String, Object>>>() {});
+                Set<String> declaredNames = new LinkedHashSet<>();
+                for (Map<String, Object> def : outputDefs) {
+                    String name = (String) def.get("name");
+                    if (name != null && !name.isEmpty()) {
+                        declaredNames.add(name);
+                    }
+                }
+                if (!declaredNames.isEmpty()) {
+                    Map<String, Object> filteredOutputs = new LinkedHashMap<>();
+                    for (String name : declaredNames) {
+                        if (vars.containsKey(name)) {
+                            filteredOutputs.put(name, vars.get(name));
+                        }
+                    }
+                    output.put("outputValues", filteredOutputs);
+                }
+            } catch (Exception e) {
+                log.warn("解析 Action 出参定义失败: {}", e.getMessage());
+            }
         }
 
         return ActionDebugResponse.ok(output, nodeResults, elapsed);

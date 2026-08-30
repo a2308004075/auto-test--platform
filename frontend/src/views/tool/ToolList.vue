@@ -293,12 +293,10 @@ async function applyBatchGroup() {
 const defaultColumns: ColumnItem[] = [
   { key: 'id', label: 'ID', locked: true, visible: true },
   { key: 'name', label: '工具方法', locked: true, visible: true },
-  { key: 'params', label: '参数', locked: false, visible: false },
-  { key: 'returnType', label: '返回', locked: false, visible: false },
-  { key: 'category', label: '分组', locked: false, visible: false },
-  { key: 'desc', label: '描述', locked: false, visible: false },
-  { key: 'refCount', label: '被引用次数', locked: false, visible: false },
-  { key: 'createTime', label: '创建时间', locked: false, visible: false },
+  { key: 'category', label: '分组', locked: false, visible: true },
+  { key: 'desc', label: '描述', locked: false, visible: true },
+  { key: 'refCount', label: '被引用次数', locked: false, visible: true },
+  { key: 'createTime', label: '创建时间', locked: false, visible: true },
   { key: 'action', label: '操作', locked: true, visible: true },
 ]
 const columns = ref<ColumnItem[]>(defaultColumns.map((c) => ({ ...c })))

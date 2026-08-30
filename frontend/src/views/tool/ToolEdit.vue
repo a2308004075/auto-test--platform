@@ -298,7 +298,7 @@ onMounted(() => {
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="分组" required>
+              <el-form-item label="分组">
                 <el-select
                   v-model="form.category"
                   placeholder="请选择或输入分组名称"
@@ -369,7 +369,7 @@ onMounted(() => {
     </el-tabs>
 
     <!-- 保存成功弹窗（新建模式） -->
-    <el-dialog v-model="saveModalVisible" title="保存工具方法" width="380px" :close-on-click-modal="false">
+    <el-dialog v-model="saveModalVisible" title="保存工具方法" width="300px" class="tool-save-success-dialog" :close-on-click-modal="false">
       <p style="font-size: 14px; color: var(--el-text-color-secondary, #606266); line-height: 1.6;">
         工具方法 <strong style="color: var(--el-color-primary, #409eff);">{{ saveModalName }}</strong> 保存成功！
       </p>

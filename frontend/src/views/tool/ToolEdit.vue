@@ -333,18 +333,20 @@ onMounted(() => {
               </div>
             </div>
           </template>
-          <!-- 入参/出参说明 -->
+          <!-- 入参/出参说明：标题 + 悬浮查看详情 -->
           <el-alert type="info" :closable="false" class="param-receive-alert">
             <template #title>
               <span>入参与出参说明</span>
               <el-tooltip placement="bottom" effect="light">
                 <template #content>
                   <div style="max-width: 400px; line-height: 1.8; padding: 2px 0;">
-                    <div style="font-weight: 600; margin-bottom: 6px;">入参：接收外部传入参数</div>
-                    <div>以 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">def</code> 函数编写，形参即入参；带 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">= 默认值</code> 的参数自动识别为可选。在线测试时在"测试参数"表格中按参数名填入测试值。</div>
-                    <div style="margin-top: 4px;">也可不定义函数，直接解析内置变量 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">input</code>（JSON 字符串）：<code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">new groovy.json.JsonSlurper().parseText(input)</code></div>
-                    <div style="margin-top: 12px; font-weight: 600; margin-bottom: 6px;">出参：返回值传给外部</div>
-                    <div>函数 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">return</code> 的值（或脚本最后一个表达式的值）即为返回结果，执行后可在"执行结果"中查看。</div>
+                    <div style="font-weight: 600; margin-bottom: 6px;">入参：外部传入的测试参数</div>
+                    <div>• 用 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">def</code> 函数定义形参，例如 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">def add(a, b)</code></div>
+                    <div>• 带默认值的参数为可选，例如 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">def add(a, b = 0)</code></div>
+                    <div>• 也可不定义函数，直接解析内置变量 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">input</code>（JSON 字符串）</div>
+                    <div style="margin-top: 12px; font-weight: 600; margin-bottom: 6px;">出参：脚本的返回结果</div>
+                    <div>• 函数 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">return</code> 的值即为返回结果</div>
+                    <div>• 没写 return 时，脚本最后一个表达式的值作为返回结果</div>
                   </div>
                 </template>
                 <el-icon class="param-help-icon"><InfoFilled /></el-icon>

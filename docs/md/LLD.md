@@ -2077,3 +2077,259 @@ async def batch_operation(project_id: str, data: BatchRequest,
 | 在线调试 | 不同 HTTP 方法的请求构建、路径参数替换、环境变量注入 |
 | 分组管理 | 删除自定义分组时接口自动移入「未分组」；系统分组不可编辑/删除 |
 
+
+## 7. M11 — 测试代码库模块
+
+### 7.1 模块内部架构
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                    M11 测试代码库 (repository)                      │
+│                                                                    │
+│  ┌─── Controller 层 ─────────────────────────────────────────┐    │
+│  │ CodeRepositoryController:                                 │    │
+│  │   列表 / 新建 / 编辑 / 删除 / 拉取 / 拉取记录               │    │
+│  └───────────────────────────┬────────────────────────────────┘    │
+│                              ▼                                     │
+│  ┌─── Service 层 ───────────────────────────────────────────┐    │
+│  │ CodeRepositoryService:                                    │    │
+│  │   CRUD（重名校验/密码加解密）、pull（CLONE/PULL 分支）、    │    │
+│  │   本地目录管理（buildLocalDir/递归删除）                    │    │
+│  └───────┬──────────────────────────────┬─────────────────────┘    │
+│          ▼                              ▼                          │
+│  ┌─── JGit 集成 ────────────┐   ┌─── 数据层 ─────────────────┐   │
+│  │ Git.cloneRepository()     │   │ CodeRepository             │   │
+│  │ FetchCommand/PullCommand │   │ CodeRepositoryPullLog      │   │
+│  │ UsernamePassword          │   │ (MyBatis-Plus Mapper)      │   │
+│  │ CredentialsProvider       │   └────────────────────────────┘   │
+│  └───────────────────────────┘                                    │
+│                                                                    │
+│  ┌─── 公共工具（platform-api）────────────────────────────────┐   │
+│  │ AesCryptoUtil: 凭证 AES-128/CBC 加解密（enc: 前缀）          │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+**三模块分层（与平台既有模式一致）：**
+- `platform-api`：`com.platform.repository.dto`（5 个 DTO）+ `com.platform.common.util.AesCryptoUtil`
+- `platform-data`：`com.platform.repository.entity`（CodeRepository、CodeRepositoryPullLog）+ `mapper`（两个 BaseMapper）
+- `platform-server`：`com.platform.repository.controller` + `service`（业务逻辑与 JGit 调用）
+
+### 7.2 数据模型 DDL
+
+#### 7.2.1 code_repository 表（测试代码仓库）
+
+```sql
+CREATE TABLE `code_repository` (
+  `id`               bigint       NOT NULL AUTO_INCREMENT,
+  `project_id`       bigint       NOT NULL                COMMENT '所属项目 ID',
+  `name`             varchar(50)  NOT NULL                COMMENT '仓库名称（项目内唯一）',
+  `git_url`          varchar(500) NOT NULL                COMMENT 'Git 仓库地址',
+  `branch`           varchar(100) DEFAULT NULL            COMMENT '拉取分支（NULL=仓库默认分支）',
+  `description`      varchar(255) DEFAULT NULL            COMMENT '仓库描述',
+  `auth_username`    varchar(200) DEFAULT NULL            COMMENT '认证用户名',
+  `auth_password`    varchar(1000) DEFAULT NULL           COMMENT '认证密码/Token（AES 加密，enc: 前缀）',
+  `local_path`       varchar(500) DEFAULT NULL            COMMENT '本地存储相对路径（{projectId}/{repoId}）',
+  `last_pull_at`     datetime     DEFAULT NULL            COMMENT '最近拉取时间',
+  `last_pull_status` varchar(20)  DEFAULT NULL            COMMENT '最近拉取状态：RUNNING/SUCCESS/FAILED',
+  `last_commit_id`   varchar(64)  DEFAULT NULL            COMMENT '最近拉取成功后的 HEAD commit id',
+  `created_at`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_code_repository_project_name` (`project_id`, `name`),
+  CONSTRAINT `fk_code_repository_project` FOREIGN KEY (`project_id`) REFERENCES `project`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='测试代码仓库表';
+```
+
+#### 7.2.2 code_repository_pull_log 表（拉取历史）
+
+```sql
+CREATE TABLE `code_repository_pull_log` (
+  `id`            bigint        NOT NULL AUTO_INCREMENT,
+  `repository_id` bigint        NOT NULL                COMMENT '所属仓库 ID',
+  `pull_type`     varchar(10)   NOT NULL                COMMENT '拉取类型：CLONE 克隆 / PULL 增量更新',
+  `branch`        varchar(100)  DEFAULT NULL            COMMENT '本次拉取分支（NULL=默认分支）',
+  `status`        varchar(20)   NOT NULL                COMMENT '状态：RUNNING/SUCCESS/FAILED',
+  `commit_id`     varchar(64)   DEFAULT NULL            COMMENT '拉取成功后的 HEAD commit id',
+  `message`       varchar(2000) DEFAULT NULL            COMMENT '结果信息（失败原因/成功说明）',
+  `duration_ms`   bigint        DEFAULT NULL            COMMENT '拉取耗时（毫秒）',
+  `created_at`    datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_pull_log_repo` (`repository_id`),
+  CONSTRAINT `fk_pull_log_repository` FOREIGN KEY (`repository_id`) REFERENCES `code_repository`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='仓库拉取历史表';
+```
+
+**字典：** `repository_pull_status`（RUNNING 拉取中 / SUCCESS 成功 / FAILED 失败），前端状态文案经 `useDict` 获取。
+
+### 7.3 服务层设计（CodeRepositoryService）
+
+```java
+// backend/platform-server/src/main/java/com/platform/repository/service/CodeRepositoryService.java
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class CodeRepositoryService {
+
+    // ── CRUD ──────────────────────────────────────────────
+    public List<RepositoryResponse> listByProject(Long projectId);
+    public RepositoryResponse create(Long projectId, RepositoryCreateRequest request);
+    // 校验项目存在(PROJECT_NOT_FOUND) + 项目内重名(2201)；密码非空时 AesCryptoUtil.encrypt 加密入库
+    public RepositoryResponse update(Long projectId, Long repoId, RepositoryUpdateRequest request);
+    // 密码留空保持不变；名称变更时排除自身做重名校验
+    public void delete(Long projectId, Long repoId);
+    // 物理删除记录 + FileUtil.del 递归删除本地目录 {storage-path}/{projectId}/{repoId}；pull_log 级联删除
+
+    // ── 拉取（同步执行 + 历史记录）─────────────────────────
+    @Transactional
+    public PullResultResponse pull(Long projectId, Long repoId);
+    // 失败不抛异常：捕获 GitAPIException/IOException 等转为 success=false 返回 HTTP 200
+
+    public List<PullLogResponse> getPullLogs(Long projectId, Long repoId);
+    // 默认返回最近 20 条（ORDER BY id DESC LIMIT 20）
+
+    // ── 私有方法 ──────────────────────────────────────────
+    private CodeRepository findById(Long projectId, Long repoId);          // 2200 REPOSITORY_NOT_FOUND
+    private void checkNameDuplicate(Long projectId, String name, Long excludeId); // 2201 重名
+    private File buildLocalDir(Long projectId, Long repoId);               // {storage-path}/{projectId}/{repoId}
+    private boolean isGitRepository(File dir);                             // .git 目录存在判定
+    private PullResultResponse doClone(CodeRepository repo, File localDir);   // CLONE 分支
+    private PullResultResponse doPull(CodeRepository repo, File localDir);    // PULL 分支（fetch + checkout + pull）
+    private void checkoutBranchIfNeeded(Git git, String branch) throws GitAPIException;
+    // 当前分支 ≠ 配置分支时 checkout；本地不存在则从远程跟踪分支创建并关联上游
+    private CredentialsProvider buildCredentials(CodeRepository repo);    // 用户名 + 解密密码
+    private String resolveHeadCommitId(Git git) throws IOException;       // repository.resolve(HEAD)
+    private void finishPullLog(CodeRepositoryPullLog log, String status, String commitId, String message, long durationMs);
+    private void updateRepositoryAfterPull(CodeRepository repo, boolean success, String commitId, String localPath);
+}
+```
+
+**pull 核心流程（拉取状态机）：**
+
+```
+                 ┌──────────────────────────────────────┐
+                 │  pull(projectId, repoId) 入口          │
+                 └──────────────────┬───────────────────┘
+                                    ▼
+                 ┌──────────────────────────────────────┐
+                 │ findById 校验仓库存在（2200）           │
+                 │ buildLocalDir 计算本地目录              │
+                 └──────────────────┬───────────────────┘
+                                    ▼
+              ┌── isGitRepository(dir)? ──────────────────┐
+              │ 否（不存在/残留）        │ 是                  │
+              ▼                        ▼                    │
+   ┌──────────────────┐    ┌──────────────────────┐        │
+   │ INSERT pull_log   │    │ INSERT pull_log       │        │
+   │ pull_type=CLONE   │    │ pull_type=PULL        │        │
+   │ status=RUNNING    │    │ status=RUNNING        │        │
+   └─────────┬────────┘    └──────────┬───────────┘        │
+             ▼                        ▼                     │
+   ┌──────────────────┐    ┌──────────────────────┐        │
+   │ Git.clone         │    │ fetch（同步远程引用    │        │
+   │  .setURI(gitUrl)  │    │  setRemoveDeletedRefs）│       │
+   │  指定分支时         │    │ checkoutBranchIfNeeded │      │
+   │  setBranch(refs/  │    │ PullCommand            │       │
+   │  heads/{branch})  │    └──────────┬───────────┘        │
+   │  setTimeout(300s) │               │                     │
+   └─────────┬────────┘               │                     │
+             └──────────┬──────────────┘                     │
+                        ▼                                    │
+             （认证：UsernamePasswordCredentialsProvider      │
+               仅当 authUsername 与解密密码均非空）             │
+                        │                                    │
+             ┌──────────┴──────────┐                         │
+             ▼ 成功                 ▼ 失败(GitAPIException/  │
+        ┌─────────┐               IOException)               │
+        │resolve  │        ┌──────────────────┐              │
+        │HEAD     │        │ CLONE: 清理残留目录 │              │
+        │commitId │        │ message=e原因      │              │
+        └────┬────┘        └────────┬─────────┘              │
+             ▼                      ▼                        │
+        ┌──────────────────────────────────┐                 │
+        │ finishPullLog:                    │                 │
+        │  SUCCESS（commitId、durationMs）   │                 │
+        │  FAILED（message、durationMs）     │                 │
+        │ updateRepositoryAfterPull:        │                 │
+        │  回写 last_pull_* / local_path    │                 │
+        └──────────────────┬───────────────┘                 │
+                           ▼                                 │
+        ┌──────────────────────────────────────┐             │
+        │ 返回 PullResultResponse               │             │
+        │  成功: success=true + commitId        │             │
+        │  失败: success=false + message        │             │
+        │  （均为 HTTP 200，前端按业务结果提示）  │             │
+        └──────────────────────────────────────┘
+```
+
+**凭证加密（AesCryptoUtil）：**
+
+```java
+// backend/platform-api/src/main/java/com/platform/common/util/AesCryptoUtil.java
+public static String encrypt(String plain, String key);  // AES-128/CBC/PKCS5Padding，随机 IV 前置 + Base64，返回 enc: + base64
+public static String decrypt(String cipher, String key); // 剥离 enc: 前缀解密；无前缀旧值原样返回
+```
+
+### 7.4 DTO 设计
+
+| DTO | 字段 | 说明 |
+|---|---|---|
+| `RepositoryCreateRequest` | projectId、name(@NotBlank @Size(max=50))、gitUrl(@NotBlank @Size(max=500))、branch(@Size(max=100))、description(@Size(max=255))、authUsername(@Size(max=200))、authPassword(@Size(max=500)) | 新建请求 |
+| `RepositoryUpdateRequest` | 同上 | authPassword 留空=保持不变 |
+| `RepositoryResponse` | id、projectId、name、gitUrl、branch、description、authUsername、hasAuth、localPath、lastPullAt、lastPullStatus、lastCommitId、createdAt | 不回传密码，仅 hasAuth 布尔 |
+| `PullResultResponse` | logId、success、pullType、branch、commitId、message、durationMs、finishedAt | 拉取结果（失败也 200） |
+| `PullLogResponse` | id、pullType、branch、status、commitId、message、durationMs、createdAt | 拉取历史条目 |
+
+### 7.5 API 路由签名（CodeRepositoryController）
+
+```java
+@RestController
+@RequestMapping("/api/v1/projects/{projectId}/repositories")
+public class CodeRepositoryController {
+
+    @GetMapping                       ApiResponse<List<RepositoryResponse>> list(@PathVariable Long projectId);
+    @PostMapping                      ApiResponse<RepositoryResponse> create(@PathVariable Long projectId,
+                                                            @Valid @RequestBody RepositoryCreateRequest request);
+    @PostMapping("/{repoId}")          ApiResponse<RepositoryResponse> update(@PathVariable Long projectId, @PathVariable Long repoId,
+                                                            @Valid @RequestBody RepositoryUpdateRequest request);
+    @PostMapping("/{repoId}/delete")   ApiResponse<Void> delete(@PathVariable Long projectId, @PathVariable Long repoId);
+    @PostMapping("/{repoId}/pull")     ApiResponse<PullResultResponse> pull(@PathVariable Long projectId, @PathVariable Long repoId);
+    @GetMapping("/{repoId}/pull-logs") ApiResponse<List<PullLogResponse>> pullLogs(@PathVariable Long projectId, @PathVariable Long repoId);
+}
+```
+
+**配置项（application.yml）：**
+
+```yaml
+repository:
+  storage-path: ./data/repos        # 代码存储根目录（相对启动目录）
+  crypto-key: AutoTestRepo2026      # 凭证 AES 密钥（16 字节，可覆盖）
+  clone-timeout-seconds: 300        # JGit 克隆/拉取超时（秒）
+```
+
+### 7.6 错误码明细与测试边界
+
+**错误码（M11 段 2200-2299）：**
+
+| 错误码 | HTTP | 触发场景 |
+|---|---|---|
+| 2200 REPOSITORY_NOT_FOUND | 404 | 仓库不存在或不属于当前项目 |
+| 2201 REPOSITORY_NAME_DUPLICATE | 409 | 项目内仓库名称已存在 |
+| 2202 REPOSITORY_CRYPTO_ERROR | 500 | 凭证 AES 加解密失败 |
+
+**测试边界：**
+
+| 场景类型 | 测试点 |
+|---|---|
+| 正常流程 | 新建/编辑/删除仓库；名称长度与必填校验；项目内重名校验（编辑排除自身） |
+| 代码拉取 | 首次拉取触发 CLONE；再次拉取触发 PULL；指定分支克隆正确分支 |
+| 代码拉取 | PULL 前 fetch 同步远程引用；配置分支与当前分支不一致时自动切换；远程新建分支本地不存在时从跟踪分支创建 |
+| 代码拉取 | 错误 Git 地址返回 success=false + 具体原因（HTTP 200），拉取历史记录 FAILED |
+| 代码拉取 | CLONE 失败后清理残留目录，下次拉取可重新克隆 |
+| 认证 | 私有仓库用户名+密码/Token 认证成功拉取；认证信息错误时记录失败原因 |
+| 认证 | 密码 AES 加密入库（enc: 前缀）；列表接口不回传密码仅 hasAuth；编辑留空保持不变 |
+| 拉取历史 | 每次拉取（含失败）产生一条记录；RUNNING→SUCCESS/FAILED 状态更新；耗时统计；最近 20 条排序 |
+| 删除 | 删除仓库同时递归清理本地代码目录；pull_log 级联删除；删除确认提示包含本地目录警告 |
+| 权限 | 菜单 project:repositories；按钮 project:repo:add/pull/edit/delete/logs 各自控制 |

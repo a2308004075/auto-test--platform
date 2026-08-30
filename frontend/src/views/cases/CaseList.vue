@@ -12,7 +12,7 @@
 import { ref, reactive, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getCases, deleteCase, toggleCaseStatus, debugCase, getCaseGroups, createCaseGroup, updateCaseGroup, deleteCaseGroup } from '@/api/case'
+import { getCases, deleteCase, toggleCaseStatus, debugCase, getCaseGroups, createCaseGroup, updateCaseGroup, deleteCaseGroup, clearGroupCases, clearProjectCases } from '@/api/case'
 import { getSuites } from '@/api/suite'
 import { getEnvironments } from '@/api/environment'
 import PageHeader from '@/components/PageHeader/index.vue'
@@ -27,6 +27,7 @@ const router = useRouter()
 const projectId = computed(() => Number(route.params.id))
 const { hasPermission } = usePermission()
 const { options: priorityOptions } = useDict('priority')
+const { options: statusOptions } = useDict('is_active')
 
 // ===== 列表数据 =====
 const loading = ref(false)
@@ -48,26 +49,27 @@ async function fetchSuites() {
 
 // ===== 分组 =====
 const groups = ref<any[]>([])
-const activeGroupId = ref<number>(0) // 0 = 全部
+const activeGroupId = ref<number>(0) // 0 = 全部，-1 = 未分组，正数 = 分组 ID
 const filterText = ref('')
-// 用户分组（非系统），用于父分组下拉和批量移动
+// 用户分组（非系统），用于批量移动
 const userGroups = computed(() => groups.value.filter((g) => g.isSystem !== 1))
-// 分组树：全部(虚拟) + 系统分组(未分组等，排除全部) + 用户分组按 parentId 建树
+// 未分组计数 ≈ 当前总数 − 顶层用户分组递归计数和（顶层 caseCount 已含子孙分组）
+const ungroupedCount = computed(() => {
+  const topUserGroups = groups.value.filter((g) => g.isSystem !== 1 && (g.parentId ?? null) === null)
+  const groupedSum = topUserGroups.reduce((acc, g) => acc + (g.caseCount || 0), 0)
+  return Math.max(0, pagination.total - groupedSum)
+})
+// 分组树：全部(虚拟) + 未分组(虚拟) + 用户分组按 parentId 建树
 const groupTree = computed(() => {
   const userItems = groups.value.filter((g) => g.isSystem !== 1)
   const buildTree = (parentId: number | null): any[] =>
     userItems
       .filter((g) => (g.parentId ?? null) === parentId)
       .map((g) => ({ ...g, children: buildTree(g.id) }))
-  const systemGroups = groups.value
-    .filter((g) => g.isSystem === 1 && g.name !== '全部')
-    .map((g) => ({ ...g, children: [], icon: '📁' }))
-  const userTree = buildTree(null)
-  if (userTree.length > 0) (userTree[0] as any)._isFirstUserGroup = true
   return [
-    { id: 0, name: '全部', isSystem: 1, caseCount: pagination.total, children: [], icon: '📂' },
-    ...systemGroups,
-    ...userTree,
+    { id: 0, name: '全部', isSystem: 1, caseCount: pagination.total, children: [] },
+    { id: -1, name: '未分组', isSystem: 1, caseCount: ungroupedCount.value, children: [] },
+    ...buildTree(null),
   ]
 })
 // 根据搜索关键字过滤分组树
@@ -79,17 +81,7 @@ const filteredGroupTree = computed(() => {
     for (const node of nodes) {
       const childMatches = matchRecursive(node.children || [])
       if (node.name.toLowerCase().includes(kw) || childMatches.length > 0) {
-        result.push({ ...node, children: childMatches.length > 0 ? childMatches : node.children, _isFirstUserGroup: false })
-      }
-    }
-    // 标记过滤结果中第一个用户分组
-    let foundFirst = false
-    for (const node of result) {
-      if (node.isSystem !== 1 && !foundFirst) {
-        node._isFirstUserGroup = true
-        foundFirst = true
-      } else if (node.isSystem !== 1) {
-        node._isFirstUserGroup = false
+        result.push({ ...node, children: childMatches.length > 0 ? childMatches : node.children })
       }
     }
     return result
@@ -115,8 +107,10 @@ async function fetchGroups() {
 async function fetchList() {
   loading.value = true
   try {
+    // activeGroupId：0=全部（不传）；-1=未分组（后端 groupId=0）；正数=分组 ID
+    const groupIdParam = activeGroupId.value === 0 ? undefined : activeGroupId.value === -1 ? 0 : activeGroupId.value
     const res: any = await getCases(projectId.value, {
-      groupId: activeGroupId.value || undefined,
+      groupId: groupIdParam,
       suiteId: search.suiteId || undefined,
       keyword: search.name || undefined,
       priority: search.priority || undefined,
@@ -148,7 +142,7 @@ const contextGroup = ref<any>(null)
 function handleNodeContextmenu(e: MouseEvent, data: any) {
   e.preventDefault()
   e.stopPropagation()
-  if (data.isSystem === 1) return
+  // 系统分组（全部/未分组虚拟节点）右键显示清空菜单
   contextGroup.value = data
   contextMenuPos.x = e.clientX
   contextMenuPos.y = e.clientY
@@ -190,6 +184,35 @@ function contextEdit() {
 function contextDelete() {
   if (contextGroup.value) handleDeleteGroup(contextGroup.value)
   closeContextMenu()
+}
+
+function contextClear() {
+  if (!contextGroup.value) return
+  const g = contextGroup.value
+  closeContextMenu()
+  const isAll = g.id === 0
+  const isUngrouped = g.id === -1
+  ElMessageBox.confirm(
+    isAll
+      ? '确定清空项目下的所有用例？此操作不可恢复。'
+      : isUngrouped
+        ? '确定清空「未分组」中的所有用例？此操作不可恢复。'
+        : `确定清空分组「${g.name}」及其子分组中的所有用例？此操作不可恢复。`,
+    '确认清空',
+    { type: 'warning', confirmButtonText: '清空', cancelButtonText: '取消' }
+  )
+    .then(async () => {
+      if (isAll) {
+        await clearProjectCases(projectId.value)
+      } else {
+        // 未分组（-1）后端语义为 groupId=0
+        await clearGroupCases(projectId.value, isUngrouped ? 0 : g.id)
+      }
+      ElMessage.success('已清空')
+      fetchGroups()
+      fetchList()
+    })
+    .catch(() => {})
 }
 
 // ===== 批量操作 =====
@@ -397,7 +420,6 @@ onBeforeUnmount(() => {
       <div class="group-panel" @contextmenu="handleBlankContextmenu">
         <div class="group-head">
           <span class="group-title">分组</span>
-          <el-button v-if="hasPermission('project:case:group')" size="small" type="primary" link @click="openCreateGroup()">+ 新建</el-button>
         </div>
         <div class="tree-search">
           <el-input v-model="filterText" size="small" placeholder="搜索分组..." clearable @input="(v: string) => treeRef?.filter(v)" />
@@ -415,10 +437,9 @@ onBeforeUnmount(() => {
           >
             <template #default="{ data }">
               <div
-                :class="['group-tree-node', { active: activeGroupId === data.id, 'tree-divider-top': data._isFirstUserGroup }]"
+                :class="['group-tree-node', { active: activeGroupId === data.id }]"
                 @contextmenu.stop="handleNodeContextmenu($event, data)"
               >
-                <span class="group-icon">{{ data.icon || '📁' }}</span>
                 <span class="group-name">{{ data.name }}</span>
                 <span class="group-count">{{ data.caseCount ?? 0 }}</span>
                 <span v-if="data.isSystem === 1" class="group-lock" title="系统默认分组">&#x1F512;</span>
@@ -451,8 +472,7 @@ onBeforeUnmount(() => {
             <div class="pro-search-field">
               <span class="pro-search-label">状态</span>
               <el-select v-model="search.status" placeholder="全部状态" clearable style="width: 120px">
-                <el-option value="1" label="启用" />
-                <el-option value="0" label="禁用" />
+                <el-option v-for="s in statusOptions" :key="s.value" :value="s.value" :label="s.label" />
               </el-select>
             </div>
           </template>
@@ -574,14 +594,6 @@ onBeforeUnmount(() => {
         <el-form-item label="分组名称" required>
           <el-input v-model="groupForm.name" placeholder="如：认证测试" />
         </el-form-item>
-        <el-form-item label="父分组">
-          <el-select v-model="groupForm.parentId" placeholder="无（根分组）" clearable style="width: 100%">
-            <el-option
-              v-for="g in userGroups.filter((x: any) => x.id !== editingGroupId)"
-              :key="g.id" :value="g.id" :label="g.name"
-            />
-          </el-select>
-        </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="groupForm.description" type="textarea" :rows="2" placeholder="可选，分组描述" />
         </el-form-item>
@@ -614,13 +626,20 @@ onBeforeUnmount(() => {
         :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
         @click.stop
       >
+        <!-- 空白区域右键：仅显示"新建分组" -->
         <template v-if="!contextGroup">
-          <div class="context-menu-item" @click="contextCreateGroup">新建分组</div>
+          <div v-if="hasPermission('project:case:group')" class="context-menu-item" @click="contextCreateGroup">新建分组</div>
         </template>
+        <!-- 系统分组（全部/未分组）右键：仅允许清空 -->
+        <template v-else-if="contextGroup.isSystem === 1">
+          <div class="context-menu-item danger" @click="contextClear">清空用例</div>
+        </template>
+        <!-- 用户分组右键 -->
         <template v-else>
-          <div class="context-menu-item" @click="contextCreateChild">新建子分组</div>
-          <div class="context-menu-divider" />
+          <div v-if="hasPermission('project:case:group')" class="context-menu-item" @click="contextCreateChild">新建子分组</div>
+          <div v-if="hasPermission('project:case:group')" class="context-menu-divider" />
           <div class="context-menu-item" @click="contextEdit">编辑</div>
+          <div class="context-menu-item danger" @click="contextClear">清空用例</div>
           <div class="context-menu-item danger" @click="contextDelete">删除</div>
         </template>
       </div>
@@ -793,18 +812,6 @@ onBeforeUnmount(() => {
   height: 1px;
   background: #ebeef5;
   margin: 4px 0;
-}
-
-/* 分组树图标和分隔线 */
-.group-icon {
-  font-size: 14px;
-  flex-shrink: 0;
-  line-height: 1;
-}
-.group-tree-node.tree-divider-top {
-  border-top: 1px solid #ebeef5;
-  padding-top: 6px;
-  margin-top: 4px;
 }
 
 /* 卡片视图 */

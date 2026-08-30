@@ -9,7 +9,7 @@ import request from './request'
  * 测试套件模块 API（M8）
  */
 
-export function getSuites(projectId: number, params?: { keyword?: string; groupId?: number | null; page?: number; pageSize?: number }) {
+export function getSuites(projectId: number, params?: { keyword?: string; groupId?: number | null; priority?: string; page?: number; pageSize?: number }) {
   return request.get(`/v1/projects/${projectId}/suites`, { params })
 }
 
@@ -63,14 +63,28 @@ export function getSuiteGroups(projectId: number) {
   return request.get(`/v1/projects/${projectId}/suite-groups`)
 }
 
-export function createSuiteGroup(projectId: number, data: { name: string; parentId?: number | null; sortNo?: number }) {
+export function createSuiteGroup(projectId: number, data: { name: string; description?: string; parentId?: number | null; sortNo?: number }) {
   return request.post(`/v1/projects/${projectId}/suite-groups`, data)
 }
 
-export function updateSuiteGroup(projectId: number, groupId: number, data: { name: string; parentId?: number | null; sortNo?: number }) {
+export function updateSuiteGroup(projectId: number, groupId: number, data: { name: string; description?: string; parentId?: number | null; sortNo?: number }) {
   return request.post(`/v1/projects/${projectId}/suite-groups/${groupId}`, data)
 }
 
 export function deleteSuiteGroup(projectId: number, groupId: number) {
   return request.post(`/v1/projects/${projectId}/suite-groups/${groupId}/delete`)
+}
+
+/**
+ * 清空分组及其子孙分组中的所有套件
+ */
+export function clearGroupSuites(projectId: number, groupId: number) {
+  return request.post(`/v1/projects/${projectId}/suite-groups/${groupId}/clear-suites`)
+}
+
+/**
+ * 清空项目下所有套件
+ */
+export function clearProjectSuites(projectId: number) {
+  return request.post(`/v1/projects/${projectId}/suite-groups/clear-all-suites`)
 }

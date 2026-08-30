@@ -890,6 +890,7 @@ auto-test-platform/                      ← 项目根目录（已有）
         <hutool.version>5.8.34</hutool.version>
         <okhttp.version>4.12.0</okhttp.version>
         <groovy.version>3.0.9</groovy.version>
+        <jgit.version>5.13.3.202401111512-r</jgit.version>
     </properties>
 
     <!-- 依赖管理：子模块声明即可，版本由父 POM 统一锁定 -->
@@ -960,6 +961,12 @@ auto-test-platform/                      ← 项目根目录（已有）
                 <artifactId>groovy</artifactId>
                 <version>${groovy.version}</version>
             </dependency>
+            <!-- JGit（测试代码库 Git 克隆/拉取，5.x 最后支持 Java 8 的版本） -->
+            <dependency>
+                <groupId>org.eclipse.jgit</groupId>
+                <artifactId>org.eclipse.jgit</artifactId>
+                <version>${jgit.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>
@@ -982,12 +989,13 @@ auto-test-platform/                      ← 项目根目录（已有）
 | 2 | auth | 认证模块（登录、JWT、用户管理、系统配置） |
 | 3 | project | 项目管理模块（项目 CRUD、仪表板） |
 | 4 | environment | 环境配置模块（环境 CRUD、连接测试） |
-| 5 | apidoc | 接口文档模块（接口 CRUD、Swagger 导入、接口调试） |
-| 6 | keyword | 关键字管理模块（接口关键字 CRUD） |
-| 7 | tool | 工具方法模块（工具方法 CRUD、沙箱执行） |
-| 8 | action | Action 模块（Action CRUD、流程画布、调试） |
-| 9 | execution | 执行与报告模块（套件、用例、计划、执行、报告） |
-| 10 | filter | 全局过滤器（CORS） |
+| 5 | repository | 测试代码库模块（仓库 CRUD、JGit 拉取、拉取历史） |
+| 6 | apidoc | 接口文档模块（接口 CRUD、Swagger 导入、接口调试） |
+| 7 | keyword | 关键字管理模块（接口关键字 CRUD） |
+| 8 | tool | 工具方法模块（工具方法 CRUD、沙箱执行） |
+| 9 | action | Action 模块（Action CRUD、流程画布、调试） |
+| 10 | execution | 执行与报告模块（套件、用例、计划、执行、报告） |
+| 11 | filter | 全局过滤器（CORS） |
 
 **在 IDEA 中创建包的步骤**：
 

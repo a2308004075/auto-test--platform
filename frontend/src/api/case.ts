@@ -57,3 +57,17 @@ export function updateCaseGroup(projectId: number, groupId: number, data: { pare
 export function deleteCaseGroup(projectId: number, groupId: number) {
   return request.post(`/v1/projects/${projectId}/case-groups/${groupId}/delete`)
 }
+
+/**
+ * 清空分组及其子孙分组中的所有用例
+ */
+export function clearGroupCases(projectId: number, groupId: number) {
+  return request.post(`/v1/projects/${projectId}/case-groups/${groupId}/clear-cases`)
+}
+
+/**
+ * 清空项目下所有用例
+ */
+export function clearProjectCases(projectId: number) {
+  return request.post(`/v1/projects/${projectId}/case-groups/clear-all-cases`)
+}

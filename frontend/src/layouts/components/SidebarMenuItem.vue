@@ -21,6 +21,17 @@ const sortedChildren = computed(() => {
     (a, b) => (a.sortNo || 0) - (b.sortNo || 0) || a.id - b.id,
   )
 })
+
+/**
+ * 菜单项 index
+ * 项目菜单路径中的 :id 替换为实际项目 ID，
+ * 与 default-active（实际路由路径）保持一致，确保高亮与父级链定位正确
+ */
+const itemIndex = computed(() => {
+  const raw = props.node.routePath
+  if (!raw) return ''
+  return raw.includes(':id') ? raw.replace(':id', props.pathPrefix || '') : raw
+})
 </script>
 
 <template>
@@ -43,7 +54,7 @@ const sortedChildren = computed(() => {
   <!-- 菜单项 → el-menu-item（跳过按钮类型 menuType=3） -->
   <el-menu-item
     v-else-if="node.menuType === 2 && node.routePath"
-    :index="node.routePath"
+    :index="itemIndex"
   >
     <span>{{ node.name }}</span>
   </el-menu-item>

@@ -15,9 +15,11 @@ import com.platform.execution.dto.SuiteCreateRequest;
 import com.platform.execution.dto.SuitePassRateDTO;
 import com.platform.execution.dto.SuiteResponse;
 import com.platform.execution.dto.SuiteUpdateRequest;
+import com.platform.execution.entity.SuiteGroup;
 import com.platform.execution.entity.TestCase;
 import com.platform.execution.entity.TestResult;
 import com.platform.execution.entity.TestSuite;
+import com.platform.execution.mapper.SuiteGroupMapper;
 import com.platform.execution.mapper.TestCaseMapper;
 import com.platform.execution.mapper.TestResultMapper;
 import com.platform.execution.mapper.TestSuiteMapper;
@@ -41,13 +43,16 @@ public class SuiteService {
     private final TestSuiteMapper testSuiteMapper;
     private final TestCaseMapper testCaseMapper;
     private final TestResultMapper testResultMapper;
+    private final SuiteGroupMapper suiteGroupMapper;
 
     /**
      * 分页查询测试套件
      *
-     * @param groupId 分组 ID（null 表示不过滤；-1 表示未分组）
+     * @param groupId  分组 ID（null 表示不过滤；0/-1 表示未分组；正数=指定分组含子孙分组）
+     * @param priority 优先级（P0-P3，null 不过滤）
      */
-    public PageResponse<SuiteResponse> listSuites(Long projectId, String keyword, Long groupId, int page, int pageSize) {
+    public PageResponse<SuiteResponse> listSuites(Long projectId, String keyword, Long groupId,
+                                                   String priority, int page, int pageSize) {
         LambdaQueryWrapper<TestSuite> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TestSuite::getProjectId, projectId);
         if (StringUtils.hasText(keyword)) {
@@ -56,11 +61,16 @@ public class SuiteService {
         }
         // 分组筛选
         if (groupId != null) {
-            if (groupId == -1L) {
+            if (groupId == 0L || groupId == -1L) {
+                // 未分组
                 wrapper.isNull(TestSuite::getGroupId);
             } else {
-                wrapper.eq(TestSuite::getGroupId, groupId);
+                // 指定分组（含子孙分组递归）
+                wrapper.in(TestSuite::getGroupId, getDescendantGroupIds(groupId));
             }
+        }
+        if (StringUtils.hasText(priority)) {
+            wrapper.eq(TestSuite::getPriority, priority);
         }
         wrapper.orderByDesc(TestSuite::getCreatedAt);
 
@@ -172,6 +182,35 @@ public class SuiteService {
     }
 
     /**
+     * 清空分组及其子孙分组中的所有套件（用例与执行结果由外键级联删除）
+     *
+     * @param groupId 分组 ID（0 表示未分组）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void clearByGroup(Long projectId, Long groupId) {
+        LambdaQueryWrapper<TestSuite> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(TestSuite::getProjectId, projectId);
+        if (groupId == 0L) {
+            // 未分组
+            wrapper.isNull(TestSuite::getGroupId);
+        } else {
+            // 指定分组（含子孙分组递归）
+            wrapper.in(TestSuite::getGroupId, getDescendantGroupIds(groupId));
+        }
+        testSuiteMapper.delete(wrapper);
+    }
+
+    /**
+     * 清空项目下所有套件
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void clearByProject(Long projectId) {
+        LambdaQueryWrapper<TestSuite> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(TestSuite::getProjectId, projectId);
+        testSuiteMapper.delete(wrapper);
+    }
+
+    /**
      * 批量计算套件通过率
      *
      * <p>对每个套件：查询其下所有用例，取每条用例最近一次执行结果，
@@ -253,6 +292,22 @@ public class SuiteService {
                 testSuiteMapper.updateById(suite);
             }
         }
+    }
+
+    /**
+     * 获取分组及所有后代分组 ID（递归查询）
+     */
+    private List<Long> getDescendantGroupIds(Long groupId) {
+        List<Long> ids = new ArrayList<>();
+        ids.add(groupId);
+
+        LambdaQueryWrapper<SuiteGroup> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SuiteGroup::getParentId, groupId);
+        List<SuiteGroup> children = suiteGroupMapper.selectList(wrapper);
+        for (SuiteGroup child : children) {
+            ids.addAll(getDescendantGroupIds(child.getId()));
+        }
+        return ids;
     }
 
     private long countByName(Long projectId, String name, Long excludeId) {

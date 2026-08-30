@@ -57,3 +57,12 @@ jwt:
 execution:
   max-concurrent: 3
 
+# 测试代码库配置（M11）
+repository:
+  # 代码存储根目录（相对启动目录）
+  storage-path: ./data/repos
+  # 凭证 AES 加密密钥（16 字节，可覆盖）
+  crypto-key: AutoTestRepo2026
+  # JGit 拉取超时（秒）
+  clone-timeout-seconds: 300
+

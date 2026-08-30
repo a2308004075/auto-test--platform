@@ -55,17 +55,33 @@ public class CaseService {
 
     /**
      * 分页查询测试用例
+     *
+     * @param projectId 项目 ID（用例无项目字段，经所属套件限定项目范围）
+     * @param groupId   分组 ID（null=不过滤，0=未分组，正数=指定分组含子孙分组）
      */
-    public PageResponse<CaseResponse> listCases(Long suiteId, Long groupId, String keyword,
+    public PageResponse<CaseResponse> listCases(Long projectId, Long suiteId, Long groupId, String keyword,
                                                  String priority, String status, int page, int pageSize) {
         LambdaQueryWrapper<TestCase> wrapper = new LambdaQueryWrapper<>();
+        // 用例无项目字段，经所属套件限定项目范围
+        if (projectId != null) {
+            List<Long> suiteIds = getProjectSuiteIds(projectId);
+            if (suiteIds.isEmpty()) {
+                return PageResponse.empty((long) page, (long) pageSize);
+            }
+            wrapper.in(TestCase::getSuiteId, suiteIds);
+        }
         if (suiteId != null) {
             wrapper.eq(TestCase::getSuiteId, suiteId);
         }
-        // 按分组筛选（含子孙分组）
+        // 按分组筛选（0=未分组；正数=含子孙分组）
         if (groupId != null) {
-            Set<Long> groupIds = caseGroupService.getDescendantGroupIds(groupId);
-            wrapper.in(TestCase::getGroupId, groupIds);
+            if (groupId == 0L) {
+                // 未分组
+                wrapper.isNull(TestCase::getGroupId);
+            } else {
+                Set<Long> groupIds = caseGroupService.getDescendantGroupIds(groupId);
+                wrapper.in(TestCase::getGroupId, groupIds);
+            }
         }
         if (StringUtils.hasText(keyword)) {
             wrapper.and(w -> w.like(TestCase::getName, keyword)
@@ -195,6 +211,44 @@ public class CaseService {
     }
 
     /**
+     * 清空分组及其子孙分组中的所有用例（执行结果由外键级联删除）
+     *
+     * @param groupId 分组 ID（0 表示未分组）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void clearByGroup(Long projectId, Long groupId) {
+        List<Long> suiteIds = getProjectSuiteIds(projectId);
+        if (suiteIds.isEmpty()) {
+            return;
+        }
+        LambdaQueryWrapper<TestCase> wrapper = new LambdaQueryWrapper<>();
+        // 用例无项目字段，经所属套件限定项目范围
+        wrapper.in(TestCase::getSuiteId, suiteIds);
+        if (groupId == 0L) {
+            // 未分组
+            wrapper.isNull(TestCase::getGroupId);
+        } else {
+            // 指定分组（含子孙分组递归）
+            wrapper.in(TestCase::getGroupId, caseGroupService.getDescendantGroupIds(groupId));
+        }
+        testCaseMapper.delete(wrapper);
+    }
+
+    /**
+     * 清空项目下所有用例
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void clearByProject(Long projectId) {
+        List<Long> suiteIds = getProjectSuiteIds(projectId);
+        if (suiteIds.isEmpty()) {
+            return;
+        }
+        LambdaQueryWrapper<TestCase> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(TestCase::getSuiteId, suiteIds);
+        testCaseMapper.delete(wrapper);
+    }
+
+    /**
      * 启用/禁用测试用例
      */
     @Transactional(rollbackFor = Exception.class)
@@ -270,6 +324,19 @@ public class CaseService {
             wrapper.ne(TestCase::getId, excludeId);
         }
         return testCaseMapper.selectCount(wrapper);
+    }
+
+    /**
+     * 查询项目下所有套件 ID（用例无项目字段，经套件关联项目）
+     */
+    private List<Long> getProjectSuiteIds(Long projectId) {
+        LambdaQueryWrapper<TestSuite> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(TestSuite::getProjectId, projectId).select(TestSuite::getId);
+        List<Long> ids = new ArrayList<>();
+        for (TestSuite s : testSuiteMapper.selectList(wrapper)) {
+            ids.add(s.getId());
+        }
+        return ids;
     }
 
     private CaseResponse toResponse(TestCase c) {

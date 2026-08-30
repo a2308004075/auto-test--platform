@@ -139,6 +139,7 @@ public class SuiteGroupService {
         }
 
         group.setName(request.getName());
+        group.setDescription(request.getDescription());
         group.setParentId(request.getParentId());
         if (request.getSortNo() != null) {
             group.setSortNo(request.getSortNo());

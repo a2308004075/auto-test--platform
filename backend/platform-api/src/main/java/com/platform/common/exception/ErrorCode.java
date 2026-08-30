@@ -21,6 +21,7 @@ package com.platform.common.exception;
  *   <li>1800-1899: M8 测试用例</li>
  *   <li>1900-1999: M9 测试执行</li>
  *   <li>2100-2199: 系统管理</li>
+ *   <li>2200-2299: M11 测试代码库</li>
  * </ul>
  *
  * <p>使用示例：
@@ -127,6 +128,11 @@ public final class ErrorCode {
     public static final int DICT_NOT_FOUND = 2101;
     public static final int CACHE_KEY_NOT_FOUND = 2102;
 
+    // ===== M11 测试代码库 (2200-2299) =====
+    public static final int REPOSITORY_NOT_FOUND = 2200;
+    public static final int REPOSITORY_NAME_DUPLICATE = 2201;
+    public static final int REPOSITORY_CRYPTO_ERROR = 2202;
+
     // ===== 业务错误码 → HTTP 状态码映射 =====
     private static final int[] UNAUTHORIZED_CODES = {UNAUTHORIZED, ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED};
     private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, CASE_GROUP_SYSTEM, ACTION_GROUP_SYSTEM, KEYWORD_GROUP_SYSTEM};
@@ -157,6 +163,7 @@ public final class ErrorCode {
             case MENU_NOT_FOUND:
             case DICT_NOT_FOUND:
             case CACHE_KEY_NOT_FOUND:
+            case REPOSITORY_NOT_FOUND:
                 return 404;
             case RESOURCE_CONFLICT:
             case API_DEPENDENCY_CONFLICT:
@@ -174,6 +181,7 @@ public final class ErrorCode {
             case PLAN_NAME_DUPLICATE:
             case ROLE_CODE_DUPLICATE:
             case ROLE_HAS_USERS:
+            case REPOSITORY_NAME_DUPLICATE:
                 return 409;
             case EXECUTION_QUEUE_FULL:
                 return 429;

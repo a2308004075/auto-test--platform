@@ -15,18 +15,20 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getSuites, createSuite, updateSuite, deleteSuite,
   getSuiteGroups, createSuiteGroup, updateSuiteGroup, deleteSuiteGroup,
-  getSuitePassRates, batchUpdateSuiteGroup,
+  getSuitePassRates, batchUpdateSuiteGroup, clearGroupSuites, clearProjectSuites,
 } from '@/api/suite'
 import PageHeader from '@/components/PageHeader/index.vue'
 import BatchBar from '@/components/BatchBar/index.vue'
 import ProPagination from '@/components/ProPagination/index.vue'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
+import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
 const router = useRouter()
 const projectId = computed(() => Number(route.params.id))
 const { hasPermission } = usePermission()
+const { options: priorityOptions } = useDict('priority')
 
 // ===== 列表数据 =====
 const loading = ref(false)
@@ -36,11 +38,11 @@ const selectedRows = ref<any[]>([])
 const passRateMap = ref<Record<number, number>>({})
 
 // ===== 搜索条件 =====
-const search = reactive({ name: '' })
+const search = reactive({ name: '', priority: '' })
 
 // ===== 分组 =====
 const groups = ref<any[]>([])
-const activeGroupId = ref<number | null>(null) // null=全部, -1=未分组, 其他=分组ID
+const activeGroupId = ref<number>(0) // 0 = 全部，-1 = 未分组，正数 = 分组 ID
 const filterText = ref('')
 const treeRef = ref()
 const groupMap = computed<Record<number, any>>(() => {
@@ -49,7 +51,7 @@ const groupMap = computed<Record<number, any>>(() => {
   return m
 })
 
-// 分组树构建（含分隔线节点）
+// 分组树构建：全部(虚拟) + 未分组(虚拟) + 用户分组按 parentId 建树
 const groupTree = computed(() => {
   const userGroups = groups.value
   const buildTree = (parentId: number | null): any[] =>
@@ -63,9 +65,8 @@ const groupTree = computed(() => {
   const ungroupedCount = Math.max(0, pagination.total - topLevelCount)
 
   return [
-    { id: null, name: '全部', isSystem: true, isDivider: false, suiteCount: pagination.total, children: [] },
-    { id: -1, name: '未分组', isSystem: true, isDivider: false, suiteCount: ungroupedCount, children: [] },
-    { id: '__divider__', name: '', isSystem: false, isDivider: true, suiteCount: 0, children: [] },
+    { id: 0, name: '全部', isSystem: 1, suiteCount: pagination.total, children: [] },
+    { id: -1, name: '未分组', isSystem: 1, suiteCount: ungroupedCount, children: [] },
     ...userTree,
   ]
 })
@@ -76,7 +77,6 @@ const filteredGroupTree = computed(() => {
   const matchRecursive = (nodes: any[]): any[] => {
     const result: any[] = []
     for (const node of nodes) {
-      if (node.isDivider) continue
       const childMatches = matchRecursive(node.children || [])
       if (node.name.toLowerCase().includes(kw) || childMatches.length > 0) {
         result.push({ ...node, children: childMatches.length > 0 ? childMatches : node.children })
@@ -84,22 +84,20 @@ const filteredGroupTree = computed(() => {
     }
     return result
   }
-  // 系统节点始终显示
-  const systemNodes = groupTree.value.filter((n: any) => n.isSystem)
-  const userNodes = groupTree.value.filter((n: any) => !n.isSystem && !n.isDivider)
-  const matched = matchRecursive(userNodes)
-  return matched.length > 0 ? [...systemNodes, { id: '__divider__', name: '', isSystem: false, isDivider: true, suiteCount: 0, children: [] }, ...matched] : systemNodes
+  return matchRecursive(groupTree.value)
 })
 
 function filterNode(value: string, data: any) {
   if (!value) return true
-  if (data.isSystem || data.isDivider) return true
   return data.name.toLowerCase().includes(value.toLowerCase())
 }
 
 function onGroupNodeClick(data: any) {
-  if (data.isDivider) return
-  activeGroupId.value = data.id === activeGroupId.value ? null : data.id
+  selectGroup(data.id)
+}
+
+function selectGroup(id: number) {
+  activeGroupId.value = id === activeGroupId.value ? 0 : id
   pagination.current = 1
   clearSelection()
   fetchList()
@@ -115,9 +113,12 @@ async function fetchGroups() {
 async function fetchList() {
   loading.value = true
   try {
+    // activeGroupId：0=全部（不传）；-1=未分组（后端 groupId=0）；正数=分组 ID
+    const groupIdParam = activeGroupId.value === 0 ? undefined : activeGroupId.value === -1 ? 0 : activeGroupId.value
     const res: any = await getSuites(projectId.value, {
       keyword: search.name || undefined,
-      groupId: activeGroupId.value !== null ? activeGroupId.value : undefined,
+      groupId: groupIdParam,
+      priority: search.priority || undefined,
       page: pagination.current,
       pageSize: pagination.pageSize,
     })
@@ -142,7 +143,7 @@ async function fetchPassRates() {
 }
 
 function handleSearch() { pagination.current = 1; fetchList() }
-function handleReset() { Object.assign(search, { name: '' }); handleSearch() }
+function handleReset() { Object.assign(search, { name: '', priority: '' }); handleSearch() }
 
 // ===== 选中 & 批量 =====
 const selectedIds = computed(() => selectedRows.value.map((r: any) => r.id))
@@ -203,7 +204,7 @@ const form = reactive({ name: '', description: '', groupId: null as number | nul
 
 function openCreate() {
   editingId.value = 0
-  Object.assign(form, { name: '', description: '', groupId: activeGroupId.value !== null && activeGroupId.value > 0 ? activeGroupId.value : null })
+  Object.assign(form, { name: '', description: '', groupId: activeGroupId.value > 0 ? activeGroupId.value : null })
   modalVisible.value = true
 }
 
@@ -237,7 +238,7 @@ const contextGroup = ref<any>(null)
 function handleNodeContextmenu(e: MouseEvent, data: any) {
   e.preventDefault()
   e.stopPropagation()
-  if (data.isSystem) return
+  // 系统分组（全部/未分组虚拟节点）右键显示清空菜单
   contextGroup.value = data
   contextMenuPos.x = e.clientX
   contextMenuPos.y = e.clientY
@@ -281,20 +282,49 @@ function contextDelete() {
   closeContextMenu()
 }
 
+function contextClear() {
+  if (!contextGroup.value) return
+  const g = contextGroup.value
+  closeContextMenu()
+  const isAll = g.id === 0
+  const isUngrouped = g.id === -1
+  ElMessageBox.confirm(
+    isAll
+      ? '确定清空项目下的所有套件？其下所有用例将一并删除，此操作不可恢复。'
+      : isUngrouped
+        ? '确定清空「未分组」中的所有套件？其下所有用例将一并删除，此操作不可恢复。'
+        : `确定清空分组「${g.name}」及其子分组中的所有套件？其下所有用例将一并删除，此操作不可恢复。`,
+    '确认清空',
+    { type: 'warning', confirmButtonText: '清空', cancelButtonText: '取消' }
+  )
+    .then(async () => {
+      if (isAll) {
+        await clearProjectSuites(projectId.value)
+      } else {
+        // 未分组（-1）后端语义为 groupId=0
+        await clearGroupSuites(projectId.value, isUngrouped ? 0 : g.id)
+      }
+      ElMessage.success('已清空')
+      fetchGroups()
+      fetchList()
+    })
+    .catch(() => {})
+}
+
 // ===== 分组新建/编辑弹窗 =====
 const groupModalVisible = ref(false)
 const groupModalMode = ref<'create' | 'edit'>('create')
 const editingGroupId = ref<number>(0)
-const groupForm = reactive({ name: '', parentId: null as number | null })
+const groupForm = reactive({ name: '', description: '', parentId: null as number | null })
 
 function openGroupModal(mode: 'create' | 'edit', parentId?: number, group?: any) {
   groupModalMode.value = mode
   if (mode === 'create') {
     editingGroupId.value = 0
-    Object.assign(groupForm, { name: '', parentId: parentId ?? null })
+    Object.assign(groupForm, { name: '', description: '', parentId: parentId ?? null })
   } else {
     editingGroupId.value = group.id
-    Object.assign(groupForm, { name: group.name, parentId: group.parentId ?? null })
+    Object.assign(groupForm, { name: group.name, description: group.description || '', parentId: group.parentId ?? null })
   }
   groupModalVisible.value = true
 }
@@ -303,10 +333,10 @@ async function handleGroupSubmit() {
   if (!groupForm.name) { ElMessage.warning('请输入分组名称'); return }
   try {
     if (groupModalMode.value === 'create') {
-      await createSuiteGroup(projectId.value, { name: groupForm.name, parentId: groupForm.parentId })
+      await createSuiteGroup(projectId.value, { name: groupForm.name, description: groupForm.description, parentId: groupForm.parentId })
       ElMessage.success('分组创建成功')
     } else {
-      await updateSuiteGroup(projectId.value, editingGroupId.value, { name: groupForm.name, parentId: groupForm.parentId })
+      await updateSuiteGroup(projectId.value, editingGroupId.value, { name: groupForm.name, description: groupForm.description, parentId: groupForm.parentId })
       ElMessage.success('分组更新成功')
     }
     groupModalVisible.value = false
@@ -319,7 +349,7 @@ async function handleDeleteGroup(group: any) {
     await ElMessageBox.confirm(`确定删除分组「${group.name}」吗？删除后，该分组下的套件将自动归入「未分组」。`, '删除分组', { type: 'warning' })
     await deleteSuiteGroup(projectId.value, group.id)
     ElMessage.success('分组删除成功')
-    if (activeGroupId.value === group.id) activeGroupId.value = null
+    if (activeGroupId.value === group.id) activeGroupId.value = 0
     fetchGroups()
     fetchList()
   } catch { /* cancelled */ }
@@ -333,7 +363,7 @@ function passRateTag(rate: number | undefined) {
   return { label: `${rate}%`, type: 'danger' as const }
 }
 
-// ===== 用户分组（非系统），用于父分组下拉 =====
+// ===== 用户分组，用于套件新建/编辑与批量修改分组弹窗 =====
 const userGroups = computed(() => groups.value)
 
 onMounted(() => {
@@ -374,17 +404,13 @@ function onDocClick() { closeContextMenu() }
             @node-click="onGroupNodeClick"
           >
             <template #default="{ data }">
-              <div v-if="data.isDivider" class="group-tree-divider" />
               <div
-                v-else
                 :class="['group-tree-node', { active: activeGroupId === data.id }]"
                 @contextmenu.stop="handleNodeContextmenu($event, data)"
               >
-                <span v-if="data.isSystem" class="group-icon">{{ data.id === null ? '📂' : '📁' }}</span>
-                <span v-else class="group-icon">📁</span>
                 <span class="group-name">{{ data.name }}</span>
                 <span class="group-count">{{ data.suiteCount ?? 0 }}</span>
-                <span v-if="data.isSystem" class="group-lock" title="系统默认分组">🔒</span>
+                <span v-if="data.isSystem === 1" class="group-lock" title="系统默认分组">🔒</span>
               </div>
             </template>
           </el-tree>
@@ -397,6 +423,12 @@ function onDocClick() { closeContextMenu() }
           <div class="pro-search-field">
             <span class="pro-search-label">套件名称</span>
             <el-input v-model="search.name" placeholder="搜索套件名称" clearable style="width: 180px" @keyup.enter="handleSearch" />
+          </div>
+          <div class="pro-search-field">
+            <span class="pro-search-label">优先级</span>
+            <el-select v-model="search.priority" placeholder="全部" clearable style="width: 100px">
+              <el-option v-for="p in priorityOptions" :key="p.value" :value="p.value" :label="p.label" />
+            </el-select>
           </div>
         </ProSearchCard>
 
@@ -502,16 +534,8 @@ function onDocClick() { closeContextMenu() }
         <el-form-item label="分组名称" required>
           <el-input v-model="groupForm.name" placeholder="请输入分组名称" />
         </el-form-item>
-        <el-form-item label="父分组">
-          <el-tree-select
-            v-model="groupForm.parentId"
-            :data="[{ id: null, name: '无（根分组）', children: [] }, ...userGroups.filter((g: any) => g.id !== editingGroupId).map((g: any) => ({ id: g.id, name: g.name, parentId: g.parentId }))]"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
-            check-strictly
-            clearable
-            placeholder="无（根分组）"
-            style="width: 100%"
-          />
+        <el-form-item label="描述">
+          <el-input v-model="groupForm.description" type="textarea" :rows="2" placeholder="可选，分组描述" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -528,13 +552,20 @@ function onDocClick() { closeContextMenu() }
         :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
         @click.stop
       >
+        <!-- 空白区域右键：仅显示"新建分组" -->
         <template v-if="!contextGroup">
-          <div class="context-menu-item" @click="contextCreateGroup">新建分组</div>
+          <div v-if="hasPermission('project:suite:group')" class="context-menu-item" @click="contextCreateGroup">新建分组</div>
         </template>
+        <!-- 系统分组（全部/未分组）右键：仅允许清空 -->
+        <template v-else-if="contextGroup.isSystem === 1">
+          <div class="context-menu-item danger" @click="contextClear">清空套件</div>
+        </template>
+        <!-- 用户分组右键 -->
         <template v-else>
-          <div class="context-menu-item" @click="contextCreateChild">新建子分组</div>
-          <div class="context-menu-divider" />
+          <div v-if="hasPermission('project:suite:group')" class="context-menu-item" @click="contextCreateChild">新建子分组</div>
+          <div v-if="hasPermission('project:suite:group')" class="context-menu-divider" />
           <div class="context-menu-item" @click="contextEdit">编辑</div>
+          <div class="context-menu-item danger" @click="contextClear">清空套件</div>
           <div class="context-menu-item danger" @click="contextDelete">删除</div>
         </template>
       </div>
@@ -576,23 +607,20 @@ function onDocClick() { closeContextMenu() }
 .group-tree {
   max-height: 560px;
   overflow-y: auto;
-  margin: 8px -12px 0;
 }
 .group-tree :deep(.el-tree-node__content) {
   height: auto;
-  padding: 0;
-  width: 100%;
+  padding: 2px 0;
 }
 .group-tree-node {
   display: flex;
   align-items: center;
   flex: 1;
-  padding: 4px 12px;
-  border-radius: 0;
+  padding: 2px 4px;
+  border-radius: 4px;
   font-size: 13px;
   gap: 6px;
   width: 100%;
-  box-sizing: border-box;
 }
 .group-tree-node:hover {
   background: #f5f7fa;
@@ -601,11 +629,6 @@ function onDocClick() { closeContextMenu() }
   background: #ecf5ff;
   color: #409eff;
   font-weight: 500;
-}
-.group-icon {
-  font-size: 14px;
-  flex-shrink: 0;
-  line-height: 1;
 }
 .group-name {
   flex: 1;
@@ -624,16 +647,6 @@ function onDocClick() { closeContextMenu() }
   color: #c0c4cc;
   flex-shrink: 0;
   margin-left: 2px;
-}
-.group-tree-divider {
-  height: 1px;
-  background: #ebeef5;
-  margin: 6px 0;
-}
-.group-tree :deep(.el-tree-node:has(.group-tree-divider)) {
-  height: auto;
-  padding: 0;
-  pointer-events: none;
 }
 .suite-content {
   flex: 1;

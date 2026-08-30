@@ -30,7 +30,7 @@ auto-test-platform 是一个**通用的项目管理平台**，面向任意行业
 |---|---|
 | 前端 | Vue 3 + TypeScript + Vite + Element Plus 2.x + Pinia + ECharts + Monaco Editor + AntV X6 |
 | 后端 | Java 1.8 + Spring Boot 2.7（单体应用） |
-| 后端组件 | Spring Security 5.7 + JJWT 0.11（JWT 认证）+ Spring AMQP（异步消息）+ OkHttp 4.12（HTTP 客户端） |
+| 后端组件 | Spring Security 5.7 + JJWT 0.11（JWT 认证）+ Spring AMQP（异步消息）+ OkHttp 4.12（HTTP 客户端）+ JGit 5.13（Git 仓库克隆/拉取） |
 | 数据持久层 | MyBatis-Plus 3.5 + Flyway 8 + JJWT 0.11 |
 | 数据库 | MySQL 8.0+ + Redis 7.x |
 | 消息队列 | RabbitMQ 3.x（异步事件驱动：测试执行触发、状态通知） |
@@ -116,7 +116,7 @@ auto-test-platform 是一个**通用的项目管理平台**，面向任意行业
 ```yaml
 services:
   nginx:          # 前端静态资源 + API 反向代理
-  backend:        # Spring Boot 单体应用（包含所有功能模块 M1~M10 + 内置执行引擎）
+  backend:        # Spring Boot 单体应用（包含所有功能模块 M1~M11 + 内置执行引擎）
   rabbitmq:       # 消息队列（异步事件驱动）
   mysql:          # MySQL 8.0+
   redis:          # Redis 7.x（缓存）
@@ -137,12 +137,13 @@ RabbitMQ + MySQL + Redis
 
 ### 2.3 后端功能模块划分
 
-后端采用 Spring Boot 单体应用架构，将 10 个功能模块组织在同一个应用内，按业务领域划分为 5 个模块包：
+后端采用 Spring Boot 单体应用架构，将 11 个功能模块组织在同一个应用内，按业务领域划分为 6 个模块包：
 
 | 模块包 | 包含模块 | 核心职责 |
 |---|---|---|
 | auth | M1 | 用户认证、JWT 签发/刷新、RBAC 权限、用户 CRUD、全局配置 |
 | project | M2, M3 | 项目管理、环境配置 |
+| repository | M11 | 测试代码库、JGit 仓库克隆/拉取、凭证 AES 加密、拉取历史 |
 | api | M4 | 接口文档、Swagger 导入、接口调试 |
 | keyword | M5, M6, M7 | 接口关键字、工具方法、Action 画布、删除保护链 |
 | execution | M8, M9, M10 | 测试套件、用例编排、执行调度、实时推送、报告分析、**内置执行引擎** |
@@ -160,9 +161,10 @@ RabbitMQ + MySQL + Redis
 
 ```
 auth ←─── project ←─── api ←─── keyword ←─── execution
-  │                                           │
-  │                                           │ (内置执行引擎)
-  └───────────────────────────────────────────┘
+  │            ↑                                │
+  │            └── repository(M11，仅校验项目存在)  (内置执行引擎)
+  │                                             │
+  └─────────────────────────────────────────────┘
            (所有模块均依赖 auth 的 JWT 验证能力)
 ```
 
@@ -170,7 +172,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 
 ## 3. 模块划分与职责
 
-基于 PRD 和 SRS 的功能需求，将系统划分为以下 **10 个功能模块**：
+基于 PRD 和 SRS 的功能需求，将系统划分为以下 **11 个功能模块**：
 
 ### 3.1 模块总览
 
@@ -186,6 +188,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 | M8 | 测试用例管理 | CASE-001 ~ CASE-004 | 套件管理、用例 CRUD、步骤编排器、校验配置、参数化、四层 Setup/Teardown | 4 |
 | M9 | 测试执行与调度 | EXEC-001, EXEC-002 | 测试计划 CRUD、执行触发（手动/定时/CI）、实时状态推送 | 4 |
 | M10 | 测试报告与分析 | RPT-001 ~ RPT-005 | 执行详情、执行历史、趋势分析、历史对比、PDF/Excel 报告导出 | 2 |
+| M11 | 测试代码库 | REPO-001 ~ REPO-004 | Git 仓库登记、JGit 代码克隆/拉取、认证凭证 AES 加密存储、拉取历史 | 1 |
 
 > **系统设置**（SET-001 全局配置、SET-002 通知配置）归入 M1 认证与用户管理模块中，作为系统级配置子功能，不单独成模块。
 
@@ -662,6 +665,79 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 
 ---
 
+### 3.12 M11 — 测试代码库模块
+
+#### 职责
+
+- Git 仓库登记 CRUD（项目内名称唯一，名称/Git 地址/分支/认证凭证/描述）
+- 基于 JGit 的代码拉取：本地目录不存在执行克隆（CLONE），已存在执行增量更新（PULL，先 fetch 同步远程引用、必要时切换分支）
+- 私有仓库认证：UsernamePasswordCredentialsProvider（用户名 + 密码/Token）
+- 认证凭证加密存储（AES-128/CBC/PKCS5Padding，随机 IV 前置 + Base64，`enc:` 前缀）
+- 拉取历史记录（RUNNING → SUCCESS/FAILED 状态机，含 commitId、耗时、错误信息）
+- 仓库删除时物理删除记录 + 递归清理本地代码目录（拉取历史随外键级联删除）
+
+#### 边界
+
+| 边界项 | 说明 |
+|---|---|
+| 输入 | Git 地址、分支、认证凭证、拉取/删除操作 |
+| 输出 | 仓库列表（含最近拉取状态，不回传密码）、拉取结果（业务状态）、拉取历史 |
+| 不负责 | 代码内容的解析与执行（由执行引擎按需读取本地目录）；SSH 密钥认证（本期仅用户名密码/Token） |
+
+#### 对外接口
+
+| 接口 | 方法 | 路径 | 说明 |
+|---|---|---|---|
+| 仓库列表 | GET | `/api/v1/projects/:pid/repositories` | 项目下所有仓库（含 hasAuth） |
+| 新建仓库 | POST | `/api/v1/projects/:pid/repositories` | 密码 AES 加密入库 |
+| 编辑仓库 | POST | `/api/v1/projects/:pid/repositories/:id` | 密码留空保持不变 |
+| 删除仓库 | POST | `/api/v1/projects/:pid/repositories/:id/delete` | 物理删除 + 清理本地目录 |
+| 拉取代码 | POST | `/api/v1/projects/:pid/repositories/:id/pull` | 克隆/增量更新，失败返回 HTTP 200 + success=false |
+| 拉取历史 | GET | `/api/v1/projects/:pid/repositories/:id/pull-logs` | 最近 20 条 |
+
+#### 数据实体
+
+- `CodeRepository`：测试代码仓库（project_id, name, git_url, branch, auth_username, auth_password 加密, local_path, last_pull_status, last_pull_at, last_commit_id）
+- `CodeRepositoryPullLog`：拉取历史（repository_id, pull_type(CLONE/PULL), branch, status, commit_id, message, duration_ms）
+
+#### UI 页面
+
+| 页面 | 路径 |
+|---|---|
+| 项目源代码 | `/projects/:id/repositories` |
+
+#### 关键设计
+
+**JGit 集成与同步拉取时序：**
+
+```
+前端点击「拉取」(timeout 10min)
+  → Controller 同步调用 Service.pull()
+    → 校验仓库存在（REPOSITORY_NOT_FOUND）
+    → 本地目录 {storage-path}/{projectId}/{repoId} 是否为 Git 仓库？
+        ├── 否（不存在或残留）→ CLONE：Git.cloneRepository().setURI(gitUrl)
+        │     指定分支时 setBranch("refs/heads/" + branch)；失败清理残留目录
+        └── 是 → PULL：fetch（同步远程引用，清理已删除远程分支引用）
+              → 配置分支 ≠ 当前分支 → checkout / 从远程跟踪分支创建
+              → PullCommand
+    → 认证：authUsername + 解密密码 → UsernamePasswordCredentialsProvider
+    → 插入 pull_log(RUNNING) → 执行 → 更新为 SUCCESS/FAILED（commitId、durationMs、message）
+    → 成功回写仓库表 last_pull_* 与 local_path
+  → 返回 PullResultResponse（失败也是 HTTP 200 + success=false，错误信息落库可追溯）
+```
+
+**凭证加密：** `AesCryptoUtil`（platform-api 公共工具）：AES-128/CBC/PKCS5Padding，随机 IV 前置拼接后 Base64，密文带 `enc:` 前缀；密钥通过 `repository.crypto-key` 配置（16 字节）。查询接口仅返回 `hasAuth` 布尔标识。
+
+**配置项（application.yml）：**
+
+| 配置 | 默认值 | 说明 |
+|---|---|---|
+| `repository.storage-path` | `./data/repos` | 代码存储根目录（相对启动目录） |
+| `repository.crypto-key` | `AutoTestRepo2026` | 凭证 AES 密钥（16 字节，可覆盖） |
+| `repository.clone-timeout-seconds` | `300` | JGit 克隆/拉取超时 |
+
+---
+
 ## 4. 模块间依赖关系
 
 ### 4.1 依赖关系总图
@@ -736,24 +812,31 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
        │                  │ 聚合查询: M2(项目概览仪表板)                  │
        └──────────────────┤                                              │
                           └──────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────┐
+│          M11 测试代码库 (repository)          │
+│ (仓库登记·JGit克隆/拉取·凭证AES加密·拉取历史)  │
+│ 依赖 → M2(项目存在校验，仅读)                  │
+└──────────────────────────────────────────────┘
 ```
 
 ### 4.2 依赖关系矩阵
 
 下表以行为消费者、列为提供者，标注依赖方向（→ 表示"依赖于"）：
 
-| 消费者 \ 提供者 | M1 | M2 | M3 | M4 | M5 | M6 | M7 | M8 | M9 | M10 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| **M1** | — | | | | | | | | | |
-| **M2** | → | — | | | | | | | | → |
-| **M3** | → | → | — | | | | | | | |
-| **M4** | → | → | → | — | | | | | | |
-| **M5** | → | → | | → | — | | | | | |
-| **M6** | → | → | | | | — | | | | |
-| **M7** | → | → | | | → | → | → | | | |
-| **M8** | → | → | | | → | → | → | — | | |
-| **M9** | → | → | → | | | | → | → | — | |
-| **M10** | → | → | | | | | | | → | — |
+| 消费者 \ 提供者 | M1 | M2 | M3 | M4 | M5 | M6 | M7 | M8 | M9 | M10 | M11 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| **M1** | — | | | | | | | | | | |
+| **M2** | → | — | | | | | | | | → | |
+| **M3** | → | → | — | | | | | | | | |
+| **M4** | → | → | → | — | | | | | | | |
+| **M5** | → | → | | → | — | | | | | | |
+| **M6** | → | → | | | | — | | | | | |
+| **M7** | → | → | | | → | → | → | | | | |
+| **M8** | → | → | | | → | → | → | — | | | |
+| **M9** | → | → | → | | | | → | → | — | | |
+| **M10** | → | → | | | | | | | → | — | |
+| **M11** | → | → | | | | | | | | | — |
 
 ### 4.3 关键依赖链
 
@@ -795,6 +878,7 @@ M9 触发执行（发布消息到 RabbitMQ）
 
 ```
 Project 1──N Environment
+Project 1──N CodeRepository 1──N CodeRepositoryPullLog
 Project 1──N ApiModule 1──N ApiEndpoint 1──N Keyword(API)
 Project 1──N Keyword（统一关键字元数据，keyword_type 区分类型）
 Project 1──N ToolMethod
@@ -814,6 +898,8 @@ User 1──N TestExecution（triggered_by）
 | `User` | M1 | 用户账号与角色 | username, password_hash, role, is_active |
 | `Project` | M2 | 项目一级组织单元 | name, source_path, is_active |
 | `Environment` | M3 | 测试环境配置 | project_id, config JSON, is_active |
+| `CodeRepository` | M11 | 测试代码仓库 | project_id, git_url, branch, auth_password(AES 加密), local_path, last_pull_status |
+| `CodeRepositoryPullLog` | M11 | 仓库拉取历史 | repository_id, pull_type(CLONE/PULL), status, commit_id, duration_ms |
 | `ApiModule` | M4 | 接口分组 | project_id, name, service_prefix, source_type |
 | `ApiEndpoint` | M4 | HTTP 接口定义 | module_id, path, method, parameters JSON, responses JSON |
 | `Keyword` | M5/M7/M8 | 统一关键字元数据 | keyword_type(API/TOOL/ACTION/TEST_CASE), ref_id, input_params, output_params, config JSON |
@@ -870,7 +956,8 @@ Keyword
 | M8 测试用例管理 | 12 | 0 |
 | M9 测试执行与调度 | 11 | 1 |
 | M10 测试报告与分析 | 7 | 0 |
-| **合计** | **82** | **1** |
+| M11 测试代码库 | 6 | 0 |
+| **合计** | **88** | **1** |
 
 ### 6.3 WebSocket 接口
 
@@ -901,6 +988,7 @@ Keyword
 | RBAC | ADMIN 全权限 / USER 测试操作权限 | M1，所有模块权限守卫 |
 | admin 账号保护 | 不可改名/改角色/禁用/删除 | M1 |
 | 敏感数据脱敏 | 环境配置中 Token/密码 API 响应脱敏 | M3 |
+| 仓库凭证加密 | 认证密码/Token AES-128/CBC 加密存储（`enc:` 前缀），API 响应仅返回 hasAuth 布尔标识 | M11 |
 | 工具方法沙箱 | 白名单库 + 禁止文件/网络/子进程 + 超时/内存限制 | M6 |
 
 ### 7.3 可用性要求
@@ -951,13 +1039,14 @@ Keyword
 
 ## 9. 附录
 
-### 9.1 UI 页面总览（26 个核心页面）
+### 9.1 UI 页面总览（31 个核心页面）
 
 | 模块 | 页面数 | 页面列表 |
 |---|---|---|
 | M1 认证与用户管理 | 4 | 登录、用户管理、个人资料、全局配置 |
 | M2 项目管理 | 2 | 项目列表、项目概览 |
 | M3 环境配置管理 | 1 | 环境配置 |
+| M11 测试代码库 | 1 | 项目源代码 |
 | M4 接口管理 | 4 | 接口列表、Swagger 导入、接口编辑、接口调试 |
 | M5 接口关键字管理 | 3 | 接口关键字列表、创建接口关键字、编辑接口关键字 |
 | M6 工具方法关键字管理 | 3 | 工具方法关键字列表、创建工具方法关键字、编辑工具方法关键字 |
@@ -971,8 +1060,8 @@ Keyword
 | 文档 | 路径 | 说明 |
 |---|---|---|
 | 需求规格说明书 | [SRS.md](SRS.md) | 技术架构、数据模型、API 设计、引擎复用方案、非功能需求 |
-| 产品需求文档 | [PRD.md](PRD.md) | 功能需求规范（PM/ENV/API/KW/TOOL/ACT/CASE/EXEC/RPT/AUTH/SET）、UI 设计规范 |
-| UI 原型 | [docs/ui/](../ui/index.html) | 26 个核心页面的 HTML 高保真原型 |
+| 产品需求文档 | [PRD.md](PRD.md) | 功能需求规范（PM/ENV/REPO/API/KW/TOOL/ACT/CASE/EXEC/RPT/AUTH/SET)、UI 设计规范 |
+| UI 原型 | [docs/ui/](../ui/index.html) | 31 个核心页面的 HTML 高保真原型 |
 
 ### 9.3 开发里程碑参照
 

@@ -43,7 +43,7 @@ public class CaseController {
                                                          @RequestParam(required = false) String status,
                                                          @RequestParam(defaultValue = "1") int page,
                                                          @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.ok(caseService.listCases(suiteId, groupId, keyword, priority, status, page, pageSize));
+        return ApiResponse.ok(caseService.listCases(projectId, suiteId, groupId, keyword, priority, status, page, pageSize));
     }
 
     /**

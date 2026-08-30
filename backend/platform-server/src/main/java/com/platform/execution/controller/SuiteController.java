@@ -35,15 +35,17 @@ public class SuiteController {
     /**
      * 分页查询测试套件
      *
-     * @param groupId 分组 ID（null 不过滤；-1 表示未分组）
+     * @param groupId  分组 ID（null 不过滤；0/-1 表示未分组；正数=指定分组含子孙分组）
+     * @param priority 优先级（P0-P3，null 不过滤）
      */
     @GetMapping
     public ApiResponse<PageResponse<SuiteResponse>> list(@PathVariable Long projectId,
                                                          @RequestParam(required = false) String keyword,
                                                          @RequestParam(required = false) Long groupId,
+                                                         @RequestParam(required = false) String priority,
                                                          @RequestParam(defaultValue = "1") int page,
                                                          @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.ok(suiteService.listSuites(projectId, keyword, groupId, page, pageSize));
+        return ApiResponse.ok(suiteService.listSuites(projectId, keyword, groupId, priority, page, pageSize));
     }
 
     /**

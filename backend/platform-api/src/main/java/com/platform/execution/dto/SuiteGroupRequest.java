@@ -23,6 +23,9 @@ public class SuiteGroupRequest implements Serializable {
     @Size(max = 50, message = "分组名称长度不能超过 50")
     private String name;
 
+    @Size(max = 500, message = "描述长度不能超过 500")
+    private String description;
+
     /**
      * 父分组 ID（null 表示顶层分组）
      */

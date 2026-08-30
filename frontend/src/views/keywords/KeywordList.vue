@@ -495,19 +495,20 @@ const highlightedDebugResponse = computed(() => {
 
     <div class="kw-layout">
       <!-- 左侧分组树（接口关键字独立分组） -->
-      <div class="module-panel" @contextmenu="onPanelContextMenu">
-        <div class="module-head">
-          <span class="module-title">分组</span>
+      <div class="group-panel" @contextmenu="onPanelContextMenu">
+        <div class="group-head">
+          <span class="group-title">分组</span>
         </div>
-        <el-input
-          v-model="filterText"
-          class="tree-search"
-          placeholder="搜索分组"
-          clearable
-          size="small"
-          prefix-icon="Search"
-        />
-        <div class="module-tree">
+        <div class="tree-search">
+          <el-input
+            v-model="filterText"
+            placeholder="搜索分组"
+            clearable
+            size="small"
+            prefix-icon="Search"
+          />
+        </div>
+        <div class="group-tree">
           <el-tree
             :data="filteredGroupTree"
             node-key="id"
@@ -519,12 +520,12 @@ const highlightedDebugResponse = computed(() => {
           >
             <template #default="{ data }">
               <div
-                :class="['module-tree-node', { active: activeGroupId === data.id }]"
+                :class="['group-tree-node', { active: activeGroupId === data.id }]"
                 @contextmenu.stop="onNodeContextMenu($event, data)"
               >
-                <span class="module-name">{{ data.name }}</span>
-                <span v-if="data.isSystem === 1" class="module-lock" title="系统默认分组">🔒</span>
-                <span class="module-count">{{ data.keywordCount ?? 0 }}</span>
+                <span class="group-name">{{ data.name }}</span>
+                <span v-if="data.isSystem === 1" class="group-lock" title="系统默认分组">🔒</span>
+                <span class="group-count">{{ data.keywordCount ?? 0 }}</span>
               </div>
             </template>
           </el-tree>
@@ -824,7 +825,7 @@ const highlightedDebugResponse = computed(() => {
   gap: 16px;
   align-items: flex-start;
 }
-.module-panel {
+.group-panel {
   width: 220px;
   flex-shrink: 0;
   background: #fff;
@@ -832,12 +833,12 @@ const highlightedDebugResponse = computed(() => {
   border-radius: 6px;
   padding: 12px;
 }
-.module-head {
+.group-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.module-title {
+.group-title {
   font-weight: 600;
   font-size: 14px;
   color: #303133;
@@ -849,48 +850,45 @@ const highlightedDebugResponse = computed(() => {
   box-shadow: 0 0 0 1px #dcdfe6 inset;
   border-radius: 4px;
 }
-.module-tree {
+.group-tree {
   max-height: 560px;
   overflow-y: auto;
-  margin: 8px -12px 0;
 }
-.module-tree :deep(.el-tree-node__content) {
+.group-tree :deep(.el-tree-node__content) {
   height: auto;
-  padding: 0;
-  width: 100%;
+  padding: 2px 0;
 }
-.module-tree-node {
+.group-tree-node {
   display: flex;
   align-items: center;
   flex: 1;
-  padding: 4px 12px;
-  border-radius: 0;
+  padding: 2px 4px;
+  border-radius: 4px;
   font-size: 13px;
   gap: 6px;
   width: 100%;
-  box-sizing: border-box;
 }
-.module-tree-node:hover {
+.group-tree-node:hover {
   background: #f5f7fa;
 }
-.module-tree-node.active {
+.group-tree-node.active {
   background: #ecf5ff;
   color: #409eff;
   font-weight: 500;
 }
-.module-name {
+.group-name {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.module-count {
+.group-count {
   font-size: 12px;
   color: #909399;
   flex-shrink: 0;
 }
-.module-lock {
+.group-lock {
   font-size: 10px;
   color: #c0c4cc;
   flex-shrink: 0;

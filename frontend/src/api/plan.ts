@@ -17,6 +17,7 @@ export function getPlans(projectId: number, params?: {
   status?: number
   updateBegin?: string
   updateEnd?: string
+  suiteKeyword?: string
   page?: number
   pageSize?: number
 }) {
@@ -55,4 +56,18 @@ export function updatePlanGroup(groupId: number, data: { name: string; descripti
 
 export function deletePlanGroup(groupId: number) {
   return request.post(`/v1/plan-groups/${groupId}/delete`)
+}
+
+/**
+ * 清空分组及其子孙分组中的所有计划
+ */
+export function clearGroupPlans(projectId: number, groupId: number) {
+  return request.post(`/v1/projects/${projectId}/plan-groups/${groupId}/clear-plans`)
+}
+
+/**
+ * 清空项目下所有计划
+ */
+export function clearProjectPlans(projectId: number) {
+  return request.post(`/v1/projects/${projectId}/plan-groups/clear-all-plans`)
 }

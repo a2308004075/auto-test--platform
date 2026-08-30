@@ -62,11 +62,13 @@ public class PlanService {
      * @param status        状态 1=启用 0=禁用（null=不过滤）
      * @param updateBegin   更新日期起（yyyy-MM-dd，null=不过滤）
      * @param updateEnd     更新日期止（yyyy-MM-dd，null=不过滤）
+     * @param suiteKeyword  关联套件名称关键字（null=不过滤，按项目下套件名称模糊匹配）
      */
     public PageResponse<PlanResponse> listPlans(Long projectId, String keyword,
                                                  Long groupId, String triggerType,
                                                  Long environmentId, Integer status,
                                                  String updateBegin, String updateEnd,
+                                                 String suiteKeyword,
                                                  int page, int pageSize) {
         LambdaQueryWrapper<TestPlan> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TestPlan::getProjectId, projectId);
@@ -81,6 +83,32 @@ public class PlanService {
                 List<Long> groupIds = getDescendantGroupIds(groupId);
                 wrapper.in(TestPlan::getGroupId, groupIds);
             }
+        }
+
+        // 按关联套件名称过滤：先查项目下名称匹配的套件 ID，再匹配 suite_ids JSON 数组
+        if (StringUtils.hasText(suiteKeyword)) {
+            LambdaQueryWrapper<TestSuite> suiteWrapper = new LambdaQueryWrapper<>();
+            suiteWrapper.eq(TestSuite::getProjectId, projectId)
+                    .like(TestSuite::getName, suiteKeyword)
+                    .select(TestSuite::getId);
+            List<Long> matchedSuiteIds = new ArrayList<>();
+            for (TestSuite s : testSuiteMapper.selectList(suiteWrapper)) {
+                matchedSuiteIds.add(s.getId());
+            }
+            if (matchedSuiteIds.isEmpty()) {
+                return PageResponse.empty((long) page, (long) pageSize);
+            }
+            wrapper.and(w -> {
+                boolean first = true;
+                for (Long suiteId : matchedSuiteIds) {
+                    if (first) {
+                        w.apply("JSON_CONTAINS(suite_ids, {0})", String.valueOf(suiteId));
+                        first = false;
+                    } else {
+                        w.or().apply("JSON_CONTAINS(suite_ids, {0})", String.valueOf(suiteId));
+                    }
+                }
+            });
         }
 
         if (StringUtils.hasText(keyword)) {
@@ -210,6 +238,35 @@ public class PlanService {
     public void deletePlan(Long planId) {
         findById(planId);
         testPlanMapper.deleteById(planId);
+    }
+
+    /**
+     * 清空分组及其子孙分组中的所有计划（执行记录由外键级联删除）
+     *
+     * @param groupId 分组 ID（0 表示未分组）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void clearByGroup(Long projectId, Long groupId) {
+        LambdaQueryWrapper<TestPlan> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(TestPlan::getProjectId, projectId);
+        if (groupId == 0L) {
+            // 未分组
+            wrapper.isNull(TestPlan::getGroupId);
+        } else {
+            // 指定分组（含子孙分组递归）
+            wrapper.in(TestPlan::getGroupId, getDescendantGroupIds(groupId));
+        }
+        testPlanMapper.delete(wrapper);
+    }
+
+    /**
+     * 清空项目下所有计划
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void clearByProject(Long projectId) {
+        LambdaQueryWrapper<TestPlan> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(TestPlan::getProjectId, projectId);
+        testPlanMapper.delete(wrapper);
     }
 
     private TestPlan findById(Long planId) {

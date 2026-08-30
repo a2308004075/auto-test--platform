@@ -36,6 +36,11 @@ public class SuiteGroup extends BaseEntity {
     private String name;
 
     /**
+     * 分组描述
+     */
+    private String description;
+
+    /**
      * 排序号
      */
     private Integer sortNo;

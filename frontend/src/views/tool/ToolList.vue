@@ -370,11 +370,11 @@ onBeforeUnmount(() => {
 
     <div class="kw-layout">
       <!-- 左侧分组树 -->
-      <div class="module-panel" @contextmenu="handleBlankContextmenu">
-        <div class="module-head">
-          <span class="module-title">分组</span>
+      <div class="group-panel" @contextmenu="handleBlankContextmenu">
+        <div class="group-head">
+          <span class="group-title">分组</span>
         </div>
-        <div class="module-tree-search">
+        <div class="tree-search">
           <el-input
             v-model="groupSearch"
             placeholder="搜索分组..."
@@ -383,17 +383,17 @@ onBeforeUnmount(() => {
             prefix-icon="Search"
           />
         </div>
-        <div class="module-tree">
+        <div class="group-tree">
           <div
             v-for="node in filteredCategoryTree"
             :key="node.id"
-            :class="['module-tree-node', { active: activeCategory === node.id }]"
+            :class="['group-tree-node', { active: activeCategory === node.id }]"
             @click="onCategoryClick(node)"
             @contextmenu.prevent.stop="handleNodeContextmenu($event, node)"
           >
-            <span class="module-name">{{ node.name }}</span>
-            <span v-if="node.isSystem" class="module-lock" title="系统默认分组">🔒</span>
-            <span class="module-count">{{ node.count }}</span>
+            <span class="group-name">{{ node.name }}</span>
+            <span v-if="node.isSystem" class="group-lock" title="系统默认分组">🔒</span>
+            <span class="group-count">{{ node.count }}</span>
           </div>
         </div>
       </div>
@@ -607,63 +607,63 @@ onBeforeUnmount(() => {
   gap: 16px;
   align-items: flex-start;
 }
-.module-panel {
+.group-panel {
   width: 220px;
   flex-shrink: 0;
   background: #fff;
-  border: 1px solid var(--el-border-color-light, #ebeef5);
+  border: 1px solid #ebeef5;
   border-radius: 6px;
   padding: 12px;
 }
-.module-head {
+.group-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.module-title {
+.group-title {
   font-weight: 600;
   font-size: 14px;
-  color: var(--el-text-color-primary, #303133);
+  color: #303133;
 }
-.module-tree-search {
-  margin-top: 8px;
-  margin-bottom: 8px;
+.tree-search {
+  margin: 8px 0;
 }
-.module-tree {
+.tree-search :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+  border-radius: 4px;
+}
+.group-tree {
   max-height: 560px;
   overflow-y: auto;
-  margin-top: 8px;
 }
-.module-tree-node {
+.group-tree-node {
   display: flex;
   align-items: center;
   flex: 1;
-  padding: 4px 8px;
+  padding: 2px 4px;
   border-radius: 4px;
   font-size: 13px;
   gap: 6px;
   width: 100%;
-  cursor: pointer;
-  transition: background 0.15s;
 }
-.module-tree-node:hover {
-  background: var(--el-fill-color-light, #f5f7fa);
+.group-tree-node:hover {
+  background: #f5f7fa;
 }
-.module-tree-node.active {
-  background: var(--el-color-primary-light-9, #ecf5ff);
-  color: var(--el-color-primary, #409eff);
+.group-tree-node.active {
+  background: #ecf5ff;
+  color: #409eff;
   font-weight: 500;
 }
-.module-name {
+.group-name {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.module-count {
+.group-count {
   font-size: 12px;
-  color: var(--el-text-color-secondary, #909399);
+  color: #909399;
   flex-shrink: 0;
 }
 .kw-content {
@@ -810,7 +810,7 @@ onBeforeUnmount(() => {
   background: #ebeef5;
   margin: 4px 0;
 }
-.module-lock {
+.group-lock {
   font-size: 10px;
   color: #c0c4cc;
   flex-shrink: 0;

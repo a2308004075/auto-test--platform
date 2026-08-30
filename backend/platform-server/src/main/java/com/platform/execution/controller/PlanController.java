@@ -28,7 +28,8 @@ public class PlanController {
     /**
      * 分页查询测试计划
      *
-     * @param groupId 分组 ID（不传=全部，0=未分组，正数=指定分组含子分组）
+     * @param groupId      分组 ID（不传=全部，0=未分组，正数=指定分组含子分组）
+     * @param suiteKeyword 关联套件名称关键字（按项目下套件名称模糊匹配）
      */
     @GetMapping("/api/v1/projects/{projectId}/plans")
     public ApiResponse<PageResponse<PlanResponse>> list(@PathVariable Long projectId,
@@ -39,10 +40,11 @@ public class PlanController {
                                                          @RequestParam(required = false) Integer status,
                                                          @RequestParam(required = false) String updateBegin,
                                                          @RequestParam(required = false) String updateEnd,
+                                                         @RequestParam(required = false) String suiteKeyword,
                                                          @RequestParam(defaultValue = "1") int page,
                                                          @RequestParam(defaultValue = "20") int pageSize) {
         return ApiResponse.ok(planService.listPlans(projectId, keyword, groupId,
-                triggerType, environmentId, status, updateBegin, updateEnd, page, pageSize));
+                triggerType, environmentId, status, updateBegin, updateEnd, suiteKeyword, page, pageSize));
     }
 
     /**

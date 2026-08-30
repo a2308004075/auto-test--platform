@@ -117,6 +117,12 @@
             <artifactId>groovy-json</artifactId>
         </dependency>
 
+        <!-- JGit（M11 测试代码库 Git 仓库克隆/拉取） -->
+        <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit</artifactId>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

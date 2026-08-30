@@ -9,6 +9,7 @@ import com.platform.common.response.ApiResponse;
 import com.platform.execution.dto.SuiteGroupDTO;
 import com.platform.execution.dto.SuiteGroupRequest;
 import com.platform.execution.service.SuiteGroupService;
+import com.platform.execution.service.SuiteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +25,7 @@ import java.util.List;
 public class SuiteGroupController {
 
     private final SuiteGroupService suiteGroupService;
+    private final SuiteService suiteService;
 
     /**
      * 查询项目下所有分组
@@ -59,6 +61,25 @@ public class SuiteGroupController {
     public ApiResponse<Void> delete(@PathVariable Long projectId,
                                      @PathVariable Long groupId) {
         suiteGroupService.deleteGroup(projectId, groupId);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * 清空分组及其子孙分组中的所有套件
+     */
+    @PostMapping("/{groupId}/clear-suites")
+    public ApiResponse<Void> clearSuites(@PathVariable Long projectId,
+                                         @PathVariable Long groupId) {
+        suiteService.clearByGroup(projectId, groupId);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * 清空项目下所有套件
+     */
+    @PostMapping("/clear-all-suites")
+    public ApiResponse<Void> clearAllSuites(@PathVariable Long projectId) {
+        suiteService.clearByProject(projectId);
         return ApiResponse.ok();
     }
 }

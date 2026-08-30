@@ -9,6 +9,7 @@ import com.platform.common.response.ApiResponse;
 import com.platform.execution.dto.PlanGroupRequest;
 import com.platform.execution.dto.PlanGroupResponse;
 import com.platform.execution.service.PlanGroupService;
+import com.platform.execution.service.PlanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +24,7 @@ import java.util.List;
 public class PlanGroupController {
 
     private final PlanGroupService planGroupService;
+    private final PlanService planService;
 
     /**
      * 获取项目下的分组列表
@@ -56,6 +58,25 @@ public class PlanGroupController {
     @PostMapping("/api/v1/plan-groups/{groupId}/delete")
     public ApiResponse<Void> delete(@PathVariable Long groupId) {
         planGroupService.delete(groupId);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * 清空分组及其子孙分组中的所有计划
+     */
+    @PostMapping("/api/v1/projects/{projectId}/plan-groups/{groupId}/clear-plans")
+    public ApiResponse<Void> clearPlans(@PathVariable Long projectId,
+                                        @PathVariable Long groupId) {
+        planService.clearByGroup(projectId, groupId);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * 清空项目下所有计划
+     */
+    @PostMapping("/api/v1/projects/{projectId}/plan-groups/clear-all-plans")
+    public ApiResponse<Void> clearAllPlans(@PathVariable Long projectId) {
+        planService.clearByProject(projectId);
         return ApiResponse.ok();
     }
 }

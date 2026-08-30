@@ -6,153 +6,191 @@
 <script setup lang="ts">
 /**
  * 测试计划列表 - M9
- * 左侧分组树 + 右侧搜索/表格（含触发方式、用例数、最近执行、通过率列）
+ * 左侧分组树 + 右侧高级搜索 + 分页表格（含触发方式、用例数、最近执行、通过率列）
+ * 分组交互对齐 ApiList.vue 模式（el-tree 多层树 + 右键菜单）
  */
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getPlans, deletePlan, getPlanGroups, createPlanGroup, updatePlanGroup, deletePlanGroup } from '@/api/plan'
+import { getPlans, deletePlan, getPlanGroups, createPlanGroup, updatePlanGroup, deletePlanGroup, clearGroupPlans, clearProjectPlans } from '@/api/plan'
 import { startExecution } from '@/api/execution'
 import { getEnvironments } from '@/api/environment'
+import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
 import PageHeader from '@/components/PageHeader/index.vue'
+import ProSearchCard from '@/components/ProSearchCard/index.vue'
+import ProPagination from '@/components/ProPagination/index.vue'
 
 const route = useRoute()
 const router = useRouter()
 const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
+const { options: triggerTypeOptions } = useDict('trigger_type')
+const { options: statusOptions } = useDict('is_active')
 
 // ===== 分组树 =====
-const groupLoading = ref(false)
 const groups = ref<any[]>([])
-const activeGroupId = ref<string | number>('all')
-const groupSearchKey = ref('')
-const expandedIds = ref<Set<number>>(new Set())
-
-interface GroupNode {
-  id: string | number
-  name: string
-  description?: string
-  parentId: number | null
-  planCount: number
-  isSystem: boolean
+const activeGroupId = ref<number>(0) // 0 = 全部，-1 = 未分组，正数 = 分组 ID
+const filterText = ref('')
+const treeRef = ref()
+// 未分组计数 ≈ 当前总数 − 顶层用户分组递归计数和（后端 planCount 已含子孙分组）
+const ungroupedCount = computed(() => {
+  const topUserGroups = groups.value.filter((g: any) => (g.parentId ?? null) === null)
+  const groupedSum = topUserGroups.reduce((acc: number, g: any) => acc + (g.planCount || 0), 0)
+  return Math.max(0, pagination.total - groupedSum)
+})
+// 分组树：全部(虚拟) + 未分组(虚拟) + 用户分组按 parentId 建树
+const groupTree = computed(() => {
+  const userItems = groups.value
+  const buildTree = (parentId: number | null): any[] =>
+    userItems
+      .filter((g: any) => (g.parentId ?? null) === parentId)
+      .map((g: any) => ({ ...g, children: buildTree(g.id) }))
+  return [
+    { id: 0, name: '全部', isSystem: 1, planCount: pagination.total, children: [] },
+    { id: -1, name: '未分组', isSystem: 1, planCount: ungroupedCount.value, children: [] },
+    ...buildTree(null),
+  ]
+})
+// 根据搜索关键字过滤分组树
+const filteredGroupTree = computed(() => {
+  const kw = filterText.value.trim().toLowerCase()
+  if (!kw) return groupTree.value
+  const matchRecursive = (nodes: any[]): any[] => {
+    const result: any[] = []
+    for (const node of nodes) {
+      const childMatches = matchRecursive(node.children || [])
+      if (node.name.toLowerCase().includes(kw) || childMatches.length > 0) {
+        result.push({ ...node, children: childMatches.length > 0 ? childMatches : node.children })
+      }
+    }
+    return result
+  }
+  return matchRecursive(groupTree.value)
+})
+// 树形组件过滤回调
+function filterNode(value: string, data: any) {
+  if (!value) return true
+  return data.name.toLowerCase().includes(value.toLowerCase())
 }
 
-const systemGroups: GroupNode[] = [
-  { id: 'all', name: '全部', parentId: null, planCount: 0, isSystem: true },
-  { id: 'ungrouped', name: '未分组', parentId: null, planCount: 0, isSystem: true },
-]
-
-const allGroups = computed<GroupNode[]>(() => {
-  const userGroups: GroupNode[] = groups.value.map((g: any) => ({
-    id: g.id,
-    name: g.name,
-    description: g.description,
-    parentId: g.parentId,
-    planCount: g.planCount || 0,
-    isSystem: false,
-  }))
-  return [...systemGroups, ...userGroups]
-})
-
-const filteredUserGroups = computed(() => {
-  const key = groupSearchKey.value.toLowerCase()
-  if (!key) return allGroups.value.filter(g => !g.isSystem)
-  return allGroups.value.filter(g => !g.isSystem && g.name.toLowerCase().includes(key))
-})
-
-const topLevelUserGroups = computed(() =>
-  filteredUserGroups.value.filter(g => g.parentId === null)
-)
-
-function getChildren(parentId: number): GroupNode[] {
-  return filteredUserGroups.value.filter(g => g.parentId === parentId)
+function onGroupNodeClick(data: any) {
+  selectGroup(data.id)
 }
 
-function selectGroup(id: string | number) {
-  activeGroupId.value = id
+function selectGroup(id: number) {
+  activeGroupId.value = id === activeGroupId.value ? 0 : id
   pagination.current = 1
   fetchList()
 }
 
-function toggleExpand(id: number) {
-  if (expandedIds.value.has(id)) {
-    expandedIds.value.delete(id)
-  } else {
-    expandedIds.value.add(id)
-  }
-}
-
 async function fetchGroups() {
-  groupLoading.value = true
   try {
     const res: any = await getPlanGroups(projectId.value)
     groups.value = res.data || []
-    // 更新系统分组的计数
-    const allCount = list.value.length > 0 ? pagination.total : 0
-    systemGroups[0].planCount = allCount
-    systemGroups[1].planCount = groups.value.length > 0
-      ? Math.max(0, allCount - groups.value.reduce((sum: number, g: any) => sum + (g.planCount || 0), 0))
-      : 0
-  } catch { groups.value = [] } finally { groupLoading.value = false }
+  } catch { groups.value = [] }
 }
 
 // ===== 右键菜单 =====
 const contextMenuVisible = ref(false)
 const contextMenuPos = reactive({ x: 0, y: 0 })
-const contextGroup = ref<GroupNode | null>(null)
-const isBlankContext = ref(false)
+const contextGroup = ref<any>(null)
 
-function showBlankContextMenu(e: MouseEvent) {
-  const target = e.target as HTMLElement
-  if (target.closest('.group-tree-item')) return
+function handleNodeContextmenu(e: MouseEvent, data: any) {
   e.preventDefault()
-  isBlankContext.value = true
+  e.stopPropagation()
+  // 系统分组（全部/未分组虚拟节点）右键显示清空菜单
+  contextGroup.value = data
+  contextMenuPos.x = e.clientX
+  contextMenuPos.y = e.clientY
+  contextMenuVisible.value = true
+}
+
+function handleBlankContextmenu(e: MouseEvent) {
+  e.preventDefault()
   contextGroup.value = null
   contextMenuPos.x = e.clientX
   contextMenuPos.y = e.clientY
   contextMenuVisible.value = true
 }
 
-function showGroupContextMenu(e: MouseEvent, group: GroupNode) {
-  if (group.isSystem) return
-  e.preventDefault()
-  e.stopPropagation()
-  isBlankContext.value = false
-  contextGroup.value = group
-  contextMenuPos.x = e.clientX
-  contextMenuPos.y = e.clientY
-  contextMenuVisible.value = true
+function closeContextMenu() {
+  contextMenuVisible.value = false
+  contextGroup.value = null
 }
 
-function hideContextMenu() {
-  contextMenuVisible.value = false
+function contextCreateGroup() {
+  if (contextGroup.value) {
+    openCreateGroup(contextGroup.value.id)
+  } else {
+    openCreateGroup()
+  }
+  closeContextMenu()
+}
+
+function contextCreateChild() {
+  if (contextGroup.value) openCreateGroup(contextGroup.value.id)
+  closeContextMenu()
+}
+
+function contextEdit() {
+  if (contextGroup.value) openEditGroup(contextGroup.value)
+  closeContextMenu()
+}
+
+function contextDelete() {
+  if (contextGroup.value) handleDeleteGroup(contextGroup.value)
+  closeContextMenu()
+}
+
+function contextClear() {
+  if (!contextGroup.value) return
+  const g = contextGroup.value
+  closeContextMenu()
+  const isAll = g.id === 0
+  const isUngrouped = g.id === -1
+  ElMessageBox.confirm(
+    isAll
+      ? '确定清空项目下的所有计划？其执行记录将一并删除，此操作不可恢复。'
+      : isUngrouped
+        ? '确定清空「未分组」中的所有计划？其执行记录将一并删除，此操作不可恢复。'
+        : `确定清空分组「${g.name}」及其子分组中的所有计划？其执行记录将一并删除，此操作不可恢复。`,
+    '确认清空',
+    { type: 'warning', confirmButtonText: '清空', cancelButtonText: '取消' }
+  )
+    .then(async () => {
+      if (isAll) {
+        await clearProjectPlans(projectId.value)
+      } else {
+        // 未分组（-1）后端语义为 groupId=0
+        await clearGroupPlans(projectId.value, isUngrouped ? 0 : g.id)
+      }
+      ElMessage.success('已清空')
+      fetchGroups()
+      fetchList()
+    })
+    .catch(() => {})
 }
 
 // ===== 分组弹窗 =====
-const groupDialogVisible = ref(false)
+const groupModalVisible = ref(false)
 const groupDialogTitle = ref('新建分组')
 const groupForm = reactive({ name: '', description: '', parentId: null as number | null })
-const editingGroupId = ref<number | null>(null)
+const editingGroupId = ref<number>(0)
 
 function openCreateGroup(parentId: number | null = null) {
-  editingGroupId.value = null
+  editingGroupId.value = 0
   groupDialogTitle.value = parentId ? '新建子分组' : '新建分组'
-  groupForm.name = ''
-  groupForm.description = ''
-  groupForm.parentId = parentId
-  groupDialogVisible.value = true
-  hideContextMenu()
+  Object.assign(groupForm, { name: '', description: '', parentId: parentId ?? null })
+  groupModalVisible.value = true
 }
 
-function openEditGroup(group: GroupNode) {
-  editingGroupId.value = group.id as number
+function openEditGroup(group: any) {
+  if (group.isSystem === 1) { ElMessage.info('系统分组不可编辑'); return }
+  editingGroupId.value = group.id
   groupDialogTitle.value = '编辑分组'
-  groupForm.name = group.name
-  groupForm.description = group.description || ''
-  groupForm.parentId = group.parentId
-  groupDialogVisible.value = true
-  hideContextMenu()
+  Object.assign(groupForm, { name: group.name, description: group.description || '', parentId: group.parentId ?? null })
+  groupModalVisible.value = true
 }
 
 async function handleGroupSubmit() {
@@ -176,37 +214,32 @@ async function handleGroupSubmit() {
       })
       ElMessage.success('创建成功')
     }
-    groupDialogVisible.value = false
+    groupModalVisible.value = false
     fetchGroups()
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '操作失败')
   }
 }
 
-async function handleDeleteGroup(group: GroupNode) {
-  const childCount = filteredUserGroups.value.filter(g => g.parentId === group.id).length
-  const hint = childCount > 0
-    ? `删除后，子分组将一并删除，所有计划将自动归入「未分组」。`
-    : `删除后，该分组下的计划将自动归入「未分组」。`
+async function handleDeleteGroup(group: any) {
+  if (group.isSystem === 1) { ElMessage.info('系统分组不可删除'); return }
   try {
     await ElMessageBox.confirm(
-      `确定删除分组「${group.name}」吗？${hint}`,
+      `确定删除分组「${group.name}」吗？删除后，该分组下的计划将自动归入「未分组」。`,
       '确认删除',
       { type: 'warning' }
     )
-    await deletePlanGroup(group.id as number)
+    await deletePlanGroup(group.id)
     ElMessage.success('删除成功')
     if (activeGroupId.value === group.id) {
-      activeGroupId.value = 'all'
+      activeGroupId.value = 0
     }
     fetchGroups()
     fetchList()
-  } catch {}
-  hideContextMenu()
+  } catch { /* cancelled */ }
 }
 
 // ===== 搜索 =====
-const searchCollapsed = ref(true)
 const searchForm = reactive({
   name: '',
   triggerType: '',
@@ -231,13 +264,15 @@ function handleSearch() {
 }
 
 function handleReset() {
-  searchForm.name = ''
-  searchForm.triggerType = ''
-  searchForm.environmentId = null
-  searchForm.status = ''
-  searchForm.suiteKeyword = ''
-  searchForm.updateBegin = ''
-  searchForm.updateEnd = ''
+  Object.assign(searchForm, {
+    name: '',
+    triggerType: '',
+    environmentId: null,
+    status: '',
+    suiteKeyword: '',
+    updateBegin: '',
+    updateEnd: '',
+  })
   handleSearch()
 }
 
@@ -256,12 +291,9 @@ async function fetchList() {
     // 搜索条件拼入 keyword（后端支持 name/description 模糊匹配）
     if (searchForm.name) params.keyword = searchForm.name
 
-    // 分组过滤
-    if (activeGroupId.value === 'ungrouped') {
-      params.groupId = 0
-    } else if (activeGroupId.value !== 'all') {
-      params.groupId = activeGroupId.value
-    }
+    // 分组过滤：activeGroupId 0=全部（不传）；-1=未分组（后端 groupId=0）；正数=分组 ID
+    const groupIdParam = activeGroupId.value === 0 ? undefined : activeGroupId.value === -1 ? 0 : activeGroupId.value
+    if (groupIdParam !== undefined) params.groupId = groupIdParam
 
     // 触发方式
     if (searchForm.triggerType) params.triggerType = searchForm.triggerType
@@ -269,6 +301,8 @@ async function fetchList() {
     if (searchForm.environmentId) params.environmentId = searchForm.environmentId
     // 状态
     if (searchForm.status) params.status = searchForm.status === '1' ? 1 : 0
+    // 关联套件名称关键字
+    if (searchForm.suiteKeyword) params.suiteKeyword = searchForm.suiteKeyword
     // 更新日期范围
     if (searchForm.updateBegin) params.updateBegin = searchForm.updateBegin
     if (searchForm.updateEnd) params.updateEnd = searchForm.updateEnd
@@ -276,9 +310,6 @@ async function fetchList() {
     const res: any = await getPlans(projectId.value, params)
     list.value = res.data?.items || []
     pagination.total = res.data?.total || 0
-
-    // 刷新分组计数
-    fetchGroups()
   } catch { list.value = [] } finally { loading.value = false }
 }
 
@@ -292,6 +323,7 @@ function handleDelete(record: any) {
     .then(async () => {
       await deletePlan(record.id)
       ElMessage.success('删除成功')
+      fetchGroups()
       fetchList()
     })
     .catch(() => {})
@@ -310,16 +342,14 @@ async function handleRun(record: any) {
 }
 
 // ===== 辅助 =====
-const triggerTypeLabels: Record<string, string> = {
-  MANUAL: '手动',
-  SCHEDULED: '定时',
-  CI: 'CI',
-}
-
 const triggerTypeTagMap: Record<string, string> = {
   MANUAL: '',
   SCHEDULED: 'success',
   CI: 'warning',
+}
+
+function triggerTypeLabel(type: string) {
+  return triggerTypeOptions.value.find((t) => t.value === type)?.label || type
 }
 
 function formatDateTime(dt: string | null) {
@@ -334,10 +364,16 @@ function getPassRateColor(rate: number | null) {
   return '#f56c6c'
 }
 
-// ===== 初始化 =====
+// ===== 生命周期 =====
+function onDocClick() { closeContextMenu() }
 onMounted(() => {
   loadEnvironments()
+  fetchGroups()
   fetchList()
+  document.addEventListener('click', onDocClick)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
 })
 </script>
 
@@ -349,115 +385,80 @@ onMounted(() => {
     </PageHeader>
 
     <div class="plan-layout">
-      <!-- 左侧分组树 -->
-      <div class="group-panel" @contextmenu="showBlankContextMenu">
-        <div class="group-search">
-          <el-input v-model="groupSearchKey" placeholder="搜索分组..." size="small" clearable />
+      <!-- 左侧分组 -->
+      <div class="group-panel" @contextmenu="handleBlankContextmenu">
+        <div class="group-head">
+          <span class="group-title">分组</span>
         </div>
-
-        <!-- 系统分组 -->
-        <div v-for="sg in systemGroups" :key="sg.id"
-          class="group-tree-item"
-          :class="{ active: activeGroupId === sg.id }"
-          @click="selectGroup(sg.id)">
-          <span class="group-icon">{{ sg.id === 'all' ? '📂' : '📁' }}</span>
-          <span class="group-name">{{ sg.name }}</span>
-          <span class="group-lock" title="系统默认分组">🔒</span>
-          <span class="group-count">{{ sg.planCount }}</span>
+        <div class="tree-search">
+          <el-input v-model="filterText" size="small" placeholder="搜索分组..." clearable @input="(v: string) => treeRef?.filter(v)" />
         </div>
-
-        <div class="group-divider" />
-
-        <!-- 用户分组 -->
-        <template v-for="group in topLevelUserGroups" :key="group.id">
-          <div class="group-tree-item"
-            :class="{ active: activeGroupId === group.id }"
-            @click="selectGroup(group.id)"
-            @contextmenu="showGroupContextMenu($event, group)">
-            <span v-if="getChildren(group.id as number).length > 0"
-              class="group-arrow"
-              :class="{ expanded: expandedIds.has(group.id as number) }"
-              @click.stop="toggleExpand(group.id as number)">&#9654;</span>
-            <span v-else class="group-arrow-placeholder" />
-            <span class="group-icon">📁</span>
-            <span class="group-name" :title="group.name">{{ group.name }}</span>
-            <span class="group-count">{{ group.planCount }}</span>
-          </div>
-          <!-- 子分组（递归一层，深层可后续扩展） -->
-          <template v-if="expandedIds.has(group.id as number)">
-            <div v-for="child in getChildren(group.id as number)" :key="child.id"
-              class="group-tree-item child"
-              :class="{ active: activeGroupId === child.id }"
-              @click="selectGroup(child.id)"
-              @contextmenu="showGroupContextMenu($event, child)">
-              <span class="group-arrow-placeholder" />
-              <span class="group-icon">📁</span>
-              <span class="group-name" :title="child.name">{{ child.name }}</span>
-              <span class="group-count">{{ child.planCount }}</span>
-            </div>
-          </template>
-        </template>
+        <div class="group-tree">
+          <el-tree
+            ref="treeRef"
+            :data="filteredGroupTree"
+            node-key="id"
+            :props="{ label: 'name', children: 'children' }"
+            :default-expand-all="true"
+            :expand-on-click-node="false"
+            :filter-node-method="filterNode"
+            @node-click="onGroupNodeClick"
+          >
+            <template #default="{ data }">
+              <div
+                :class="['group-tree-node', { active: activeGroupId === data.id }]"
+                @contextmenu.stop="handleNodeContextmenu($event, data)"
+              >
+                <span class="group-name">{{ data.name }}</span>
+                <span class="group-count">{{ data.planCount ?? 0 }}</span>
+                <span v-if="data.isSystem === 1" class="group-lock" title="系统默认分组">🔒</span>
+              </div>
+            </template>
+          </el-tree>
+        </div>
       </div>
 
       <!-- 右侧内容 -->
       <div class="plan-content">
-        <!-- 搜索卡片 -->
-        <div class="search-card" :class="{ collapsed: searchCollapsed }">
-          <div class="search-form">
-            <div class="search-row">
-              <div class="search-item">
-                <label class="filter-label">计划名称</label>
-                <el-input v-model="searchForm.name" placeholder="模糊查询" size="default" clearable @keyup.enter="handleSearch" />
-              </div>
-              <div class="search-item">
-                <label class="filter-label">触发方式</label>
-                <el-select v-model="searchForm.triggerType" placeholder="全部触发方式" clearable size="default">
-                  <el-option label="定时执行" value="SCHEDULED" />
-                  <el-option label="手动触发" value="MANUAL" />
-                  <el-option label="CI 触发" value="CI" />
-                </el-select>
-              </div>
-              <div class="search-item">
-                <label class="filter-label">环境</label>
-                <el-select v-model="searchForm.environmentId" placeholder="全部环境" clearable size="default">
-                  <el-option v-for="env in environments" :key="env.id" :value="env.id" :label="env.name" />
-                </el-select>
-              </div>
-              <div class="search-actions">
-                <el-button type="primary" size="default" @click="handleSearch">查询</el-button>
-                <el-button size="default" @click="handleReset">重置</el-button>
-                <button class="search-toggle" type="button" @click="searchCollapsed = !searchCollapsed">
-                  <span class="arrow" :class="{ up: !searchCollapsed }">&#708;</span>
-                  <span class="text">{{ searchCollapsed ? '展开' : '收起' }}</span>
-                </button>
-              </div>
-            </div>
-            <div v-show="!searchCollapsed" class="search-row collapse-row">
-              <div class="search-item">
-                <label class="filter-label">状态</label>
-                <el-select v-model="searchForm.status" placeholder="全部状态" clearable size="default">
-                  <el-option label="启用" value="1" />
-                  <el-option label="禁用" value="0" />
-                </el-select>
-              </div>
-              <div class="search-item">
-                <label class="filter-label">关联套件</label>
-                <el-input v-model="searchForm.suiteKeyword" placeholder="套件名称" size="default" clearable />
-              </div>
-              <div class="search-item">
-                <label class="filter-label">最近更新</label>
-                <div style="display:flex;gap:4px;align-items:center;flex:1">
-                  <el-date-picker v-model="searchForm.updateBegin" type="date" placeholder="起" size="default" style="flex:1" value-format="YYYY-MM-DD" />
-                  <span style="color:#999">至</span>
-                  <el-date-picker v-model="searchForm.updateEnd" type="date" placeholder="止" size="default" style="flex:1" value-format="YYYY-MM-DD" />
-                </div>
-              </div>
-            </div>
+        <ProSearchCard :loading="loading" @search="handleSearch" @reset="handleReset">
+          <div class="pro-search-field">
+            <span class="pro-search-label">计划名称</span>
+            <el-input v-model="searchForm.name" placeholder="模糊查询" clearable style="width: 180px" @keyup.enter="handleSearch" />
           </div>
-        </div>
+          <div class="pro-search-field">
+            <span class="pro-search-label">触发方式</span>
+            <el-select v-model="searchForm.triggerType" placeholder="全部触发方式" clearable style="width: 140px">
+              <el-option v-for="t in triggerTypeOptions" :key="t.value" :value="t.value" :label="t.label" />
+            </el-select>
+          </div>
+          <div class="pro-search-field">
+            <span class="pro-search-label">环境</span>
+            <el-select v-model="searchForm.environmentId" placeholder="全部环境" clearable style="width: 150px">
+              <el-option v-for="env in environments" :key="env.id" :value="env.id" :label="env.name" />
+            </el-select>
+          </div>
+          <template #collapse>
+            <div class="pro-search-field">
+              <span class="pro-search-label">状态</span>
+              <el-select v-model="searchForm.status" placeholder="全部状态" clearable style="width: 120px">
+                <el-option v-for="s in statusOptions" :key="s.value" :value="s.value" :label="s.label" />
+              </el-select>
+            </div>
+            <div class="pro-search-field">
+              <span class="pro-search-label">关联套件</span>
+              <el-input v-model="searchForm.suiteKeyword" placeholder="套件名称" clearable style="width: 160px" @keyup.enter="handleSearch" />
+            </div>
+            <div class="pro-search-field">
+              <span class="pro-search-label">最近更新</span>
+              <el-date-picker v-model="searchForm.updateBegin" type="date" placeholder="开始日期" style="width: 130px" value-format="YYYY-MM-DD" />
+              <span style="color: #909399; padding: 0 2px">至</span>
+              <el-date-picker v-model="searchForm.updateEnd" type="date" placeholder="结束日期" style="width: 130px" value-format="YYYY-MM-DD" />
+            </div>
+          </template>
+        </ProSearchCard>
 
         <!-- 表格 -->
-        <el-table v-loading="loading" :data="list" row-key="id" border style="width:100%">
+        <el-table v-loading="loading" :data="list" row-key="id" border stripe style="width:100%">
           <el-table-column prop="name" label="计划名称" min-width="160" show-overflow-tooltip>
             <template #default="{ row }">
               <a style="font-weight:500;color:var(--color-primary);cursor:pointer" @click="handleEdit(row)">{{ row.name }}</a>
@@ -467,7 +468,7 @@ onMounted(() => {
           <el-table-column label="触发方式" width="90" align="center">
             <template #default="{ row }">
               <el-tag :type="(triggerTypeTagMap[row.triggerType] || '') as any" size="small">
-                {{ triggerTypeLabels[row.triggerType] || row.triggerType }}
+                {{ triggerTypeLabel(row.triggerType) }}
               </el-tag>
             </template>
           </el-table-column>
@@ -519,42 +520,17 @@ onMounted(() => {
           </el-table-column>
         </el-table>
 
-        <div v-if="pagination.total > 0" class="pagination">
-          <el-pagination
-            v-model:current-page="pagination.current"
-            v-model:page-size="pagination.pageSize"
-            :total="pagination.total"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, sizes, prev, pager, next, jumper"
-            background
-            @current-change="(p: number) => { pagination.current = p; fetchList() }"
-            @size-change="(s: number) => { pagination.pageSize = s; pagination.current = 1; fetchList() }"
-          />
-        </div>
+        <ProPagination
+          v-model:current-page="pagination.current"
+          v-model:page-size="pagination.pageSize"
+          :total="pagination.total"
+          @change="(p: number) => { pagination.current = p; fetchList() }"
+        />
       </div>
     </div>
 
-    <!-- 右键菜单 -->
-    <teleport to="body">
-      <div v-if="contextMenuVisible" class="context-menu"
-        :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
-        @click="hideContextMenu">
-        <template v-if="isBlankContext">
-          <div class="context-menu-item" @click="openCreateGroup()">新建分组</div>
-        </template>
-        <template v-else>
-          <div class="context-menu-item" @click="openCreateGroup(contextGroup?.id as number)">新建子分组</div>
-          <div class="context-menu-divider" />
-          <div class="context-menu-item" @click="openEditGroup(contextGroup!)">编辑</div>
-          <div class="context-menu-item danger" @click="handleDeleteGroup(contextGroup!)">删除</div>
-        </template>
-      </div>
-      <!-- 点击空白关闭菜单 -->
-      <div v-if="contextMenuVisible" class="context-menu-mask" @click="hideContextMenu" @contextmenu.prevent="hideContextMenu" />
-    </teleport>
-
-    <!-- 新建/编辑分组弹窗 -->
-    <el-dialog v-model="groupDialogVisible" :title="groupDialogTitle" width="420px" :close-on-click-modal="false">
+    <!-- 分组新建/编辑弹窗 -->
+    <el-dialog v-model="groupModalVisible" :title="groupDialogTitle" width="420px" :close-on-click-modal="false">
       <el-form label-position="top">
         <el-form-item label="分组名称" required>
           <el-input v-model="groupForm.name" placeholder="请输入分组名称，如「日常测试」" maxlength="100" />
@@ -564,63 +540,98 @@ onMounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="groupDialogVisible = false">取消</el-button>
+        <el-button @click="groupModalVisible = false">取消</el-button>
         <el-button type="primary" @click="handleGroupSubmit">确认</el-button>
       </template>
     </el-dialog>
+
+    <!-- 右键上下文菜单 -->
+    <Teleport to="body">
+      <div
+        v-if="contextMenuVisible"
+        class="context-menu"
+        :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
+        @click.stop
+      >
+        <!-- 空白区域右键：仅显示"新建分组" -->
+        <template v-if="!contextGroup">
+          <div v-if="hasPermission('project:plan:group')" class="context-menu-item" @click="contextCreateGroup">新建分组</div>
+        </template>
+        <!-- 系统分组（全部/未分组）右键：仅允许清空 -->
+        <template v-else-if="contextGroup.isSystem === 1">
+          <div class="context-menu-item danger" @click="contextClear">清空计划</div>
+        </template>
+        <!-- 用户分组右键 -->
+        <template v-else>
+          <div v-if="hasPermission('project:plan:group')" class="context-menu-item" @click="contextCreateChild">新建子分组</div>
+          <div v-if="hasPermission('project:plan:group')" class="context-menu-divider" />
+          <div class="context-menu-item" @click="contextEdit">编辑</div>
+          <div class="context-menu-item danger" @click="contextClear">清空计划</div>
+          <div class="context-menu-item danger" @click="contextDelete">删除</div>
+        </template>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <style scoped>
 .plan-layout {
   display: flex;
-  background: #fff;
-  border-radius: 4px;
-  border: 1px solid #f0f0f0;
-  overflow: hidden;
-  min-height: calc(100vh - 200px);
+  gap: 16px;
+  align-items: flex-start;
 }
 
 /* ===== 分组面板 ===== */
 .group-panel {
-  width: 260px;
-  border-right: 1px solid #f0f0f0;
-  padding: 12px 0;
+  width: 220px;
   flex-shrink: 0;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  padding: 12px;
+}
+.group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.group-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #303133;
+}
+.tree-search {
+  margin: 8px 0;
+}
+.tree-search :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+  border-radius: 4px;
+}
+.group-tree {
+  max-height: 560px;
   overflow-y: auto;
 }
-.group-search {
-  padding: 0 12px;
-  margin-bottom: 8px;
+.group-tree :deep(.el-tree-node__content) {
+  height: auto;
+  padding: 2px 0;
 }
-.group-divider {
-  height: 1px;
-  background: #f0f0f0;
-  margin: 8px 12px;
-}
-.group-tree-item {
+.group-tree-node {
   display: flex;
   align-items: center;
+  flex: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 13px;
   gap: 6px;
-  padding: 6px 12px 6px 16px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #606266;
-  transition: all .15s;
+  width: 100%;
 }
-.group-tree-item:hover {
-  background: #fafafa;
+.group-tree-node:hover {
+  background: #f5f7fa;
 }
-.group-tree-item.active {
+.group-tree-node.active {
   background: #ecf5ff;
   color: #409eff;
-}
-.group-tree-item.child {
-  padding-left: 36px;
-}
-.group-icon {
-  font-size: 14px;
-  flex-shrink: 0;
+  font-weight: 500;
 }
 .group-name {
   flex: 1;
@@ -629,135 +640,44 @@ onMounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.group-lock {
-  font-size: 11px;
-  color: #c0c4cc;
-  margin-left: 4px;
-  flex-shrink: 0;
-}
 .group-count {
-  margin-left: auto;
   font-size: 12px;
-  background: #f5f5f5;
   color: #909399;
-  padding: 0 6px;
-  border-radius: 10px;
-  min-width: 24px;
-  text-align: center;
-  line-height: 20px;
   flex-shrink: 0;
 }
-.group-arrow {
-  display: inline-block;
-  width: 14px;
-  font-size: 9px;
+.group-lock {
+  font-size: 10px;
   color: #c0c4cc;
-  cursor: pointer;
   flex-shrink: 0;
-  text-align: center;
-  transition: transform .15s;
-}
-.group-arrow.expanded {
-  transform: rotate(90deg);
-}
-.group-arrow-placeholder {
-  display: inline-block;
-  width: 14px;
-  flex-shrink: 0;
+  margin-left: 2px;
 }
 
 /* ===== 右侧内容 ===== */
 .plan-content {
   flex: 1;
-  padding: 16px 20px;
-  overflow: auto;
-}
-
-/* ===== 搜索卡片 ===== */
-.search-card {
-  background: #fff;
-  border-radius: 4px;
-  border: 1px solid #f0f0f0;
-  padding: 16px 16px 12px;
-  margin-bottom: 16px;
-}
-.search-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.search-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-}
-.search-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   min-width: 0;
 }
-.search-item .filter-label {
-  min-width: 72px;
-  max-width: 72px;
-  flex-shrink: 0;
-  font-size: 13px;
-  color: #606266;
-}
-.search-item .el-input,
-.search-item .el-select {
-  flex: 1;
-  min-width: 0;
-}
-.search-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.search-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 32px;
-  padding: 0 8px;
-  border: none;
-  background: none;
-  color: #409eff;
-  font-size: 13px;
-  cursor: pointer;
-}
-.search-toggle:hover {
-  color: #66b1ff;
-}
-.search-toggle .arrow {
-  display: inline-block;
-  transition: transform .2s;
-  font-size: 11px;
-}
-.search-toggle .arrow.up {
-  transform: rotate(180deg);
-}
 
-/* ===== 右键菜单 ===== */
+/* ===== 右键上下文菜单 ===== */
 .context-menu {
   position: fixed;
   background: #fff;
-  border: 1px solid #e4e7ed;
+  border: 1px solid #ebeef5;
   border-radius: 4px;
-  box-shadow: 0 2px 12px rgba(0,0,0,.1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   padding: 4px 0;
-  min-width: 120px;
-  z-index: 3000;
+  min-width: 130px;
+  z-index: 9999;
 }
 .context-menu-item {
-  padding: 6px 12px;
+  padding: 7px 14px;
   font-size: 13px;
   color: #303133;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: background 0.15s;
 }
 .context-menu-item:hover {
   background: #f5f7fa;
@@ -765,24 +685,12 @@ onMounted(() => {
 .context-menu-item.danger {
   color: #f56c6c;
 }
+.context-menu-item.danger:hover {
+  background: #fef0f0;
+}
 .context-menu-divider {
   height: 1px;
-  background: #e4e7ed;
+  background: #ebeef5;
   margin: 4px 0;
-}
-.context-menu-mask {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 2999;
-}
-
-/* ===== 分页 ===== */
-.pagination {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
 }
 </style>

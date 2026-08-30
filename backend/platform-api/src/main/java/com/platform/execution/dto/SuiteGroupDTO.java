@@ -26,6 +26,11 @@ public class SuiteGroupDTO implements Serializable {
 
     private String name;
 
+    /**
+     * 分组描述
+     */
+    private String description;
+
     private Integer sortNo;
 
     private LocalDateTime createdAt;

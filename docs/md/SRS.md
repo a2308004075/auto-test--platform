@@ -314,6 +314,7 @@ Shell/SQL 链路：
 | Spring Async | - | 服务内异步任务执行（@Async + ThreadPoolTaskExecutor） |
 | javax.validation | - | 数据校验（Spring Boot 内置，注解驱动） |
 | OkHttp | 4.12 | HTTP 客户端，支持 HTTP/2、异步请求 |
+| JGit | 5.13 | 纯 Java 实现的 Git 客户端库（测试代码库克隆/拉取，无需服务器安装 Git） |
 | Groovy ScriptEngine | JSR-223 | 工具方法沙箱执行 |
 | swagger-parser | - | Swagger/OpenAPI 文档解析 |
 | JavaParser | - | 工具方法源码 AST 解析 |
@@ -409,6 +410,34 @@ Environment (环境)
 ├── config: JSON                # 环境配置 JSON (host, host_authorization, wss, nacos, nacos_accessToken, company, 扩展配置等)
 ├── is_active: Boolean
 └── created_at: DateTime
+
+CodeRepository (测试代码仓库)
+├── id: UUID
+├── project_id: FK → Project
+├── name: String                # 仓库名称（项目内唯一）
+├── git_url: String             # Git 仓库地址（http(s):// 或 git@）
+├── branch: String              # 拉取分支（空=仓库默认分支）
+├── description: Text           # 仓库描述
+├── auth_username: String       # 认证用户名（私有仓库，兼容 Token 用户名）
+├── auth_password: String       # 认证密码/Token（AES 加密存储，enc: 前缀）
+├── local_path: String          # 本地代码目录（相对存储根目录，首次拉取成功后回填）
+├── last_pull_at: DateTime      # 最近一次拉取时间
+├── last_pull_status: String    # 最近一次拉取状态：RUNNING / SUCCESS / FAILED
+├── last_commit_id: String      # 最近一次拉取成功后的 HEAD commit ID
+├── created_at: DateTime
+└── updated_at: DateTime
+
+CodeRepositoryPullLog (仓库拉取历史)
+├── id: UUID
+├── repository_id: FK → CodeRepository
+├── pull_type: String           # 拉取类型：CLONE（首次克隆）/ PULL（增量更新）
+├── branch: String              # 拉取分支
+├── status: String              # 拉取状态：RUNNING / SUCCESS / FAILED
+├── commit_id: String           # 拉取成功后的 HEAD commit ID
+├── message: Text               # 结果信息（成功为概要，失败为原因）
+├── duration_ms: Integer        # 拉取耗时（毫秒）
+├── created_at: DateTime
+└── updated_at: DateTime
 
 ApiModule (接口分组)
 ├── id: UUID
@@ -727,6 +756,8 @@ User (用户)
 
 ```
 Project 1──N Environment
+Project 1──N CodeRepository
+CodeRepository 1──N CodeRepositoryPullLog
 Project 1──N ApiModule
 Project 1──N Keyword
 Project 1──N ToolMethod
@@ -774,6 +805,7 @@ TestResult N──1 TestCase
 > | M8 测试用例管理 | 套件、用例 CRUD、步骤编排、参数化、四层 Setup/Teardown |
 > | M9 测试执行与调度 | 测试计划、执行触发、实时状态推送 |
 > | M10 测试报告与分析 | 执行详情、执行历史、趋势分析、报告导出 |
+> | M11 测试代码库 | Git 仓库登记、JGit 代码克隆/拉取、认证凭证加密存储、拉取历史 |
 >
 > **模块间通信：**
 > - 所有模块在同一应用内，通过 Spring Bean 依赖注入直接调用，无网络开销
@@ -1375,6 +1407,40 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 - 邮件通知：执行完成后发送结果摘要
 - Webhook 通知：对接企业微信/钉钉
 
+### 4.10 测试代码库
+
+测试代码库负责登记项目关联的 Git 仓库并拉取代码到平台服务器本地，供测试执行使用。基于 JGit（纯 Java 实现的 Git 客户端库）完成克隆与增量更新，服务器无需安装 Git。
+
+#### 4.10.1 仓库登记
+
+- 项目内登记多个 Git 仓库：仓库名称（项目内唯一，≤50 字符）、Git 地址（http(s):// 或 git@ 形式，≤500 字符）、分支（留空使用仓库默认分支，≤100 字符）、描述
+- 仓库列表展示：名称、Git 地址、分支、认证（有/无）、最近拉取状态、最近拉取时间、最近 Commit（截断 8 位）
+- 编辑仓库时认证密码留空表示保持不变，密码不回显、不回传（仅返回是否已配置认证）
+- 删除仓库需二次确认，同时物理删除仓库记录与服务器本地已拉取的代码目录（拉取历史随外键级联删除）
+
+#### 4.10.2 代码拉取
+
+- 拉取策略（本地存储目录按 `{存储根目录}/{projectId}/{repoId}` 组织，以 repoId 命名，仓库名可修改不影响目录）：
+  - 本地目录不存在 → 克隆（CLONE）
+  - 本地目录已存在 → 增量更新（PULL），拉取前先 fetch 同步远程引用；配置分支与当前分支不一致时自动切换分支
+- 指定分支时克隆/更新该分支，留空使用仓库默认分支
+- 拉取成功后回写仓库表：最近拉取状态、拉取时间、HEAD Commit ID、本地存储路径
+- 拉取失败不中断业务：以 HTTP 200 + 业务失败状态（success=false）返回，错误信息保存至拉取历史
+- 克隆失败时自动清理残留目录，保证下次可重新克隆
+- 拉取超时可配置（默认 300 秒）；前端拉取请求超时单独放宽至 10 分钟（防止大仓库超时）；同一仓库拉取期间按钮置 loading 防重复触发
+
+#### 4.10.3 认证与加密
+
+- 支持私有仓库认证：认证用户名 + 密码/Access Token（用户名密码凭证方式，兼容 Token 场景）
+- 凭证加密存储：AES-128/CBC/PKCS5Padding 加密，随机 IV 前置拼接后 Base64，密文带 `enc:` 前缀；密钥可配置
+- 查询接口不回传密码，仅返回是否配置认证（hasAuth 布尔值）
+
+#### 4.10.4 拉取历史
+
+- 每次拉取（含失败）记录一条历史：类型（CLONE 克隆/PULL 更新）、分支、状态（RUNNING 拉取中/SUCCESS 成功/FAILED 失败）、Commit ID、错误信息、耗时
+- 拉取记录抽屉展示最近 20 条历史
+- 状态文案由数据字典 `repository_pull_status` 统一维护
+
 ---
 
 ## 5. 页面结构
@@ -1395,6 +1461,7 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 左侧导航菜单（项目维度）
 ├── 📊 项目概览（仪表盘）
 ├── ⚙ 环境配置
+├── 📦 测试代码库
 ├── 🌐 接口管理
 ├── 🔑 关键字管理
 │   ├── 接口关键字
@@ -1421,6 +1488,7 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 | 项目列表 | `/projects` | 所有项目卡片视图 |
 | 项目概览 | `/projects/:id` | 项目仪表盘 |
 | 环境配置 | `/projects/:id/environments` | 环境列表 + 配置编辑器 |
+| 测试代码库 | `/projects/:id/repositories` | 仓库列表 + 拉取记录抽屉 |
 | 接口管理 | `/projects/:id/apis` | 接口分组 + 接口列表 |
 | 接口导入 | `/projects/:id/apis/import` | Swagger 导入向导 |
 | 接口编辑 | `/projects/:id/apis/:apiId/edit` | 接口参数/请求体/响应编辑 |
@@ -1488,6 +1556,17 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 | PUT | `/api/v1/projects/:pid/environments/:id` | 更新环境 |
 | DELETE | `/api/v1/projects/:pid/environments/:id` | 删除环境 |
 | POST | `/api/v1/projects/:pid/environments/:id/test` | 测试连接 |
+
+#### 测试代码库模块
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/v1/projects/:pid/repositories` | 仓库列表 |
+| POST | `/api/v1/projects/:pid/repositories` | 新建仓库 |
+| POST | `/api/v1/projects/:pid/repositories/:id` | 编辑仓库（密码留空保持不变） |
+| POST | `/api/v1/projects/:pid/repositories/:id/delete` | 删除仓库（含本地代码目录） |
+| POST | `/api/v1/projects/:pid/repositories/:id/pull` | 拉取代码（克隆/增量更新，失败也返回 HTTP 200 + 业务状态） |
+| GET | `/api/v1/projects/:pid/repositories/:id/pull-logs` | 拉取历史（最近 20 条） |
 
 #### 接口模块
 
@@ -1746,6 +1825,7 @@ auto-test-platform 后端服务 (Java / Spring Boot)
 | API 权限 | RBAC：ADMIN 全权限，USER 测试操作权限（不可管理用户和系统配置） |
 | admin 账号保护 | 账号为 `admin` 的系统内置管理员不可修改用户名、不可分配角色、不可禁用、不可删除，仅允许重置密码 |
 | 敏感数据 | 环境配置中的 Token、密码在 API 响应中脱敏显示 |
+| 仓库凭证加密 | 测试代码库的认证密码/Token 使用 AES-128/CBC 加密存储（`enc:` 前缀），API 响应不回传明文 |
 | CORS | Nginx + Gateway 双重 CORS 配置，仅允许前端域名跨域 |
 | SQL 注入 | 使用 MyBatis-Plus 参数化查询（MySQL 预处理语句） |
 | XSS | 前端输入输出转义 |
@@ -1778,6 +1858,7 @@ auto-test-platform/
 │   │   │   ├── login/
 │   │   │   ├── project/
 │   │   │   ├── environment/
+│   │   │   ├── repository/
 │   │   │   ├── api/
 │   │   │   ├── api-keyword/
 │   │   │   ├── tool/
@@ -1840,6 +1921,12 @@ auto-test-platform/
 │   │   │   ├── mq/                 #     ExecutionMessageProducer, ExecutionMessageConsumer
 │   │   │   ├── websocket/          #     ExecutionWebSocket
 │   │   │   └── config/             #     RabbitMQConfig, AsyncConfig, WebSocketConfig
+│   │   ├── repository/              #   测试代码库模块（M11）
+│   │   │   ├── controller/         #     CodeRepositoryController
+│   │   │   ├── service/            #     CodeRepositoryService（JGit 克隆/拉取）
+│   │   │   ├── mapper/             #     CodeRepositoryMapper, CodeRepositoryPullLogMapper
+│   │   │   ├── entity/             #     CodeRepository, CodeRepositoryPullLog
+│   │   │   └── dto/
 │   │   └── filter/                 #   全局过滤器（JWT 鉴权、CORS）
 │   │       ├── JwtAuthenticationFilter.java
 │   │       └── CorsFilter.java
@@ -1936,6 +2023,7 @@ auto-test-platform/
 | Action 关键字 (Action Keyword) | Keyword(type=ACTION) + Action，关键字组合 + 逻辑控制的封装，形成可复用的业务动作单元 |
 | 测试用例关键字 (TestCase Keyword) | Keyword(type=TEST_CASE) + TestCase，测试用例作为关键字复用 |
 | 接口 (ApiEndpoint) | 被测系统的 HTTP REST 接口定义，由 Swagger 导入或手动创建 |
+| 测试代码库 (Code Repository) | 项目登记的 Git 仓库及拉取到服务器本地的代码副本，基于 JGit 克隆/增量更新 |
 | 关键字字典 | 关键字名称到函数引用的映射字典，运行时用于查找执行 |
 | 测试套件 (Test Suite) | 一组相关测试用例的集合 |
 | 测试用例 (Test Case) | 由多个步骤组成的完整测试场景，也可作为关键字被其他用例引用。包含测试步骤和可选的校验（断言） |

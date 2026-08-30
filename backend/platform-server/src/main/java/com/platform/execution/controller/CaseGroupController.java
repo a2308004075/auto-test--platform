@@ -10,6 +10,7 @@ import com.platform.execution.dto.CaseGroupCreateRequest;
 import com.platform.execution.dto.CaseGroupResponse;
 import com.platform.execution.dto.CaseGroupUpdateRequest;
 import com.platform.execution.service.CaseGroupService;
+import com.platform.execution.service.CaseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,7 @@ import java.util.List;
 public class CaseGroupController {
 
     private final CaseGroupService caseGroupService;
+    private final CaseService caseService;
 
     /**
      * 查询分组列表
@@ -61,6 +63,25 @@ public class CaseGroupController {
     public ApiResponse<Void> delete(@PathVariable Long projectId,
                                      @PathVariable Long groupId) {
         caseGroupService.delete(groupId);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * 清空分组及其子孙分组中的所有用例
+     */
+    @PostMapping("/{groupId}/clear-cases")
+    public ApiResponse<Void> clearCases(@PathVariable Long projectId,
+                                        @PathVariable Long groupId) {
+        caseService.clearByGroup(projectId, groupId);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * 清空项目下所有用例
+     */
+    @PostMapping("/clear-all-cases")
+    public ApiResponse<Void> clearAllCases(@PathVariable Long projectId) {
+        caseService.clearByProject(projectId);
         return ApiResponse.ok();
     }
 }

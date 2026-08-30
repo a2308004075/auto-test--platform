@@ -204,6 +204,8 @@ function toggleCategory(cat: ElementCategory) {
 }
 
 // ===== X6 画布初始化 =====
+let x6NodesRegistered = false
+
 function getNodeMarkup(color: string, icon: string, iconBg: string) {
   return [
     { tagName: 'rect', selector: 'body' },
@@ -231,6 +233,7 @@ function getNodeMarkup(color: string, icon: string, iconBg: string) {
 }
 
 function registerNodes(Graph: any) {
+  if (x6NodesRegistered) return
   const portConfig = {
     groups: {
       top: { position: 'top', attrs: { circle: { r: 5, magnet: true, stroke: '#dcdfe6', fill: '#fff', strokeWidth: 1.5 } } },
@@ -241,23 +244,26 @@ function registerNodes(Graph: any) {
     items: [{ group: 'top' }, { group: 'bottom' }, { group: 'left' }, { group: 'right' }],
   }
 
-  // 注册方形节点
+  // 注册方形节点（try-catch 防止 HMR 重复注册报错）
   const registerSquare = (name: string, color: string, icon: string, iconBg: string) => {
-    Graph.registerNode(name, {
-      inherit: 'rect',
-      width: 200, height: 54,
-      markup: getNodeMarkup(color, icon, iconBg),
-      attrs: { body: { fill: iconBg, stroke: 'none', strokeWidth: 0, rx: 6, ry: 6 } },
-      ports: portConfig,
-    })
+    try {
+      Graph.registerNode(name, {
+        inherit: 'rect',
+        width: 200, height: 54,
+        markup: getNodeMarkup(color, icon, iconBg),
+        attrs: { body: { fill: iconBg, stroke: 'none', strokeWidth: 0, rx: 6, ry: 6 } },
+        ports: portConfig,
+      })
+    } catch { /* HMR 重复注册，忽略 */ }
   }
   registerSquare('node-action', '#e6a23c', 'A', '#fdf6ec')
   registerSquare('node-api', '#409eff', 'K', '#ecf5ff')
   registerSquare('node-tool', '#67c23a', 'T', '#f0f9eb')
   registerSquare('node-listener', '#999', '♪', '#f5f5f5')
 
-  // 注册菱形节点（断言）
-  Graph.registerNode('node-assert', {
+  // 注册菱形节点（断言 + 逻辑判断）
+  try {
+    Graph.registerNode('node-assert', {
     inherit: 'polygon',
     width: 160, height: 80,
     markup: [
@@ -311,6 +317,9 @@ function registerNodes(Graph: any) {
       items: [{ id: 'yes', group: 'yes' }, { id: 'no', group: 'no' }],
     },
   })
+  } catch { /* HMR 重复注册，忽略 */ }
+
+  x6NodesRegistered = true
 }
 
 const GRID = 20

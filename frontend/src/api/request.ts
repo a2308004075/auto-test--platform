@@ -6,6 +6,7 @@
 import axios from 'axios'
 import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
+import { reportError } from '@/utils/logger'
 
 /**
  * 401 / 服务不可用时的全局清理回调
@@ -95,6 +96,15 @@ service.interceptors.response.use(
       ElMessage.error(data?.message || '服务器错误')
     }
 
+    // 上报 API 错误到后端日志（跳过日志上报接口自身，避免死循环）
+    if (!url.includes('/v1/frontend-log')) {
+      reportError('api_error', `HTTP ${status || 'N/A'} ${url}`, {
+        extra: `响应: ${JSON.stringify(data?.message || data?.error || '')}`.slice(0, 500),
+      })
+    }
+
+    // 标记已上报，防止 unhandledrejection 监听器重复上报
+    error.__logged = true
     return Promise.reject(error)
   },
 )

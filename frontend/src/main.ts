@@ -15,8 +15,20 @@ import { setUnauthorizedHandler } from './api/request'
 import { useUserStore, useProjectStore, useTagsViewStore } from './stores'
 import dragDialog from '@/directives/drag'
 import vPermission from '@/directives/permission'
+import { reportError, setupGlobalErrorHandlers } from '@/utils/logger'
 
 const app = createApp(App)
+
+// Vue 组件渲染/生命周期错误捕获
+app.config.errorHandler = (err, _instance, info) => {
+  reportError('vue_error', err instanceof Error ? err.message : String(err), {
+    stack: err instanceof Error ? err.stack : undefined,
+    extra: `组件生命周期: ${info}`,
+  })
+}
+
+// 注册 JS 运行时错误和未捕获 Promise 异常监听
+setupGlobalErrorHandlers()
 
 app.use(createPinia())
 app.use(router)

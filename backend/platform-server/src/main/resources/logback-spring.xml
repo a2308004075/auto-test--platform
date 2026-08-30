@@ -98,6 +98,29 @@
         <appender-ref ref="SWAGGER"/>
     </logger>
 
+    <!-- ======================== 前端错误日志 frontend-err.log ========================
+         由独立 logger「com.platform.frontend」输出（additivity=false，不进 all.log）。
+         接收前端通过 POST /api/v1/frontend-log 上报的运行时错误。
+    -->
+    <appender name="FRONTEND_ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/frontend-err.log</file>
+        <append>false</append>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/frontend-err.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 前端错误日志独立 logger：仅写入 frontend-err.log，不向上传播至 root -->
+    <logger name="com.platform.frontend" level="ERROR" additivity="false">
+        <appender-ref ref="FRONTEND_ERROR"/>
+    </logger>
+
     <!-- ======================== 屏蔽数据库调用详情日志 ========================
          将 MyBatis mapper 命名空间及数据库基础设施组件的日志级别提升至 WARN，
          阻止 DEBUG 级别的 SQL 语句、参数绑定、结果集等信息写入 all.log。

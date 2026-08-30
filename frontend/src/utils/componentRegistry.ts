@@ -32,6 +32,9 @@ export const componentMap: Record<string, () => Promise<any>> = {
   // ===== 界面元素模块 =====
   'uielement/UiElementList': () => import('@/views/uielement/UiElementList.vue'),
 
+  // ===== 需求文档模块 =====
+  'requirement/RequirementList': () => import('@/views/requirement/RequirementList.vue'),
+
   // ===== 关键字模块 =====
   'keywords/KeywordList': () => import('@/views/keywords/KeywordList.vue'),
   'keywords/KeywordEdit': () => import('@/views/keywords/KeywordEdit.vue'),

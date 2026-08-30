@@ -366,7 +366,7 @@ onMounted(fetchTree)
         type="info"
         :closable="false"
         show-icon
-        title="解析仓库内 .vue / .html 源码，提取交互元素（input / button / select / textarea / a / label / img / form）并生成智能 XPath"
+        title="解析仓库内 .vue / .html 源码，提取原生交互元素与 Element UI 组件（el-input / el-button / el-select 等），支持 Vue 绑定语法（v-model / :attr）解析并生成智能 XPath"
         description="重复导入将覆盖该仓库已有元素数据；XPath 以源码书写结构为准，无法感知 v-if / v-for 等运行时动态结构"
       />
       <div v-if="repoOptions.length === 0 && !repoLoading" class="no-repo-tip">

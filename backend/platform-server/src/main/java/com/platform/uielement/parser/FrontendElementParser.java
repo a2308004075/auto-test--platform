@@ -28,16 +28,19 @@ import java.util.Set;
  * 前端源码交互元素解析器
  *
  * <p>遍历仓库本地目录中的 .vue（解析顶层 template 区块）与 .html 文件，
- * 提取原生交互标签（input/button/select/textarea/a/label/img/form）并生成 XPath：
+ * 提取原生交互标签（input/button/select/textarea/a/label/img/form）及
+ * Element UI 组件标签（el-input/el-button/el-select 等）并生成 XPath：
  * <ul>
  *   <li>智能 XPath：优先 data-testid/data-test/data-cy &gt; id &gt; name &gt; placeholder &gt;
- *       唯一文本定位，均不可用时回退为绝对路径</li>
+ *       label/value（Element UI）&gt; 唯一文本定位 &gt; placeholder 定位，均不可用时回退为绝对路径</li>
  *   <li>绝对 XPath：html 文件以 /html/body 为根，vue 文件以 /template 为根，各级带同级同名索引</li>
  * </ul>
  *
+ * <p>属性提取支持 Vue 绑定语法：标准属性（如 id="x"）优先，Vue 绑定（如 :id="expr"）次之，
+ * v-model 绑定（仅 Element UI 标签）作为 name 字段的回退值。
+ *
  * <p>说明：静态源码解析无法感知 v-if/v-for 等运行时动态结构，
- * XPath 以源码书写结构为准；UI 库自定义组件标签（如 el-button）渲染后 DOM
- * 与源码不一致，不参与解析。
+ * XPath 以源码书写结构为准。
  */
 @Component
 @Slf4j
@@ -48,6 +51,13 @@ public class FrontendElementParser {
      */
     private static final Set<String> INTERACTIVE_TAGS = new HashSet<>(Arrays.asList(
             "input", "button", "select", "textarea", "a", "label", "img", "form"));
+
+    /**
+     * 参与解析的 Element UI 交互组件标签
+     */
+    private static final Set<String> ELEMENT_UI_TAGS = new HashSet<>(Arrays.asList(
+            "el-input", "el-button", "el-select", "el-checkbox", "el-radio",
+            "el-switch", "el-option", "el-upload", "el-form-item"));
 
     /**
      * 遍历时排除的目录名
@@ -69,6 +79,11 @@ public class FrontendElementParser {
      * XPath 候选验证时尝试的语义属性（优先级从高到低）
      */
     private static final String[] SEMANTIC_ATTRS = {"id", "name", "placeholder"};
+
+    /**
+     * Element UI 组件额外的 XPath 候选属性（label 文本、value 值）
+     */
+    private static final String[] LABEL_ATTRS = {"label", "value"};
 
     /**
      * 文本/XPath 相关字段截断长度
@@ -168,7 +183,9 @@ public class FrontendElementParser {
             return new ArrayList<>();
         }
 
-        Elements candidates = root.select(String.join(",", INTERACTIVE_TAGS));
+        Set<String> allTags = new HashSet<>(INTERACTIVE_TAGS);
+        allTags.addAll(ELEMENT_UI_TAGS);
+        Elements candidates = root.select(String.join(",", allTags));
         List<UiElement> elements = new ArrayList<>(candidates.size());
         int sortNo = 0;
         for (Element el : candidates) {
@@ -179,20 +196,66 @@ public class FrontendElementParser {
     }
 
     /**
+     * 判断是否为 Element UI 组件标签
+     */
+    private boolean isElementUiTag(String tag) {
+        return ELEMENT_UI_TAGS.contains(tag);
+    }
+
+    /**
+     * 解析属性值，支持标准属性 → Vue 绑定（:attr） → v-model 三级回退
+     *
+     * <p>优先级：
+     * <ol>
+     *   <li>标准 HTML 属性（如 id="myId"）</li>
+     *   <li>Vue 绑定语法（如 :id="dynamicId"），返回绑定表达式</li>
+     *   <li>v-model 绑定（仅 Element UI 标签，当 name 字段标准值为空时回退）</li>
+     * </ol>
+     *
+     * @param el           jsoup 元素
+     * @param attr         标准属性名（如 "id"、"name"、"placeholder"）
+     * @param tag          元素标签名
+     * @param useVModel    是否允许 v-model 回退
+     */
+    private String resolveAttr(Element el, String attr, String tag, boolean useVModel) {
+        // 1. 标准 HTML 属性
+        String value = truncateOrNull(el.attr(attr), ATTR_MAX_LENGTH);
+        if (value != null) {
+            return value;
+        }
+        // 2. Vue 绑定语法（:attr="expression"）
+        value = truncateOrNull(el.attr(":" + attr), ATTR_MAX_LENGTH);
+        if (value != null) {
+            return value;
+        }
+        // 3. v-model 回退（仅非原生 input/select/textarea 标签使用，避免将值绑定误作字段名）
+        if (useVModel) {
+            value = truncateOrNull(el.attr("v-model"), ATTR_MAX_LENGTH);
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    /**
      * 将 jsoup 元素转为界面元素实体（含智能/绝对 XPath 生成）
      */
     private UiElement buildElement(Element el, Element root, String rootLabel,
                                    Long projectId, Long repositoryId, String relativePath, int sortNo) {
+        String tag = el.tagName();
+        boolean isUi = isElementUiTag(tag);
+
         UiElement element = new UiElement();
         element.setProjectId(projectId);
         element.setRepositoryId(repositoryId);
         element.setFilePath(relativePath);
-        element.setElementTag(el.tagName());
-        element.setElementId(truncateOrNull(el.attr("id"), ATTR_MAX_LENGTH));
-        element.setElementName(truncateOrNull(el.attr("name"), ATTR_MAX_LENGTH));
+        element.setElementTag(tag);
+        element.setElementId(resolveAttr(el, "id", tag, isUi));
+        element.setElementName(resolveAttr(el, "name", tag, isUi));
         element.setElementClass(truncateOrNull(el.attr("class"), CLASS_MAX_LENGTH));
         element.setElementText(truncateOrNull(el.text().trim(), TEXT_MAX_LENGTH));
-        element.setElementPlaceholder(truncateOrNull(el.attr("placeholder"), ATTR_MAX_LENGTH));
+        element.setElementPlaceholder(resolveAttr(el, "placeholder", tag, isUi));
         element.setElementType(truncateOrNull(el.attr("type"), 50));
         element.setSortNo(sortNo);
 
@@ -224,7 +287,16 @@ public class FrontendElementParser {
                 return xpath;
             }
         }
-        // 唯一文本定位（button/a/label 等常见）
+        // Element UI 组件额外尝试 label / value 属性（el-option、el-form-item 等常见）
+        if (isElementUiTag(tag)) {
+            for (String attr : LABEL_ATTRS) {
+                String xpath = tryAttrCandidate(el, root, tag, attr);
+                if (xpath != null) {
+                    return xpath;
+                }
+            }
+        }
+        // 唯一文本定位（button/a/label/el-button 等常见）
         String text = el.text().trim();
         if (!text.isEmpty()) {
             String value = truncateOrNull(text, TEXT_MAX_LENGTH);
@@ -232,6 +304,21 @@ public class FrontendElementParser {
             String xpath = tryCandidate(el, root, base);
             if (xpath != null) {
                 return xpath;
+            }
+        }
+        // 兜底：placeholder 属性作为文本定位（el-input 等自身无文本但有 placeholder）
+        String placeholder = el.attr("placeholder");
+        if ((placeholder == null || placeholder.trim().isEmpty())) {
+            placeholder = el.attr(":placeholder");
+        }
+        if (placeholder != null && !placeholder.trim().isEmpty()) {
+            String value = truncateOrNull(placeholder.trim(), TEXT_MAX_LENGTH);
+            String base = "//" + tag + "[@placeholder=" + quoteValue(value) + "]";
+            if (base != null) {
+                String xpath = tryCandidate(el, root, base);
+                if (xpath != null) {
+                    return xpath;
+                }
             }
         }
         // 兜底一：绝对路径

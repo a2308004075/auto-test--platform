@@ -411,7 +411,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <PageHeader title="测试用例">
+    <PageHeader title="自动化用例">
       <el-button v-if="hasPermission('project:case:add')" type="primary" @click="openCreate">+ 新建用例</el-button>
     </PageHeader>
 

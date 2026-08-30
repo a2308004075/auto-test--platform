@@ -358,10 +358,9 @@ function onDocClick() { closeContextMenu() }
       <div class="group-panel" @contextmenu="handleBlankContextmenu">
         <div class="group-head">
           <span class="group-title">分组</span>
-          <el-button v-if="hasPermission('project:suite:edit')" size="small" type="primary" link @click="openGroupModal('create')">+ 新建</el-button>
         </div>
         <div class="tree-search">
-          <el-input v-model="filterText" size="small" placeholder="搜索分组..." clearable @input="(v: string) => treeRef?.filter(v)" />
+          <el-input v-model="filterText" size="small" placeholder="搜索分组..." clearable prefix-icon="Search" @input="(v: string) => treeRef?.filter(v)" />
         </div>
         <div class="group-tree">
           <el-tree
@@ -577,20 +576,23 @@ function onDocClick() { closeContextMenu() }
 .group-tree {
   max-height: 560px;
   overflow-y: auto;
+  margin: 8px -12px 0;
 }
 .group-tree :deep(.el-tree-node__content) {
   height: auto;
-  padding: 2px 0;
+  padding: 0;
+  width: 100%;
 }
 .group-tree-node {
   display: flex;
   align-items: center;
   flex: 1;
-  padding: 2px 4px;
-  border-radius: 4px;
+  padding: 4px 12px;
+  border-radius: 0;
   font-size: 13px;
   gap: 6px;
   width: 100%;
+  box-sizing: border-box;
 }
 .group-tree-node:hover {
   background: #f5f7fa;
@@ -601,8 +603,9 @@ function onDocClick() { closeContextMenu() }
   font-weight: 500;
 }
 .group-icon {
-  font-size: 13px;
+  font-size: 14px;
   flex-shrink: 0;
+  line-height: 1;
 }
 .group-name {
   flex: 1;
@@ -625,7 +628,7 @@ function onDocClick() { closeContextMenu() }
 .group-tree-divider {
   height: 1px;
   background: #ebeef5;
-  margin: 6px 8px;
+  margin: 6px 0;
 }
 .group-tree :deep(.el-tree-node:has(.group-tree-divider)) {
   height: auto;

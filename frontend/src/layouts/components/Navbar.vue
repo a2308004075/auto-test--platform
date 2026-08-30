@@ -9,11 +9,12 @@
  * 面包屑 + 项目徽标 + 用户/登录区
  * 右上角用户信息：角色头像 + 显示名 + 下拉菜单（首页/系统管理/退出登录）
  */
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore, useProjectStore, useTagsViewStore, usePermissionStore } from '@/stores'
 import { logout as logoutApi } from '@/api/auth'
+import { getMyDefectTasks } from '@/api/defect'
 import Hamburger from '@/components/Hamburger/index.vue'
 import Breadcrumb from '@/components/Breadcrumb/index.vue'
 import LoginModal from '@/views/auth/LoginModal.vue'
@@ -27,6 +28,19 @@ const permissionStore = usePermissionStore()
 
 // 登录弹窗
 const loginModalOpen = ref(false)
+
+// 待完成任务数
+const pendingTaskCount = ref(0)
+
+async function fetchPendingTaskCount() {
+  if (!userStore.isLoggedIn || !userStore.userId) return
+  try {
+    const res: any = await getMyDefectTasks(userStore.userId)
+    pendingTaskCount.value = (res.data || []).length
+  } catch {
+    pendingTaskCount.value = 0
+  }
+}
 
 // 判断当前是否在项目内页面
 const inProject = computed(() => route.meta?.inProject === true)
@@ -54,6 +68,13 @@ onMounted(() => {
   if (userStore.isLoggedIn && !userStore.username) {
     userStore.fetchCurrentUser()
   }
+  // 获取待完成任务数
+  fetchPendingTaskCount()
+})
+
+// 页面刷新后 fetchCurrentUser 异步完成时重新获取任务数
+watch(() => userStore.userId, (newId) => {
+  if (newId) fetchPendingTaskCount()
 })
 
 async function handleLogout() {
@@ -74,6 +95,7 @@ async function handleLogout() {
 
 function handleLoginSuccess() {
   router.push('/home')
+  fetchPendingTaskCount()
 }
 
 // 下拉菜单命令
@@ -93,6 +115,11 @@ function handleCommand(command: string) {
       break
   }
 }
+
+// 下拉菜单展开时刷新任务数
+function onDropdownToggle(visible: boolean) {
+  if (visible) fetchPendingTaskCount()
+}
 </script>
 
 <template>
@@ -106,7 +133,7 @@ function handleCommand(command: string) {
     </div>
     <div class="navbar-right">
       <template v-if="userStore.isLoggedIn">
-        <el-dropdown trigger="click" @command="handleCommand">
+        <el-dropdown trigger="click" @command="handleCommand" @visible-change="onDropdownToggle">
           <div class="header-user">
             <div class="user-role" :title="userStore.role">{{ roleInitial }}</div>
             <span class="user-name">{{ displayName }}</span>
@@ -125,6 +152,7 @@ function handleCommand(command: string) {
               </el-dropdown-item>
               <el-dropdown-item command="my-tasks">
                 <span class="dropdown-icon">☰</span>我的任务
+                <span v-if="pendingTaskCount > 0" class="task-badge">{{ pendingTaskCount > 99 ? '99+' : pendingTaskCount }}</span>
               </el-dropdown-item>
               <el-dropdown-item command="settings">
                 <span class="dropdown-icon">⚙</span>系统管理
@@ -229,5 +257,20 @@ function handleCommand(command: string) {
   width: 16px;
   text-align: center;
   margin-right: 4px;
+}
+.task-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: auto;
+  border-radius: 9px;
+  background: #f56c6c;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
 }
 </style>

@@ -143,6 +143,16 @@ public class DefectController {
         return ApiResponse.ok();
     }
 
+    /**
+     * 按目标反查关联（用例视角：该用例被哪些缺陷关联）
+     */
+    @GetMapping("/by-target")
+    public ApiResponse<List<DefectRelationResponse>> listByTarget(@PathVariable Long projectId,
+                                                                   @RequestParam String targetType,
+                                                                   @RequestParam Long targetId) {
+        return ApiResponse.ok(defectService.listRelationsByTarget(projectId, targetType, targetId));
+    }
+
     // ───────────── 附件 ─────────────
 
     /**

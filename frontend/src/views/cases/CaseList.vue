@@ -19,6 +19,8 @@ import PageHeader from '@/components/PageHeader/index.vue'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
 import BatchBar from '@/components/BatchBar/index.vue'
 import ProPagination from '@/components/ProPagination/index.vue'
+import CaseRequirementPanel from '@/components/CaseRequirementPanel/index.vue'
+import CaseDefectPanel from '@/components/CaseDefectPanel/index.vue'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
 
@@ -306,6 +308,15 @@ function handleDebug(record: any) {
   loadDebugEnvs()
 }
 
+// ===== 关联抽屉（关联需求/关联缺陷） =====
+const relationDrawerVisible = ref(false)
+const relationCase = ref<any>(null)
+
+function handleRelation(record: any) {
+  relationCase.value = record
+  relationDrawerVisible.value = true
+}
+
 // ===== 调试弹窗 =====
 const debugVisible = ref(false)
 const debugLoading = ref(false)
@@ -532,10 +543,11 @@ onBeforeUnmount(() => {
               <span style="color:#c0c4cc">-</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200" fixed="right">
+          <el-table-column label="操作" width="250" fixed="right">
             <template #default="{ row }">
               <el-button v-if="hasPermission('project:case:edit')" type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
               <el-button type="primary" link size="small" @click="handleDebug(row)">调试</el-button>
+              <el-button type="primary" link size="small" @click="handleRelation(row)">关联</el-button>
               <el-button v-if="hasPermission('project:case:toggle')" type="primary" link size="small" @click="handleToggleStatus(row)">{{ row.isActive === 1 ? '禁用' : '启用' }}</el-button>
               <el-button v-if="hasPermission('project:case:delete')" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
             </template>
@@ -573,6 +585,7 @@ onBeforeUnmount(() => {
             <div class="case-card-footer">
               <el-button v-if="hasPermission('project:case:edit')" type="primary" link size="small" @click.stop="handleEdit(item)">编辑</el-button>
               <el-button type="primary" link size="small" @click.stop="handleDebug(item)">调试</el-button>
+              <el-button type="primary" link size="small" @click.stop="handleRelation(item)">关联</el-button>
               <el-button v-if="hasPermission('project:case:toggle')" type="primary" link size="small" @click.stop="handleToggleStatus(item)">{{ item.isActive === 1 ? '禁用' : '启用' }}</el-button>
               <el-button v-if="hasPermission('project:case:delete')" type="danger" link size="small" @click.stop="handleDelete(item)">删除</el-button>
             </div>
@@ -690,6 +703,31 @@ onBeforeUnmount(() => {
         <el-button @click="debugVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <!-- 用例关联抽屉（关联需求/关联缺陷） -->
+    <el-drawer
+      v-model="relationDrawerVisible"
+      :title="`用例关联 - ${relationCase?.name || ''}`"
+      size="560px"
+      destroy-on-close
+    >
+      <el-tabs type="card">
+        <el-tab-pane label="关联需求" name="requirement">
+          <CaseRequirementPanel
+            :project-id="projectId"
+            case-type="TEST_CASE"
+            :case-id="relationCase?.id"
+          />
+        </el-tab-pane>
+        <el-tab-pane label="关联缺陷" name="defect">
+          <CaseDefectPanel
+            :project-id="projectId"
+            target-type="TEST_CASE"
+            :target-id="relationCase?.id"
+          />
+        </el-tab-pane>
+      </el-tabs>
+    </el-drawer>
   </div>
 </template>
 

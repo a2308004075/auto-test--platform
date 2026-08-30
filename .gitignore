@@ -29,6 +29,9 @@ frontend/npm-debug.log*
 frontend/pnpm-debug.log*
 *.log
 
+# 数据库备份（reset-and-build.bat 自动生成）
+backend/scripts/backup/
+
 # 编辑器临时文件
 frontend/.vscode/*
 !frontend/.vscode/extensions.json

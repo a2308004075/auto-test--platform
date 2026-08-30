@@ -18,9 +18,12 @@ import com.platform.common.util.ChangeLogHelper;
 import com.platform.execution.dto.ManualCaseCreateRequest;
 import com.platform.execution.dto.ManualCaseResponse;
 import com.platform.execution.dto.ManualCaseUpdateRequest;
+import com.platform.execution.entity.DefectRelation;
 import com.platform.execution.entity.ManualCase;
+import com.platform.execution.mapper.DefectRelationMapper;
 import com.platform.execution.mapper.ManualCaseMapper;
 import com.platform.project.service.ProjectService;
+import com.platform.requirement.service.RequirementCaseRelationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -47,6 +50,8 @@ public class ManualCaseService {
     private final ProjectService projectService;
     private final ChangeLogService changeLogService;
     private final CommentService commentService;
+    private final RequirementCaseRelationService requirementCaseRelationService;
+    private final DefectRelationMapper defectRelationMapper;
 
     /**
      * 分页查询手动用例
@@ -208,7 +213,7 @@ public class ManualCaseService {
     }
 
     /**
-     * 删除手动用例（同步清理评论与变更记录）
+     * 删除手动用例（同步清理评论、变更记录、需求关联与缺陷关联）
      */
     @Transactional(rollbackFor = Exception.class)
     public void deleteCase(Long caseId) {
@@ -218,6 +223,8 @@ public class ManualCaseService {
         }
         commentService.deleteByBiz(BizType.MANUAL_CASE, caseId);
         changeLogService.deleteByBiz(BizType.MANUAL_CASE, caseId);
+        requirementCaseRelationService.deleteByCase(RequirementCaseRelationService.CASE_TYPE_MANUAL, caseId);
+        deleteDefectRelations(caseId);
         manualCaseMapper.deleteById(caseId);
     }
 
@@ -272,8 +279,20 @@ public class ManualCaseService {
         for (ManualCase c : cases) {
             commentService.deleteByBiz(BizType.MANUAL_CASE, c.getId());
             changeLogService.deleteByBiz(BizType.MANUAL_CASE, c.getId());
+            requirementCaseRelationService.deleteByCase(RequirementCaseRelationService.CASE_TYPE_MANUAL, c.getId());
+            deleteDefectRelations(c.getId());
         }
         manualCaseMapper.delete(wrapper);
+    }
+
+    /**
+     * 删除某手动用例的缺陷关联记录
+     */
+    private void deleteDefectRelations(Long caseId) {
+        LambdaQueryWrapper<DefectRelation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(DefectRelation::getTargetType, "MANUAL_CASE")
+                .eq(DefectRelation::getTargetId, caseId);
+        defectRelationMapper.delete(wrapper);
     }
 
     // ───────────────────── 私有方法 ─────────────────────

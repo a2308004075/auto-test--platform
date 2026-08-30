@@ -49,6 +49,9 @@ public class DefectService {
     private final DefectRelationMapper defectRelationMapper;
     private final DefectAttachmentMapper defectAttachmentMapper;
     private final DefectHistoryMapper defectHistoryMapper;
+    private final ManualCaseMapper manualCaseMapper;
+    private final TestCaseMapper testCaseMapper;
+    private final TestSuiteMapper testSuiteMapper;
     private final UserMapper userMapper;
     private final ProjectService projectService;
     private final EnvironmentMapper environmentMapper;
@@ -420,16 +423,77 @@ public class DefectService {
     }
 
     private DefectRelation createRelation(Long defectId, DefectRelationCreateRequest request) {
+        Defect defect = findById(defectId);
+        String targetType = request.getTargetType();
+
+        // 用例类目标：校验存在性、同项目，并回填标题快照
+        String targetTitle = request.getTargetTitle();
+        if ("MANUAL_CASE".equals(targetType) || "TEST_CASE".equals(targetType)) {
+            if ("MANUAL_CASE".equals(targetType)) {
+                ManualCase manualCase = manualCaseMapper.selectById(request.getTargetId());
+                if (manualCase == null) {
+                    throw new BusinessException(ErrorCode.MANUAL_CASE_NOT_FOUND, "手动用例不存在：" + request.getTargetId());
+                }
+                if (!Objects.equals(manualCase.getProjectId(), defect.getProjectId())) {
+                    throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "用例与缺陷不属于同一项目");
+                }
+                targetTitle = manualCase.getTitle();
+            } else {
+                TestCase testCase = testCaseMapper.selectById(request.getTargetId());
+                if (testCase == null) {
+                    throw new BusinessException(ErrorCode.CASE_NOT_FOUND, "自动用例不存在：" + request.getTargetId());
+                }
+                TestSuite suite = testSuiteMapper.selectById(testCase.getSuiteId());
+                if (suite == null || !Objects.equals(suite.getProjectId(), defect.getProjectId())) {
+                    throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "用例与缺陷不属于同一项目");
+                }
+                targetTitle = testCase.getName();
+            }
+
+            // 防重复
+            LambdaQueryWrapper<DefectRelation> dupWrapper = new LambdaQueryWrapper<>();
+            dupWrapper.eq(DefectRelation::getDefectId, defectId)
+                    .eq(DefectRelation::getTargetType, targetType)
+                    .eq(DefectRelation::getTargetId, request.getTargetId());
+            if (defectRelationMapper.selectCount(dupWrapper) > 0) {
+                throw new BusinessException(ErrorCode.RESOURCE_CONFLICT, "该用例已关联到当前缺陷");
+            }
+        }
+
         DefectRelation relation = new DefectRelation();
         relation.setDefectId(defectId);
         relation.setRelationType(StringUtils.hasText(request.getRelationType()) ? request.getRelationType() : "RELATED");
-        relation.setTargetType(request.getTargetType());
+        relation.setTargetType(targetType);
         relation.setTargetId(request.getTargetId());
-        relation.setTargetTitle(request.getTargetTitle());
+        relation.setTargetTitle(targetTitle);
         relation.setCreatedBy(getCurrentUserId());
         relation.setCreatedAt(LocalDateTime.now());
         defectRelationMapper.insert(relation);
         return relation;
+    }
+
+    /**
+     * 按目标反查关联（用例视角：该用例被哪些缺陷关联）
+     */
+    public List<DefectRelationResponse> listRelationsByTarget(Long projectId, String targetType, Long targetId) {
+        projectService.findActiveById(projectId);
+
+        LambdaQueryWrapper<DefectRelation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(DefectRelation::getTargetType, targetType)
+                .eq(DefectRelation::getTargetId, targetId)
+                .orderByDesc(DefectRelation::getCreatedAt);
+        List<DefectRelationResponse> result = new ArrayList<>();
+        for (DefectRelation relation : defectRelationMapper.selectList(wrapper)) {
+            DefectRelationResponse resp = toRelationResponse(relation);
+            Defect defect = defectMapper.selectById(relation.getDefectId());
+            if (defect != null) {
+                resp.setDefectNo(defect.getDefectNo());
+                resp.setDefectTitle(defect.getTitle());
+                resp.setDefectStatus(defect.getStatus());
+            }
+            result.add(resp);
+        }
+        return result;
     }
 
     private void recalcWorkHours(Long defectId) {

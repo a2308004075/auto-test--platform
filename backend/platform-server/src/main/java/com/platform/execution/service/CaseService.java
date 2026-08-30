@@ -19,11 +19,14 @@ import com.platform.execution.dto.CaseUpdateRequest;
 import com.platform.execution.engine.CaseExecutor;
 import com.platform.execution.engine.ExecutionContext;
 import com.platform.execution.engine.StepResult;
+import com.platform.execution.entity.DefectRelation;
 import com.platform.execution.entity.TestCase;
 import com.platform.execution.entity.TestSuite;
+import com.platform.execution.mapper.DefectRelationMapper;
 import com.platform.execution.mapper.TestCaseMapper;
 import com.platform.execution.mapper.TestSuiteMapper;
 import com.platform.environment.service.EnvironmentService;
+import com.platform.requirement.service.RequirementCaseRelationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -52,6 +55,8 @@ public class CaseService {
     private final CaseGroupService caseGroupService;
     private final CaseExecutor caseExecutor;
     private final EnvironmentService environmentService;
+    private final RequirementCaseRelationService requirementCaseRelationService;
+    private final DefectRelationMapper defectRelationMapper;
 
     /**
      * 分页查询测试用例
@@ -199,7 +204,7 @@ public class CaseService {
     }
 
     /**
-     * 删除测试用例
+     * 删除测试用例（同步清理需求关联与缺陷关联）
      */
     @Transactional(rollbackFor = Exception.class)
     public void deleteCase(Long caseId) {
@@ -207,11 +212,12 @@ public class CaseService {
         if (c == null) {
             throw new BusinessException(ErrorCode.CASE_NOT_FOUND, "测试用例不存在：" + caseId);
         }
+        deleteCaseRelations(caseId);
         testCaseMapper.deleteById(caseId);
     }
 
     /**
-     * 清空分组及其子孙分组中的所有用例（执行结果由外键级联删除）
+     * 清空分组及其子孙分组中的所有用例（同步清理需求关联与缺陷关联）
      *
      * @param groupId 分组 ID（0 表示未分组）
      */
@@ -231,11 +237,15 @@ public class CaseService {
             // 指定分组（含子孙分组递归）
             wrapper.in(TestCase::getGroupId, caseGroupService.getDescendantGroupIds(groupId));
         }
+        List<TestCase> cases = testCaseMapper.selectList(wrapper);
+        for (TestCase c : cases) {
+            deleteCaseRelations(c.getId());
+        }
         testCaseMapper.delete(wrapper);
     }
 
     /**
-     * 清空项目下所有用例
+     * 清空项目下所有用例（同步清理需求关联与缺陷关联）
      */
     @Transactional(rollbackFor = Exception.class)
     public void clearByProject(Long projectId) {
@@ -245,7 +255,23 @@ public class CaseService {
         }
         LambdaQueryWrapper<TestCase> wrapper = new LambdaQueryWrapper<>();
         wrapper.in(TestCase::getSuiteId, suiteIds);
+        List<TestCase> cases = testCaseMapper.selectList(wrapper);
+        for (TestCase c : cases) {
+            deleteCaseRelations(c.getId());
+        }
         testCaseMapper.delete(wrapper);
+    }
+
+    /**
+     * 删除某自动用例的需求关联与缺陷关联记录
+     */
+    private void deleteCaseRelations(Long caseId) {
+        requirementCaseRelationService.deleteByCase(RequirementCaseRelationService.CASE_TYPE_AUTO, caseId);
+
+        LambdaQueryWrapper<DefectRelation> defectWrapper = new LambdaQueryWrapper<>();
+        defectWrapper.eq(DefectRelation::getTargetType, "TEST_CASE")
+                .eq(DefectRelation::getTargetId, caseId);
+        defectRelationMapper.delete(defectWrapper);
     }
 
     /**

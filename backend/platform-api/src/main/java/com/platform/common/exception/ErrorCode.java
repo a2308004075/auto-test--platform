@@ -44,6 +44,7 @@ public final class ErrorCode {
     public static final int RESOURCE_NOT_FOUND = 1006;
     public static final int RESOURCE_CONFLICT = 1007;
     public static final int INTERNAL_ERROR = 1008;
+    public static final int TASK_NOT_FOUND = 1009;
 
     // ===== M1 认证与用户 (1100-1199) =====
     public static final int LOGIN_FAILED = 1100;
@@ -165,6 +166,7 @@ public final class ErrorCode {
             case UI_ELEMENT_IMPORT_FAILED:
                 return 400;
             case RESOURCE_NOT_FOUND:
+            case TASK_NOT_FOUND:
             case SUITE_NOT_FOUND:
             case CASE_NOT_FOUND:
             case PLAN_NOT_FOUND:

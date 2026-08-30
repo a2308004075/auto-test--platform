@@ -1,12 +1,15 @@
 <!--
  @author HXN
  @date 2026-08-30
- @description 业务对象详情抽屉（评论、状态变更、变更记录）
+ @description 业务对象详情抽屉（评论、状态变更、变更记录、关联信息）
 -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import CommentPanel from '@/components/CommentPanel/index.vue'
 import ChangeLogPanel from '@/components/ChangeLogPanel/index.vue'
+import RequirementCasePanel from '@/components/RequirementCasePanel/index.vue'
+import CaseRequirementPanel from '@/components/CaseRequirementPanel/index.vue'
+import CaseDefectPanel from '@/components/CaseDefectPanel/index.vue'
 
 export interface BizDetailDrawerProps {
   visible: boolean
@@ -16,6 +19,8 @@ export interface BizDetailDrawerProps {
   statusFieldName: string
   fieldLabelMap?: Record<string, string>
   valueLabelMap?: Record<string, Record<string, string>>
+  /** 项目 ID（需求条目/手动用例传入后展示关联 Tab） */
+  projectId?: number
 }
 
 const props = defineProps<BizDetailDrawerProps>()
@@ -50,6 +55,15 @@ const drawerVisible = computed({
           :field-label-map="fieldLabelMap"
           :value-label-map="valueLabelMap"
         />
+      </el-tab-pane>
+      <el-tab-pane v-if="bizType === 'REQUIREMENT_ITEM' && projectId" label="关联用例" name="caseRelation">
+        <RequirementCasePanel :project-id="projectId" :item-id="bizId" />
+      </el-tab-pane>
+      <el-tab-pane v-if="bizType === 'MANUAL_CASE' && projectId" label="关联需求" name="requirementRelation">
+        <CaseRequirementPanel :project-id="projectId" case-type="MANUAL_CASE" :case-id="bizId" />
+      </el-tab-pane>
+      <el-tab-pane v-if="bizType === 'MANUAL_CASE' && projectId" label="关联缺陷" name="defectRelation">
+        <CaseDefectPanel :project-id="projectId" target-type="MANUAL_CASE" :target-id="bizId" />
       </el-tab-pane>
       <el-tab-pane label="变更记录" name="changeLog">
         <ChangeLogPanel

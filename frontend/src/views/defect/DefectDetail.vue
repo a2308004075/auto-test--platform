@@ -18,6 +18,7 @@ import {
   addDefectAttachment, deleteDefectAttachment
 } from '@/api/defect'
 import PageHeader from '@/components/PageHeader/index.vue'
+import CaseSelectDialog from '@/components/CaseSelectDialog/index.vue'
 import { useDict } from '@/composables/useDict'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import '@wangeditor/editor/dist/css/style.css'
@@ -27,6 +28,18 @@ const router = useRouter()
 const projectId = computed(() => Number(route.params.id))
 const defectId = computed(() => Number(route.params.defectId))
 const { options: relationTypeOptions } = useDict('defect_relation_type')
+const { options: targetTypeOptions } = useDict('defect_target_type')
+
+const relationTypeLabelMap = computed(() => {
+  const map: Record<string, string> = {}
+  relationTypeOptions.value.forEach((o) => { map[o.value] = o.label })
+  return map
+})
+const targetTypeLabelMap = computed(() => {
+  const map: Record<string, string> = {}
+  targetTypeOptions.value.forEach((o) => { map[o.value] = o.label })
+  return map
+})
 
 const loading = ref(false)
 const detail = ref<any>({})
@@ -39,6 +52,20 @@ const workLogVisible = ref(false)
 // 关联
 const relationForm = reactive({ relationType: 'RELATED', targetType: 'TEST_CASE', targetId: undefined as number | undefined, targetTitle: '' })
 const relationVisible = ref(false)
+// 用例类目标（手动/自动用例）支持搜索选择，其余类型手动输入
+const isCaseTarget = computed(() => ['MANUAL_CASE', 'TEST_CASE'].includes(relationForm.targetType))
+const caseSelectVisible = ref(false)
+
+function handleTargetTypeChange() {
+  relationForm.targetId = undefined
+  relationForm.targetTitle = ''
+}
+
+function handleCaseConfirm(rows: Array<{ id: number; title: string }>) {
+  if (rows.length === 0) return
+  relationForm.targetId = rows[0].id
+  relationForm.targetTitle = rows[0].title
+}
 
 // 附件
 const attachmentForm = reactive({ fileName: '', fileUrl: '', fileSize: undefined as number | undefined })
@@ -122,7 +149,10 @@ async function handleDeleteWorkLog(id: number) {
 
 // 关联
 async function handleAddRelation() {
-  if (!relationForm.targetId) { ElMessage.warning('请输入关联目标 ID'); return }
+  if (!relationForm.targetId) {
+    ElMessage.warning(isCaseTarget.value ? '请选择关联的用例' : '请输入关联目标 ID')
+    return
+  }
   try {
     await addDefectRelation(projectId.value, defectId.value, relationForm)
     ElMessage.success('添加成功')
@@ -282,8 +312,12 @@ onMounted(() => {
             <el-button type="primary" size="small" @click="relationVisible = true">添加关联</el-button>
           </div>
           <el-table :data="detail.relations || []" border stripe>
-            <el-table-column prop="relationType" label="关联类型" width="120" />
-            <el-table-column prop="targetType" label="目标类型" width="140" />
+            <el-table-column label="关联类型" width="120">
+              <template #default="{ row }">{{ relationTypeLabelMap[row.relationType] || row.relationType }}</template>
+            </el-table-column>
+            <el-table-column label="目标类型" width="140">
+              <template #default="{ row }">{{ targetTypeLabelMap[row.targetType] || row.targetType }}</template>
+            </el-table-column>
             <el-table-column prop="targetId" label="目标 ID" width="100" />
             <el-table-column prop="targetTitle" label="目标标题" />
             <el-table-column label="操作" width="80">
@@ -364,25 +398,35 @@ onMounted(() => {
           </el-select>
         </el-form-item>
         <el-form-item label="目标类型">
-          <el-select v-model="relationForm.targetType" style="width: 100%">
-            <el-option value="TEST_CASE" label="自动用例" />
-            <el-option value="MANUAL_CASE" label="手动用例" />
-            <el-option value="TEST_PLAN" label="测试计划" />
-            <el-option value="TEST_EXECUTION" label="执行记录" />
+          <el-select v-model="relationForm.targetType" style="width: 100%" @change="handleTargetTypeChange">
+            <el-option v-for="t in targetTypeOptions" :key="t.value" :value="t.value" :label="t.label" />
           </el-select>
         </el-form-item>
-        <el-form-item label="目标 ID" required>
-          <el-input-number v-model="relationForm.targetId" :controls="false" style="width: 100%" />
+        <!-- 用例类目标：搜索选择，自动带出 ID/标题 -->
+        <el-form-item v-if="isCaseTarget" label="关联目标" required>
+          <div style="display: flex; gap: 8px; width: 100%">
+            <el-input :model-value="relationForm.targetTitle" placeholder="点击右侧按钮选择用例" readonly style="flex: 1" />
+            <el-button type="primary" @click="caseSelectVisible = true">选择用例</el-button>
+          </div>
         </el-form-item>
-        <el-form-item label="目标标题">
-          <el-input v-model="relationForm.targetTitle" placeholder="关联目标标题快照" />
-        </el-form-item>
+        <!-- 其余目标类型：保持手动输入 -->
+        <template v-else>
+          <el-form-item label="目标 ID" required>
+            <el-input-number v-model="relationForm.targetId" :controls="false" style="width: 100%" />
+          </el-form-item>
+          <el-form-item label="目标标题">
+            <el-input v-model="relationForm.targetTitle" placeholder="关联目标标题快照" />
+          </el-form-item>
+        </template>
       </el-form>
       <template #footer>
         <el-button @click="relationVisible = false">取消</el-button>
         <el-button type="primary" @click="handleAddRelation">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 用例选择弹窗（单选） -->
+    <CaseSelectDialog v-model:visible="caseSelectVisible" :project-id="projectId" @confirm="handleCaseConfirm" />
 
     <!-- 添加附件弹窗 -->
     <el-dialog v-model="attachmentVisible" title="添加附件" width="460px">

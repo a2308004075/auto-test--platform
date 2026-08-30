@@ -45,6 +45,7 @@ public class RequirementService {
     private final ProjectService projectService;
     private final ChangeLogService changeLogService;
     private final CommentService commentService;
+    private final RequirementCaseRelationService requirementCaseRelationService;
 
     // ===== 版本管理 =====
 
@@ -121,13 +122,14 @@ public class RequirementService {
     public void deleteVersion(Long versionId) {
         findVersionById(versionId);
 
-        // 清理该版本下所有条目的评论与变更记录
+        // 清理该版本下所有条目的评论、变更记录与用例关联
         LambdaQueryWrapper<RequirementItem> itemWrapper = new LambdaQueryWrapper<>();
         itemWrapper.eq(RequirementItem::getVersionId, versionId);
         List<RequirementItem> items = itemMapper.selectList(itemWrapper);
         for (RequirementItem item : items) {
             commentService.deleteByBiz(BizType.REQUIREMENT_ITEM, item.getId());
             changeLogService.deleteByBiz(BizType.REQUIREMENT_ITEM, item.getId());
+            requirementCaseRelationService.deleteByItem(item.getId());
         }
 
         versionMapper.deleteById(versionId);
@@ -230,13 +232,14 @@ public class RequirementService {
     }
 
     /**
-     * 删除需求条目（同步清理评论与变更记录）
+     * 删除需求条目（同步清理评论、变更记录与用例关联）
      */
     @Transactional(rollbackFor = Exception.class)
     public void deleteItem(Long itemId) {
         findItemById(itemId);
         commentService.deleteByBiz(BizType.REQUIREMENT_ITEM, itemId);
         changeLogService.deleteByBiz(BizType.REQUIREMENT_ITEM, itemId);
+        requirementCaseRelationService.deleteByItem(itemId);
         itemMapper.deleteById(itemId);
     }
 

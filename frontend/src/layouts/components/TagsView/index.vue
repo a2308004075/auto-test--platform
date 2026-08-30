@@ -33,7 +33,16 @@ onUnmounted(() => {
 
 watch(
   () => route.path,
-  () => addCurrentTag(),
+  (newPath) => {
+    addCurrentTag()
+    // 离开【系统管理】时自动关闭"我的任务"页签
+    if (!newPath.startsWith('/settings/')) {
+      const myTasksTab = tagsViewStore.visitedViews.find(v => v.path === '/settings/my-tasks')
+      if (myTasksTab) {
+        tagsViewStore.delView(myTasksTab)
+      }
+    }
+  },
 )
 
 function addCurrentTag() {

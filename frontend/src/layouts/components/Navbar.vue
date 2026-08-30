@@ -14,7 +14,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore, useProjectStore, useTagsViewStore, usePermissionStore } from '@/stores'
 import { logout as logoutApi } from '@/api/auth'
-import { getMyDefectTasks } from '@/api/defect'
+import { getMyTaskCount } from '@/api/task'
 import Hamburger from '@/components/Hamburger/index.vue'
 import Breadcrumb from '@/components/Breadcrumb/index.vue'
 import LoginModal from '@/views/auth/LoginModal.vue'
@@ -35,8 +35,8 @@ const pendingTaskCount = ref(0)
 async function fetchPendingTaskCount() {
   if (!userStore.isLoggedIn || !userStore.userId) return
   try {
-    const res: any = await getMyDefectTasks(userStore.userId)
-    pendingTaskCount.value = (res.data || []).length
+    const res: any = await getMyTaskCount(userStore.userId)
+    pendingTaskCount.value = res.data || 0
   } catch {
     pendingTaskCount.value = 0
   }

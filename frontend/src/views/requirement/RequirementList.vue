@@ -575,6 +575,7 @@ onMounted(fetchVersions)
       status-field-name="status"
       :field-label-map="requirementFieldLabelMap"
       :value-label-map="requirementValueLabelMap"
+      :project-id="projectId"
     />
 
     <!-- 新建/编辑需求条目弹窗 -->

@@ -510,6 +510,7 @@ onBeforeUnmount(() => {
       status-field-name="caseStatus"
       :field-label-map="manualCaseFieldLabelMap"
       :value-label-map="manualCaseValueLabelMap"
+      :project-id="projectId"
     />
 
     <!-- 分组新建/编辑弹窗 -->

@@ -13,9 +13,11 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores'
 import { getCurrentUser, updateProfile, changePassword, getLoginLogs } from '@/api/auth'
 import { validatePassword, PASSWORD_RULE_HINT } from '@/utils/password'
+import { useRouteTab } from '@/composables/useRouteTab'
 
 const userStore = useUserStore()
-const activeTab = ref('basic')
+// Tab 状态（与 URL ?tab= 参数同步，刷新后停留在当前选项卡）
+const activeTab = useRouteTab(['basic', 'password', 'activity'], 'basic')
 
 // ===== 基本信息 =====
 const profileLoading = ref(false)

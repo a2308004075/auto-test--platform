@@ -18,6 +18,7 @@ import { getAction, updateAction } from '@/api/action'
 import { getKeywords, getKeyword } from '@/api/keyword'
 import { getTools } from '@/api/tool'
 import { usePermission } from '@/composables/usePermission'
+import { useRouteTab } from '@/composables/useRouteTab'
 import { InfoFilled } from '@element-plus/icons-vue'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
@@ -27,8 +28,8 @@ const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 const actionId = computed(() => Number(route.params.actionId))
 
-// ===== Tab 状态 =====
-const activeTab = ref('basic')
+// ===== Tab 状态（与 URL ?tab= 参数同步，刷新后停留在当前选项卡） =====
+const activeTab = useRouteTab(['basic', 'params', 'orchestrator'], 'basic')
 
 // ===== 基础信息 =====
 const actionName = ref('')
@@ -150,6 +151,8 @@ async function fetchAction() {
     actionName.value = data.name || ''
     actionDesc.value = data.description || ''
     try { nodes.value = data.nodes ? JSON.parse(data.nodes) : [] } catch { nodes.value = [] }
+    // 刷新后直接恢复到编排器 tab 时，画布可能先于数据初始化，数据到达后重绘
+    renderExistingNodes()
     inputParams.value = parseParams(data.inputParams)
     outputParams.value = parseParams(data.outputParams)
   } catch {
@@ -1013,7 +1016,6 @@ function gotoDebug() {
 
 // ===== Tab 切换时延迟初始化画布 =====
 async function onTabChange(name: string) {
-  activeTab.value = name
   if (name === 'orchestrator') {
     await nextTick()
     if (!graphInitialized) {
@@ -1037,6 +1039,8 @@ function onDocClickCloseInsert() {
 onMounted(() => {
   fetchAction()
   fetchElementData()
+  // 刷新恢复到编排器 tab 时触发画布初始化（与手动切换 tab 行为一致）
+  onTabChange(activeTab.value)
   document.addEventListener('click', onDocClickCloseInsert)
 })
 

@@ -17,6 +17,7 @@ import { getApi, createApi, updateApi, getModules, getApiReferences, debugApi } 
 import { getEnvironments } from '@/api/environment'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
+import { useRouteTab } from '@/composables/useRouteTab'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
 import CodeEditor from '@/components/CodeEditor/index.vue'
 import { schemaToExampleString } from '@/utils/schemaToExample'
@@ -29,7 +30,11 @@ const apiId = computed(() => Number(route.params.apiId))
 const isEdit = computed(() => !!apiId.value)
 const { hasPermission } = usePermission()
 
-const activeTab = ref('basic')
+// Tab 状态（与 URL ?tab= 参数同步，刷新后停留在当前选项卡；调试/引用关系 tab 仅编辑模式存在）
+const activeTab = useRouteTab(
+  isEdit.value ? ['basic', 'headers', 'params', 'body', 'response', 'debug', 'refs'] : ['basic', 'headers', 'params', 'body', 'response'],
+  'basic',
+)
 const loading = ref(false)
 const modules = ref<any[]>([])
 const environments = ref<any[]>([])
@@ -399,6 +404,8 @@ onMounted(() => {
   fetchModules()
   fetchEnvironments()
   fetchApi()
+  // 刷新恢复到调试/引用关系 tab 时触发懒加载（与手动切换 tab 行为一致）
+  onTabChange(activeTab.value)
   // 新建时自动添加 Content-Type 到 Header 参数
   if (!isEdit.value) {
     headerParams.value.push({ name: 'Content-Type', type: 'string', required: false, description: '内容类型', value: form.contentType })

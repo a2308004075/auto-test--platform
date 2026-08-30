@@ -20,6 +20,7 @@ import {
 import PageHeader from '@/components/PageHeader/index.vue'
 import BatchBar from '@/components/BatchBar/index.vue'
 import ProPagination from '@/components/ProPagination/index.vue'
+import ProSearchCard from '@/components/ProSearchCard/index.vue'
 import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
@@ -30,10 +31,12 @@ const { hasPermission } = usePermission()
 // ===== 列表数据 =====
 const loading = ref(false)
 const list = ref<any[]>([])
-const keyword = ref('')
 const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 const selectedRows = ref<any[]>([])
 const passRateMap = ref<Record<number, number>>({})
+
+// ===== 搜索条件 =====
+const search = reactive({ name: '' })
 
 // ===== 分组 =====
 const groups = ref<any[]>([])
@@ -113,7 +116,7 @@ async function fetchList() {
   loading.value = true
   try {
     const res: any = await getSuites(projectId.value, {
-      keyword: keyword.value || undefined,
+      keyword: search.name || undefined,
       groupId: activeGroupId.value !== null ? activeGroupId.value : undefined,
       page: pagination.current,
       pageSize: pagination.pageSize,
@@ -139,6 +142,7 @@ async function fetchPassRates() {
 }
 
 function handleSearch() { pagination.current = 1; fetchList() }
+function handleReset() { Object.assign(search, { name: '' }); handleSearch() }
 
 // ===== 选中 & 批量 =====
 const selectedIds = computed(() => selectedRows.value.map((r: any) => r.id))
@@ -346,9 +350,6 @@ function onDocClick() { closeContextMenu() }
 <template>
   <div>
     <PageHeader title="测试套件">
-      <el-input v-model="keyword" placeholder="搜索套件" clearable style="width: 220px" @keyup.enter="handleSearch" @clear="handleSearch">
-        <template #append><el-button @click="handleSearch">搜索</el-button></template>
-      </el-input>
       <el-button v-if="hasPermission('project:suite:add')" type="primary" @click="openCreate">+ 新建套件</el-button>
     </PageHeader>
 
@@ -393,9 +394,12 @@ function onDocClick() { closeContextMenu() }
 
       <!-- 右侧内容 -->
       <div class="suite-content">
-        <div class="suite-list-header">
-          <h3>{{ activeGroupId === null ? '全部套件' : (activeGroupId === -1 ? '未分组' : (groupMap[activeGroupId as number]?.name || '')) }} — {{ pagination.total }} 个套件</h3>
-        </div>
+        <ProSearchCard :loading="loading" @search="handleSearch" @reset="handleReset">
+          <div class="pro-search-field">
+            <span class="pro-search-label">套件名称</span>
+            <el-input v-model="search.name" placeholder="搜索套件名称" clearable style="width: 180px" @keyup.enter="handleSearch" />
+          </div>
+        </ProSearchCard>
 
         <BatchBar
           :selected-count="selectedIds.length"
@@ -631,14 +635,6 @@ function onDocClick() { closeContextMenu() }
 .suite-content {
   flex: 1;
   min-width: 0;
-}
-.suite-list-header {
-  margin-bottom: 12px;
-}
-.suite-list-header h3 {
-  font-size: 15px;
-  margin: 0;
-  color: #303133;
 }
 .suite-name-cell {
   line-height: 1.5;

@@ -9,7 +9,7 @@
  * Tab 布局：基础信息 / 步骤编排器 / 参数化
  * 对齐原型 case-edit.html
  */
-import { reactive, ref, onMounted, computed, watch, onBeforeUnmount } from 'vue'
+import { reactive, ref, onMounted, computed, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getCase, createCase, updateCase, debugCase } from '@/api/case'
@@ -18,6 +18,7 @@ import { getActions } from '@/api/action'
 import { getEnvironments } from '@/api/environment'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
+import { useRouteTab } from '@/composables/useRouteTab'
 import PageHeader from '@/components/PageHeader/index.vue'
 import { tryFormatJson, jsonSyntaxError } from '@/utils/jsonFormat'
 
@@ -94,8 +95,8 @@ function parseTagsFromJson() {
   } catch { tagsList.value = [] }
 }
 
-// ===== Tab 管理 =====
-const activeTab = ref('basic')
+// ===== Tab 管理（与 URL ?tab= 参数同步，刷新后停留在当前选项卡） =====
+const activeTab = useRouteTab(['basic', 'orchestrator', 'params'], 'basic')
 
 // ===== Setup/Teardown 步骤数据 =====
 interface StepItem {
@@ -578,20 +579,11 @@ onMounted(() => {
   } else {
     initCreateMode()
   }
-  // 恢复 Tab
-  const hash = (location.hash || '').replace(/^#/, '')
-  if (['basic', 'orchestrator', 'params'].includes(hash)) {
-    activeTab.value = hash
-  }
   document.addEventListener('click', onDocClick)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
-})
-
-watch(activeTab, (v) => {
-  if (location.hash !== '#' + v) history.replaceState(null, '', '#' + v)
 })
 </script>
 

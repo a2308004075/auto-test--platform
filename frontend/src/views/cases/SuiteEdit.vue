@@ -16,6 +16,7 @@ import { getSuite, updateSuite, getSuiteLifecycle, saveSuiteLifecycle } from '@/
 import { getCases } from '@/api/case'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
+import { useRouteTab } from '@/composables/useRouteTab'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
 const route = useRoute()
@@ -27,7 +28,8 @@ const suiteId = computed(() => Number(route.params.suiteId))
 const loading = ref(false)
 const saving = ref(false)
 const { options: priorityOptions } = useDict('priority')
-const activeTab = ref<'setup' | 'teardown'>('setup')
+// Tab 状态（与 URL ?tab= 参数同步，刷新后停留在当前选项卡）
+const activeTab = useRouteTab<'setup' | 'teardown'>(['setup', 'teardown'], 'setup')
 
 // 套件内用例列表和生命周期配置
 const suiteCases = ref<any[]>([])

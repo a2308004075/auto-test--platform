@@ -18,6 +18,7 @@ import { getApis, getApi, getModules } from '@/api/apidoc'
 import { getEnvironments } from '@/api/environment'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
+import { useRouteTab } from '@/composables/useRouteTab'
 import { Refresh, InfoFilled } from '@element-plus/icons-vue'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
 import CodeEditor from '@/components/CodeEditor/index.vue'
@@ -34,7 +35,11 @@ const isEdit = computed(() => !!keywordId.value)
 const methodColors: Record<string, string> = { GET: '', POST: 'success', PUT: 'warning', DELETE: 'danger', PATCH: 'info' }
 const { options: paramTypeOptions } = useDict('param_type')
 
-const activeTab = ref('basic')
+// Tab 状态（与 URL ?tab= 参数同步，刷新后停留在当前选项卡；引用关系 tab 仅编辑模式存在）
+const activeTab = useRouteTab(
+  isEdit.value ? ['basic', 'testdata', 'response', 'refs', 'debug'] : ['basic', 'testdata', 'response', 'debug'],
+  'basic',
+)
 const loading = ref(false)
 const apis = ref<any[]>([])
 const apiModules = ref<any[]>([])
@@ -360,7 +365,6 @@ function resetForm() {
   referenceList.value = []
   saveSuccessVisible.value = false
   savedKeywordName.value = ''
-  router.replace({ hash: '' })
 }
 
 // ===== 保存成功弹窗操作 =====
@@ -380,21 +384,6 @@ watch(() => route.params.keywordId, () => {
   }
   fetchKeyword()
   fetchDependencies()
-})
-
-// ===== Hash 锚点自动切换 Tab =====
-const validTabs = ['basic', 'testdata', 'response', 'refs', 'debug']
-watch(() => route.hash, (hash) => {
-  const tab = hash.replace('#', '')
-  if (tab && validTabs.includes(tab)) {
-    activeTab.value = tab
-  }
-}, { immediate: true })
-watch(activeTab, (tab) => {
-  const targetHash = `#${tab}`
-  if (route.hash !== targetHash) {
-    router.replace({ hash: targetHash })
-  }
 })
 
 onMounted(() => {

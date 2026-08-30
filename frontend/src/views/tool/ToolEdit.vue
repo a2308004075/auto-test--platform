@@ -16,6 +16,7 @@ import { getTool, createTool, updateTool, testTool, getTools, getToolDependencie
 import { InfoFilled } from '@element-plus/icons-vue'
 import CodeEditor from '@/components/CodeEditor/index.vue'
 import { usePermission } from '@/composables/usePermission'
+import { useRouteTab } from '@/composables/useRouteTab'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
 const route = useRoute()
@@ -24,10 +25,14 @@ const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 
 // ===== 路由参数 =====
-const toolId = ref(0)
+const toolId = ref(Number(route.params.toolId) || 0)
 const isEdit = computed(() => toolId.value > 0)
 const loading = ref(false)
-const activeTab = ref('basic')
+// Tab 状态（与 URL ?tab= 参数同步，刷新后停留在当前选项卡；引用关系 tab 仅编辑模式存在）
+const activeTab = useRouteTab(
+  isEdit.value ? ['basic', 'code', 'refs'] : ['basic', 'code'],
+  'basic',
+)
 
 // ===== 已有分组列表（从已有工具方法中提取） =====
 const categoryOptions = ref<string[]>([])
@@ -264,9 +269,7 @@ async function fetchDependencies() {
 
 onMounted(() => {
   fetchCategoryOptions()
-  const id = Number(route.params.toolId)
-  if (id) {
-    toolId.value = id
+  if (toolId.value) {
     fetchTool()
     fetchDependencies()
   }

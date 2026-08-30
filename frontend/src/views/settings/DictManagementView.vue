@@ -317,7 +317,7 @@ onMounted(() => {
     <!-- 新增/编辑弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      v-drag-dialog
+      draggable
       :title="isEdit ? '编辑字典' : '新增字典'"
       :close-on-click-modal="false"
     >

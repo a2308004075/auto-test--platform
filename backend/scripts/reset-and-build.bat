@@ -1,10 +1,9 @@
 @echo off
-chcp 65001 >nul 2>&1
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: ä¸€é”®é‡ç½®æ•°æ®åº“ + æ¸…ç†æž„å»º
-:: ç”¨äºŽä¿®å¤ Flyway è¿ç§»å†²çªã€checksum ä¸åŒ¹é…ç­‰é—®é¢˜
+:: Ò»¼üÖØÖÃÊý¾Ý¿â + ÇåÀí¹¹½¨
+:: ÓÃÓÚÐÞ¸´ Flyway Ç¨ÒÆ³åÍ»¡¢checksum ²»Æ¥ÅäµÈÎÊÌâ
 :: ============================================================
 
 set "MYSQL_EXE=D:\software\mysql-8.0\bin\mysql.exe"
@@ -14,60 +13,60 @@ set "DB_NAME=auto_test_platform"
 
 echo.
 echo ============================================================
-echo  [1/3] é‡ç½®æ•°æ®åº“: %DB_NAME%
+echo  [1/3] ÖØÖÃÊý¾Ý¿â: %DB_NAME%
 echo ============================================================
 echo.
 
-:: æ£€æŸ¥ MySQL æ˜¯å¦å¯ç”¨
+:: ¼ì²é MySQL ÊÇ·ñ¿ÉÓÃ
 if not exist "%MYSQL_EXE%" (
-    echo [ERROR] MySQL æœªæ‰¾åˆ°: %MYSQL_EXE%
-    echo è¯·ç¡®è®¤ MySQL å·²å®‰è£…å¹¶é…ç½®æ­£ç¡®è·¯å¾„ã€‚
+    echo [ERROR] MySQL Î´ÕÒµ½: %MYSQL_EXE%
+    echo ÇëÈ·ÈÏ MySQL ÒÑ°²×°²¢ÅäÖÃÕýÈ·Â·¾¶¡£
     pause
     exit /b 1
 )
 
-:: é‡ç½®æ•°æ®åº“
+:: ÖØÖÃÊý¾Ý¿â
 echo DROP DATABASE IF EXISTS %DB_NAME%;> "%TEMP%\reset_db.sql"
 echo CREATE DATABASE %DB_NAME% DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_unicode_ci;>> "%TEMP%\reset_db.sql"
 
 "%MYSQL_EXE%" -u %MYSQL_USER% -p%MYSQL_PASS% < "%TEMP%\reset_db.sql" 2>nul
 if !errorlevel! neq 0 (
-    echo [ERROR] æ•°æ®åº“é‡ç½®å¤±è´¥ï¼Œè¯·æ£€æŸ¥ MySQL æ˜¯å¦æ­£åœ¨è¿è¡Œã€‚
+    echo [ERROR] Êý¾Ý¿âÖØÖÃÊ§°Ü£¬Çë¼ì²é MySQL ÊÇ·ñÕýÔÚÔËÐÐ¡£
     del "%TEMP%\reset_db.sql" 2>nul
     pause
     exit /b 1
 )
 
 del "%TEMP%\reset_db.sql" 2>nul
-echo [OK] æ•°æ®åº“ %DB_NAME% å·²é‡ç½®
+echo [OK] Êý¾Ý¿â %DB_NAME% ÒÑÖØÖÃ
 
 echo.
 echo ============================================================
-echo  [2/3] æ¸…ç†å¹¶é‡å»º Maven é¡¹ç›®
+echo  [2/3] ÇåÀí²¢ÖØ½¨ Maven ÏîÄ¿
 echo ============================================================
 echo.
 
-:: å®šä½ backend ç›®å½•ï¼ˆè„šæœ¬æ‰€åœ¨ç›®å½•çš„ä¸Šçº§ï¼‰
+:: ¶¨Î» backend Ä¿Â¼£¨½Å±¾ËùÔÚÄ¿Â¼µÄÉÏ¼¶£©
 set "SCRIPT_DIR=%~dp0"
 set "BACKEND_DIR=%SCRIPT_DIR%.."
 
 pushd "%BACKEND_DIR%"
 call mvn clean install -DskipTests -q
 if !errorlevel! neq 0 (
-    echo [ERROR] Maven æž„å»ºå¤±è´¥ï¼Œè¯·æ£€æŸ¥ç¼–è¯‘é”™è¯¯ã€‚
+    echo [ERROR] Maven ¹¹½¨Ê§°Ü£¬Çë¼ì²é±àÒë´íÎó¡£
     popd
     pause
     exit /b 1
 )
 popd
-echo [OK] Maven æž„å»ºæˆåŠŸ
+echo [OK] Maven ¹¹½¨³É¹¦
 
 echo.
 echo ============================================================
-echo  [3/3] å®Œæˆ
+echo  [3/3] Íê³É
 echo ============================================================
 echo.
-echo  æ•°æ®åº“å·²é‡ç½®ï¼ŒMaven å·²é‡å»ºã€‚
-echo  çŽ°åœ¨å¯ä»¥å¯åŠ¨åŽç«¯æœåŠ¡ï¼ŒFlyway å°†ä»Žé›¶æ‰§è¡Œå…¨éƒ¨è¿ç§»ã€‚
+echo  Êý¾Ý¿âÒÑÖØÖÃ£¬Maven ÒÑÖØ½¨¡£
+echo  ÏÖÔÚ¿ÉÒÔÆô¶¯ºó¶Ë·þÎñ£¬Flyway ½«´ÓÁãÖ´ÐÐÈ«²¿Ç¨ÒÆ¡£
 echo.
 pause

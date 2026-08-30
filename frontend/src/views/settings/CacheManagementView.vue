@@ -199,7 +199,7 @@ function formatValue(val: string): string {
     <!-- 设置缓存弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      v-drag-dialog
+      draggable
       title="设置缓存"
       :close-on-click-modal="false"
     >

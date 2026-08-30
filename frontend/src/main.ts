@@ -13,7 +13,6 @@ import App from './App.vue'
 import './styles/global.less'
 import { setUnauthorizedHandler } from './api/request'
 import { useUserStore, useProjectStore, useTagsViewStore } from './stores'
-import dragDialog from '@/directives/drag'
 import vPermission from '@/directives/permission'
 import { reportError, setupGlobalErrorHandlers } from '@/utils/logger'
 
@@ -33,9 +32,6 @@ setupGlobalErrorHandlers()
 app.use(createPinia())
 app.use(router)
 app.use(ElementPlus, { locale: zhCn, size: 'default' })
-
-// 注册全局弹窗拖拽指令（对标 svc-manager-web 的 v-el-drag-dialog）
-app.directive('drag-dialog', dragDialog)
 
 // 注册全局权限控制指令（display 模式隐藏 / click 模式禁用）
 app.directive('permission', vPermission)

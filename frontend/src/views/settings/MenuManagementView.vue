@@ -346,7 +346,7 @@ onBeforeUnmount(() => {
     <!-- 新增/编辑弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      v-drag-dialog
+      draggable
       :title="isEdit ? '编辑菜单' : '新增菜单'"
       :close-on-click-modal="false"
     >

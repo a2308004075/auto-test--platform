@@ -530,6 +530,18 @@ public class ApiService {
         return "raw";
     }
 
+    /** rawType → Content-Type 静态映射 */
+    private static final Map<String, String> RAW_TYPE_CONTENT_TYPE_MAP;
+    static {
+        Map<String, String> m = new LinkedHashMap<>();
+        m.put("text", "text/plain");
+        m.put("javascript", "application/javascript");
+        m.put("json", "application/json");
+        m.put("html", "text/html");
+        m.put("xml", "application/xml");
+        RAW_TYPE_CONTENT_TYPE_MAP = Collections.unmodifiableMap(m);
+    }
+
     /**
      * 根据请求体格式解析 Content-Type
      */
@@ -547,20 +559,9 @@ public class ApiService {
             return "application/json";
         }
         // raw：按子类型映射，无子类型时回退接口保存的 Content-Type
-        if ("text".equals(rawType)) {
-            return "text/plain";
-        }
-        if ("javascript".equals(rawType)) {
-            return "application/javascript";
-        }
-        if ("json".equals(rawType)) {
-            return "application/json";
-        }
-        if ("html".equals(rawType)) {
-            return "text/html";
-        }
-        if ("xml".equals(rawType)) {
-            return "application/xml";
+        String mapped = RAW_TYPE_CONTENT_TYPE_MAP.get(rawType);
+        if (mapped != null) {
+            return mapped;
         }
         return StringUtils.hasText(apiContentType) ? apiContentType : "application/json";
     }

@@ -49,28 +49,31 @@
   }
 }
 
-// 登录弹窗固定宽度，覆盖全局 min/max-width 限制
+// 固定宽度弹窗公共 reset（覆盖全局 min/max-width 限制）
+.fixed-dialog() {
+  min-width: auto !important;
+  max-width: none !important;
+}
+
+// 登录弹窗固定宽度
 .login-dialog {
   --el-dialog-width: 420px !important;
   width: 420px !important;
-  min-width: auto !important;
-  max-width: none !important;
+  .fixed-dialog();
 }
 
 // 保存成功提示弹窗固定宽度
 .save-success-dialog {
   --el-dialog-width: 500px !important;
   width: 500px !important;
-  min-width: auto !important;
-  max-width: none !important;
+  .fixed-dialog();
 }
 
 // 工具方法保存成功弹窗固定宽度
 .tool-save-success-dialog {
   --el-dialog-width: 300px !important;
   width: 300px !important;
-  min-width: auto !important;
-  max-width: none !important;
+  .fixed-dialog();
 }
 
 // 弹窗标题样式（对齐 svc-manager-web：底边框）

@@ -29,6 +29,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import cn.hutool.http.useragent.UserAgent;
+import cn.hutool.http.useragent.UserAgentUtil;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -159,11 +161,7 @@ public class AuthService {
             throw new BusinessException(ErrorCode.LOGIN_FAILED, "用户名或密码错误");
         }
 
-        String roleCode = getRoleCode(user.getRoleId());
-        // superAdmin 账号保护：强制使用 SUPER_ADMIN 角色，不受角色管理配置影响
-        if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
-            roleCode = BUILTIN_ROLE_CODE;
-        }
+        String roleCode = resolveEffectiveRoleCode(user);
         long validityMs = getLoginValidityMs();
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), roleCode, validityMs);
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), validityMs);
@@ -217,11 +215,7 @@ public class AuthService {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND, "用户不存在或已禁用");
         }
 
-        String roleCode = getRoleCode(user.getRoleId());
-        // superAdmin 账号保护：刷新 Token 时同样强制使用 SUPER_ADMIN 角色
-        if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
-            roleCode = BUILTIN_ROLE_CODE;
-        }
+        String roleCode = resolveEffectiveRoleCode(user);
         long validityMs = getLoginValidityMs();
         String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), roleCode, validityMs);
 
@@ -269,34 +263,7 @@ public class AuthService {
         if (user == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND, "用户不存在");
         }
-        UserResponse response = new UserResponse();
-        response.setId(user.getId());
-        response.setUsername(user.getUsername());
-        response.setDisplayName(user.getDisplayName());
-        response.setBio(user.getBio());
-        response.setRoleId(user.getRoleId());
-        // superAdmin 账号保护：强制使用 SUPER_ADMIN 角色和全部权限，不受角色管理配置影响
-        if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
-            response.setRole(BUILTIN_ROLE_CODE);
-            response.setRoleName(SUPER_ADMIN_DISPLAY_NAME);
-            response.setPermissions(Collections.singletonList("*"));
-            PermissionBriefDTO dto = new PermissionBriefDTO();
-            dto.setCode("*");
-            response.setPermissionDetails(Collections.singletonList(dto));
-        } else {
-            String roleCode = getRoleCode(user.getRoleId());
-            response.setRole(roleCode);
-            UserRole role = userRoleMapper.selectById(user.getRoleId());
-            if (role != null) {
-                response.setRoleName(role.getRoleName());
-            }
-            response.setPermissions(roleService.getPermissionCodesByRoleId(user.getRoleId()));
-            response.setPermissionDetails(roleService.getPermissionDetailsByRoleId(user.getRoleId()));
-        }
-        response.setIsActive(user.getIsActive());
-        response.setLastLoginAt(user.getLastLoginAt());
-        response.setCreatedAt(user.getCreatedAt());
-        return response;
+        return toUserResponse(user);
     }
 
     /**
@@ -429,19 +396,7 @@ public class AuthService {
         if (userAgent == null || userAgent.isEmpty()) {
             return "Unknown";
         }
-        if (userAgent.contains("Edg/")) {
-            return "Edge";
-        }
-        if (userAgent.contains("Chrome/")) {
-            return "Chrome";
-        }
-        if (userAgent.contains("Firefox/")) {
-            return "Firefox";
-        }
-        if (userAgent.contains("Safari/") && !userAgent.contains("Chrome/")) {
-            return "Safari";
-        }
-        return "Unknown";
+        return UserAgentUtil.parse(userAgent).getBrowser().toString();
     }
 
     /**
@@ -451,19 +406,7 @@ public class AuthService {
         if (userAgent == null || userAgent.isEmpty()) {
             return "Unknown";
         }
-        if (userAgent.contains("Windows NT 10")) {
-            return "Windows 10/11";
-        }
-        if (userAgent.contains("Windows NT")) {
-            return "Windows";
-        }
-        if (userAgent.contains("Mac OS X")) {
-            return "macOS";
-        }
-        if (userAgent.contains("Linux")) {
-            return "Linux";
-        }
-        return "Unknown";
+        return UserAgentUtil.parse(userAgent).getOs().toString();
     }
 
     private LoginLogResponse toLoginLogResponse(LoginLog log) {
@@ -486,13 +429,11 @@ public class AuthService {
         response.setBio(user.getBio());
         response.setRoleId(user.getRoleId());
         // superAdmin 账号保护：强制使用 SUPER_ADMIN 角色和全部权限
-        if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
+        if (isSuperAdmin(user)) {
             response.setRole(BUILTIN_ROLE_CODE);
             response.setRoleName(SUPER_ADMIN_DISPLAY_NAME);
             response.setPermissions(Collections.singletonList("*"));
-            PermissionBriefDTO dto = new PermissionBriefDTO();
-            dto.setCode("*");
-            response.setPermissionDetails(Collections.singletonList(dto));
+            response.setPermissionDetails(Collections.singletonList(superAdminPermissionDetail()));
         } else {
             String roleCode = getRoleCode(user.getRoleId());
             response.setRole(roleCode);
@@ -515,17 +456,35 @@ public class AuthService {
         brief.setUsername(user.getUsername());
         brief.setDisplayName(user.getDisplayName());
         // superAdmin 账号保护：强制使用 SUPER_ADMIN 角色和全部权限
-        if (RESERVED_USERNAME.equalsIgnoreCase(user.getUsername())) {
+        if (isSuperAdmin(user)) {
             brief.setRole(BUILTIN_ROLE_CODE);
             brief.setPermissions(Collections.singletonList("*"));
-            PermissionBriefDTO dto = new PermissionBriefDTO();
-            dto.setCode("*");
-            brief.setPermissionDetails(Collections.singletonList(dto));
+            brief.setPermissionDetails(Collections.singletonList(superAdminPermissionDetail()));
         } else {
             brief.setRole(getRoleCode(user.getRoleId()));
             brief.setPermissions(roleService.getPermissionCodesByRoleId(user.getRoleId()));
             brief.setPermissionDetails(roleService.getPermissionDetailsByRoleId(user.getRoleId()));
         }
         return brief;
+    }
+
+    private boolean isSuperAdmin(User user) {
+        return RESERVED_USERNAME.equalsIgnoreCase(user.getUsername());
+    }
+
+    /**
+     * 解析用户的有效角色编码，superAdmin 强制使用 SUPER_ADMIN
+     */
+    private String resolveEffectiveRoleCode(User user) {
+        if (isSuperAdmin(user)) {
+            return BUILTIN_ROLE_CODE;
+        }
+        return getRoleCode(user.getRoleId());
+    }
+
+    private PermissionBriefDTO superAdminPermissionDetail() {
+        PermissionBriefDTO dto = new PermissionBriefDTO();
+        dto.setCode("*");
+        return dto;
     }
 }

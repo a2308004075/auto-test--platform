@@ -478,12 +478,8 @@ onMounted(fetchTree)
   flex-shrink: 0;
   color: rgba(0, 0, 0, 0.25);
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.tree-node:hover .tree-delete {
   opacity: 1;
+  transition: opacity 0.2s;
 }
 
 .tree-delete:hover {

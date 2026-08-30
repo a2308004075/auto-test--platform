@@ -82,6 +82,9 @@ function handleCommand(command: string) {
     case 'home':
       router.push('/home')
       break
+    case 'my-tasks':
+      router.push('/settings/my-tasks')
+      break
     case 'settings':
       router.push(isAdmin.value ? '/settings/users' : '/settings/profile')
       break
@@ -119,6 +122,9 @@ function handleCommand(command: string) {
               </div>
               <el-dropdown-item command="home">
                 <span class="dropdown-icon">⌂</span>首页
+              </el-dropdown-item>
+              <el-dropdown-item command="my-tasks">
+                <span class="dropdown-icon">☰</span>我的任务
               </el-dropdown-item>
               <el-dropdown-item command="settings">
                 <span class="dropdown-icon">⚙</span>系统管理

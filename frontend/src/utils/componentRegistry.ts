@@ -54,6 +54,15 @@ export const componentMap: Record<string, () => Promise<any>> = {
   'cases/CaseList': () => import('@/views/cases/CaseList.vue'),
   'cases/CaseEdit': () => import('@/views/cases/CaseEdit.vue'),
 
+  // ===== 手动用例模块 =====
+  'manualcase/ManualCaseList': () => import('@/views/manualcase/ManualCaseList.vue'),
+  'manualcase/ManualCaseEdit': () => import('@/views/manualcase/ManualCaseEdit.vue'),
+
+  // ===== 缺陷管理模块 =====
+  'defect/DefectList': () => import('@/views/defect/DefectList.vue'),
+  'defect/DefectEdit': () => import('@/views/defect/DefectEdit.vue'),
+  'defect/DefectDetail': () => import('@/views/defect/DefectDetail.vue'),
+
   // ===== 测试计划/执行模块 =====
   'execution/PlanList': () => import('@/views/execution/PlanList.vue'),
   'execution/PlanEdit': () => import('@/views/execution/PlanEdit.vue'),
@@ -62,6 +71,7 @@ export const componentMap: Record<string, () => Promise<any>> = {
 
   // ===== 系统设置模块 =====
   'settings/ProfileView': () => import('@/views/settings/ProfileView.vue'),
+  'settings/MyTasksView': () => import('@/views/settings/MyTasksView.vue'),
   'settings/UserManagementView': () => import('@/views/settings/UserManagementView.vue'),
   'settings/RoleManagementView': () => import('@/views/settings/RoleManagementView.vue'),
   'settings/GlobalConfigView': () => import('@/views/settings/GlobalConfigView.vue'),

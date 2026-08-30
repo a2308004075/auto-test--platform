@@ -135,7 +135,7 @@ public class CaseService {
         BeanUtils.copyProperties(request, c);
         c.setSuiteId(suiteId);
         if (!StringUtils.hasText(c.getPriority())) {
-            c.setPriority("P2");
+            c.setPriority("中");
         }
         if (c.getTimeout() == null) {
             c.setTimeout(30);

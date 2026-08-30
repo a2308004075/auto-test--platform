@@ -128,10 +128,18 @@ export function addSupplementaryRoutes(router: Router, layoutName: string): void
     { path: 'project/:id/cases/:caseId/edit',       component: 'cases/CaseEdit',   title: '编辑用例' },
     { path: 'project/:id/suites/:suiteId/edit',     component: 'cases/SuiteEdit',  title: '步骤配置' },
 
+    // ===== 缺陷管理模块 =====
+    { path: 'project/:id/defects/new',              component: 'defect/DefectEdit',   title: '新建缺陷' },
+    { path: 'project/:id/defects/:defectId/edit',   component: 'defect/DefectEdit',   title: '编辑缺陷' },
+    { path: 'project/:id/defects/:defectId',         component: 'defect/DefectDetail', title: '缺陷详情' },
+
     // ===== 测试计划/执行模块 =====
     { path: 'project/:id/plans/new',                       component: 'execution/PlanEdit',        title: '新建计划' },
     { path: 'project/:id/plans/:planId/edit',              component: 'execution/PlanEdit',        title: '编辑计划' },
     { path: 'project/:id/executions/:executionId',         component: 'execution/ExecutionDetail', title: '执行详情' },
+
+    // ===== 我的任务 =====
+    { path: 'settings/my-tasks', component: 'settings/MyTasksView', title: '我的任务' },
   ]
 
   for (const r of routes) {

@@ -25,6 +25,7 @@ import {
 import type { RequirementVersion, RequirementItem } from '@/api/requirement'
 import { useProjectStore } from '@/stores/modules/project'
 import { usePermission } from '@/composables/usePermission'
+import BizDetailDrawer from '@/components/BizDetailDrawer/index.vue'
 
 const route = useRoute()
 const { hasPermission } = usePermission()
@@ -305,6 +306,31 @@ function formatDate(value: string | null | undefined) {
   return value ? value.substring(0, 10) : '-'
 }
 
+// ===== 详情抽屉 =====
+const detailDrawerVisible = ref(false)
+const detailItem = ref<RequirementItem | null>(null)
+
+const requirementFieldLabelMap: Record<string, string> = {
+  title: '标题',
+  description: '描述',
+  reqType: '需求类型',
+  priority: '优先级',
+  status: '状态',
+  assignee: '负责人',
+  deadline: '截止日期',
+}
+
+const requirementValueLabelMap: Record<string, Record<string, string>> = {
+  reqType: { FEATURE: '功能', IMPROVEMENT: '优化', BUG: 'Bug' },
+  priority: { HIGH: '高', MEDIUM: '中', LOW: '低' },
+  status: { PENDING: '待处理', IN_PROGRESS: '进行中', COMPLETED: '已完成' },
+}
+
+function openDetailDrawer(item: RequirementItem) {
+  detailItem.value = item
+  detailDrawerVisible.value = true
+}
+
 onMounted(fetchVersions)
 </script>
 
@@ -442,8 +468,16 @@ onMounted(fetchVersions)
                 {{ formatDate(row.deadline) }}
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="130" fixed="right">
+            <el-table-column label="操作" width="170" fixed="right">
               <template #default="{ row }">
+                <el-button
+                  type="primary"
+                  link
+                  size="small"
+                  @click="openDetailDrawer(row)"
+                >
+                  详情
+                </el-button>
                 <el-button
                   v-if="hasPermission('project:req:item:edit')"
                   type="primary"
@@ -531,6 +565,17 @@ onMounted(fetchVersions)
         <el-button type="primary" @click="handleVersionSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 需求条目详情抽屉 -->
+    <BizDetailDrawer
+      v-model:visible="detailDrawerVisible"
+      :title="`需求详情 - ${detailItem?.title || ''}`"
+      biz-type="REQUIREMENT_ITEM"
+      :biz-id="detailItem?.id"
+      status-field-name="status"
+      :field-label-map="requirementFieldLabelMap"
+      :value-label-map="requirementValueLabelMap"
+    />
 
     <!-- 新建/编辑需求条目弹窗 -->
     <el-dialog

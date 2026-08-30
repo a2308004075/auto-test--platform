@@ -6,8 +6,12 @@
 package com.platform.requirement.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.platform.common.constant.BizType;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
+import com.platform.common.service.ChangeLogService;
+import com.platform.common.service.CommentService;
+import com.platform.common.util.ChangeLogHelper;
 import com.platform.project.service.ProjectService;
 import com.platform.requirement.dto.RequirementItemCreateRequest;
 import com.platform.requirement.dto.RequirementItemResponse;
@@ -39,6 +43,8 @@ public class RequirementService {
     private final RequirementVersionMapper versionMapper;
     private final RequirementItemMapper itemMapper;
     private final ProjectService projectService;
+    private final ChangeLogService changeLogService;
+    private final CommentService commentService;
 
     // ===== 版本管理 =====
 
@@ -109,11 +115,21 @@ public class RequirementService {
     }
 
     /**
-     * 删除版本（FK CASCADE 自动删除其下所有条目）
+     * 删除版本（FK CASCADE 自动删除其下所有条目；同步清理评论与变更记录）
      */
     @Transactional(rollbackFor = Exception.class)
     public void deleteVersion(Long versionId) {
         findVersionById(versionId);
+
+        // 清理该版本下所有条目的评论与变更记录
+        LambdaQueryWrapper<RequirementItem> itemWrapper = new LambdaQueryWrapper<>();
+        itemWrapper.eq(RequirementItem::getVersionId, versionId);
+        List<RequirementItem> items = itemMapper.selectList(itemWrapper);
+        for (RequirementItem item : items) {
+            commentService.deleteByBiz(BizType.REQUIREMENT_ITEM, item.getId());
+            changeLogService.deleteByBiz(BizType.REQUIREMENT_ITEM, item.getId());
+        }
+
         versionMapper.deleteById(versionId);
     }
 
@@ -174,6 +190,15 @@ public class RequirementService {
     public RequirementItemResponse updateItem(Long itemId, RequirementItemCreateRequest request) {
         RequirementItem item = findItemById(itemId);
 
+        // 记录变更前值
+        String oldTitle = item.getTitle();
+        String oldDescription = item.getDescription();
+        String oldReqType = item.getReqType();
+        String oldPriority = item.getPriority();
+        String oldStatus = item.getStatus();
+        String oldAssignee = item.getAssignee();
+        Object oldDeadline = item.getDeadline();
+
         item.setTitle(request.getTitle());
         item.setDescription(request.getDescription());
         if (request.getReqType() != null) {
@@ -189,15 +214,29 @@ public class RequirementService {
         item.setDeadline(request.getDeadline());
 
         itemMapper.updateById(item);
+
+        // 记录字段变更
+        ChangeLogHelper.collect(BizType.REQUIREMENT_ITEM, itemId, changeLogService)
+                .compare("title", oldTitle, item.getTitle())
+                .compare("description", oldDescription, item.getDescription())
+                .compare("reqType", oldReqType, item.getReqType())
+                .compare("priority", oldPriority, item.getPriority())
+                .compare("status", oldStatus, item.getStatus())
+                .compare("assignee", oldAssignee, item.getAssignee())
+                .compare("deadline", oldDeadline, item.getDeadline())
+                .save();
+
         return toItemResponse(item);
     }
 
     /**
-     * 删除需求条目
+     * 删除需求条目（同步清理评论与变更记录）
      */
     @Transactional(rollbackFor = Exception.class)
     public void deleteItem(Long itemId) {
         findItemById(itemId);
+        commentService.deleteByBiz(BizType.REQUIREMENT_ITEM, itemId);
+        changeLogService.deleteByBiz(BizType.REQUIREMENT_ITEM, itemId);
         itemMapper.deleteById(itemId);
     }
 

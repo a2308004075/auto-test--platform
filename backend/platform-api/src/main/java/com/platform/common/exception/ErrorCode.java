@@ -116,6 +116,14 @@ public final class ErrorCode {
     public static final int SUITE_GROUP_HAS_CHILDREN = 1808;
     public static final int CASE_GROUP_NOT_FOUND = 1809;
     public static final int CASE_GROUP_SYSTEM = 1810;
+    public static final int MANUAL_CASE_NOT_FOUND = 1820;
+    public static final int MANUAL_CASE_GROUP_NOT_FOUND = 1821;
+    public static final int MANUAL_CASE_GROUP_SYSTEM = 1822;
+
+    // ===== 缺陷管理 (1830-1849) =====
+    public static final int DEFECT_NOT_FOUND = 1830;
+    public static final int DEFECT_GROUP_NOT_FOUND = 1831;
+    public static final int DEFECT_GROUP_SYSTEM = 1832;
 
     // ===== M9 测试执行 (1900-1999) =====
     public static final int EXECUTION_QUEUE_FULL = 1900;
@@ -139,7 +147,7 @@ public final class ErrorCode {
 
     // ===== 业务错误码 → HTTP 状态码映射 =====
     private static final int[] UNAUTHORIZED_CODES = {UNAUTHORIZED, ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED};
-    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, CASE_GROUP_SYSTEM, ACTION_GROUP_SYSTEM, KEYWORD_GROUP_SYSTEM};
+    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, CASE_GROUP_SYSTEM, ACTION_GROUP_SYSTEM, KEYWORD_GROUP_SYSTEM, MANUAL_CASE_GROUP_SYSTEM, DEFECT_GROUP_SYSTEM};
 
     public static int toHttpStatus(int errorCode) {
         for (int code : UNAUTHORIZED_CODES) {
@@ -162,6 +170,10 @@ public final class ErrorCode {
             case PLAN_NOT_FOUND:
             case SUITE_GROUP_NOT_FOUND:
             case CASE_GROUP_NOT_FOUND:
+            case MANUAL_CASE_NOT_FOUND:
+            case MANUAL_CASE_GROUP_NOT_FOUND:
+            case DEFECT_NOT_FOUND:
+            case DEFECT_GROUP_NOT_FOUND:
             case ACTION_GROUP_NOT_FOUND:
             case KEYWORD_GROUP_NOT_FOUND:
             case ROLE_NOT_FOUND:

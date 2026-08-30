@@ -391,7 +391,7 @@ function parseTags(raw?: string): string[] {
 }
 
 // ===== 优先级 =====
-const priorityTypeMap: Record<string, string> = { P0: 'danger', P1: 'warning', P2: '', P3: 'info' }
+const priorityTypeMap: Record<string, string> = { '高': 'danger', '中': 'warning', '低': 'info', P0: 'danger', P1: 'warning', P2: '', P3: 'info' }
 
 // ===== 视图切换 =====
 const viewMode = ref<'list' | 'card'>('list')
@@ -411,7 +411,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <PageHeader title="自动化用例">
+    <PageHeader title="自动用例">
       <el-button v-if="hasPermission('project:case:add')" type="primary" @click="openCreate">+ 新建用例</el-button>
     </PageHeader>
 

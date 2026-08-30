@@ -21,6 +21,12 @@ spring:
       simple:
         default-requeue-rejected: false
 
+  # 文件上传大小限制（项目文档不限类型与大小）
+  servlet:
+    multipart:
+      max-file-size: -1
+      max-request-size: -1
+
   # Flyway 数据库迁移
   flyway:
     enabled: true
@@ -65,4 +71,9 @@ repository:
   crypto-key: AutoTestRepo2026
   # JGit 拉取超时（秒）
   clone-timeout-seconds: 300
+
+# 项目文档配置（M13）
+doc:
+  # 文档存储根目录（相对启动目录，按项目 ID 分目录）
+  storage-path: ./data/docs
 

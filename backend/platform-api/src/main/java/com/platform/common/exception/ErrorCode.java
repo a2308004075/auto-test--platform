@@ -23,6 +23,7 @@ package com.platform.common.exception;
  *   <li>2100-2199: 系统管理</li>
  *   <li>2200-2299: M11 测试代码库</li>
  *   <li>2300-2399: M12 界面元素</li>
+ *   <li>2400-2499: M13 项目文档</li>
  * </ul>
  *
  * <p>使用示例：
@@ -146,9 +147,15 @@ public final class ErrorCode {
     // ===== M12 界面元素 (2300-2399) =====
     public static final int UI_ELEMENT_IMPORT_FAILED = 2300;
 
+    // ===== M13 项目文档 (2400-2499) =====
+    public static final int PROJECT_DOC_NOT_FOUND = 2400;
+    public static final int PROJECT_DOC_GROUP_NOT_FOUND = 2401;
+    public static final int PROJECT_DOC_GROUP_SYSTEM = 2402;
+    public static final int PROJECT_DOC_FILE_ERROR = 2403;
+
     // ===== 业务错误码 → HTTP 状态码映射 =====
     private static final int[] UNAUTHORIZED_CODES = {UNAUTHORIZED, ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED};
-    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, CASE_GROUP_SYSTEM, ACTION_GROUP_SYSTEM, KEYWORD_GROUP_SYSTEM, MANUAL_CASE_GROUP_SYSTEM, DEFECT_GROUP_SYSTEM};
+    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, CASE_GROUP_SYSTEM, ACTION_GROUP_SYSTEM, KEYWORD_GROUP_SYSTEM, MANUAL_CASE_GROUP_SYSTEM, DEFECT_GROUP_SYSTEM, PROJECT_DOC_GROUP_SYSTEM};
 
     public static int toHttpStatus(int errorCode) {
         for (int code : UNAUTHORIZED_CODES) {
@@ -176,6 +183,8 @@ public final class ErrorCode {
             case MANUAL_CASE_GROUP_NOT_FOUND:
             case DEFECT_NOT_FOUND:
             case DEFECT_GROUP_NOT_FOUND:
+            case PROJECT_DOC_NOT_FOUND:
+            case PROJECT_DOC_GROUP_NOT_FOUND:
             case ACTION_GROUP_NOT_FOUND:
             case KEYWORD_GROUP_NOT_FOUND:
             case ROLE_NOT_FOUND:

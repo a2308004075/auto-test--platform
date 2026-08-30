@@ -151,7 +151,7 @@ const pagination = reactive({ current: 1, pageSize: 20, total: 0 })
 const selectedRows = ref<any[]>([])
 
 // ===== 搜索条件 =====
-const search = reactive({ keyword: '', param: '', description: '' })
+const search = reactive({ keyword: '', description: '' })
 
 // ===== 分组树（按 category 动态构建） =====
 const activeCategory = ref('ALL')
@@ -201,10 +201,8 @@ const filteredList = computed(() => {
     result = result.filter((t) => t.category === activeCategory.value)
   }
   const kw = search.keyword.trim().toLowerCase()
-  const paramKw = search.param.trim().toLowerCase()
   const desc = search.description.trim().toLowerCase()
   if (kw) result = result.filter((t) => t.name?.toLowerCase().includes(kw))
-  if (paramKw) result = result.filter((t) => formatParams(t.paramDefinitions).toLowerCase().includes(paramKw))
   if (desc) result = result.filter((t) => t.description?.toLowerCase().includes(desc))
   return result
 })
@@ -224,7 +222,7 @@ watch(filteredList, () => {
 
 function handleSearch() { pagination.current = 1 }
 function handleReset() {
-  Object.assign(search, { keyword: '', param: '', description: '' })
+  Object.assign(search, { keyword: '', description: '' })
   activeCategory.value = 'ALL'
   pagination.current = 1
 }
@@ -305,19 +303,6 @@ function isColVisible(key: string) {
 }
 function resetColumns() {
   columns.value = defaultColumns.map((c) => ({ ...c }))
-}
-
-// ===== 参数格式化 =====
-function formatParams(paramDefinitions?: string): string {
-  if (!paramDefinitions) return '无参数'
-  try {
-    const arr = JSON.parse(paramDefinitions)
-    if (!Array.isArray(arr) || arr.length === 0) return '无参数'
-    return arr.map((p: any) => {
-      const type = p.type || ''
-      return type ? `${p.name}: ${type}` : p.name
-    }).join(', ')
-  } catch { return '无参数' }
 }
 
 // ===== 在线测试弹窗 =====
@@ -422,11 +407,6 @@ onBeforeUnmount(() => {
               style="width: 180px" @keyup.enter="handleSearch" />
           </div>
           <div class="pro-search-field">
-            <span class="pro-search-label">参数</span>
-            <el-input v-model="search.param" placeholder="输入参数" clearable
-              style="width: 180px" @keyup.enter="handleSearch" />
-          </div>
-          <div class="pro-search-field">
             <span class="pro-search-label">描述</span>
             <el-input v-model="search.description" placeholder="输入描述" clearable
               style="width: 180px" @keyup.enter="handleSearch" />
@@ -456,18 +436,7 @@ onBeforeUnmount(() => {
           @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="45" />
           <el-table-column v-if="isColVisible('id')" prop="id" label="ID" width="70" />
-          <el-table-column v-if="isColVisible('name')" prop="name" label="工具方法" width="180" show-overflow-tooltip />
-          <el-table-column v-if="isColVisible('params')" label="参数" show-overflow-tooltip>
-            <template #default="{ row }">
-              <span class="cell-truncate">{{ formatParams(row.paramDefinitions) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column v-if="isColVisible('returnType')" label="返回" width="80">
-            <template #default="{ row }">
-              <el-tag v-if="row.returnType" size="small" type="info">{{ row.returnType }}</el-tag>
-              <span v-else style="color: #c0c4cc">--</span>
-            </template>
-          </el-table-column>
+          <el-table-column v-if="isColVisible('name')" prop="name" label="工具方法" width="300" show-overflow-tooltip />
           <el-table-column v-if="isColVisible('category')" label="分组" width="120">
             <template #default="{ row }">
               <el-tag v-if="row.category && row.category !== 'CUSTOM' && row.category !== 'BUILTIN'"

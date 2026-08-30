@@ -439,8 +439,7 @@ onBeforeUnmount(() => {
           <el-table-column v-if="isColVisible('name')" prop="name" label="工具方法" width="350" show-overflow-tooltip />
           <el-table-column v-if="isColVisible('category')" label="分组" width="160">
             <template #default="{ row }">
-              <el-tag v-if="row.category && row.category !== 'CUSTOM' && row.category !== 'BUILTIN'"
-                size="small">{{ row.category }}</el-tag>
+              <span v-if="row.category && row.category !== 'CUSTOM' && row.category !== 'BUILTIN'">{{ row.category }}</span>
               <span v-else style="color: #c0c4cc">未分组</span>
             </template>
           </el-table-column>
@@ -473,7 +472,35 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- 在线测试弹窗 -->
-    <el-dialog v-model="testVisible" :title="`在线测试${currentTestTool ? ' - ' + currentTestTool.name : ''}`" width="600px">
+    <el-dialog v-model="testVisible" title="在线调试" width="720px">
+      <!-- 基础信息 -->
+      <div class="test-info-section">
+        <h4 class="test-section-title">基础信息</h4>
+        <div class="test-info-grid">
+          <div class="test-info-item">
+            <span class="test-info-label">工具方法：</span>
+            {{ currentTestTool?.name }}
+          </div>
+          <div class="test-info-item">
+            <span class="test-info-label">分组：</span>
+            {{ currentTestTool?.category && currentTestTool?.category !== 'CUSTOM' && currentTestTool?.category !== 'BUILTIN' ? currentTestTool.category : '未分组' }}
+          </div>
+          <div v-if="currentTestTool?.description" class="test-info-item full">
+            <span class="test-info-label">描述：</span>
+            {{ currentTestTool?.description }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 代码预览 -->
+      <div v-if="currentTestTool?.code" class="test-code-section">
+        <h4 class="test-section-title">代码</h4>
+        <div class="test-code-viewer">
+          <pre><code>{{ currentTestTool?.code }}</code></pre>
+        </div>
+      </div>
+
+      <!-- 测试参数 -->
       <div v-if="testParams.length > 0" class="test-params-section">
         <h4 class="test-section-title">测试参数</h4>
         <el-table :data="testParams" border size="small">
@@ -492,10 +519,8 @@ onBeforeUnmount(() => {
           </el-table-column>
         </el-table>
       </div>
-      <div v-else class="test-empty">
-        <el-empty description="该方法无参数" :image-size="60" />
-      </div>
 
+      <!-- 执行结果 -->
       <div v-if="testResult" class="test-result-section">
         <h4 class="test-section-title">执行结果</h4>
         <div class="test-result-meta">
@@ -509,7 +534,7 @@ onBeforeUnmount(() => {
 
       <template #footer>
         <el-button @click="testVisible = false">关闭</el-button>
-        <el-button type="primary" :loading="testLoading" :disabled="testParams.length === 0" @click="handleTest">▶ 执行测试</el-button>
+        <el-button type="primary" :loading="testLoading" @click="handleTest">▶ 执行测试</el-button>
       </template>
     </el-dialog>
 
@@ -656,6 +681,47 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.test-info-section {
+  margin-bottom: 16px;
+}
+.test-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+}
+.test-info-item {
+  display: flex;
+  align-items: baseline;
+  font-size: 13px;
+}
+.test-info-item.full {
+  grid-column: 1 / -1;
+}
+.test-info-label {
+  color: var(--el-text-color-secondary, #909399);
+  flex-shrink: 0;
+  min-width: 56px;
+}
+.test-code-section {
+  margin-bottom: 16px;
+}
+.test-code-viewer {
+  background: #1e1e1e;
+  border-radius: 4px;
+  padding: 12px;
+  max-height: 200px;
+  overflow: auto;
+}
+.test-code-viewer pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.test-code-viewer code {
+  color: #d4d4d4;
+  font-size: 12px;
+  font-family: Consolas, 'Courier New', monospace;
+}
 .test-params-section {
   margin-bottom: 16px;
 }
@@ -663,9 +729,6 @@ onBeforeUnmount(() => {
   font-size: 13px;
   font-weight: 600;
   margin: 0 0 12px;
-}
-.test-empty {
-  padding: 24px 0;
 }
 .test-result-section {
   margin-top: 16px;

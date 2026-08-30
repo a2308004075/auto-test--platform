@@ -88,10 +88,35 @@ public class GroovySandboxExecutor {
 
         CompilerConfiguration config = new CompilerConfiguration();
         Binding binding = new Binding();
-        binding.setVariable("input", input);
 
         GroovyShell shell = new GroovyShell(binding, config);
-        Object result = shell.evaluate(code);
+
+        // 检测代码是否定义了函数，如果是则自动调用
+        String codeToExecute = code;
+        java.util.regex.Matcher funcMatcher = java.util.regex.Pattern
+                .compile("(?:def|([A-Z]\\w*))\\s+(\\w+)\\s*\\(([\\s\\S]*?)\\)\\s*\\{")
+                .matcher(code);
+        if (funcMatcher.find()) {
+            String funcName = funcMatcher.group(2);
+            String paramsPart = funcMatcher.group(3).trim();
+            if (paramsPart.isEmpty()) {
+                // 无参函数：直接调用
+                codeToExecute = code + "\n" + funcName + "()";
+            } else {
+                // 有参函数：解析 JSON 输入并按参数顺序传递
+                String[] paramParts = paramsPart.split(",");
+                StringBuilder argsList = new StringBuilder();
+                for (int i = 0; i < paramParts.length; i++) {
+                    if (i > 0) argsList.append(", ");
+                    argsList.append("__args[").append(i).append("]");
+                }
+                codeToExecute = code + "\ndef __args = new groovy.json.JsonSlurper().parseText(input)\n"
+                        + funcName + "(" + argsList + ")";
+            }
+        }
+
+        binding.setVariable("input", input != null ? input : "{}");
+        Object result = shell.evaluate(codeToExecute);
 
         long elapsed = System.currentTimeMillis() - start;
         String output = result != null ? result.toString() : "null";

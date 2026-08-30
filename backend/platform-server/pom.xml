@@ -123,6 +123,12 @@
             <artifactId>org.eclipse.jgit</artifactId>
         </dependency>
 
+        <!-- jsoup（M12 界面元素：HTML/Vue 模板解析） -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

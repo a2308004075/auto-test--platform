@@ -22,6 +22,7 @@ package com.platform.common.exception;
  *   <li>1900-1999: M9 测试执行</li>
  *   <li>2100-2199: 系统管理</li>
  *   <li>2200-2299: M11 测试代码库</li>
+ *   <li>2300-2399: M12 界面元素</li>
  * </ul>
  *
  * <p>使用示例：
@@ -133,6 +134,9 @@ public final class ErrorCode {
     public static final int REPOSITORY_NAME_DUPLICATE = 2201;
     public static final int REPOSITORY_CRYPTO_ERROR = 2202;
 
+    // ===== M12 界面元素 (2300-2399) =====
+    public static final int UI_ELEMENT_IMPORT_FAILED = 2300;
+
     // ===== 业务错误码 → HTTP 状态码映射 =====
     private static final int[] UNAUTHORIZED_CODES = {UNAUTHORIZED, ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED};
     private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, CASE_GROUP_SYSTEM, ACTION_GROUP_SYSTEM, KEYWORD_GROUP_SYSTEM};
@@ -150,6 +154,7 @@ public final class ErrorCode {
             case CAPTCHA_EXPIRED:
             case PASSWORD_INCORRECT:
             case EXCEL_IMPORT_FAILED:
+            case UI_ELEMENT_IMPORT_FAILED:
                 return 400;
             case RESOURCE_NOT_FOUND:
             case SUITE_NOT_FOUND:

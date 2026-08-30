@@ -29,6 +29,9 @@ export const componentMap: Record<string, () => Promise<any>> = {
   // ===== 测试代码库模块 =====
   'repository/RepositoryList': () => import('@/views/repository/RepositoryList.vue'),
 
+  // ===== 界面元素模块 =====
+  'uielement/UiElementList': () => import('@/views/uielement/UiElementList.vue'),
+
   // ===== 关键字模块 =====
   'keywords/KeywordList': () => import('@/views/keywords/KeywordList.vue'),
   'keywords/KeywordEdit': () => import('@/views/keywords/KeywordEdit.vue'),

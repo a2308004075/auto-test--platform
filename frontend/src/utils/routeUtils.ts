@@ -138,6 +138,10 @@ export function addSupplementaryRoutes(router: Router, layoutName: string): void
     { path: 'project/:id/plans/:planId/edit',              component: 'execution/PlanEdit',        title: '编辑计划' },
     { path: 'project/:id/executions/:executionId',         component: 'execution/ExecutionDetail', title: '执行详情' },
 
+    // ===== 需求文档模块 =====
+    { path: 'project/:id/requirements/new',                component: 'requirement/RequirementEdit', title: '新建需求' },
+    { path: 'project/:id/requirements/:itemId/edit',       component: 'requirement/RequirementEdit', title: '编辑需求' },
+
     // ===== 我的任务 =====
     { path: 'settings/my-tasks', component: 'settings/MyTasksView', title: '我的任务' },
   ]

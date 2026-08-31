@@ -34,6 +34,7 @@ export const componentMap: Record<string, () => Promise<any>> = {
 
   // ===== 需求文档模块 =====
   'requirement/RequirementList': () => import('@/views/requirement/RequirementList.vue'),
+  'requirement/RequirementEdit': () => import('@/views/requirement/RequirementEdit.vue'),
 
   // ===== 项目文档模块 =====
   'projectdoc/ProjectDocList': () => import('@/views/projectdoc/ProjectDocList.vue'),

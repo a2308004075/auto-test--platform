@@ -138,6 +138,13 @@ public class RequirementService {
     // ===== 需求条目管理 =====
 
     /**
+     * 查询单个需求条目详情
+     */
+    public RequirementItemResponse getItem(Long itemId) {
+        return toItemResponse(findItemById(itemId));
+    }
+
+    /**
      * 查询版本下的需求条目列表（按排序号升序，创建时间升序）
      */
     public List<RequirementItemResponse> listItems(Long versionId) {

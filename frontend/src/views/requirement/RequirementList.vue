@@ -9,7 +9,7 @@
  * 左侧版本列表（可增删改），右侧选中版本的需求条目列表（可增删改）
  */
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import {
@@ -18,8 +18,6 @@ import {
   updateRequirementVersion,
   deleteRequirementVersion,
   getRequirementItems,
-  createRequirementItem,
-  updateRequirementItem,
   deleteRequirementItem,
 } from '@/api/requirement'
 import type { RequirementVersion, RequirementItem } from '@/api/requirement'
@@ -28,6 +26,7 @@ import { usePermission } from '@/composables/usePermission'
 import BizDetailDrawer from '@/components/BizDetailDrawer/index.vue'
 
 const route = useRoute()
+const router = useRouter()
 const { hasPermission } = usePermission()
 const projectStore = useProjectStore()
 const projectId = computed(() => Number(route.params.id))
@@ -200,90 +199,15 @@ watch(selectedVersionId, () => {
   fetchItems()
 })
 
-// ===== 需求条目新建/编辑弹窗 =====
-const itemModalVisible = ref(false)
-const itemIsEdit = ref(false)
-const itemEditingId = ref<number | null>(null)
-const itemFormRef = ref<FormInstance>()
-const itemForm = reactive({
-  title: '',
-  description: '',
-  reqType: 'FEATURE',
-  priority: 'MEDIUM',
-  status: 'PENDING',
-  assignee: '',
-  deadline: '',
-})
-const itemRules = reactive<FormRules>({
-  title: [
-    { required: true, message: '请输入需求标题', trigger: 'blur' },
-    { max: 200, message: '需求标题长度不能超过 200 个字符', trigger: 'blur' },
-  ],
-})
+// ===== 需求条目新建/编辑导航 =====
 
 function openCreateItem() {
   if (!selectedVersionId.value) return
-  itemIsEdit.value = false
-  itemEditingId.value = null
-  Object.assign(itemForm, {
-    title: '',
-    description: '',
-    reqType: 'FEATURE',
-    priority: 'MEDIUM',
-    status: 'PENDING',
-    assignee: '',
-    deadline: '',
-  })
-  itemModalVisible.value = true
+  router.push(`/project/${projectId.value}/requirements/new?versionId=${selectedVersionId.value}`)
 }
 
 function openEditItem(item: RequirementItem) {
-  itemIsEdit.value = true
-  itemEditingId.value = item.id
-  Object.assign(itemForm, {
-    title: item.title,
-    description: item.description || '',
-    reqType: item.reqType,
-    priority: item.priority,
-    status: item.status,
-    assignee: item.assignee || '',
-    deadline: item.deadline || '',
-  })
-  itemModalVisible.value = true
-}
-
-function handleItemSubmit() {
-  itemFormRef.value?.validate(async (valid) => {
-    if (!valid) return
-    try {
-      const data = {
-        title: itemForm.title,
-        description: itemForm.description || undefined,
-        reqType: itemForm.reqType,
-        priority: itemForm.priority,
-        status: itemForm.status,
-        assignee: itemForm.assignee || undefined,
-        deadline: itemForm.deadline || undefined,
-      }
-      if (itemIsEdit.value && itemEditingId.value) {
-        await updateRequirementItem(itemEditingId.value, data)
-        ElMessage.success('保存成功')
-      } else if (selectedVersionId.value) {
-        await createRequirementItem(selectedVersionId.value, data)
-        ElMessage.success('创建成功')
-      }
-      itemModalVisible.value = false
-      await fetchItems()
-      // 刷新版本列表以更新条目计数
-      fetchVersions()
-    } catch (e: any) {
-      ElMessage.error(e?.response?.data?.message || '保存失败')
-    }
-  })
-}
-
-function handleItemDialogClosed() {
-  itemFormRef.value?.resetFields()
+  router.push(`/project/${projectId.value}/requirements/${item.id}/edit`)
 }
 
 function handleDeleteItem(item: RequirementItem) {
@@ -577,75 +501,6 @@ onMounted(fetchVersions)
       :value-label-map="requirementValueLabelMap"
       :project-id="projectId"
     />
-
-    <!-- 新建/编辑需求条目弹窗 -->
-    <el-dialog
-      v-model="itemModalVisible"
-      :title="itemIsEdit ? '编辑需求' : '新建需求'"
-      width="600px"
-      @closed="handleItemDialogClosed"
-    >
-      <el-form ref="itemFormRef" :model="itemForm" :rules="itemRules" label-position="top">
-        <el-form-item label="标题" prop="title">
-          <el-input v-model="itemForm.title" placeholder="需求标题" maxlength="200" show-word-limit />
-        </el-form-item>
-        <el-form-item label="描述" prop="description">
-          <el-input v-model="itemForm.description" type="textarea" :rows="3" placeholder="需求详细描述" />
-        </el-form-item>
-        <el-row :gutter="16">
-          <el-col :span="8">
-            <el-form-item label="需求类型" prop="reqType">
-              <el-select v-model="itemForm.reqType" placeholder="类型" style="width: 100%">
-                <el-option label="功能" value="FEATURE" />
-                <el-option label="优化" value="IMPROVEMENT" />
-                <el-option label="Bug" value="BUG" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="优先级" prop="priority">
-              <el-select v-model="itemForm.priority" placeholder="优先级" style="width: 100%">
-                <el-option label="高" value="HIGH" />
-                <el-option label="中" value="MEDIUM" />
-                <el-option label="低" value="LOW" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="状态" prop="status">
-              <el-select v-model="itemForm.status" placeholder="状态" style="width: 100%">
-                <el-option label="待处理" value="PENDING" />
-                <el-option label="进行中" value="IN_PROGRESS" />
-                <el-option label="已完成" value="COMPLETED" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="负责人" prop="assignee">
-              <el-input v-model="itemForm.assignee" placeholder="负责人" maxlength="50" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="截止日期" prop="deadline">
-              <el-date-picker
-                v-model="itemForm.deadline"
-                type="date"
-                placeholder="截止日期"
-                format="YYYY-MM-DD"
-                value-format="YYYY-MM-DD"
-                style="width: 100%"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <template #footer>
-        <el-button @click="itemModalVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleItemSubmit">确定</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 

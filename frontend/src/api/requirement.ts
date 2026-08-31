@@ -77,6 +77,11 @@ export function deleteRequirementVersion(versionId: number) {
 
 // ===== 需求条目 API =====
 
+/** 查询单个需求条目详情 */
+export function getRequirementItem(itemId: number) {
+  return request.get(`/v1/requirement-items/${itemId}`)
+}
+
 /** 查询版本下的需求条目列表 */
 export function getRequirementItems(versionId: number) {
   return request.get(`/v1/requirement-versions/${versionId}/items`)

@@ -70,6 +70,14 @@ public class RequirementController {
     // ===== 需求条目管理 =====
 
     /**
+     * 查询单个需求条目详情
+     */
+    @GetMapping("/api/v1/requirement-items/{itemId}")
+    public ApiResponse<RequirementItemResponse> getItem(@PathVariable Long itemId) {
+        return ApiResponse.ok(requirementService.getItem(itemId));
+    }
+
+    /**
      * 查询版本下的需求条目列表
      */
     @GetMapping("/api/v1/requirement-versions/{versionId}/items")

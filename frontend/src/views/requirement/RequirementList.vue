@@ -8,7 +8,7 @@
  * 需求文档 - 版本管理与需求条目管理
  * 左侧版本列表（可增删改），右侧选中版本的需求条目列表（可增删改）
  */
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -175,6 +175,55 @@ function handleDeleteVersion(version: RequirementVersion) {
     .catch(() => {})
 }
 
+// ===== 版本右键菜单 =====
+const contextMenuVisible = ref(false)
+const contextMenuPos = reactive({ x: 0, y: 0 })
+const contextVersion = ref<RequirementVersion | null>(null)
+
+function handleVersionContextmenu(e: MouseEvent, version: RequirementVersion) {
+  e.preventDefault()
+  e.stopPropagation()
+  contextVersion.value = version
+  contextMenuPos.x = e.clientX
+  contextMenuPos.y = e.clientY
+  contextMenuVisible.value = true
+}
+
+function handleBlankContextmenu(e: MouseEvent) {
+  e.preventDefault()
+  contextVersion.value = null
+  contextMenuPos.x = e.clientX
+  contextMenuPos.y = e.clientY
+  contextMenuVisible.value = true
+}
+
+function closeContextMenu() {
+  contextMenuVisible.value = false
+  contextVersion.value = null
+}
+
+function contextCreateVersion() {
+  openCreateVersion()
+  closeContextMenu()
+}
+
+function contextEditVersion() {
+  if (contextVersion.value) openEditVersion(contextVersion.value)
+  closeContextMenu()
+}
+
+function contextDeleteVersion() {
+  if (contextVersion.value) handleDeleteVersion(contextVersion.value)
+  closeContextMenu()
+}
+
+function contextCreateItem() {
+  if (!contextVersion.value) return
+  selectedVersionId.value = contextVersion.value.id
+  router.push(`/project/${projectId.value}/requirements/new?versionId=${contextVersion.value.id}`)
+  closeContextMenu()
+}
+
 // ===== 需求条目列表 =====
 const itemsLoading = ref(false)
 const items = ref<RequirementItem[]>([])
@@ -255,7 +304,14 @@ function openDetailDrawer(item: RequirementItem) {
   detailDrawerVisible.value = true
 }
 
-onMounted(fetchVersions)
+function onDocClick() { closeContextMenu() }
+onMounted(() => {
+  fetchVersions()
+  document.addEventListener('click', onDocClick)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
+})
 </script>
 
 <template>
@@ -279,54 +335,22 @@ onMounted(fetchVersions)
       <div class="req-left-panel">
         <div class="panel-header">
           <span class="panel-title">版本列表</span>
-          <el-button v-if="hasPermission('project:req:version:create')" type="primary" size="small" @click="openCreateVersion">
-            + 新建版本
-          </el-button>
         </div>
 
-        <div v-loading="versionLoading" class="version-list">
+        <div v-loading="versionLoading" class="version-list" @contextmenu="handleBlankContextmenu">
           <div
             v-for="version in versions"
             :key="version.id"
             class="version-card"
             :class="{ active: selectedVersionId === version.id }"
             @click="selectedVersionId = version.id"
+            @contextmenu.stop="handleVersionContextmenu($event, version)"
           >
-            <div class="version-card-top">
-              <span class="version-name">{{ version.versionName }}</span>
-              <el-tag :type="versionStatusMap[version.status]?.type || 'info'" size="small">
-                {{ versionStatusMap[version.status]?.label || version.status }}
-              </el-tag>
-            </div>
-            <div class="version-card-meta">
-              <span>{{ version.itemCount || 0 }} 个需求</span>
-              <span v-if="version.startDate || version.endDate">
-                {{ formatDate(version.startDate) }} ~ {{ formatDate(version.endDate) }}
-              </span>
-            </div>
-            <div v-if="version.description" class="version-card-desc">
-              {{ version.description }}
-            </div>
-            <div class="version-card-actions" @click.stop>
-              <el-button
-                v-if="hasPermission('project:req:version:edit')"
-                type="primary"
-                link
-                size="small"
-                @click="openEditVersion(version)"
-              >
-                编辑
-              </el-button>
-              <el-button
-                v-if="hasPermission('project:req:version:delete')"
-                type="danger"
-                link
-                size="small"
-                @click="handleDeleteVersion(version)"
-              >
-                删除
-              </el-button>
-            </div>
+            <span class="version-name">{{ version.versionName }}</span>
+            <el-tag :type="versionStatusMap[version.status]?.type || 'info'" size="small">
+              {{ versionStatusMap[version.status]?.label || version.status }}
+            </el-tag>
+            <span class="version-count">{{ version.itemCount || 0 }}</span>
           </div>
 
           <div v-if="!versionLoading && versions.length === 0" class="empty-text">
@@ -501,6 +525,28 @@ onMounted(fetchVersions)
       :value-label-map="requirementValueLabelMap"
       :project-id="projectId"
     />
+
+    <!-- 版本列表右键菜单 -->
+    <Teleport to="body">
+      <div
+        v-if="contextMenuVisible"
+        class="context-menu"
+        :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
+        @click.stop
+      >
+        <!-- 空白区域右键 -->
+        <template v-if="!contextVersion">
+          <div v-if="hasPermission('project:req:version:create')" class="context-menu-item" @click="contextCreateVersion">新建版本</div>
+        </template>
+        <!-- 版本卡片右键 -->
+        <template v-else>
+          <div v-if="hasPermission('project:req:item:create')" class="context-menu-item" @click="contextCreateItem">新建需求</div>
+          <div v-if="hasPermission('project:req:item:create')" class="context-menu-divider" />
+          <div v-if="hasPermission('project:req:version:edit')" class="context-menu-item" @click="contextEditVersion">编辑</div>
+          <div v-if="hasPermission('project:req:version:delete')" class="context-menu-item danger" @click="contextDeleteVersion">删除</div>
+        </template>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -593,58 +639,39 @@ onMounted(fetchVersions)
 }
 
 .version-card {
-  padding: 12px;
-  border: 1px solid #ebeef5;
-  border-radius: 6px;
-  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s;
+  font-size: 13px;
+  transition: background 0.15s;
 }
 
 .version-card:hover {
-  border-color: #c6e2ff;
-  background: #f5f9ff;
+  background: #f5f7fa;
 }
 
 .version-card.active {
-  border-color: #409eff;
   background: #ecf5ff;
-}
-
-.version-card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
+  color: #409eff;
+  font-weight: 500;
 }
 
 .version-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.version-card-meta {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #909399;
-  margin-bottom: 4px;
-}
-
-.version-card-desc {
-  font-size: 12px;
-  color: #909399;
-  margin-bottom: 6px;
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.version-card-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
+.version-count {
+  font-size: 12px;
+  color: #909399;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 /* ===== 空状态 ===== */
@@ -663,5 +690,41 @@ onMounted(fetchVersions)
   min-height: 300px;
   color: rgba(0, 0, 0, 0.25);
   font-size: 14px;
+}
+
+/* ===== 右键上下文菜单 ===== */
+.context-menu {
+  position: fixed;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px 0;
+  min-width: 130px;
+  z-index: 9999;
+}
+.context-menu-item {
+  padding: 7px 14px;
+  font-size: 13px;
+  color: #303133;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+}
+.context-menu-item:hover {
+  background: #f5f7fa;
+}
+.context-menu-item.danger {
+  color: #f56c6c;
+}
+.context-menu-item.danger:hover {
+  background: #fef0f0;
+}
+.context-menu-divider {
+  height: 1px;
+  background: #ebeef5;
+  margin: 4px 0;
 }
 </style>

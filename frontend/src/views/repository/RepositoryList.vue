@@ -309,7 +309,7 @@ onMounted(fetchList)
           </template>
         </el-table-column>
         <template #empty>
-          <div class="empty-text">暂无仓库，点击「新建仓库」开始登记 Git 仓库</div>
+          <div class="empty-text">暂无数据</div>
         </template>
       </el-table>
     </div>

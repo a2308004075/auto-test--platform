@@ -447,7 +447,7 @@ onBeforeUnmount(() => {
               </template>
             </el-table-column>
             <template #empty>
-              <div class="empty-text">暂无需求条目，点击「新建需求」开始</div>
+              <div class="empty-text">暂无数据</div>
             </template>
           </el-table>
         </template>

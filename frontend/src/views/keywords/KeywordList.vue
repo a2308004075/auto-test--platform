@@ -823,7 +823,7 @@ const highlightedDebugResponse = computed(() => {
 .kw-layout {
   display: flex;
   gap: 16px;
-  align-items: flex-start;
+  min-height: calc(100vh - 164px);
 }
 .group-panel {
   width: 220px;
@@ -832,6 +832,9 @@ const highlightedDebugResponse = computed(() => {
   border: 1px solid #ebeef5;
   border-radius: 6px;
   padding: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .group-head {
   display: flex;
@@ -851,7 +854,7 @@ const highlightedDebugResponse = computed(() => {
   border-radius: 4px;
 }
 .group-tree {
-  max-height: 560px;
+  flex: 1;
   overflow-y: auto;
 }
 .group-tree :deep(.el-tree-node__content) {

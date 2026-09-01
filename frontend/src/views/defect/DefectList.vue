@@ -505,13 +505,13 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.case-layout { display: flex; gap: 16px; align-items: flex-start; }
-.group-panel { width: 220px; flex-shrink: 0; background: #fff; border: 1px solid #ebeef5; border-radius: 6px; padding: 12px; }
+.case-layout { display: flex; gap: 16px; min-height: calc(100vh - 164px); }
+.group-panel { width: 220px; flex-shrink: 0; background: #fff; border: 1px solid #ebeef5; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; overflow: hidden; }
 .group-head { display: flex; justify-content: space-between; align-items: center; }
 .group-title { font-weight: 600; font-size: 14px; color: #303133; }
 .tree-search { margin: 8px 0; }
 .tree-search :deep(.el-input__wrapper) { box-shadow: 0 0 0 1px #dcdfe6 inset; border-radius: 4px; }
-.group-tree { max-height: 560px; overflow-y: auto; }
+.group-tree { flex: 1; overflow-y: auto; }
 .group-tree :deep(.el-tree-node__content) { height: auto; padding: 2px 0; }
 .group-tree-node { display: flex; align-items: center; flex: 1; padding: 2px 4px; border-radius: 4px; font-size: 13px; gap: 6px; width: 100%; }
 .group-tree-node:hover { background: #f5f7fa; }

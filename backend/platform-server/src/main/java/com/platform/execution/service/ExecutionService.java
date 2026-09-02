@@ -22,8 +22,8 @@ import com.platform.execution.mapper.TestPlanMapper;
 import com.platform.execution.mapper.TestResultMapper;
 import com.platform.execution.mq.ExecutionMessage;
 import com.platform.execution.mq.ExecutionProducer;
-import com.platform.execution.entity.TestCase;
-import com.platform.execution.mapper.TestCaseMapper;
+import com.platform.execution.entity.AutoCase;
+import com.platform.execution.mapper.AutoCaseMapper;
 import com.platform.environment.entity.Environment;
 import com.platform.environment.mapper.EnvironmentMapper;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +60,7 @@ public class ExecutionService {
     private final TestExecutionMapper testExecutionMapper;
     private final TestPlanMapper testPlanMapper;
     private final TestResultMapper testResultMapper;
-    private final TestCaseMapper testCaseMapper;
+    private final AutoCaseMapper autoCaseMapper;
     private final EnvironmentMapper environmentMapper;
     private final ExecutionProducer executionProducer;
 
@@ -316,10 +316,10 @@ public class ExecutionService {
         TestResultResponse resp = new TestResultResponse();
         BeanUtils.copyProperties(result, resp);
 
-        // 获取用例名称
-        TestCase testCase = testCaseMapper.selectById(result.getCaseId());
-        if (testCase != null) {
-            resp.setCaseName(testCase.getName());
+        // 获取自动化用例名称
+        AutoCase autoCase = autoCaseMapper.selectById(result.getAutoCaseId());
+        if (autoCase != null) {
+            resp.setCaseName(autoCase.getName());
         }
 
         return resp;

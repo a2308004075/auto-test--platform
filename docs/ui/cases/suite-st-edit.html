@@ -40,9 +40,9 @@
   <header class="layout-header">
     <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
     <div class="header-breadcrumb">
-      <span><a href="suite-list.html">测试套件</a></span>
+      <span><a href="suite-list.html">自动化套件</a></span>
       <span class="sep">&#8250;</span>
-      <span>冒烟测试套件</span>
+      <span>冒烟自动化套件</span>
       <span class="sep">&#8250;</span>
       <span class="current" id="breadcrumbTitle">Setup/Teardown 配置</span>
     </div>
@@ -89,8 +89,8 @@
         <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
-            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
-            <li class="menu-item active"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../cases/case-list.html">自动化用例</a></li>
+            <li class="menu-item active"><a href="../cases/suite-list.html">自动化套件</a></li>
             <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
             <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
           </ul>
@@ -110,7 +110,7 @@
     <!-- 上下文信息条 -->
     <div class="context-bar" id="contextBar">
       <span class="ctx-icon">ℹ</span>
-      <span id="contextText">套件级 · 整体 — 整个套件执行前后各调用一次</span>
+      <span id="contextText">自动化套件级 · 整体 — 整个自动化套件执行前后各调用一次</span>
     </div>
 
     <!-- Tabs: Setup / Teardown -->
@@ -166,16 +166,16 @@
 
     /* ===== 上下文初始化 ===== */
     var contextMap = {
-      once: { title: '套件级 · 整体 Setup/Teardown', text: '套件级 · 整体 — 整个套件执行前后各调用一次' },
-      per:  { title: '套件级 · 每条用例 Setup/Teardown', text: '套件级 · 每条用例 — 每条用例执行前后各调用一次' },
-      'case': { title: '差异化 Setup/Teardown', text: '用例级差异化 — 仅在当前套件中生效，不影响用例自身的配置' }
+      once: { title: '自动化套件级 · 整体 Setup/Teardown', text: '自动化套件级 · 整体 — 整个自动化套件执行前后各调用一次' },
+      per:  { title: '自动化套件级 · 每条自动化用例 Setup/Teardown', text: '自动化套件级 · 每条自动化用例 — 每条自动化用例执行前后各调用一次' },
+      'case': { title: '差异化 Setup/Teardown', text: '自动化用例级差异化 — 仅在当前自动化套件中生效，不影响自动化用例自身的配置' }
     };
     var ctx = contextMap[editType] || contextMap.once;
     document.getElementById('pageTitle').textContent = ctx.title;
     document.getElementById('breadcrumbTitle').textContent = ctx.title;
     document.getElementById('contextText').textContent = ctx.text;
     if (editType === 'case' && caseName) {
-      document.getElementById('contextText').textContent = '用例「' + caseName + '」差异化配置 — 仅在当前套件（冒烟测试套件）中生效';
+      document.getElementById('contextText').textContent = '自动化用例「' + caseName + '」差异化配置 — 仅在当前自动化套件（冒烟自动化套件）中生效';
     }
 
     /* ===== Tab 切换 ===== */

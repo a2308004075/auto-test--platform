@@ -49,8 +49,8 @@ public class PlanService {
     private final ProjectService projectService;
     private final EnvironmentMapper environmentMapper;
     private final TestExecutionMapper testExecutionMapper;
-    private final TestSuiteMapper testSuiteMapper;
-    private final TestCaseMapper testCaseMapper;
+    private final AutoSuiteMapper autoSuiteMapper;
+    private final AutoCaseMapper autoCaseMapper;
     private final ObjectMapper objectMapper;
 
     /**
@@ -62,7 +62,7 @@ public class PlanService {
      * @param status        状态 1=启用 0=禁用（null=不过滤）
      * @param updateBegin   更新日期起（yyyy-MM-dd，null=不过滤）
      * @param updateEnd     更新日期止（yyyy-MM-dd，null=不过滤）
-     * @param suiteKeyword  关联套件名称关键字（null=不过滤，按项目下套件名称模糊匹配）
+     * @param suiteKeyword  关联自动化套件名称关键字（null=不过滤，按项目下自动化套件名称模糊匹配）
      */
     public PageResponse<PlanResponse> listPlans(Long projectId, String keyword,
                                                  Long groupId, String triggerType,
@@ -85,14 +85,14 @@ public class PlanService {
             }
         }
 
-        // 按关联套件名称过滤：先查项目下名称匹配的套件 ID，再匹配 suite_ids JSON 数组
+        // 按关联自动化套件名称过滤：先查项目下名称匹配的自动化套件 ID，再匹配 auto_suite_ids JSON 数组
         if (StringUtils.hasText(suiteKeyword)) {
-            LambdaQueryWrapper<TestSuite> suiteWrapper = new LambdaQueryWrapper<>();
-            suiteWrapper.eq(TestSuite::getProjectId, projectId)
-                    .like(TestSuite::getName, suiteKeyword)
-                    .select(TestSuite::getId);
+            LambdaQueryWrapper<AutoSuite> suiteWrapper = new LambdaQueryWrapper<>();
+            suiteWrapper.eq(AutoSuite::getProjectId, projectId)
+                    .like(AutoSuite::getName, suiteKeyword)
+                    .select(AutoSuite::getId);
             List<Long> matchedSuiteIds = new ArrayList<>();
-            for (TestSuite s : testSuiteMapper.selectList(suiteWrapper)) {
+            for (AutoSuite s : autoSuiteMapper.selectList(suiteWrapper)) {
                 matchedSuiteIds.add(s.getId());
             }
             if (matchedSuiteIds.isEmpty()) {
@@ -102,10 +102,10 @@ public class PlanService {
                 boolean first = true;
                 for (Long suiteId : matchedSuiteIds) {
                     if (first) {
-                        w.apply("JSON_CONTAINS(suite_ids, {0})", String.valueOf(suiteId));
+                        w.apply("JSON_CONTAINS(auto_suite_ids, {0})", String.valueOf(suiteId));
                         first = false;
                     } else {
-                        w.or().apply("JSON_CONTAINS(suite_ids, {0})", String.valueOf(suiteId));
+                        w.or().apply("JSON_CONTAINS(auto_suite_ids, {0})", String.valueOf(suiteId));
                     }
                 }
             });
@@ -177,7 +177,7 @@ public class PlanService {
 
         TestPlan plan = new TestPlan();
         BeanUtils.copyProperties(request, plan);
-        plan.setSuiteIds(serializeSuiteIds(request.getSuiteIds()));
+        plan.setAutoSuiteIds(serializeAutoSuiteIds(request.getAutoSuiteIds()));
         plan.setTriggerType(request.getTriggerType() != null ? request.getTriggerType() : "MANUAL");
         plan.setIsActive(1);
         plan.setCreatedBy(getCurrentUserId());
@@ -211,8 +211,8 @@ public class PlanService {
         } else if (request.getGroupId() != null) {
             plan.setGroupId(request.getGroupId());
         }
-        if (request.getSuiteIds() != null) {
-            plan.setSuiteIds(serializeSuiteIds(request.getSuiteIds()));
+        if (request.getAutoSuiteIds() != null) {
+            plan.setAutoSuiteIds(serializeAutoSuiteIds(request.getAutoSuiteIds()));
         }
         if (request.getEnvironmentId() != null) {
             plan.setEnvironmentId(request.getEnvironmentId());
@@ -280,7 +280,7 @@ public class PlanService {
     private PlanResponse toResponse(TestPlan plan) {
         PlanResponse resp = new PlanResponse();
         BeanUtils.copyProperties(plan, resp);
-        resp.setSuiteIds(parseSuiteIds(plan.getSuiteIds()));
+        resp.setAutoSuiteIds(parseAutoSuiteIds(plan.getAutoSuiteIds()));
 
         // 获取环境名称
         if (plan.getEnvironmentId() != null) {
@@ -290,22 +290,22 @@ public class PlanService {
             }
         }
 
-        // 获取套件名称列表
-        List<Long> suiteIdList = resp.getSuiteIds();
-        List<String> suiteNames = new ArrayList<>();
+        // 获取自动化套件名称列表
+        List<Long> autoSuiteIdList = resp.getAutoSuiteIds();
+        List<String> autoSuiteNames = new ArrayList<>();
         int caseCount = 0;
-        for (Long suiteId : suiteIdList) {
-            TestSuite suite = testSuiteMapper.selectById(suiteId);
+        for (Long autoSuiteId : autoSuiteIdList) {
+            AutoSuite suite = autoSuiteMapper.selectById(autoSuiteId);
             if (suite != null) {
-                suiteNames.add(suite.getName());
-                // 统计该套件下启用的用例数
-                LambdaQueryWrapper<TestCase> caseWrapper = new LambdaQueryWrapper<>();
-                caseWrapper.eq(TestCase::getSuiteId, suiteId)
-                        .eq(TestCase::getIsActive, 1);
-                caseCount += Math.toIntExact(testCaseMapper.selectCount(caseWrapper));
+                autoSuiteNames.add(suite.getName());
+                // 统计该自动化套件下启用的自动化用例数
+                LambdaQueryWrapper<AutoCase> caseWrapper = new LambdaQueryWrapper<>();
+                caseWrapper.eq(AutoCase::getAutoSuiteId, autoSuiteId)
+                        .eq(AutoCase::getIsActive, 1);
+                caseCount += Math.toIntExact(autoCaseMapper.selectCount(caseWrapper));
             }
         }
-        resp.setSuiteNames(suiteNames);
+        resp.setAutoSuiteNames(autoSuiteNames);
         resp.setCaseCount(caseCount);
 
         // 获取最近一次执行记录（COMPLETED 状态）
@@ -332,7 +332,7 @@ public class PlanService {
     }
 
     @SuppressWarnings("unchecked")
-    private List<Long> parseSuiteIds(String json) {
+    private List<Long> parseAutoSuiteIds(String json) {
         if (json == null || json.trim().isEmpty()) {
             return Collections.emptyList();
         }
@@ -343,14 +343,14 @@ public class PlanService {
         }
     }
 
-    private String serializeSuiteIds(List<Long> suiteIds) {
-        if (suiteIds == null || suiteIds.isEmpty()) {
+    private String serializeAutoSuiteIds(List<Long> autoSuiteIds) {
+        if (autoSuiteIds == null || autoSuiteIds.isEmpty()) {
             return "[]";
         }
         try {
-            return objectMapper.writeValueAsString(suiteIds);
+            return objectMapper.writeValueAsString(autoSuiteIds);
         } catch (JsonProcessingException e) {
-            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "序列化 suiteIds 失败");
+            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "序列化 autoSuiteIds 失败");
         }
     }
 

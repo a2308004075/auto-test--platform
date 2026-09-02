@@ -75,8 +75,8 @@
         <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
-            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
-            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../cases/case-list.html">自动化用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">自动化套件</a></li>
             <li class="menu-item active"><a href="../execution/plan-list.html">测试计划</a></li>
             <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
           </ul>
@@ -133,8 +133,8 @@
                 <select class="select" id="searchStatus"><option>全部状态</option><option>启用</option><option>禁用</option></select>
               </div>
               <div class="search-item">
-                <label class="filter-label" for="searchSuite">关联套件</label>
-                <input type="text" class="input input-search" id="searchSuite" placeholder="套件名称">
+                <label class="filter-label" for="searchSuite">关联自动化套件</label>
+                <input type="text" class="input input-search" id="searchSuite" placeholder="自动化套件名称">
               </div>
               <div class="search-item">
                 <label class="filter-label" for="searchUpdateBegin">最近更新</label>
@@ -151,7 +151,7 @@
         <div class="card">
           <div class="table-wrapper">
             <table>
-              <thead><tr><th style="width:200px;">计划名称</th><th style="width:200px;">描述</th><th style="width:90px;">触发方式</th><th style="width:160px;">关联套件</th><th style="width:70px;">用例数</th><th style="width:100px;">环境</th><th style="width:70px;">状态</th><th style="width:160px;">最近执行</th><th style="width:70px;">通过率</th><th style="width:140px;">操作</th></tr></thead>
+              <thead><tr><th style="width:200px;">计划名称</th><th style="width:200px;">描述</th><th style="width:90px;">触发方式</th><th style="width:160px;">关联自动化套件</th><th style="width:70px;">自动化用例数</th><th style="width:100px;">环境</th><th style="width:70px;">状态</th><th style="width:160px;">最近执行</th><th style="width:70px;">通过率</th><th style="width:140px;">操作</th></tr></thead>
               <tbody id="planTableBody"></tbody>
             </table>
           </div>
@@ -211,11 +211,11 @@
 
     /* ===== Plan Data ===== */
     var plans = [
-      { id: 1, name: '每日冒烟测试', desc: '每日自动执行冒烟用例，确保核心功能正常', trigger: '定时', triggerTag: 'tag-green', suites: ['冒烟测试套件'], caseCount: 12, env: '开发环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-15 08:00', cron: 'Cron: 0 8 * * *', passRate: '95%', passCls: 'var(--success)', groupId: '1' },
-      { id: 2, name: '每周回归测试', desc: '每周五下午全量回归，发布前验证', trigger: '定时', triggerTag: 'tag-green', suites: ['回归测试套件','电池管理测试'], caseCount: 63, env: '测试环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-12 14:00', cron: 'Cron: 0 14 * * 5', passRate: '92%', passCls: 'var(--success)', groupId: '4' },
-      { id: 3, name: '手动验证计划', desc: '临时验证用，按需手动触发执行', trigger: '手动', triggerTag: 'tag-blue', suites: ['冒烟测试套件'], caseCount: 12, env: '开发环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-10 16:30', cron: '', passRate: '88%', passCls: '', groupId: '1' },
-      { id: 4, name: 'CI/CD 集成测试', desc: 'Jenkins 部署后自动触发回归测试', trigger: 'CI', triggerTag: 'tag-purple', suites: ['回归测试套件'], caseCount: 28, env: '预发布环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-14 20:15', cron: '', passRate: '96%', passCls: 'var(--success)', groupId: '3' },
-      { id: 5, name: '接口全量回归', desc: '版本发布前全量接口回归验证', trigger: '手动', triggerTag: 'tag-blue', suites: ['冒烟测试套件','回归测试套件'], caseCount: 40, env: '测试环境', status: '禁用', statusTag: 'tag-gray', lastExec: '2024-01-08 11:20', cron: '', passRate: '72%', passCls: 'var(--error)', groupId: '4' }
+      { id: 1, name: '每日冒烟测试', desc: '每日自动执行冒烟自动化用例，确保核心功能正常', trigger: '定时', triggerTag: 'tag-green', suites: ['冒烟自动化套件'], caseCount: 12, env: '开发环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-15 08:00', cron: 'Cron: 0 8 * * *', passRate: '95%', passCls: 'var(--success)', groupId: '1' },
+      { id: 2, name: '每周回归测试', desc: '每周五下午全量回归，发布前验证', trigger: '定时', triggerTag: 'tag-green', suites: ['回归自动化套件','电池管理测试'], caseCount: 63, env: '测试环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-12 14:00', cron: 'Cron: 0 14 * * 5', passRate: '92%', passCls: 'var(--success)', groupId: '4' },
+      { id: 3, name: '手动验证计划', desc: '临时验证用，按需手动触发执行', trigger: '手动', triggerTag: 'tag-blue', suites: ['冒烟自动化套件'], caseCount: 12, env: '开发环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-10 16:30', cron: '', passRate: '88%', passCls: '', groupId: '1' },
+      { id: 4, name: 'CI/CD 集成测试', desc: 'Jenkins 部署后自动触发回归测试', trigger: 'CI', triggerTag: 'tag-purple', suites: ['回归自动化套件'], caseCount: 28, env: '预发布环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-14 20:15', cron: '', passRate: '96%', passCls: 'var(--success)', groupId: '3' },
+      { id: 5, name: '接口全量回归', desc: '版本发布前全量接口回归验证', trigger: '手动', triggerTag: 'tag-blue', suites: ['冒烟自动化套件','回归自动化套件'], caseCount: 40, env: '测试环境', status: '禁用', statusTag: 'tag-gray', lastExec: '2024-01-08 11:20', cron: '', passRate: '72%', passCls: 'var(--error)', groupId: '4' }
     ];
 
     /* ===== Group Data ===== */

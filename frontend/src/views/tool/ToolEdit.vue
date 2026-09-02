@@ -278,7 +278,7 @@ onMounted(() => {
 
 <template>
   <div v-loading="loading">
-    <EditPageHeader :title="isEdit ? '编辑工具方法' : '新建工具方法'" :back-route="`/project/${projectId}/tools`">
+    <EditPageHeader :title="isEdit ? '编辑工具方法' : '新建工具方法'">
       <el-button v-if="hasPermission('project:tool:test')" @click="handleTest">测试</el-button>
       <el-button v-if="hasPermission('project:tool:edit')" type="primary" @click="handleSubmit">保存</el-button>
       <el-button @click="router.push(`/project/${projectId}/tools`)">取消</el-button>

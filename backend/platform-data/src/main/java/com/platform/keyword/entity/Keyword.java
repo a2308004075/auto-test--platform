@@ -22,7 +22,7 @@ public class Keyword extends BaseEntity {
     private String name;
 
     /**
-     * 关键字类型：API / TOOL / ACTION / TEST_CASE
+     * 关键字类型：API / TOOL / ACTION / AUTO_CASE
      */
     @TableField("keyword_type")
     private String type;

@@ -19,12 +19,15 @@ public class TestResultResponse {
 
     private Long executionId;
 
-    private Long caseId;
+    private Long autoCaseId;
 
+    /**
+     * 自动化用例名称
+     */
     private String caseName;
 
     /**
-     * 用例执行结果：PASSED / FAILED / SKIPPED / ERROR
+     * 自动化用例执行结果：PASSED / FAILED / SKIPPED / ERROR
      */
     private String status;
 

@@ -13,7 +13,7 @@ import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  getActions, createAction, deleteAction,
+  getActions, deleteAction,
   getActionGroups, createActionGroup, updateActionGroup, deleteActionGroup, batchMoveActions,
   clearActionGroupActions, clearAllActions,
 } from '@/api/action'
@@ -79,6 +79,7 @@ function onGroupNodeClick(data: any) {
 }
 
 async function fetchGroups() {
+  if (!projectId.value) return
   try {
     const res: any = await getActionGroups(projectId.value)
     groups.value = res.data || []
@@ -92,6 +93,7 @@ function selectGroup(id: number) {
 }
 
 async function fetchList() {
+  if (!projectId.value) return
   loading.value = true
   try {
     const res: any = await getActions(projectId.value, {
@@ -126,20 +128,14 @@ function handleReset() {
 }
 
 // ===== 新建 =====
-async function handleCreate() {
-  try {
-    const res: any = await createAction(projectId.value, {
-      projectId: projectId.value,
-      name: `新建 Action ${Date.now() % 10000}`,
-      description: '',
-      nodes: [],
-      groupId: activeGroupId.value || undefined,
-    })
-    ElMessage.success('创建成功')
-    router.push(`/project/${projectId.value}/actions/${res.data.id}/edit`)
-  } catch (e: any) {
-    ElMessage.error(e?.response?.data?.message || '创建失败')
-  }
+function handleCreate() {
+  // 当前选中用户分组时带入作为新建页默认分组（"全部"/"未分组"等系统分组不带入）
+  const g = groupMap.value[activeGroupId.value]
+  const groupId = g && g.isSystem !== 1 ? activeGroupId.value : undefined
+  router.push({
+    path: `/project/${projectId.value}/actions/new`,
+    query: groupId ? { groupId: String(groupId) } : undefined,
+  })
 }
 
 // ===== 删除 =====

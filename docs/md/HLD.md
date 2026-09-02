@@ -14,12 +14,12 @@
 
 ### 1.2 项目概述
 
-auto-test-platform 是一个**通用的项目管理平台**，面向任意行业的 HTTP API 自动化测试场景。平台基于 postman-tool 核心引擎，提供 Web 化的全流程管理能力，覆盖接口管理、关键字编排、用例组织、执行调度和报告分析。
+auto-test-platform 是一个**通用的项目管理平台**，面向任意行业的 HTTP API 自动化测试场景。平台基于 postman-tool 核心引擎，提供 Web 化的全流程管理能力，覆盖接口管理、关键字编排、自动化用例组织、执行调度和报告分析。
 
 核心设计思想为**四层封装体系**：
 
 ```
-基础能力层 → 关键字封装层 → Action 关键字层 → 测试用例
+基础能力层 → 关键字封装层 → Action 关键字层 → 自动化用例
 ```
 
 每一层封装后形成新的可复用单元，自底向上逐层组装。
@@ -42,11 +42,11 @@ auto-test-platform 是一个**通用的项目管理平台**，面向任意行业
 
 | 术语 | 含义 |
 |---|---|
-| Keyword | 统一关键字实体，通过 `keyword_type` 区分 API / TOOL / ACTION / TEST_CASE |
+| Keyword | 统一关键字实体，通过 `keyword_type` 区分 API / TOOL / ACTION / AUTO_CASE |
 | 接口关键字 | Keyword(type=API) + ApiEndpoint，接口 + 测试数据的封装 |
 | 工具方法关键字 | ToolMethod 实体，通过 `keyword` 字段标识（≤20字符） |
 | Action 关键字 | Keyword(type=ACTION) + Action，通过流程画布编排节点连线 |
-| 四层 Setup/Teardown | 套件级·整体、套件级·每条、套件内用例级、用例级四层生命周期钩子 |
+| 四层 Setup/Teardown | 自动化套件级·整体、自动化套件级·每条、自动化套件内自动化用例级、自动化用例级四层生命周期钩子 |
 
 ---
 
@@ -80,7 +80,7 @@ auto-test-platform 是一个**通用的项目管理平台**，面向任意行业
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐   │
 │  │ auth     │ │ project  │ │ api      │ │ keyword  │ │ execution    │   │
 │  │ 认证模块  │ │ 项目模块  │ │ 接口模块  │ │ 关键字模块│ │ 执行模块      │   │
-│  │ M1认证   │ │ M2项目   │ │ M4接口   │ │ M5接口KW │ │ M8用例       │   │
+│  │ M1认证   │ │ M2项目   │ │ M4接口   │ │ M5接口KW │ │ M8自动化用例       │   │
 │  │ 用户管理  │ │ M3环境   │ │ 文档管理  │ │ M6工具KW │ │ M9执行       │   │
 │  │ 系统配置  │ │ 配置管理  │ │          │ │ M7Action │ │ M10报告      │   │
 │  └──────────┘ └──────────┘ └──────────┘ └────┬─────┘ └──────────────┘   │
@@ -146,7 +146,7 @@ RabbitMQ + MySQL + Redis
 | repository | M11 | 测试代码库、JGit 仓库克隆/拉取、凭证 AES 加密、拉取历史 |
 | api | M4 | 接口文档、Swagger 导入、接口调试 |
 | keyword | M5, M6, M7 | 接口关键字、工具方法、Action 画布、删除保护链 |
-| execution | M8, M9, M10 | 测试套件、用例编排、执行调度、实时推送、报告分析、**内置执行引擎** |
+| execution | M8, M9, M10 | 自动化套件、自动化用例编排、执行调度、实时推送、报告分析、**内置执行引擎** |
 
 **模块间通信：**
 
@@ -185,7 +185,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 | M5 | 接口关键字管理 | KW-001 ~ KW-005 | 接口关键字 CRUD、测试数据配置、预期响应、删除保护、传参返回 | 3 |
 | M6 | 工具方法关键字管理 | TOOL-001 ~ TOOL-006 | 内置/自定义工具方法管理、代码沙箱执行、在线测试、传参返回 | 3 |
 | M7 | Action 关键字管理 | ACT-001 ~ ACT-004 | Action CRUD、流程画布编排、Action 调试、引用管理、删除保护 | 3 |
-| M8 | 测试用例管理 | CASE-001 ~ CASE-004 | 套件管理、用例 CRUD、步骤编排器、校验配置、参数化、四层 Setup/Teardown | 4 |
+| M8 | 自动化用例管理 | CASE-001 ~ CASE-004 | 自动化套件管理、自动化用例 CRUD、步骤编排器、校验配置、参数化、四层 Setup/Teardown | 4 |
 | M9 | 测试执行与调度 | EXEC-001, EXEC-002 | 测试计划 CRUD、执行触发（手动/定时/CI）、实时状态推送 | 4 |
 | M10 | 测试报告与分析 | RPT-001 ~ RPT-005 | 执行详情、执行历史、趋势分析、历史对比、PDF/Excel 报告导出 | 2 |
 | M11 | 测试代码库 | REPO-001 ~ REPO-004 | Git 仓库登记、JGit 代码克隆/拉取、认证凭证 AES 加密存储、拉取历史 | 1 |
@@ -257,7 +257,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 |---|---|
 | 输入 | 项目基础信息、源码路径 |
 | 输出 | 项目列表、项目详情、仪表板统计数据 |
-| 不负责 | 项目下的资源管理（接口、关键字、用例等由各自模块负责） |
+| 不负责 | 项目下的资源管理（接口、关键字、自动化用例等由各自模块负责） |
 
 #### 对外接口
 
@@ -285,7 +285,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 #### 仪表板数据依赖
 
 项目概览仪表板的数据聚合依赖以下模块提供原始数据：
-- M4（接口覆盖率）→ M5（关键字覆盖率）→ M8（用例执行结果）→ M9（执行记录）→ M10（趋势数据）
+- M4（接口覆盖率）→ M5（关键字覆盖率）→ M8（自动化用例执行结果）→ M9（执行记录）→ M10（趋势数据）
 
 ---
 
@@ -339,7 +339,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 - 接口 CRUD（手动创建、编辑基础信息/参数/请求体/响应定义）
 - 接口在线调试（选择环境 → 填写参数 → 发送请求 → 展示响应）
 - 接口同步（重新上传 Swagger，差异对比，确认后更新）
-- 接口删除保护（检查下游关键字和用例依赖，被引用接口禁止删除）
+- 接口删除保护（检查下游关键字和自动化用例依赖，被引用接口禁止删除）
 - 批量操作（启用/禁用、移动分组、删除，删除时逐条执行依赖检查）
 
 #### 边界
@@ -479,7 +479,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
   - 画布工具栏：缩放、删除选中、一键格式化、一键清空、全屏
   - 保存时序列化流程图拓扑为 nodes JSON
 - Action 调试（选择环境 → 填写参数 → 按画布拓扑顺序执行 → 展示逐节点结果）
-- 引用管理与删除保护（被用例或其他 Action 引用时不可删除）
+- 引用管理与删除保护（被自动化用例或其他 Action 引用时不可删除）
 - Action-to-Action 嵌套调用支持
 
 #### 边界
@@ -516,57 +516,57 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 
 ---
 
-### 3.9 M8 — 测试用例管理模块
+### 3.9 M8 — 自动化用例管理模块
 
 #### 职责
 
-- **测试套件管理**：套件 CRUD、套件内用例排序、标签管理、四层 Setup/Teardown 配置
-  - 套件级·整体 Setup/Teardown（独立开关，整个套件执行前/后调用一次）
-  - 套件级·每条 Setup/Teardown（独立开关，每条用例执行前/后调用）
-  - 套件内用例级差异化 Setup/Teardown（通过 SuiteCaseLifecycle 关联实体）
-- **测试用例 CRUD**：列表/卡片双视图、多维度搜索筛选（套件/标签/优先级/状态）、批量操作
-- **用例步骤编排器**（核心功能，三栏布局与 Action 编辑器交互一致）：
+- **自动化套件管理**：自动化套件 CRUD、自动化套件内自动化用例排序、标签管理、四层 Setup/Teardown 配置
+  - 自动化套件级·整体 Setup/Teardown（独立开关，整个自动化套件执行前/后调用一次）
+  - 自动化套件级·每条 Setup/Teardown（独立开关，每条自动化用例执行前/后调用）
+  - 自动化套件内自动化用例级差异化 Setup/Teardown（通过 AutoSuiteCaseLifecycle 关联实体）
+- **自动化用例 CRUD**：列表/卡片双视图、多维度搜索筛选（自动化套件/标签/优先级/状态）、批量操作
+- **自动化用例步骤编排器**（核心功能，三栏布局与 Action 编辑器交互一致）：
   - 关键字步骤（引用 Keyword，按 keyword_type 筛选 API/TOOL/ACTION）
   - 控制流步骤（串行/并行/条件/等待）
   - 校验配置（6 种断言：equal/not_equal/include/not_include/true/not_true）
   - 变量引用（`${var}` 引用上游输出或环境变量）
-- **用例级 Setup/Teardown**（可选，在所有场景通用）
+- **自动化用例级 Setup/Teardown**（可选，在所有场景通用）
 - **参数化数据驱动**：手动输入表格或 CSV 导入
-- **用例调试**：单用例在线调试，WebSocket 实时日志推送
+- **自动化用例调试**：单自动化用例在线调试，WebSocket 实时日志推送
 
 #### 边界
 
 | 边界项 | 说明 |
 |---|---|
-| 输入 | 用例步骤编排数据、校验配置、参数化数据、Setup/Teardown 步骤 |
-| 输出 | 用例列表、用例详情、调试结果 |
+| 输入 | 自动化用例步骤编排数据、校验配置、参数化数据、Setup/Teardown 步骤 |
+| 输出 | 自动化用例列表、自动化用例详情、调试结果 |
 | 不负责 | 执行调度和执行记录管理（由 M9 负责） |
 
 #### 对外接口
 
 | 接口 | 方法 | 路径 | 说明 |
 |---|---|---|---|
-| 套件 CRUD | GET/POST/PUT/DELETE | `/api/v1/projects/:pid/suites[/:id]` | 套件管理 |
-| 添加/移除用例 | POST/DELETE | `/api/v1/projects/:pid/suites/:id/cases[/:caseId]` | 套件内用例操作 |
-| 用例级生命周期 | GET/PUT/DELETE | `/api/v1/projects/:pid/suites/:id/cases/:caseId/lifecycle` | 差异化 Setup/Teardown |
-| 用例列表 | GET | `/api/v1/projects/:pid/cases` | 多维度筛选 |
-| 用例 CRUD | GET/POST/PUT/DELETE | `/api/v1/projects/:pid/cases[/:id]` | 用例管理 |
-| 用例调试 | POST | `/api/v1/projects/:pid/cases/:id/debug` | WebSocket 实时推送 |
-| 批量操作 | POST | `/api/v1/projects/:pid/cases/batch` | 批量启用/禁用/移动/打标签/删除 |
+| 自动化套件 CRUD | GET/POST/PUT/DELETE | `/api/v1/projects/:pid/auto-suites[/:id]` | 自动化套件管理 |
+| 添加/移除自动化用例 | POST/DELETE | `/api/v1/projects/:pid/auto-suites/:id/auto-cases[/:autoCaseId]` | 自动化套件内自动化用例操作 |
+| 自动化用例级生命周期 | GET/PUT/DELETE | `/api/v1/projects/:pid/auto-suites/:id/auto-cases/:autoCaseId/lifecycle` | 差异化 Setup/Teardown |
+| 自动化用例列表 | GET | `/api/v1/projects/:pid/auto-cases` | 多维度筛选 |
+| 自动化用例 CRUD | GET/POST/PUT/DELETE | `/api/v1/projects/:pid/auto-cases[/:id]` | 自动化用例管理 |
+| 自动化用例调试 | POST | `/api/v1/projects/:pid/auto-cases/:id/debug` | WebSocket 实时推送 |
+| 批量操作 | POST | `/api/v1/projects/:pid/auto-cases/batch` | 批量启用/禁用/移动/打标签/删除 |
 
 #### 数据实体
 
-- `TestSuite`：测试套件（project_id, name, tags, once_setup_steps, once_teardown_steps, per_case_setup_steps, per_case_teardown_steps, enable 开关）
-- `TestCase`：测试用例（suite_id, steps JSON, setup_steps, teardown_steps, assertions, priority）
-- `SuiteCaseLifecycle`：套件内用例级生命周期关联实体（suite_id, case_id, setup_steps, teardown_steps）
+- `AutoSuite`：自动化套件（project_id, name, tags, once_setup_steps, once_teardown_steps, per_case_setup_steps, per_case_teardown_steps, enable 开关）
+- `AutoCase`：自动化用例（auto_suite_id, steps JSON, setup_steps, teardown_steps, assertions, priority）
+- `AutoSuiteCaseLifecycle`：自动化套件内自动化用例级生命周期关联实体（auto_suite_id, auto_case_id, setup_steps, teardown_steps）
 
 #### UI 页面
 
 | 页面 | 路径 |
 |---|---|
-| 测试套件 | `/projects/:id/suites` |
-| 用例列表 | `/projects/:id/cases` |
-| 用例编辑 | `/projects/:id/cases/:caseId/edit` |
+| 自动化套件 | `/projects/:id/auto-suites` |
+| 自动化用例列表 | `/projects/:id/auto-cases` |
+| 自动化用例编辑 | `/projects/:id/auto-cases/:autoCaseId/edit` |
 
 ---
 
@@ -574,14 +574,14 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 
 #### 职责
 
-- **测试计划管理**：计划 CRUD、关联测试套件（多选）、绑定执行环境
+- **测试计划管理**：计划 CRUD、关联自动化套件（多选）、绑定执行环境
 - **定时执行配置**：可视化 Cron 编辑器（分/时/日/月/周），启停开关，执行时间预览
 - **执行触发**：
   - 手动执行：点击「立即执行」，可选覆盖环境
   - 定时执行：Spring Task Scheduler 按 cron 表达式自动触发
   - CI/CD Webhook（预留）：提供 Webhook 接口供外部系统触发
 - **执行状态管理**：PENDING → RUNNING → COMPLETED/FAILED/CANCELLED
-- **实时状态推送**：WebSocket 推送执行进度（第 N/M 个用例）和最终状态
+- **实时状态推送**：WebSocket 推送执行进度（第 N/M 个自动化用例）和最终状态
 - **执行记录管理**：历史记录列表、多维度筛选、一键重新执行
 
 #### 边界
@@ -590,7 +590,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 |---|---|
 | 输入 | 测试计划配置、执行触发指令、定时规则 |
 | 输出 | 执行记录、执行状态、实时进度推送 |
-| 不负责 | 执行结果的分析和报告生成（由 M10 负责）；用例步骤的具体执行逻辑（委托给引擎层） |
+| 不负责 | 执行结果的分析和报告生成（由 M10 负责）；自动化用例步骤的具体执行逻辑（委托给引擎层） |
 
 #### 对外接口
 
@@ -602,7 +602,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 | 定时配置 | POST | `/api/v1/projects/:pid/plans/:id/schedule` | 配置 cron |
 | 执行历史 | GET | `/api/v1/projects/:pid/executions` | 多维度筛选 |
 | 执行详情 | GET | `/api/v1/projects/:pid/executions/:id` | 含概要统计 |
-| 执行结果 | GET | `/api/v1/projects/:pid/executions/:id/cases[/:caseId/steps]` | 用例/步骤级结果 |
+| 执行结果 | GET | `/api/v1/projects/:pid/executions/:id/auto-cases[/:autoCaseId/steps]` | 自动化用例/步骤级结果 |
 | 取消执行 | POST | `/api/v1/projects/:pid/executions/:id/cancel` | 取消正在执行 |
 | 执行日志 | GET | `/api/v1/projects/:pid/executions/:id/logs` | 日志查询 |
 | CI Webhook | POST | `/api/v1/webhook/execute/:planId` | 外部触发（预留） |
@@ -610,9 +610,9 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 
 #### 数据实体
 
-- `TestPlan`：测试计划（project_id, suite_ids JSON, environment_id, schedule_cron）
+- `TestPlan`：测试计划（project_id, auto_suite_ids JSON, environment_id, schedule_cron）
 - `TestExecution`：执行记录（plan_id, trigger_type, status, total/passed/failed/skipped_cases, duration_ms）
-- `TestResult`：测试结果明细（execution_id, case_id, status, logs JSON, duration_ms）
+- `TestResult`：测试结果明细（execution_id, auto_case_id, status, logs JSON, duration_ms）
 
 #### UI 页面
 
@@ -629,11 +629,11 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 
 #### 职责
 
-- **执行详情报告**：概要统计（总数/通过/失败/跳过/耗时）、通过率进度环、用例结果列表、步骤级日志追溯
+- **执行详情报告**：概要统计（总数/通过/失败/跳过/耗时）、通过率进度环、自动化用例结果列表、步骤级日志追溯
 - **执行历史**：按时间倒序展示、多维度筛选（计划/状态/触发方式/时间范围）、一键重新执行
 - **趋势分析**：通过率折线图（天/周/月粒度）、执行耗时趋势、模块失败率热力图、高频失败 TOP 10
-- **历史对比**：选择两次执行记录对比（概要差异、新增失败/修复/持续失败用例、耗时对比柱状图）
-- **报告导出**：PDF 报告（封面+概要+图表+详细结果+失败详情）、Excel 报告（概要+用例结果+步骤详情三个 Sheet）
+- **历史对比**：选择两次执行记录对比（概要差异、新增失败/修复/持续失败自动化用例、耗时对比柱状图）
+- **报告导出**：PDF 报告（封面+概要+图表+详细结果+失败详情）、Excel 报告（概要+自动化用例结果+步骤详情三个 Sheet）
 
 #### 边界
 
@@ -788,9 +788,9 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
        │                         │                       │
        │                         │                       ▼
        │                         │    ┌───────────────────────────────────────┐
-       │                         │    │         M8 测试用例管理                │
+       │                         │    │         M8 自动化用例管理                │
        │                         │    │ (execution)                            │
-       │                         │    │ (套件·用例编排·校验·Setup/Teardown)    │
+       │                         │    │ (自动化套件·自动化用例编排·校验·Setup/Teardown)    │
        │                         │    │ 步骤引用 → M5/M6/M7(Keyword)          │
        │                         │    └──────────────────┬────────────────────┘
        │                         │                       │
@@ -800,7 +800,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
        │                  │ (计划·触发·异步执行·WebSocket实时推送)          │
        │                  │ 直接查询: 读取 M3(环境配置)                    │
        │                  │ 直接查询: 加载 M5/M6/M7(关键字)               │
-       │                  │ 直接查询: 加载 M8(用例步骤)                   │
+       │                  │ 直接查询: 加载 M8(自动化用例步骤)                   │
        │                  │ 内置执行引擎: 调用 Java 引擎执行               │
        │                  └──────────────────┬───────────────────────────┘
        │                                     │
@@ -843,7 +843,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 #### 数据流链路
 
 ```
-接口定义(M4) → 接口关键字(M5) → Action关键字(M7) → 测试用例(M8) → 执行(M9) → 报告(M10)
+接口定义(M4) → 接口关键字(M5) → Action关键字(M7) → 自动化用例(M8) → 执行(M9) → 报告(M10)
                      ↑                ↑
               工具方法关键字(M6) ───────┘
 ```
@@ -853,7 +853,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 ```
 M9 触发执行（发布消息到 RabbitMQ）
   → 直接查询 project 模块: 读取 M3 环境配置（host, authorization 等）
-  → 本地查询: 加载 M8 测试用例（steps JSON）
+  → 本地查询: 加载 M8 自动化用例（steps JSON）
   → 直接查询 keyword 模块: 获取关键字详情，解析步骤树：
       → 接口关键字步骤 → 查找 M5 → 组装 HTTP 请求 → 调用内置 HttpClient 执行
       → 工具方法步骤 → 查找 M6 → 调用内置 Groovy 沙箱执行代码
@@ -867,7 +867,7 @@ M9 触发执行（发布消息到 RabbitMQ）
 删除接口(M4)
   → 检查接口关键字(M5)引用 → 有引用则拒绝
     → 检查 Action(M7)引用 → 有引用则拒绝
-      → 检查测试用例(M8)引用 → 有引用则拒绝
+      → 检查自动化用例(M8)引用 → 有引用则拒绝
 ```
 
 ---
@@ -883,10 +883,10 @@ Project 1──N ApiModule 1──N ApiEndpoint 1──N Keyword(API)
 Project 1──N Keyword（统一关键字元数据，keyword_type 区分类型）
 Project 1──N ToolMethod
 Project 1──N Action
-Project 1──N TestSuite 1──N TestCase
-Project 1──N TestPlan N──N TestSuite（suite_ids JSON）
+Project 1──N AutoSuite 1──N AutoCase
+Project 1──N TestPlan N──N AutoSuite（auto_suite_ids JSON）
 TestPlan 1──N TestExecution 1──N TestResult
-TestSuite 1──N SuiteCaseLifecycle N──1 TestCase（差异化 Setup/Teardown）
+AutoSuite 1──N AutoSuiteCaseLifecycle N──1 AutoCase（差异化 Setup/Teardown）
 User 1──N Keyword（created_by）
 User 1──N TestExecution（triggered_by）
 ```
@@ -902,16 +902,16 @@ User 1──N TestExecution（triggered_by）
 | `CodeRepositoryPullLog` | M11 | 仓库拉取历史 | repository_id, pull_type(CLONE/PULL), status, commit_id, duration_ms |
 | `ApiModule` | M4 | 接口分组 | project_id, name, service_prefix, source_type |
 | `ApiEndpoint` | M4 | HTTP 接口定义 | module_id, path, method, parameters JSON, responses JSON |
-| `Keyword` | M5/M7/M8 | 统一关键字元数据 | keyword_type(API/TOOL/ACTION/TEST_CASE), ref_id, input_params, output_params, config JSON |
+| `Keyword` | M5/M7/M8 | 统一关键字元数据 | keyword_type(API/TOOL/ACTION/AUTO_CASE), ref_id, input_params, output_params, config JSON |
 | `ApiKeyword` | M5 | 接口关键字源实体 | keyword_id, endpoint_id |
 | `ToolMethod` | M6 | 工具方法 | name, keyword(≤20字符), code, parameters JSON, is_builtin |
 | `Action` | M7 | Action 关键字源实体 | project_id, nodes JSON |
-| `TestSuite` | M8 | 测试套件 | project_id, once/per_case setup/teardown steps, enable 开关 |
-| `TestCase` | M8 | 测试用例 | suite_id, steps JSON, setup_steps, teardown_steps |
-| `SuiteCaseLifecycle` | M8 | 套件内用例差异化生命周期 | suite_id, case_id, setup_steps, teardown_steps |
-| `TestPlan` | M9 | 测试计划 | suite_ids JSON, environment_id, schedule_cron |
+| `AutoSuite` | M8 | 自动化套件 | project_id, once/per_case setup/teardown steps, enable 开关 |
+| `AutoCase` | M8 | 自动化用例 | auto_suite_id, steps JSON, setup_steps, teardown_steps |
+| `AutoSuiteCaseLifecycle` | M8 | 自动化套件内自动化用例差异化生命周期 | auto_suite_id, auto_case_id, setup_steps, teardown_steps |
+| `TestPlan` | M9 | 测试计划 | auto_suite_ids JSON, environment_id, schedule_cron |
 | `TestExecution` | M9 | 执行记录 | plan_id, trigger_type, status, passed/failed/skipped_cases |
-| `TestResult` | M9 | 测试结果明细 | execution_id, case_id, status, logs JSON, assertions |
+| `TestResult` | M9 | 测试结果明细 | execution_id, auto_case_id, status, logs JSON, assertions |
 
 ### 5.3 Keyword 统一实体设计
 
@@ -922,7 +922,7 @@ Keyword
 ├── keyword_type: API        → ref_id → ApiKeyword → ApiEndpoint（接口 + 测试数据）
 ├── keyword_type: TOOL       → ref_id → ToolMethod（工具方法，通过 keyword 字段标识）
 ├── keyword_type: ACTION     → ref_id → Action（流程画布编排）
-└── keyword_type: TEST_CASE  → ref_id → TestCase（测试用例复用）
+└── keyword_type: AUTO_CASE  → ref_id → AutoCase（自动化用例复用）
 ```
 
 **可扩展性**：新增关键字类型只需添加 `keyword_type` 枚举值 + 对应源实体，无需修改 Keyword 表结构。
@@ -953,7 +953,7 @@ Keyword
 | M5 接口关键字管理 | 6 | 0 |
 | M6 工具方法关键字管理 | 5 | 0 |
 | M7 Action 关键字管理 | 6 | 0 |
-| M8 测试用例管理 | 12 | 0 |
+| M8 自动化用例管理 | 12 | 0 |
 | M9 测试执行与调度 | 11 | 1 |
 | M10 测试报告与分析 | 7 | 0 |
 | M11 测试代码库 | 6 | 0 |
@@ -976,7 +976,7 @@ Keyword
 | 页面首屏加载 | < 2s | 前端全局 |
 | API 响应时间 | 普通 < 200ms，列表查询 < 500ms | 所有后端模块 |
 | 并发用户 | 50+ | M1(认证), M9(执行) |
-| 单用例执行超时 | 默认 30s，可配置 | M9 |
+| 单自动化用例执行超时 | 默认 30s，可配置 | M9 |
 | 数据存储 | 百万级执行记录，MySQL 分区表 + 自动归档 > 90 天 | M9, M10 |
 
 ### 7.2 安全要求
@@ -1031,7 +1031,7 @@ Keyword
 | 约束 | 说明 |
 |---|---|
 | 四层 Setup/Teardown | 九步嵌套执行模型增加了执行引擎的复杂度，需严格保证执行顺序和错误处理 |
-| 删除保护链 | 接口 → 接口关键字 → Action → 用例 形成多层依赖链，删除操作需逐级检查 |
+| 删除保护链 | 接口 → 接口关键字 → Action → 自动化用例 形成多层依赖链，删除操作需逐级检查 |
 | 流程画布执行语义 | Action 画布是执行蓝图，引擎按拓扑排序执行，孤立节点不参与执行 |
 | CI/CD 预留 | Webhook 接口预留，第一期仅开放 API，不做前端配置页 |
 
@@ -1051,7 +1051,7 @@ Keyword
 | M5 接口关键字管理 | 3 | 接口关键字列表、创建接口关键字、编辑接口关键字 |
 | M6 工具方法关键字管理 | 3 | 工具方法关键字列表、创建工具方法关键字、编辑工具方法关键字 |
 | M7 Action 关键字管理 | 3 | Action 关键字列表、Action 编辑器、Action 调试 |
-| M8 测试用例管理 | 3 | 测试套件、用例列表、用例编辑 |
+| M8 自动化用例管理 | 3 | 自动化套件、自动化用例列表、自动化用例编辑 |
 | M9 测试执行与调度 | 4 | 测试计划列表、计划编辑、执行记录、执行详情 |
 | M10 测试报告与分析 | 0 | （复用 M9 的执行详情和执行历史页面） |
 
@@ -1069,7 +1069,7 @@ Keyword
 |---|---|---|
 | Phase 0：项目基础设施 | 1 周 | Spring Boot 脚手架、JWT/RabbitMQ 配置、公共模块 |
 | Phase 1：基础框架 & 核心功能 | 4 周 | auth(M1), project(M2/M3), api(M4), keyword(M5/M6/M7) |
-| Phase 2：用例编排 & 执行引擎 | 3 周 | execution(M8/M9 + 内置执行引擎) |
+| Phase 2：自动化用例编排 & 执行引擎 | 3 周 | execution(M8/M9 + 内置执行引擎) |
 | Phase 3：调度 & 报告分析 | 3 周 | execution(M9/M10), XXL-Job 集成 |
 | Phase 4：优化 & 部署 | 2 周 | 后端性能优化、集成测试、Docker/K8s 部署配置 |
 | **合计** | **13 周** | |

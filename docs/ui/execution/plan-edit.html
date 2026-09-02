@@ -57,8 +57,8 @@
         <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
-            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
-            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../cases/case-list.html">自动化用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">自动化套件</a></li>
             <li class="menu-item active"><a href="../execution/plan-list.html">测试计划</a></li>
             <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
           </ul>
@@ -76,15 +76,15 @@
       <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
         <div class="form-group"><label class="form-label" for="计划名称">计划名称 <span class="required">*</span></label><input type="text" class="input w-full" value="每日冒烟测试" id="计划名称"></div>
         <div class="form-group"><label class="form-label" for="绑定环境">绑定环境</label><select class="select w-full" id="绑定环境"><option selected>开发环境</option><option>测试环境</option><option>预发布环境</option></select></div>
-        <div class="form-group" style="grid-column:1/-1;"><label class="form-label" for="描述">描述</label><textarea class="textarea w-full" rows="2" id="描述">每日自动执行冒烟用例，确保核心功能正常</textarea></div>
+        <div class="form-group" style="grid-column:1/-1;"><label class="form-label" for="描述">描述</label><textarea class="textarea w-full" rows="2" id="描述">每日自动执行冒烟自动化用例，确保核心功能正常</textarea></div>
       </div>
     </div>
     <div class="card" style="margin-bottom:16px;">
-      <div class="card-header">关联测试套件</div>
+      <div class="card-header">关联自动化套件</div>
       <div class="card-body">
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-          <label class="checkbox-label" style="padding:8px 10px;border:1px solid var(--primary);border-radius:4px;background:var(--primary-bg);"><input type="checkbox" checked> 冒烟测试套件 (12)</label>
-          <label class="checkbox-label" style="padding:8px 10px;border:1px solid var(--border-color);border-radius:4px;"><input type="checkbox"> 回归测试套件 (28)</label>
+          <label class="checkbox-label" style="padding:8px 10px;border:1px solid var(--primary);border-radius:4px;background:var(--primary-bg);"><input type="checkbox" checked> 冒烟自动化套件 (12)</label>
+          <label class="checkbox-label" style="padding:8px 10px;border:1px solid var(--border-color);border-radius:4px;"><input type="checkbox"> 回归自动化套件 (28)</label>
           <label class="checkbox-label" style="padding:8px 10px;border:1px solid var(--border-color);border-radius:4px;"><input type="checkbox"> 电池管理测试 (35)</label>
           <label class="checkbox-label" style="padding:8px 10px;border:1px solid var(--border-color);border-radius:4px;"><input type="checkbox"> 性能压力测试 (15)</label>
         </div>

@@ -994,7 +994,7 @@ auto-test-platform/                      ← 项目根目录（已有）
 | 7 | keyword | 关键字管理模块（接口关键字 CRUD） |
 | 8 | tool | 工具方法模块（工具方法 CRUD、沙箱执行） |
 | 9 | action | Action 模块（Action CRUD、流程画布、调试） |
-| 10 | execution | 执行与报告模块（套件、用例、计划、执行、报告） |
+| 10 | execution | 执行与报告模块（自动化套件、自动化用例、计划、执行、报告） |
 | 11 | filter | 全局过滤器（CORS） |
 
 **在 IDEA 中创建包的步骤**：
@@ -1093,8 +1093,8 @@ frontend/
 │   │   ├── keyword.ts
 │   │   ├── tool.ts
 │   │   ├── action.ts
-│   │   ├── suite.ts
-│   │   ├── case.ts
+│   │   ├── autoSuite.ts
+│   │   ├── autoCase.ts
 │   │   ├── plan.ts
 │   │   ├── execution.ts
 │   │   └── settings.ts
@@ -1125,7 +1125,7 @@ frontend/
 │   │   ├── keywords/          ← 接口关键字页面
 │   │   ├── tool/              ← 工具方法页面
 │   │   ├── action/            ← Action 关键字页面
-│   │   ├── cases/             ← 测试套件/用例页面
+│   │   ├── cases/             ← 自动化套件/自动化用例页面
 │   │   ├── execution/         ← 测试计划/执行记录页面
 │   │   └── settings/          ← 系统设置页面
 │   ├── App.vue                ← 根组件

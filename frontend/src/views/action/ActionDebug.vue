@@ -90,6 +90,7 @@ function parseInputParams(raw?: string): ParamRow[] {
 }
 
 async function loadData() {
+  if (!projectId.value || !actionId.value) return
   loading.value = true
   try {
     const [actionRes, envRes] = await Promise.all([

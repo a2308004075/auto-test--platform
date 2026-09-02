@@ -10,12 +10,12 @@ import com.platform.auth.entity.User;
 import com.platform.auth.mapper.UserMapper;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
+import com.platform.execution.entity.AutoCase;
+import com.platform.execution.entity.AutoSuite;
 import com.platform.execution.entity.ManualCase;
-import com.platform.execution.entity.TestCase;
-import com.platform.execution.entity.TestSuite;
+import com.platform.execution.mapper.AutoCaseMapper;
+import com.platform.execution.mapper.AutoSuiteMapper;
 import com.platform.execution.mapper.ManualCaseMapper;
-import com.platform.execution.mapper.TestCaseMapper;
-import com.platform.execution.mapper.TestSuiteMapper;
 import com.platform.project.service.ProjectService;
 import com.platform.requirement.dto.RequirementCaseRelationCreateRequest;
 import com.platform.requirement.dto.RequirementCaseRelationResponse;
@@ -55,16 +55,16 @@ public class RequirementCaseRelationService {
     public static final String CASE_TYPE_MANUAL = "MANUAL_CASE";
 
     /**
-     * 用例类型：自动用例
+     * 用例类型：自动化用例
      */
-    public static final String CASE_TYPE_AUTO = "TEST_CASE";
+    public static final String CASE_TYPE_AUTO = "AUTO_CASE";
 
     private final RequirementCaseRelationMapper relationMapper;
     private final RequirementItemMapper itemMapper;
     private final RequirementVersionMapper versionMapper;
     private final ManualCaseMapper manualCaseMapper;
-    private final TestCaseMapper testCaseMapper;
-    private final TestSuiteMapper testSuiteMapper;
+    private final AutoCaseMapper autoCaseMapper;
+    private final AutoSuiteMapper autoSuiteMapper;
     private final UserMapper userMapper;
     private final ProjectService projectService;
 
@@ -105,7 +105,7 @@ public class RequirementCaseRelationService {
     /**
      * 添加关联（需求条目 → 用例）
      *
-     * <p>校验条目存在、用例存在且与需求条目同项目（自动用例经所属套件归属项目），
+     * <p>校验条目存在、用例存在且与需求条目同项目（自动化用例经所属自动化套件归属项目），
      * 防止跨项目关联；唯一键预检防重复。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -126,15 +126,15 @@ public class RequirementCaseRelationService {
             }
             caseTitle = manualCase.getTitle();
         } else {
-            TestCase testCase = testCaseMapper.selectById(request.getCaseId());
-            if (testCase == null) {
-                throw new BusinessException(ErrorCode.CASE_NOT_FOUND, "自动用例不存在：" + request.getCaseId());
+            AutoCase autoCase = autoCaseMapper.selectById(request.getCaseId());
+            if (autoCase == null) {
+                throw new BusinessException(ErrorCode.AUTO_CASE_NOT_FOUND, "自动化用例不存在：" + request.getCaseId());
             }
-            TestSuite suite = testSuiteMapper.selectById(testCase.getSuiteId());
+            AutoSuite suite = autoSuiteMapper.selectById(autoCase.getAutoSuiteId());
             if (suite == null || !Objects.equals(suite.getProjectId(), getProjectIdByItem(item))) {
                 throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "用例与需求条目不属于同一项目");
             }
-            caseTitle = testCase.getName();
+            caseTitle = autoCase.getName();
         }
 
         // 防重复

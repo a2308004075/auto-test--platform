@@ -22,8 +22,8 @@ import com.platform.environment.service.EnvironmentService;
 import com.platform.execution.engine.ActionExecutor;
 import com.platform.execution.engine.ExecutionContext;
 import com.platform.execution.engine.StepResult;
-import com.platform.execution.entity.TestCase;
-import com.platform.execution.mapper.TestCaseMapper;
+import com.platform.execution.entity.AutoCase;
+import com.platform.execution.mapper.AutoCaseMapper;
 import com.platform.keyword.entity.Keyword;
 import com.platform.keyword.mapper.KeywordMapper;
 import com.platform.project.service.ProjectService;
@@ -47,7 +47,7 @@ public class ActionService {
 
     private final ActionMapper actionMapper;
     private final KeywordMapper keywordMapper;
-    private final TestCaseMapper testCaseMapper;
+    private final AutoCaseMapper autoCaseMapper;
     private final ProjectService projectService;
     private final ObjectMapper objectMapper;
     private final ActionExecutor actionExecutor;
@@ -190,13 +190,13 @@ public class ActionService {
     public void delete(Long actionId) {
         findById(actionId);
 
-        // 删除保护检查 - 被 test_case_step 引用时不可删除
+        // 删除保护检查 - 被自动化用例引用时不可删除
         Keyword actionKeyword = findActionKeyword(actionId);
         if (actionKeyword != null) {
-            long refCount = countTestCaseReferences(actionKeyword.getId());
+            long refCount = countAutoCaseReferences(actionKeyword.getId());
             if (refCount > 0) {
                 throw new BusinessException(ErrorCode.ACTION_DEPENDENCY_CONFLICT,
-                        "Action 被 " + refCount + " 个测试用例引用，无法删除");
+                        "Action 被 " + refCount + " 个自动化用例引用，无法删除");
             }
         }
 
@@ -315,7 +315,7 @@ public class ActionService {
     }
 
     /**
-     * 获取引用该 Action 的用例列表
+     * 获取引用该 Action 的自动化用例列表
      */
     public List<Map<String, Object>> getReferences(Long actionId) {
         findById(actionId);
@@ -325,18 +325,18 @@ public class ActionService {
         }
 
         Long keywordId = actionKeyword.getId();
-        LambdaQueryWrapper<TestCase> wrapper = new LambdaQueryWrapper<>();
-        wrapper.and(w -> w.like(TestCase::getSteps, keywordId)
-                .or().like(TestCase::getSetupSteps, keywordId)
-                .or().like(TestCase::getTeardownSteps, keywordId));
-        List<TestCase> cases = testCaseMapper.selectList(wrapper);
+        LambdaQueryWrapper<AutoCase> wrapper = new LambdaQueryWrapper<>();
+        wrapper.and(w -> w.like(AutoCase::getSteps, keywordId)
+                .or().like(AutoCase::getSetupSteps, keywordId)
+                .or().like(AutoCase::getTeardownSteps, keywordId));
+        List<AutoCase> cases = autoCaseMapper.selectList(wrapper);
 
         List<Map<String, Object>> result = new ArrayList<>();
-        for (TestCase tc : cases) {
+        for (AutoCase tc : cases) {
             Map<String, Object> ref = new LinkedHashMap<>();
-            ref.put("caseId", tc.getId());
+            ref.put("autoCaseId", tc.getId());
             ref.put("caseName", tc.getName());
-            ref.put("suiteId", tc.getSuiteId());
+            ref.put("autoSuiteId", tc.getAutoSuiteId());
             result.add(ref);
         }
         return result;
@@ -366,7 +366,7 @@ public class ActionService {
     // ───────────────────── 私有方法 ─────────────────────
 
     /**
-     * 批量删除未被引用的 Action，被测试用例引用的跳过
+     * 批量删除未被引用的 Action，被自动化用例引用的跳过
      */
     private void deleteUnreferenced(List<Action> actions) {
         if (actions == null || actions.isEmpty()) {
@@ -375,7 +375,7 @@ public class ActionService {
         // ponytail: 引用检查为 JSON 列 like 查询只能逐条计数；量大时可引入冗余引用计数列
         for (Action action : actions) {
             Keyword actionKeyword = findActionKeyword(action.getId());
-            if (actionKeyword != null && countTestCaseReferences(actionKeyword.getId()) > 0) {
+            if (actionKeyword != null && countAutoCaseReferences(actionKeyword.getId()) > 0) {
                 continue;
             }
             if (actionKeyword != null) {
@@ -484,14 +484,14 @@ public class ActionService {
     }
 
     /**
-     * 统计引用指定关键字的测试用例数量（搜索 steps / setup_steps / teardown_steps JSON）
+     * 统计引用指定关键字的自动化用例数量（搜索 steps / setup_steps / teardown_steps JSON）
      */
-    private long countTestCaseReferences(Long keywordId) {
-        LambdaQueryWrapper<TestCase> wrapper = new LambdaQueryWrapper<>();
-        wrapper.and(w -> w.like(TestCase::getSteps, keywordId)
-                .or().like(TestCase::getSetupSteps, keywordId)
-                .or().like(TestCase::getTeardownSteps, keywordId));
-        return testCaseMapper.selectCount(wrapper);
+    private long countAutoCaseReferences(Long keywordId) {
+        LambdaQueryWrapper<AutoCase> wrapper = new LambdaQueryWrapper<>();
+        wrapper.and(w -> w.like(AutoCase::getSteps, keywordId)
+                .or().like(AutoCase::getSetupSteps, keywordId)
+                .or().like(AutoCase::getTeardownSteps, keywordId));
+        return autoCaseMapper.selectCount(wrapper);
     }
 
     /**
@@ -519,10 +519,10 @@ public class ActionService {
     private ActionResponse toResponse(Action action) {
         ActionResponse resp = new ActionResponse();
         BeanUtils.copyProperties(action, resp);
-        // 计算引用次数：被测试用例引用的数量
+        // 计算引用次数：被自动化用例引用的数量
         Keyword actionKeyword = findActionKeyword(action.getId());
         if (actionKeyword != null) {
-            resp.setReferenceCount((int) countTestCaseReferences(actionKeyword.getId()));
+            resp.setReferenceCount((int) countAutoCaseReferences(actionKeyword.getId()));
         } else {
             resp.setReferenceCount(0);
         }

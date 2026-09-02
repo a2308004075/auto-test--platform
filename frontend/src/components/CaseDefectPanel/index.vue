@@ -17,7 +17,7 @@ import { useDict } from '@/composables/useDict'
 
 const props = defineProps<{
   projectId: number
-  /** 目标类型：MANUAL_CASE-手动用例，TEST_CASE-自动用例 */
+  /** 目标类型：MANUAL_CASE-手动用例，AUTO_CASE-自动化用例 */
   targetType: string
   targetId: number | null | undefined
 }>()

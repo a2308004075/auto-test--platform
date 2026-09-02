@@ -29,7 +29,7 @@ public class PlanUpdateRequest {
      */
     private Boolean clearGroup;
 
-    private List<Long> suiteIds;
+    private List<Long> autoSuiteIds;
 
     private Long environmentId;
 

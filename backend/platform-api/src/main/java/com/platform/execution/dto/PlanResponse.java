@@ -30,14 +30,14 @@ public class PlanResponse {
     private Long groupId;
 
     /**
-     * 关联的测试套件 ID 列表
+     * 关联的自动化套件 ID 列表
      */
-    private List<Long> suiteIds;
+    private List<Long> autoSuiteIds;
 
     /**
-     * 关联的测试套件名称列表（表格展示用）
+     * 关联的自动化套件名称列表（表格展示用）
      */
-    private List<String> suiteNames;
+    private List<String> autoSuiteNames;
 
     private Long environmentId;
 
@@ -69,7 +69,7 @@ public class PlanResponse {
     private Double passRate;
 
     /**
-     * 关联套件下的用例总数
+     * 关联自动化套件下的自动化用例总数
      */
     private Integer caseCount;
 }

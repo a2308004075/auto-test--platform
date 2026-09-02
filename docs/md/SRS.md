@@ -9,7 +9,7 @@
 
 ### 1.1 项目背景
 
-auto-test-platform 是一个**通用的项目管理平台**，面向任意行业的 HTTP API 自动化测试场景，不绑定特定业务领域。平台提供 Web 化的全流程管理能力，覆盖接口管理、关键字编排、用例组织、执行调度和报告分析。
+auto-test-platform 是一个**通用的项目管理平台**，面向任意行业的 HTTP API 自动化测试场景，不绑定特定业务领域。平台提供 Web 化的全流程管理能力，覆盖接口管理、关键字编排、自动化用例组织、执行调度和报告分析。
 
 平台的核心引擎源自 **postman-tool**——一个面向乘用车换电站站控系统的自动化测试工具（基于 Python 3.6.8 开发，采用关键字驱动测试方法论，通过四层业务模型组织测试代码）。引擎经过通用化抽象改造后，已脱离原始业务绑定，可服务于任意项目的关键字驱动测试。
 
@@ -25,10 +25,10 @@ postman-tool 引擎具备以下核心能力：
 当前 postman-tool 以纯代码/CLI 方式运行，存在以下痛点：
 
 - **操作门槛高**：测试人员需要理解 Python 代码结构、目录约定和命令行操作
-- **无可视化管理**：关键字、测试用例、环境配置均通过源码文件和配置文件管理，不直观
+- **无可视化管理**：关键字、自动化用例、环境配置均通过源码文件和配置文件管理，不直观
 - **缺少执行调度**：不支持定时任务和执行历史追踪，仅通过控制台和日志文件查看结果
 - **无报告分析**：测试结果仅在日志文件中输出，缺乏结构化报告和趋势分析
-- **无全流程管理**：从 Swagger 导入、关键字生成、用例编排到执行分析各环节割裂，依赖手动操作
+- **无全流程管理**：从 Swagger 导入、关键字生成、自动化用例编排到执行分析各环节割裂，依赖手动操作
 - **多环境切换繁琐**：通过修改配置文件切换环境，易出错
 
 ### 1.2 项目目标
@@ -36,7 +36,7 @@ postman-tool 引擎具备以下核心能力：
 基于 postman-tool 的核心引擎，开发 **auto-test-platform**——一个通用的项目管理平台，提供 Web 化全流程管理能力：
 
 1. **关键字可视化操作**：在线浏览、搜索、管理关键字字典
-2. **测试用例编排**：拖拽式用例编排，支持参数化配置
+2. **自动化用例编排**：拖拽式自动化用例编排，支持参数化配置
 3. **环境配置管理**：多环境统一配置中心
 4. **执行调度**：手动触发 + 定时任务
 5. **报告分析**：结构化报告、趋势图表、导出（PDF/Excel）、历史对比
@@ -48,13 +48,13 @@ postman-tool 引擎具备以下核心能力：
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│  第四层：测试用例                                                      │
-│  用例步骤调用接口关键字/工具方法关键字/Action 关键字 + 逻辑控制               │
+│  第四层：自动化用例                                                      │
+│  自动化用例步骤调用接口关键字/工具方法关键字/Action 关键字 + 逻辑控制               │
 ├──────────────────────────────────────────────────────────────────────┤
 │  第三层：Action 关键字                                                 │
 │  组合接口关键字 + 工具方法关键字 + 其他 Action 关键字 + 逻辑控制             │
 │  通过流程画布编排节点连线，执行引擎按画布拓扑顺序执行                       │
-│  封装为可复用的业务动作单元，可被其他 Action 关键字和测试用例调用              │
+│  封装为可复用的业务动作单元，可被其他 Action 关键字和自动化用例调用              │
 ├──────────────────────────────────────────────────────────────────────┤
 │  第二层：关键字封装层                                                   │
 │  接口关键字：接口 + 预设测试数据（同一接口不同参数 → 不同关键字）              │
@@ -70,14 +70,14 @@ postman-tool 引擎具备以下核心能力：
 - 接口 + 测试数据 = **接口关键字**（同一接口可因不同参数配置生成多个接口关键字）
 - 工具方法 + keyword 字段 = **工具方法关键字**（每个工具方法最多一个关键字）
 - 接口关键字 + 工具方法关键字 + 其他 Action 关键字 + 逻辑控制 = **Action 关键字**（支持 Action 嵌套调用）
-- 接口关键字 + 工具方法关键字 + Action 关键字 + 逻辑控制 = **测试用例**（用例可直接调用三种关键字）
+- 接口关键字 + 工具方法关键字 + Action 关键字 + 逻辑控制 = **自动化用例**（自动化用例可直接调用三种关键字）
 
 ### 1.4 设计原则
 
 | 原则 | 说明 |
 |---|---|
 | 引擎复用 | 后端直接复用 postman-tool 的核心引擎（关键字解析、AST 转换、HTTP/WSS 通信） |
-| 外部路径引用 | 平台仅管理接口/关键字/用例的业务数据，源码文件和生成代码由用户在本地维护，执行时指定项目源码路径 |
+| 外部路径引用 | 平台仅管理接口/关键字/自动化用例的业务数据，源码文件和生成代码由用户在本地维护，执行时指定项目源码路径 |
 | 通用化抽象 | 平台不绑定特定业务领域，支持任意项目的关键字驱动测试 |
 | 专业美观 | Web 界面设计追求专业、简洁、高效，符合工程工具的使用习惯 |
 | 渐进增强 | 核心功能优先交付，扩展功能迭代完善 |
@@ -169,7 +169,7 @@ postman-tool 在业务版本层（`version/v3/` 或 `version/v1/`）内采用四
 > | 第一层：基础能力层（接口 + 工具方法） | `dao/`（数据访问层） | 封装 HTTP 请求与配置操作 |
 > | 第二层：关键字封装层 | `kw/`（关键字层） | 自动生成，禁止手动修改 |
 > | 第三层：Action 关键字 | `act/`（业务动作层） | 按业务模块组织 |
-> | 第四层：测试用例 | `ts/`（测试脚本层） | 测试入口，调用接口关键字/工具方法关键字/Action 关键字 |
+> | 第四层：自动化用例 | `ts/`（测试脚本层） | 测试入口，调用接口关键字/工具方法关键字/Action 关键字 |
 
 #### 1.5.3 新旧站版本差异
 
@@ -330,7 +330,7 @@ Shell/SQL 链路：
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                        前端服务（Vue 3 SPA）                              │
 │                                                                          │
-│  接口关键字 │ Action 关键字 │ 用例编排 │ 环境配置 │ 执行调度 │ 报告分析 │ 设置 │
+│  接口关键字 │ Action 关键字 │ 自动化用例编排 │ 环境配置 │ 执行调度 │ 报告分析 │ 设置 │
 └─────────────────────────────────┬────────────────────────────────────────┘
                                   │ HTTP REST / WebSocket
 ┌─────────────────────────────────▼────────────────────────────────────────┐
@@ -338,7 +338,7 @@ Shell/SQL 链路：
 │                                                                          │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐   │
 │  │ 认证模块  │ │ 项目管理  │ │ 接口文档  │ │关键字管理 │ │ 测试/执行/报告│   │
-│  │ M1认证   │ │ M2项目   │ │ M4接口   │ │ M5接口KW │ │ M8用例      │   │
+│  │ M1认证   │ │ M2项目   │ │ M4接口   │ │ M5接口KW │ │ M8自动化用例      │   │
 │  │ 用户管理  │ │ M3环境   │ │          │ │ M6工具KW │ │ M9执行      │   │
 │  │ 系统配置  │ │          │ │          │ │ M7Action │ │ M10报告     │   │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────────┘   │
@@ -469,8 +469,8 @@ ApiEndpoint (接口)
 Keyword (统一关键字)
 ├── id: UUID
 ├── project_id: FK → Project
-├── keyword_type: Enum          # 来源类型: API / TOOL / ACTION / TEST_CASE（可扩展新类型）
-├── ref_id: UUID                # 指向源实体 ID（ApiEndpoint / ToolMethod / Action / TestCase）
+├── keyword_type: Enum          # 来源类型: API / TOOL / ACTION / AUTO_CASE（可扩展新类型）
+├── ref_id: UUID                # 指向源实体 ID（ApiEndpoint / ToolMethod / Action / AutoCase）
 ├── name: String                # 关键字名称 (如 "获取用户列表_正常查询", "生成登录签名")
 ├── description: Text           # 关键字描述
 ├── input_params: JSON          # 输入参数定义 [{name, type, required, default, description}]
@@ -479,7 +479,7 @@ Keyword (统一关键字)
                                   #   API: {test_data, expected_response}
                                   #   TOOL: {preset_params}
                                   #   ACTION: {} (执行细节由 Action 节点树管理)
-                                  #   TEST_CASE: {} (执行细节由 TestCase 步骤管理)
+                                  #   AUTO_CASE: {} (执行细节由 AutoCase 步骤管理)
 ├── category: String            # 分类
 ├── tags: JSON                  # 标签
 ├── is_active: Boolean
@@ -582,31 +582,31 @@ Action (Action 关键字 — 源实体)
   - 保存时前端将流程图拓扑序列化为节点数组 JSON，存储到 Action 的 nodes 字段
   - 加载时将 nodes JSON 反序列化为流程图节点和连线，还原画布状态
 
-TestSuite (测试套件)
+AutoSuite (自动化套件)
 ├── id: UUID
 ├── project_id: FK → Project
 ├── name: String
 ├── description: Text
 ├── tags: JSON                  # 标签 ["smoke", "regression"]
 ├── priority: Enum              # P0/P1/P2/P3
-├── once_setup_steps: JSON       # 套件级·整体 Setup 步骤树（可选，整个套件执行前调用一次）
-├── once_teardown_steps: JSON    # 套件级·整体 Teardown 步骤树（可选，整个套件执行后调用一次）
-├── enable_once_setup_teardown: Boolean  # 是否启用套件级·整体 Setup/Teardown（默认 false）
-├── per_case_setup_steps: JSON   # 套件级·每条 Setup 步骤树（可选，每条用例执行前调用）
-├── per_case_teardown_steps: JSON # 套件级·每条 Teardown 步骤树（可选，每条用例执行后调用）
-├── enable_per_case_setup_teardown: Boolean # 是否启用套件级·每条 Setup/Teardown（默认 false）
+├── once_setup_steps: JSON       # 自动化套件级·整体 Setup 步骤树（可选，整个自动化套件执行前调用一次）
+├── once_teardown_steps: JSON    # 自动化套件级·整体 Teardown 步骤树（可选，整个自动化套件执行后调用一次）
+├── enable_once_setup_teardown: Boolean  # 是否启用自动化套件级·整体 Setup/Teardown（默认 false）
+├── per_case_setup_steps: JSON   # 自动化套件级·每条 Setup 步骤树（可选，每条自动化用例执行前调用）
+├── per_case_teardown_steps: JSON # 自动化套件级·每条 Teardown 步骤树（可选，每条自动化用例执行后调用）
+├── enable_per_case_setup_teardown: Boolean # 是否启用自动化套件级·每条 Setup/Teardown（默认 false）
 ├── created_by: FK → User
 ├── created_at: DateTime
 └── updated_at: DateTime
 
-TestCase (测试用例 — 源实体)
+AutoCase (自动化用例 — 源实体)
 ├── id: UUID
-├── suite_id: FK → TestSuite
+├── auto_suite_id: FK → AutoSuite
 ├── preconditions: Text         # 前置条件
-├── setup_steps: JSON           # 用例级 Setup 步骤树（可选，结构同 steps，该用例执行前调用）
-├── teardown_steps: JSON        # 用例级 Teardown 步骤树（可选，结构同 steps，该用例执行后调用）
+├── setup_steps: JSON           # 自动化用例级 Setup 步骤树（可选，结构同 steps，该自动化用例执行前调用）
+├── teardown_steps: JSON        # 自动化用例级 Teardown 步骤树（可选，结构同 steps，该自动化用例执行后调用）
 ├── steps: JSON                 # 步骤树（与 Action 节点结构相同）
-                                  # 测试用例由「测试步骤」和可选的「校验」组成：
+                                  # 自动化用例由「测试步骤」和可选的「校验」组成：
                                   #   - 测试步骤 + 校验：步骤执行后通过断言验证结果
                                   #   - 仅测试步骤：步骤执行后不做断言，仅记录执行结果
                                   # 步骤分为两大类：
@@ -660,18 +660,18 @@ TestCase (测试用例 — 源实体)
 
 --- Setup/Teardown 结构定义 ---
 
-Setup/Teardown 是测试套件和测试用例的生命周期钩子，用于在测试执行前后自动运行初始化或清理操作。
-Setup/Teardown 的步骤树结构与测试用例 steps 完全相同（关键字步骤 + 控制流步骤），支持引用接口关键字、工具方法关键字和 Action 关键字。
+Setup/Teardown 是自动化套件和自动化用例的生命周期钩子，用于在测试执行前后自动运行初始化或清理操作。
+Setup/Teardown 的步骤树结构与自动化用例 steps 完全相同（关键字步骤 + 控制流步骤），支持引用接口关键字、工具方法关键字和 Action 关键字。
 
-SuiteCaseLifecycle（套件内用例级生命周期 — 关联实体）
+AutoSuiteCaseLifecycle（自动化套件内自动化用例级生命周期 — 关联实体）
 
-用于在套件上下文中为每条用例单独配置差异化的 Setup/Teardown，仅在该套件执行该用例时生效。
+用于在自动化套件上下文中为每条自动化用例单独配置差异化的 Setup/Teardown，仅在该自动化套件执行该自动化用例时生效。
 
 ├── id: UUID
-├── suite_id: FK → TestSuite
-├── case_id: FK → TestCase
-├── setup_steps: JSON            # 套件内该用例的差异化 Setup 步骤树（可选）
-├── teardown_steps: JSON         # 套件内该用例的差异化 Teardown 步骤树（可选）
+├── auto_suite_id: FK → AutoSuite
+├── auto_case_id: FK → AutoCase
+├── setup_steps: JSON            # 自动化套件内该自动化用例的差异化 Setup 步骤树（可选）
+├── teardown_steps: JSON         # 自动化套件内该自动化用例的差异化 Teardown 步骤树（可选）
 ├── created_at: DateTime
 └── updated_at: DateTime
 
@@ -679,33 +679,33 @@ SuiteCaseLifecycle（套件内用例级生命周期 — 关联实体）
 
 | 层级 | 配置位置 | 存储字段 | 执行时机 | 独立开关 |
 |------|----------|----------|----------|----------|
-| 套件级·整体 | 套件编辑器 | TestSuite.once_setup_steps / once_teardown_steps | 整个套件执行前/后（仅一次） | enable_once_setup_teardown |
-| 套件级·每条 | 套件编辑器 | TestSuite.per_case_setup_steps / per_case_teardown_steps | 套件中每条用例执行前/后（统一相同步骤） | enable_per_case_setup_teardown |
-| 套件内用例级 | 套件编辑器（每条用例） | SuiteCaseLifecycle.setup_steps / teardown_steps | 该套件中该用例执行前/后（差异化） | 有步骤即生效 |
-| 用例级 | 用例编辑器 | TestCase.setup_steps / teardown_steps | 该用例在所有场景执行前/后 | 有步骤即生效 |
+| 自动化套件级·整体 | 自动化套件编辑器 | AutoSuite.once_setup_steps / once_teardown_steps | 整个自动化套件执行前/后（仅一次） | enable_once_setup_teardown |
+| 自动化套件级·每条 | 自动化套件编辑器 | AutoSuite.per_case_setup_steps / per_case_teardown_steps | 自动化套件中每条自动化用例执行前/后（统一相同步骤） | enable_per_case_setup_teardown |
+| 自动化套件内自动化用例级 | 自动化套件编辑器（每条自动化用例） | AutoSuiteCaseLifecycle.setup_steps / teardown_steps | 该自动化套件中该自动化用例执行前/后（差异化） | 有步骤即生效 |
+| 自动化用例级 | 自动化用例编辑器 | AutoCase.setup_steps / teardown_steps | 该自动化用例在所有场景执行前/后 | 有步骤即生效 |
 
 四层嵌套执行顺序（四者全部配置时）：
-1. Suite Setup（整体，enable_once=true 时仅执行一次）
-2.   Suite Setup（每条，enable_per_case=true 时每次循环执行）
-3.     Suite-Case Setup（套件内用例级 setup_steps，有步骤时执行）
-4.       Case Setup（用例级 setup_steps，有步骤时执行）
-5.         Case 步骤（steps）
-6.       Case Teardown（用例级 teardown_steps，有步骤时执行）
-7.     Suite-Case Teardown（套件内用例级 teardown_steps，有步骤时执行）
-8.   Suite Teardown（每条，enable_per_case=true 时每次循环执行）
-9. Suite Teardown（整体，enable_once=true 时仅执行一次）
+1. AutoSuite Setup（整体，enable_once=true 时仅执行一次）
+2.   AutoSuite Setup（每条，enable_per_case=true 时每次循环执行）
+3.     AutoSuite-AutoCase Setup（自动化套件内自动化用例级 setup_steps，有步骤时执行）
+4.       AutoCase Setup（自动化用例级 setup_steps，有步骤时执行）
+5.         AutoCase 步骤（steps）
+6.       AutoCase Teardown（自动化用例级 teardown_steps，有步骤时执行）
+7.     AutoSuite-AutoCase Teardown（自动化套件内自动化用例级 teardown_steps，有步骤时执行）
+8.   AutoSuite Teardown（每条，enable_per_case=true 时每次循环执行）
+9. AutoSuite Teardown（整体，enable_once=true 时仅执行一次）
 
 Setup/Teardown 错误处理：
-- Setup 失败：跳过当前用例/套件后续步骤，标记为 ERROR
-- Teardown 失败：不影响用例结果记录，但在报告中记录 Teardown 错误
-- Setup/Teardown 的执行日志独立记录，与用例步骤日志区分
+- Setup 失败：跳过当前自动化用例/自动化套件后续步骤，标记为 ERROR
+- Teardown 失败：不影响自动化用例结果记录，但在报告中记录 Teardown 错误
+- Setup/Teardown 的执行日志独立记录，与自动化用例步骤日志区分
 
 TestPlan (测试计划)
 ├── id: UUID
 ├── project_id: FK → Project
 ├── name: String
 ├── description: Text
-├── suite_ids: JSON             # 关联的测试套件 ID 列表
+├── auto_suite_ids: JSON             # 关联的自动化套件 ID 列表
 ├── environment_id: FK → Environment
 ├── schedule_cron: String       # 定时执行 cron 表达式 (可为空)
 ├── is_active: Boolean
@@ -732,7 +732,7 @@ TestExecution (测试执行记录)
 TestResult (测试结果明细)
 ├── id: UUID
 ├── execution_id: FK → TestExecution
-├── case_id: FK → TestCase
+├── auto_case_id: FK → AutoCase
 ├── status: Enum                # PASSED / FAILED / SKIPPED / ERROR
 ├── actual_result: Text         # 实际结果
 ├── expected_result: Text       # 预期结果
@@ -762,7 +762,7 @@ Project 1──N ApiModule
 Project 1──N Keyword
 Project 1──N ToolMethod
 Project 1──N Action
-Project 1──N TestSuite
+Project 1──N AutoSuite
 Project 1──N TestPlan
 
 ApiModule 1──N ApiEndpoint
@@ -774,17 +774,17 @@ ToolMethod 与 Action 通过 nodes JSON 关联（Action 节点可直接引用 To
 Action N──N Keyword  (通过 nodes JSON 关联，keyword 节点引用 Keyword)
 Action N──N ToolMethod (通过 nodes JSON 关联，可直接引用工具方法)
 
-TestSuite 1──N TestCase
-TestSuite 1──N SuiteCaseLifecycle  (通过关联实体为每条用例配置差异化 Setup/Teardown)
-SuiteCaseLifecycle N──1 TestCase
-TestCase N──N Keyword   (通过 steps JSON 关联 Keyword)
-TestCase N──N TestCase  (通过 steps JSON 关联，支持用例嵌套调用)
+AutoSuite 1──N AutoCase
+AutoSuite 1──N AutoSuiteCaseLifecycle  (通过关联实体为每条自动化用例配置差异化 Setup/Teardown)
+AutoSuiteCaseLifecycle N──1 AutoCase
+AutoCase N──N Keyword   (通过 steps JSON 关联 Keyword)
+AutoCase N──N AutoCase  (通过 steps JSON 关联，支持自动化用例嵌套调用)
 
-TestPlan N──N TestSuite (通过 suite_ids JSON 关联)
+TestPlan N──N AutoSuite (通过 auto_suite_ids JSON 关联)
 TestPlan 1──N TestExecution
 
 TestExecution 1──N TestResult
-TestResult N──1 TestCase
+TestResult N──1 AutoCase
 ```
 
 ### 3.3 后端架构与执行引擎说明
@@ -802,7 +802,7 @@ TestResult N──1 TestCase
 > | M5 接口关键字管理 | 接口关键字 CRUD、测试数据配置、删除保护 |
 > | M6 工具方法关键字管理 | 工具方法 CRUD、代码沙箱执行、在线测试 |
 > | M7 Action 关键字管理 | Action CRUD、流程画布编排、调试、引用管理 |
-> | M8 测试用例管理 | 套件、用例 CRUD、步骤编排、参数化、四层 Setup/Teardown |
+> | M8 自动化用例管理 | 自动化套件、自动化用例 CRUD、步骤编排、参数化、四层 Setup/Teardown |
 > | M9 测试执行与调度 | 测试计划、执行触发、实时状态推送 |
 > | M10 测试报告与分析 | 执行详情、执行历史、趋势分析、报告导出 |
 > | M11 测试代码库 | Git 仓库登记、JGit 代码克隆/拉取、认证凭证加密存储、拉取历史 |
@@ -826,10 +826,10 @@ TestResult N──1 TestCase
 > | 协议适配器 | OkHttp + WebSocket API，支持 WSS / Nacos HTTP / Shell 执行 |
 >
 > **执行引擎内部接口（应用内部调用，非 REST API）：**
-> - `KeywordExecutor.execute()`：执行测试用例（加载环境配置、用例步骤、关键字数据）
+> - `KeywordExecutor.execute()`：执行自动化用例（加载环境配置、自动化用例步骤、关键字数据）
 > - `SandboxEngine.execute()`：在线测试工具方法
 > - `ActionExecutor.debug()`：调试 Action
-> - `KeywordExecutor.debugCase()`：调试用例
+> - `KeywordExecutor.debugCase()`：调试自动化用例
 >
 > **架构优势：**
 > - 统一纯 Java 技术栈，无 Python 依赖，运维复杂度大幅降低
@@ -847,13 +847,13 @@ TestResult N──1 TestCase
 
 - 展示所有项目卡片/列表视图
 - 支持按名称搜索、按状态筛选
-- 显示项目基础信息：名称、描述、用例数量、最近执行状态
+- 显示项目基础信息：名称、描述、自动化用例数量、最近执行状态
 
 #### 4.1.2 项目详情
 
 - 项目基本信息编辑（名称、描述、源码路径）
 - **源码路径配置**：指定项目在服务端服务器上的源码目录绝对路径，引擎运行时从该路径读取源文件和生成的代码
-- 测试概览：质量健康度、资源统计（接口/用例/关键字/套件）、执行分析（通过率/结果分布/趋势）、模块覆盖、质量风险监控
+- 测试概览：质量健康度、资源统计（接口/自动化用例/关键字/自动化套件）、执行分析（通过率/结果分布/趋势）、模块覆盖、质量风险监控
 
 #### 4.1.3 项目设置
 
@@ -940,20 +940,20 @@ TestResult N──1 TestCase
           ↓
        列出所有关联关键字
           ↓
-       每个关联关键字 → 列出引用该关键字的测试用例
+       每个关联关键字 → 列出引用该关键字的自动化用例
 ```
 
 **依赖详情弹窗展示：**
 
 | 层级 | 展示信息 |
 |---|---|
-| 关联关键字 | 关键字名称、所属模块、关联用例数 |
-| 关联测试用例 | 用例名称、所属套件、优先级 |
+| 关联关键字 | 关键字名称、所属模块、关联自动化用例数 |
+| 关联自动化用例 | 自动化用例名称、所属自动化套件、优先级 |
 
 **解除依赖路径：**
 - 方式一：进入关键字详情，取消关联该接口（解除 `endpoint_id` 绑定）
-- 方式二：删除不再需要的关键字（需先解除该关键字与用例的关联）
-- 方式三：从用例步骤中移除引用该关键字的步骤
+- 方式二：删除不再需要的关键字（需先解除该关键字与自动化用例的关联）
+- 方式三：从自动化用例步骤中移除引用该关键字的步骤
 
 #### 4.3.5 接口编辑
 
@@ -992,7 +992,7 @@ TestResult N──1 TestCase
 - **接口关键字** (API)：接口 + 预设测试数据
 - **工具方法** (TOOL)：工具方法自身的关键字字段（不超过20个字符），用于 Action 节点直接引用
 - **Action 关键字** (ACTION)：关键字组合 + 逻辑控制
-- **测试用例关键字** (TEST_CASE)：测试用例作为关键字复用
+- **自动化用例关键字** (AUTO_CASE)：自动化用例作为关键字复用
 
 所有类型的关键字统一支持外部传参（通过 `args`）和返回值（通过 `save_as`），实现灵活的数据流转。新增关键字类型只需扩展 keyword_type 枚举值 + 对应源实体。
 
@@ -1000,7 +1000,7 @@ TestResult N──1 TestCase
 接口 + 测试数据 = 接口关键字 (keyword_type=API)
 工具方法.keyword 字段 = 工具方法引用标识（在 Action 节点中直接引用）
 关键字组合 + 逻辑控制 = Action 关键字 (keyword_type=ACTION)
-测试用例作为关键字 = 测试用例关键字 (keyword_type=TEST_CASE)
+自动化用例作为关键字 = 自动化用例关键字 (keyword_type=AUTO_CASE)
 ```
 
 #### 4.4.1 接口关键字
@@ -1159,12 +1159,12 @@ TestResult N──1 TestCase
 
 ##### 4.4.2.5 工具方法传参与返回机制
 
-工具方法支持完整的外部传参和返回值机制，使其能在 Action 节点和测试用例中被灵活调用。
+工具方法支持完整的外部传参和返回值机制，使其能在 Action 节点和自动化用例中被灵活调用。
 
 **传参机制：**
 
 - 工具方法通过 `parameters` 字段定义输入参数（名称、类型、是否必填、默认值、说明）
-- 调用方（Action 节点或测试用例步骤）通过 `args` 传入实际参数值
+- 调用方（Action 节点或自动化用例步骤）通过 `args` 传入实际参数值
 - 参数值支持变量引用 `${var}`，可引用执行上下文中的上游变量或环境变量
 - 必填参数未传值且无默认值时，执行前报错
 
@@ -1222,7 +1222,7 @@ TestResult N──1 TestCase
 
 #### 4.4.3 Action 关键字
 
-Action 关键字是接口关键字和测试用例之间的编排层。一个 Action 组合一个或多个接口关键字/工具方法，通过逻辑控制（串行、并行、条件判断、等待）封装成可复用的业务动作单元。
+Action 关键字是接口关键字和自动化用例之间的编排层。一个 Action 组合一个或多个接口关键字/工具方法，通过逻辑控制（串行、并行、条件判断、等待）封装成可复用的业务动作单元。
 
 ```
 接口关键字 + 工具方法关键字 + 逻辑控制 = Action 关键字
@@ -1232,19 +1232,19 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 
 - 按分类分组展示（登录认证、用户管理、订单处理等）
 - 搜索：按名称、分类、标签筛选
-- 列表显示：名称、描述、内部节点数量、被引用用例数
+- 列表显示：名称、描述、内部节点数量、被引用自动化用例数
 - 统计：各分类 Action 关键字数量
 
 ##### 4.4.3.2 Action 编辑器
 
 - **基础信息**：名称、描述、分类、标签
 - **输入/输出参数定义**：
-  - 输入参数：名称、类型、是否必填、默认值、说明（用例调用时传入）
-  - 输出参数：名称、类型、说明（Action 执行后返回给用例）
+  - 输入参数：名称、类型、是否必填、默认值、说明（自动化用例调用时传入）
+  - 输出参数：名称、类型、说明（Action 执行后返回给自动化用例）
 - **节点编排器**（核心功能）：
   - 可视化树形编排界面，支持拖拽添加节点
   - **节点类型**：
-    - **关键字节点**：统一引用 Keyword 实体，通过 `args` 传入输入参数，通过 `save_as` 保存输出为变量；支持按 keyword_type（API/TOOL/ACTION/TEST_CASE）筛选
+    - **关键字节点**：统一引用 Keyword 实体，通过 `args` 传入输入参数，通过 `save_as` 保存输出为变量；支持按 keyword_type（API/TOOL/ACTION/AUTO_CASE）筛选
     - **工具方法直引节点**：直接引用 ToolMethod（绕过 Keyword 封装层），通过 `args` 直接传参，通过 `save_as` 保存返回结果
     - **串行节点**：子节点按顺序依次执行（默认根节点类型）
     - **并行节点**：子节点同时执行，全部完成后继续
@@ -1263,27 +1263,27 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 
 ##### 4.4.3.4 Action 引用管理
 
-- 查看哪些测试用例引用了该 Action 关键字
-- 删除保护：被用例引用的 Action 关键字不可删除，需先解除引用
+- 查看哪些自动化用例引用了该 Action 关键字
+- 删除保护：被自动化用例引用的 Action 关键字不可删除，需先解除引用
 
-### 4.5 测试用例管理
+### 4.5 自动化用例管理
 
-#### 4.5.1 测试套件
+#### 4.5.1 自动化套件
 
-- 套件 CRUD（创建、编辑、删除）
-- 套件内用例排序、批量操作
-- 套件标签管理
+- 自动化套件 CRUD（创建、编辑、删除）
+- 自动化套件内自动化用例排序、批量操作
+- 自动化套件标签管理
 
-#### 4.5.2 用例列表
+#### 4.5.2 自动化用例列表
 
 - 列表/卡片视图切换
-- 筛选：按套件、标签、优先级、状态筛选
-- 搜索：用例名称、描述模糊搜索
+- 筛选：按自动化套件、标签、优先级、状态筛选
+- 搜索：自动化用例名称、描述模糊搜索
 - 批量操作：启用/禁用、移动、删除、打标签
 
-#### 4.5.3 用例编辑器
+#### 4.5.3 自动化用例编辑器
 
-- **基础信息**：用例名称、描述、前置条件、优先级、标签
+- **基础信息**：自动化用例名称、描述、前置条件、优先级、标签
 - **步骤编排**（核心功能）：
   - 拖拽排序步骤顺序
   - 步骤树结构（与 Action 节点树相同，支持嵌套逻辑控制）：
@@ -1298,16 +1298,16 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
   - 每个关键字步骤可配置 0 到多个校验（断言），未配置校验的步骤仅执行不断言
   - 校验类型：equal / not_equal / include / not_include / true / not_true（复用 HandlerAssert 断言引擎）
   - 校验配置项：断言类型、实际值（支持 `${变量名}` 引用步骤输出或环境变量）、预期值、校验描述
-  - 用例组成形式：
+  - 自动化用例组成形式：
     - **测试步骤 + 校验**：步骤执行后通过断言验证结果，适用于需要明确验证的场景
     - **仅测试步骤**：步骤执行后不做断言，仅记录执行日志，适用于流程验证或前置准备场景
 - **参数化**：
   - 支持数据驱动：为 Action 输入参数设置多组数据，自动生成多条执行
   - 数据源：手动输入表格、CSV 导入
 
-#### 4.5.4 用例调试
+#### 4.5.4 自动化用例调试
 
-- 单用例试运行：选择环境后直接执行
+- 单自动化用例试运行：选择环境后直接执行
 - 实时日志：WebSocket 推送执行过程中的请求/响应日志
 - 调试结果：每步骤的通过/失败状态、实际值、错误信息
 
@@ -1316,7 +1316,7 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 #### 4.6.1 测试计划
 
 - 计划 CRUD
-- 关联测试套件（多选）
+- 关联自动化套件（多选）
 - 绑定执行环境
 - 定时执行配置：
   - Cron 表达式编辑器（可视化）
@@ -1331,7 +1331,7 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 - **CI/CD 触发（预留）**：提供 Webhook 接口供外部系统（Jenkins/GitLab CI 等）触发计划执行，第一期仅开放接口，不做前端配置页
 - 执行状态实时推送（WebSocket）：
   - PENDING → RUNNING → COMPLETED/FAILED/CANCELLED
-  - 当前执行进度（第 N/M 个用例）
+  - 当前执行进度（第 N/M 个自动化用例）
 
 #### 4.6.3 执行队列
 
@@ -1345,9 +1345,9 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 
 - 执行概要：总数、通过、失败、跳过、耗时
 - 通过率进度环/饼图
-- 用例结果列表：每条用例的状态、耗时、错误摘要
-- 用例详情展开：每步骤的请求/响应日志、断言结果
-- 失败用例快速定位（仅显示失败项）
+- 自动化用例结果列表：每条自动化用例的状态、耗时、错误摘要
+- 自动化用例详情展开：每步骤的请求/响应日志、断言结果
+- 失败自动化用例快速定位（仅显示失败项）
 
 #### 4.7.2 执行历史
 
@@ -1360,12 +1360,12 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 - 通过率趋势折线图（按天/周/月）
 - 执行耗时趋势
 - 各模块失败率热力图
-- 高频失败用例 TOP 10
+- 高频失败自动化用例 TOP 10
 
 #### 4.7.4 历史对比
 
 - 选择两次执行记录进行对比
-- 对比维度：通过率变化、新增失败、修复用例、耗时变化
+- 对比维度：通过率变化、新增失败、修复自动化用例、耗时变化
 - 差异高亮展示
 
 #### 4.7.5 报告导出
@@ -1467,9 +1467,9 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 │   ├── 接口关键字
 │   ├── 工具方法
 │   ├── Action 关键字
-│   └── 测试用例关键字
-├── 📋 测试套件
-├── 📝 测试用例
+│   └── 自动化用例关键字
+├── 📋 自动化套件
+├── 📝 自动化用例
 ├── 📅 测试计划
 ├── ▶ 执行记录
 ├── 📈 报告分析
@@ -1501,9 +1501,9 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 | Action 关键字 | `/projects/:id/keywords?type=action` | Action 关键字列表 |
 | Action 关键字编辑 | `/projects/:id/keywords/action/:actionId/edit` | Action 节点编排器 |
 | Action 调试 | `/projects/:id/keywords/action/:actionId/debug` | Action 调试执行 |
-| 测试套件 | `/projects/:id/suites` | 套件列表 + 详情 |
-| 用例列表 | `/projects/:id/cases` | 用例列表视图 |
-| 用例编辑 | `/projects/:id/cases/:caseId/edit` | 用例步骤编排器 |
+| 自动化套件 | `/projects/:id/auto-suites` | 自动化套件列表 + 详情 |
+| 自动化用例列表 | `/projects/:id/auto-cases` | 自动化用例列表视图 |
+| 自动化用例编辑 | `/projects/:id/auto-cases/:autoCaseId/edit` | 自动化用例步骤编排器 |
 | 测试计划 | `/projects/:id/plans` | 计划列表 + 详情 |
 | 计划编辑 | `/projects/:id/plans/:planId/edit` | 计划配置 |
 | 执行记录 | `/projects/:id/executions` | 执行历史列表 |
@@ -1588,13 +1588,13 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 
 #### 关键字模块
 
-统一的关键字管理 API，基于 Keyword 统一实体，通过 keyword_type 区分接口关键字、工具方法关键字、Action 关键字、测试用例关键字四种类型。
+统一的关键字管理 API，基于 Keyword 统一实体，通过 keyword_type 区分接口关键字、工具方法关键字、Action 关键字、自动化用例关键字四种类型。
 
 **通用接口：**
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| GET | `/api/v1/projects/:pid/keywords` | 关键字列表（通过 `type` 参数筛选：api/tool/action/test_case） |
+| GET | `/api/v1/projects/:pid/keywords` | 关键字列表（通过 `type` 参数筛选：api/tool/action/auto_case） |
 | GET | `/api/v1/projects/:pid/keywords/categories` | 分类列表（支持按 `type` 筛选） |
 
 **接口关键字：**
@@ -1631,23 +1631,23 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 | PUT | `/api/v1/projects/:pid/keywords/action/:id` | 更新（含节点编排） |
 | DELETE | `/api/v1/projects/:pid/keywords/action/:id` | 删除（引用保护） |
 | POST | `/api/v1/projects/:pid/keywords/action/:id/debug` | Action 调试执行 |
-| GET | `/api/v1/projects/:pid/keywords/action/:id/references` | 查看引用该 Action 关键字的用例 |
+| GET | `/api/v1/projects/:pid/keywords/action/:id/references` | 查看引用该 Action 关键字的自动化用例 |
 
-#### 用例模块
+#### 自动化用例模块
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| GET | `/api/v1/projects/:pid/suites` | 套件列表 |
-| POST | `/api/v1/projects/:pid/suites` | 创建套件 |
-| PUT | `/api/v1/projects/:pid/suites/:id` | 更新套件 |
-| DELETE | `/api/v1/projects/:pid/suites/:id` | 删除套件 |
-| GET | `/api/v1/projects/:pid/cases` | 用例列表 |
-| POST | `/api/v1/projects/:pid/cases` | 创建用例 |
-| GET | `/api/v1/projects/:pid/cases/:id` | 用例详情 |
-| PUT | `/api/v1/projects/:pid/cases/:id` | 更新用例 |
-| DELETE | `/api/v1/projects/:pid/cases/:id` | 删除用例 |
-| POST | `/api/v1/projects/:pid/cases/:id/debug` | 用例调试执行 |
-| POST | `/api/v1/projects/:pid/cases/import` | 用例批量导入 |
+| GET | `/api/v1/projects/:pid/auto-suites` | 自动化套件列表 |
+| POST | `/api/v1/projects/:pid/auto-suites` | 创建自动化套件 |
+| PUT | `/api/v1/projects/:pid/auto-suites/:id` | 更新自动化套件 |
+| DELETE | `/api/v1/projects/:pid/auto-suites/:id` | 删除自动化套件 |
+| GET | `/api/v1/projects/:pid/auto-cases` | 自动化用例列表 |
+| POST | `/api/v1/projects/:pid/auto-cases` | 创建自动化用例 |
+| GET | `/api/v1/projects/:pid/auto-cases/:id` | 自动化用例详情 |
+| PUT | `/api/v1/projects/:pid/auto-cases/:id` | 更新自动化用例 |
+| DELETE | `/api/v1/projects/:pid/auto-cases/:id` | 删除自动化用例 |
+| POST | `/api/v1/projects/:pid/auto-cases/:id/debug` | 自动化用例调试执行 |
+| POST | `/api/v1/projects/:pid/auto-cases/import` | 自动化用例批量导入 |
 
 #### 执行模块
 
@@ -1671,7 +1671,7 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 |---|---|---|
 | GET | `/api/v1/projects/:pid/analytics/trends` | 趋势分析数据 |
 | GET | `/api/v1/projects/:pid/analytics/compare` | 历史对比数据 |
-| GET | `/api/v1/projects/:pid/analytics/top-failures` | 高频失败用例 |
+| GET | `/api/v1/projects/:pid/analytics/top-failures` | 高频失败自动化用例 |
 | GET | `/api/v1/projects/:pid/executions/:id/export/pdf` | 导出 PDF 报告 |
 | GET | `/api/v1/projects/:pid/executions/:id/export/excel` | 导出 Excel 报告 |
 | GET | `/api/v1/projects/:pid/analytics/export/pdf` | 导出汇总报告 PDF |
@@ -1699,7 +1699,7 @@ Action 关键字是接口关键字和测试用例之间的编排层。一个 Act
 | 路径 | 说明 |
 |---|---|
 | `/ws/execution/:executionId` | 执行过程实时日志推送 |
-| `/ws/case/:caseId/debug` | 用例调试实时日志 |
+| `/ws/auto-case/:autoCaseId/debug` | 自动化用例调试实时日志 |
 
 ---
 
@@ -1761,7 +1761,7 @@ Web 触发执行
   → 发布执行消息到 RabbitMQ
   → 消费者接收消息，启动异步执行任务
   → 从数据库获取环境配置（Environment.config JSON）→ 注入引擎
-  → 从数据库加载测试用例 → 解析 steps JSON
+  → 从数据库加载自动化用例 → 解析 steps JSON
   → 从数据库获取关键字详情
   → 按顺序执行每个 step：
     → 解析 Action 关键字节点树（流程画布数据）
@@ -1773,7 +1773,7 @@ Web 触发执行
         · API → 查找 ApiEndpoint + 测试数据 → 调用内置 HTTP 客户端执行请求
         · TOOL → 查找 ToolMethod + args 传参 → 调用内置 Groovy 沙箱执行
         · ACTION → 递归解析子 Action 节点树执行
-        · TEST_CASE → 递归解析子用例步骤树执行
+        · AUTO_CASE → 递归解析子自动化用例步骤树执行
       - tool_method 节点：直接引用 ToolMethod + args 传参 → 调用内置沙箱执行
     → 捕获请求/响应日志 → 写入 TestResult.logs JSON
     → 若步骤配置了 assertions 校验 → HandlerAssert 逐条断言校验 → 记录通过/失败
@@ -1813,7 +1813,7 @@ auto-test-platform 后端服务 (Java / Spring Boot)
 | 页面首屏加载 | < 2s |
 | API 响应时间 | 普通接口 < 200ms，列表查询 < 500ms |
 | 并发用户 | 支持 50+ 并发用户 |
-| 测试执行 | 单用例执行超时默认 30s，可配置 |
+| 测试执行 | 单自动化用例执行超时默认 30s，可配置 |
 | 数据存储 | 支持百万级执行记录，利用 MySQL 分区表 + 自动归档 > 90 天数据 |
 
 ### 8.2 安全要求
@@ -1863,8 +1863,7 @@ auto-test-platform/
 │   │   │   ├── api-keyword/
 │   │   │   ├── tool/
 │   │   │   ├── action/
-│   │   │   ├── suite/
-│   │   │   ├── case/
+│   │   │   ├── cases/
 │   │   │   ├── plan/
 │   │   │   ├── execution/
 │   │   │   ├── analytics/
@@ -1912,10 +1911,10 @@ auto-test-platform/
 │   │   │   ├── entity/             #     Keyword, ApiKeyword, ToolMethod, Action
 │   │   │   └── dto/
 │   │   ├── execution/              #   执行与报告模块（M8/M9/M10）
-│   │   │   ├── controller/         #     SuiteController, CaseController, PlanController, ExecutionController, AnalyticsController
-│   │   │   ├── service/            #     SuiteService, CaseService, ExecutionService, AnalyticsService, ReportService
-│   │   │   ├── mapper/             #     SuiteMapper, CaseMapper, ExecutionMapper, ResultMapper
-│   │   │   ├── entity/             #     TestSuite, TestCase, TestPlan, TestExecution, TestResult
+│   │   │   ├── controller/         #     AutoSuiteController, AutoCaseController, PlanController, ExecutionController, AnalyticsController
+│   │   │   ├── service/            #     AutoSuiteService, AutoCaseService, ExecutionService, AnalyticsService, ReportService
+│   │   │   ├── mapper/             #     AutoSuiteMapper, AutoCaseMapper, ExecutionMapper, ResultMapper
+│   │   │   ├── entity/             #     AutoSuite, AutoCase, TestPlan, TestExecution, TestResult
 │   │   │   ├── dto/
 │   │   │   ├── engine/             #     内置执行引擎（Java 实现）
 │   │   │   ├── mq/                 #     ExecutionMessageProducer, ExecutionMessageConsumer
@@ -1975,13 +1974,13 @@ auto-test-platform/
 | 工具方法管理（内置 + 自定义 + 沙箱 + 在线测试） | 4 天 | 工具方法完整功能 |
 | Action 关键字管理（CRUD + 节点编排器 + 调试） | 5 天 | Action 关键字完整功能 |
 
-### Phase 2：用例编排 & 执行引擎（3 周）
+### Phase 2：自动化用例编排 & 执行引擎（3 周）
 
 | 任务 | 工期 | 交付物 |
 |---|---|---|
-| 测试套件管理 | 1 天 | 套件 CRUD |
-| 用例列表 + 筛选 | 2 天 | 用例列表页 |
-| 用例编辑器（Action 调用 + 逻辑控制 + 拖拽） | 7 天 | 核心用例编排器 |
+| 自动化套件管理 | 1 天 | 自动化套件 CRUD |
+| 自动化用例列表 + 筛选 | 2 天 | 自动化用例列表页 |
+| 自动化用例编辑器（Action 调用 + 逻辑控制 + 拖拽） | 7 天 | 核心自动化用例编排器 |
 | 参数化 & 数据驱动 | 2 天 | 多组数据配置 |
 | RabbitMQ 异步执行集成 | 2 天 | 异步执行框架 |
 | 测试执行引擎（手动触发 + 内置引擎调用） | 3 天 | 端到端执行打通 |
@@ -2017,19 +2016,19 @@ auto-test-platform/
 | 术语 | 说明 |
 |---|---|
 | 关键字 (Keyword) | 统一关键字实体，通过 keyword_type 区分不同类型，所有关键字统一支持传参和返回 |
-| keyword_type | 关键字来源类型枚举：API / TOOL / ACTION / TEST_CASE，支持扩展新类型 |
+| keyword_type | 关键字来源类型枚举：API / TOOL / ACTION / AUTO_CASE，支持扩展新类型 |
 | 接口关键字 (API Keyword) | Keyword(type=API) + ApiEndpoint，接口 + 测试数据的封装 |
-| 工具方法关键字 (Tool Keyword) | ToolMethod 实体的 `keyword` 字段（≤20字符），用于 Action 节点和用例步骤直接引用，无需独立 Keyword 实体 |
+| 工具方法关键字 (Tool Keyword) | ToolMethod 实体的 `keyword` 字段（≤20字符），用于 Action 节点和自动化用例步骤直接引用，无需独立 Keyword 实体 |
 | Action 关键字 (Action Keyword) | Keyword(type=ACTION) + Action，关键字组合 + 逻辑控制的封装，形成可复用的业务动作单元 |
-| 测试用例关键字 (TestCase Keyword) | Keyword(type=TEST_CASE) + TestCase，测试用例作为关键字复用 |
+| 自动化用例关键字 (AutoCase Keyword) | Keyword(type=AUTO_CASE) + AutoCase，自动化用例作为关键字复用 |
 | 接口 (ApiEndpoint) | 被测系统的 HTTP REST 接口定义，由 Swagger 导入或手动创建 |
 | 测试代码库 (Code Repository) | 项目登记的 Git 仓库及拉取到服务器本地的代码副本，基于 JGit 克隆/增量更新 |
 | 关键字字典 | 关键字名称到函数引用的映射字典，运行时用于查找执行 |
-| 测试套件 (Test Suite) | 一组相关测试用例的集合 |
-| 测试用例 (Test Case) | 由多个步骤组成的完整测试场景，也可作为关键字被其他用例引用。包含测试步骤和可选的校验（断言） |
-| 测试步骤 (Test Step) | 用例中的单个操作，调用关键字或控制流节点，支持逻辑控制和变量传递。关键字步骤可选配置校验（断言） |
-| 工具方法 (ToolMethod) | 用户自定义的辅助函数，用于数据转换、加密等，可封装为工具方法关键字在 Action 节点和用例步骤中调用 |
-| 测试计划 (Test Plan) | 定义要执行的测试套件集合和执行策略 |
+| 自动化套件 (AutoSuite) | 一组相关自动化用例的集合 |
+| 自动化用例 (AutoCase) | 由多个步骤组成的完整测试场景，也可作为关键字被其他自动化用例引用。包含测试步骤和可选的校验（断言） |
+| 测试步骤 (Test Step) | 自动化用例中的单个操作，调用关键字或控制流节点，支持逻辑控制和变量传递。关键字步骤可选配置校验（断言） |
+| 工具方法 (ToolMethod) | 用户自定义的辅助函数，用于数据转换、加密等，可封装为工具方法关键字在 Action 节点和自动化用例步骤中调用 |
+| 测试计划 (Test Plan) | 定义要执行的自动化套件集合和执行策略 |
 | 测试执行 (Test Execution) | 一次测试计划的运行实例 |
 | KwDecorator | postman-tool 的方法装饰器，标记可转换为关键字的方法 |
 | AST | Abstract Syntax Tree，用于解析源码提取关键字信息（引擎层 Python 实现） |

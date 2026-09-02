@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>测试套件 - Postman Platform</title>
+  <title>自动化套件 - Postman Platform</title>
   <link rel="stylesheet" href="../common/shared-styles.css">
   <style>
     .batch-dropdown{position:relative;display:inline-block;}
@@ -43,7 +43,7 @@
     <div class="header-breadcrumb">
       <span>测试管理</span>
       <span class="sep">&#8250;</span>
-      <span class="current">测试套件</span>
+      <span class="current">自动化套件</span>
     </div>
     <div class="header-right">
       <div class="header-user">
@@ -88,8 +88,8 @@
         <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
-            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
-            <li class="menu-item active"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../cases/case-list.html">自动化用例</a></li>
+            <li class="menu-item active"><a href="../cases/suite-list.html">自动化套件</a></li>
             <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
             <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
           </ul>
@@ -98,7 +98,7 @@
     </nav></aside>
   <main class="layout-main">
 
-    <div class="page-header"><h1>测试套件</h1><button class="btn btn-primary" onclick="openNewSuiteModal()">+ 新建套件</button></div>
+    <div class="page-header"><h1>自动化套件</h1><button class="btn btn-primary" onclick="openNewSuiteModal()">+ 新建自动化套件</button></div>
     <div style="display:flex;gap:0;height:calc(100vh - 240px);">
       <!-- Left: Group Tree -->
       <div class="tree-panel" id="treePanel" style="border:1px solid var(--border-color);border-radius:var(--border-radius) 0 0 var(--border-radius);" oncontextmenu="showBlankContextMenu(event)">
@@ -108,7 +108,7 @@
       <!-- Right: Suite List -->
       <div style="flex:1;border:1px solid var(--border-color);border-left:none;border-radius:0 var(--border-radius) var(--border-radius) 0;background:#fff;padding:16px;overflow-y:auto;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <h3 style="font-size:15px;" id="suiteListTitle">全部套件</h3>
+          <h3 style="font-size:15px;" id="suiteListTitle">全部自动化套件</h3>
         </div>
         <!-- 批量操作栏 -->
         <div class="batch-bar" id="batchBar">
@@ -126,7 +126,7 @@
         </div>
         <div class="table-scroll">
         <table>
-          <thead><tr><th style="width:40px;"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" aria-label="select All Checkbox"></th><th>套件名称</th><th style="width:90px;">用例数</th><th style="width:90px;">分组</th><th style="width:120px;">最近执行通过率</th><th style="width:140px;">操作</th></tr></thead>
+          <thead><tr><th style="width:40px;"><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" aria-label="select All Checkbox"></th><th>自动化套件名称</th><th style="width:90px;">自动化用例数</th><th style="width:90px;">分组</th><th style="width:120px;">最近执行通过率</th><th style="width:140px;">操作</th></tr></thead>
           <tbody id="suiteTableBody"></tbody>
         </table>
         </div>
@@ -136,10 +136,10 @@
   <!-- New Suite Modal -->
   <div class="modal-overlay" id="newSuiteModal" style="display:none;">
     <div class="modal" style="width:420px;">
-      <div class="modal-header"><h3>新建测试套件</h3><button class="modal-close" onclick="this.closest('.modal-overlay').style.display='none'">×</button></div>
+      <div class="modal-header"><h3>新建自动化套件</h3><button class="modal-close" onclick="this.closest('.modal-overlay').style.display='none'">×</button></div>
       <div class="modal-body">
-        <div class="form-group"><label class="form-label" for="newSuiteName">套件名称 <span class="required">*</span></label><input type="text" class="input w-full" id="newSuiteName" placeholder="例如：冒烟测试套件"></div>
-        <div class="form-group"><label class="form-label" for="newSuiteDesc">描述</label><textarea class="textarea w-full" id="newSuiteDesc" rows="2" placeholder="套件描述"></textarea></div>
+        <div class="form-group"><label class="form-label" for="newSuiteName">自动化套件名称 <span class="required">*</span></label><input type="text" class="input w-full" id="newSuiteName" placeholder="例如：冒烟自动化套件"></div>
+        <div class="form-group"><label class="form-label" for="newSuiteDesc">描述</label><textarea class="textarea w-full" id="newSuiteDesc" rows="2" placeholder="自动化套件描述"></textarea></div>
         <div class="form-group"><label class="form-label" for="newSuiteGroup">所属分组</label><select class="select w-full" id="newSuiteGroup"></select></div>
       </div>
       <div class="modal-footer"><button class="btn" onclick="this.closest('.modal-overlay').style.display='none'">取消</button><button class="btn btn-primary" onclick="confirmNewSuite()">确定</button></div>
@@ -150,7 +150,7 @@
     <div class="modal" style="width:400px;">
       <div class="modal-header"><h3>批量修改分组</h3><button class="modal-close" onclick="closeBatchGroupModal()">&#10005;</button></div>
       <div class="modal-body">
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">将已选中的 <b id="batchGroupCount" style="color:var(--primary);">0</b> 个套件的分组修改为：</p>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">将已选中的 <b id="batchGroupCount" style="color:var(--primary);">0</b> 个自动化套件的分组修改为：</p>
         <div class="form-group">
           <label class="form-label" for="batchGroupSelect">目标分组 <span class="required">*</span></label>
           <select class="select w-full" id="batchGroupSelect"></select>
@@ -173,7 +173,7 @@
   <div class="modal-overlay" id="deleteGroupModal" style="display:none;">
     <div class="modal" style="width:360px;">
       <div class="modal-header"><h3>删除分组</h3><button class="modal-close" onclick="closeDeleteGroupModal()">&#10005;</button></div>
-      <div class="modal-body"><p style="font-size:14px;color:var(--text-secondary);line-height:1.6;">确定删除分组 <strong id="delGroupName"></strong> 吗？<br><span style="color:var(--text-tertiary);">删除后，该分组下的套件将自动归入「未分组」。</span></p></div>
+      <div class="modal-body"><p style="font-size:14px;color:var(--text-secondary);line-height:1.6;">确定删除分组 <strong id="delGroupName"></strong> 吗？<br><span style="color:var(--text-tertiary);">删除后，该分组下的自动化套件将自动归入「未分组」。</span></p></div>
       <div class="modal-footer"><button class="btn" onclick="closeDeleteGroupModal()">取消</button><button class="btn btn-primary" style="background:var(--error);border-color:var(--error);" onclick="confirmDeleteGroup()">确认删除</button></div>
     </div>
   </div>
@@ -206,11 +206,11 @@
     ];
     var suites = [
       // 核心功能
-      { id: 's1', name: '冒烟测试套件', desc: '核心流程快速验证', caseCount: 12, passRate: 95, groupId: '1' },
-      { id: 's2', name: '回归测试套件', desc: '版本回归全覆盖', caseCount: 28, passRate: 88, groupId: '1' },
+      { id: 's1', name: '冒烟自动化套件', desc: '核心流程快速验证', caseCount: 12, passRate: 95, groupId: '1' },
+      { id: 's2', name: '回归自动化套件', desc: '版本回归全覆盖', caseCount: 28, passRate: 88, groupId: '1' },
       { id: 's3', name: '电池管理测试', desc: '电池增删改查及状态流转', caseCount: 35, passRate: 92, groupId: '1' },
       // 核心功能 > 登录认证
-      { id: 's4', name: '登录认证套件', desc: '登录、注册、Token 校验', caseCount: 8, passRate: 100, groupId: '1-1' },
+      { id: 's4', name: '登录认证自动化套件', desc: '登录、注册、Token 校验', caseCount: 8, passRate: 100, groupId: '1-1' },
       { id: 's51', name: 'OAuth2 授权测试', desc: '第三方授权码与刷新令牌流程', caseCount: 6, passRate: 83, groupId: '1-1' },
       { id: 's52', name: '多因子认证测试', desc: '短信验证码与邮箱验证双因子校验', caseCount: 5, passRate: 90, groupId: '1-1' },
       // 核心功能 > 订单流程
@@ -225,7 +225,7 @@
       { id: 's57', name: '单接口基准测试', desc: '核心接口单用户响应时间基准', caseCount: 18, passRate: 96, groupId: '2-1' },
       { id: 's58', name: '混合场景基准', desc: '多接口混合调用场景基准数据', caseCount: 10, passRate: 89, groupId: '2-1' },
       // 安全测试
-      { id: 's7', name: '权限校验套件', desc: '角色权限与越权测试', caseCount: 18, passRate: 90, groupId: '3' },
+      { id: 's7', name: '权限校验自动化套件', desc: '角色权限与越权测试', caseCount: 18, passRate: 90, groupId: '3' },
       { id: 's8', name: 'XSS/SQL注入防护', desc: '安全漏洞扫描', caseCount: 10, passRate: 85, groupId: '3' },
       { id: 's59', name: 'CSRF 防护验证', desc: '跨站请求伪造防护与令牌校验', caseCount: 7, passRate: 94, groupId: '3' },
       { id: 's60', name: '敏感数据脱敏', desc: '手机号、身份证、银行卡等脱敏校验', caseCount: 12, passRate: 91, groupId: '3' },
@@ -244,7 +244,7 @@
       // 回归验证
       { id: 's68', name: 'v2.1 版本回归', desc: 'v2.1 全量功能回归验证', caseCount: 45, passRate: 94, groupId: '6' },
       { id: 's69', name: 'v2.0 版本回归', desc: 'v2.0 基线功能回归验证', caseCount: 38, passRate: 98, groupId: '6' },
-      { id: 's70', name: '热修复验证套件', desc: '线上 Bug 热修复后快速验证', caseCount: 6, passRate: 100, groupId: '6' }
+      { id: 's70', name: '热修复验证自动化套件', desc: '线上 Bug 热修复后快速验证', caseCount: 6, passRate: 100, groupId: '6' }
     ];
     var activeGroupId = 'all';
     var contextGroupId = null;
@@ -333,10 +333,10 @@
       var tbody = document.getElementById('suiteTableBody');
       var title = document.getElementById('suiteListTitle');
       var group = suiteGroups.find(function(g) { return g.id === activeGroupId; });
-      title.textContent = (group ? group.name : '全部') + ' — ' + filtered.length + ' 个套件';
+      title.textContent = (group ? group.name : '全部') + ' — ' + filtered.length + ' 个自动化套件';
       if (filtered.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:48px 20px;color:var(--text-tertiary);">' +
-          '<div style="font-size:32px;margin-bottom:8px;opacity:.4;">📋</div><div>该分组下暂无测试套件</div></td></tr>';
+          '<div style="font-size:32px;margin-bottom:8px;opacity:.4;">📋</div><div>该分组下暂无自动化套件</div></td></tr>';
         updateBatchBar();
         return;
       }
@@ -348,13 +348,13 @@
         var passTag = s.passRate >= 90 ? 'tag-green' : s.passRate >= 70 ? 'tag-orange' : 'tag-red';
         html += '<tr>' +
           '<td><input type="checkbox" onchange="toggleSuiteSelect(\'' + s.id + '\')" ' + checked + '></td>' +
-          '<td><a href="#" onclick="alert(\'进入套件详情：' + escapeHtml(s.name) + '\');return false;" style="font-weight:500;">' + escapeHtml(s.name) + '</a>' +
+          '<td><a href="#" onclick="alert(\'进入自动化套件详情：' + escapeHtml(s.name) + '\');return false;" style="font-weight:500;">' + escapeHtml(s.name) + '</a>' +
             '<div style="font-size:12px;color:var(--text-tertiary);margin-top:2px;">' + escapeHtml(s.desc) + '</div></td>' +
           '<td>' + s.caseCount + '</td>' +
           '<td><span class="tag tag-gray">' + escapeHtml(gName) + '</span></td>' +
           '<td><span class="tag ' + passTag + '">' + s.passRate + '%</span></td>' +
           '<td style="white-space:nowrap">' +
-            '<button class="btn-link" onclick="alert(\'编辑套件：' + escapeHtml(s.name) + '\')">编辑</button> ' +
+            '<button class="btn-link" onclick="alert(\'编辑自动化套件：' + escapeHtml(s.name) + '\')">编辑</button> ' +
             '<button class="btn-link" style="color:var(--error);" onclick="deleteSuite(\'' + s.id + '\')">删除</button>' +
           '</td></tr>';
       });
@@ -405,9 +405,9 @@
     function batchDelete() {
       document.getElementById('batchDropdownMenu').classList.remove('open');
       var ids = Object.keys(selectedSuiteIds);
-      if (ids.length === 0) { alert('请先选择要删除的套件'); return; }
+      if (ids.length === 0) { alert('请先选择要删除的自动化套件'); return; }
       var names = ids.map(function(id) { var s = suites.find(function(x) { return x.id === id; }); return s ? s.name : ''; });
-      if (!confirm('确定删除以下 ' + ids.length + ' 个套件？\n' + names.join('、'))) return;
+      if (!confirm('确定删除以下 ' + ids.length + ' 个自动化套件？\n' + names.join('、'))) return;
       suites = suites.filter(function(s) { return !selectedSuiteIds[s.id]; });
       selectedSuiteIds = {};
       updateGroupCounts(); renderGroupTree(); renderSuiteTable();
@@ -417,7 +417,7 @@
     function deleteSuite(id) {
       var s = suites.find(function(x) { return x.id === id; });
       if (!s) return;
-      if (!confirm('确定删除套件「' + s.name + '」？')) return;
+      if (!confirm('确定删除自动化套件「' + s.name + '」？')) return;
       suites = suites.filter(function(x) { return x.id !== id; });
       delete selectedSuiteIds[id];
       updateGroupCounts(); renderGroupTree(); renderSuiteTable();
@@ -427,7 +427,7 @@
     function openBatchGroupModal() {
       document.getElementById('batchDropdownMenu').classList.remove('open');
       var ids = Object.keys(selectedSuiteIds);
-      if (ids.length === 0) { alert('请先选择要操作的套件'); return; }
+      if (ids.length === 0) { alert('请先选择要操作的自动化套件'); return; }
       document.getElementById('batchGroupCount').textContent = ids.length;
       var sel = document.getElementById('batchGroupSelect');
       sel.value = '';

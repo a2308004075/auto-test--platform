@@ -10,13 +10,12 @@
  * 对齐原型 api-debug.html
  */
 import { ref, onMounted, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getApi, debugApi } from '@/api/apidoc'
 import { getEnvironments } from '@/api/environment'
 
 const route = useRoute()
-const router = useRouter()
 const projectId = computed(() => Number(route.params.id))
 const apiId = computed(() => Number(route.params.apiId))
 
@@ -97,7 +96,6 @@ onMounted(() => { fetchApi(); fetchEnvironments() })
     <!-- 页头 -->
     <div class="debug-page-header">
       <div class="debug-header-left">
-        <el-button type="primary" link @click="router.back()">← 返回</el-button>
         <el-tag :type="methodColors[apiInfo.httpMethod] || 'info'" size="small" style="font-size: 13px; height: 24px; min-width: 56px; text-align: center">
           {{ apiInfo.httpMethod }}
         </el-tag>

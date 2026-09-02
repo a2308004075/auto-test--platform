@@ -67,8 +67,8 @@ auto-test-platform/
 │   │   │   ├── keyword.ts
 │   │   │   ├── tool.ts
 │   │   │   ├── action.ts
-│   │   │   ├── suite.ts
-│   │   │   ├── case.ts
+│   │   │   ├── autoSuite.ts
+│   │   │   ├── autoCase.ts
 │   │   │   ├── plan.ts
 │   │   │   ├── execution.ts
 │   │   │   └── settings.ts
@@ -110,7 +110,7 @@ auto-test-platform/
 │   │   │   ├── keywords/                  #   接口关键字页面
 │   │   │   ├── tool/                      #   工具方法页面
 │   │   │   ├── action/                    #   Action 关键字页面
-│   │   │   ├── cases/                     #   测试套件/用例页面
+│   │   │   ├── cases/                     #   自动化套件/自动化用例页面
 │   │   │   ├── execution/                 #   测试计划/执行记录页面
 │   │   │   └── settings/                  #   系统设置页面
 │   │   ├── App.vue
@@ -255,7 +255,7 @@ public class ApiResponse<T> {
 | 1500-1599 | M5 接口关键字 | 关键字名重复、测试数据校验失败 |
 | 1600-1699 | M6 工具方法 | 沙箱执行超时、代码安全检查失败 |
 | 1700-1799 | M7 Action | 节点序列化失败、循环引用检测 |
-| 1800-1899 | M8 测试用例 | 步骤校验失败、参数化数据格式错误 |
+| 1800-1899 | M8 自动化用例 | 步骤校验失败、参数化数据格式错误 |
 | 1900-1999 | M9 测试执行 | 执行任务已满、计划未绑定环境 |
 | 2000-2099 | M10 报告分析 | 报告生成失败、导出超时 |
 
@@ -675,7 +675,7 @@ VALUES (UUID(), 'admin', '$2b$12$LJ3m4ys3Gl.KjU1cPJlqNO...', '管理员', 'ADMIN
 
 -- 初始化全局配置
 INSERT INTO `global_settings` (`id`, `config_key`, `config_value`, `description`) VALUES
-(UUID(), 'execution_timeout', '{"seconds": 30}', '单用例执行超时默认值'),
+(UUID(), 'execution_timeout', '{"seconds": 30}', '单自动化用例执行超时默认值'),
 (UUID(), 'concurrency_limit', '{"limit": 1}', '同一项目并发执行上限'),
 (UUID(), 'log_retention_days', '{"days": 90}', '执行日志保留天数'),
 (UUID(), 'report_retention_days', '{"days": 90}', '报告数据保留天数');
@@ -955,7 +955,7 @@ class UserResponse(BaseModel):
 │             ▼                       ▼                          │
 │  ┌─── 数据层 ──────┐   ┌─── 跨模块数据聚合 ─────────────┐     │
 │  │ Project 模型     │   │ 接口覆盖率 ← M4                │     │
-│  └─────────────────┘   │ 用例统计 ← M8                  │     │
+│  └─────────────────┘   │ 自动化用例统计 ← M8                  │     │
 │                        │ 执行记录 ← M9                  │     │
 │                        │ 趋势数据 ← M10                 │     │
 │                        └────────────────────────────────┘     │
@@ -1344,7 +1344,7 @@ class ApiEndpointService:
         self, db: AsyncSession, endpoint_id: str
     ) -> DependencyCheckResult:
         """
-        三级依赖检查：接口 → 接口关键字 → Action → 测试用例
+        三级依赖检查：接口 → 接口关键字 → Action → 自动化用例
         返回 DependencyCheckResult(has_dependencies, keywords, cases)
         """
         # 第一级：查找关联的 ApiKeyword
@@ -1372,11 +1372,11 @@ class ApiEndpointService:
                 act_kw = await db.scalar(
                     select(Keyword).where(Keyword.ref_id == act.id)
                 )
-                # 第三级：查找引用该 Action 的测试用例
+                # 第三级：查找引用该 Action 的自动化用例
                 cases = await db.scalars(
-                    select(TestCase).where(
+                    select(AutoCase).where(
                         func.json_contains(
-                            TestCase.steps, f'"{act_kw.id}"', '$.keyword_id'
+                            AutoCase.steps, f'"{act_kw.id}"', '$.keyword_id'
                         )
                     )
                 )

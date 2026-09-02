@@ -315,7 +315,7 @@ async function fetchList() {
 
 // ===== 操作 =====
 function handleEdit(record: any) {
-  router.push(`/project/${projectId}/plans/${record.id}/edit`)
+  router.push(`/project/${projectId.value}/plans/${record.id}/edit`)
 }
 
 function handleDelete(record: any) {
@@ -335,7 +335,7 @@ async function handleRun(record: any) {
       try {
         const res: any = await startExecution(record.id)
         ElMessage.success('执行已触发')
-        router.push(`/project/${projectId}/executions/${res.data.id}`)
+        router.push(`/project/${projectId.value}/executions/${res.data.id}`)
       } catch { ElMessage.error('触发失败') }
     })
     .catch(() => {})

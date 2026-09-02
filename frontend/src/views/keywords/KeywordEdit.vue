@@ -554,7 +554,7 @@ function openApiDetail() {
 
 <template>
   <div v-loading="loading">
-    <EditPageHeader :title="isEdit ? '编辑接口关键字' : '新建接口关键字'" :show-back="false">
+    <EditPageHeader :title="isEdit ? '编辑接口关键字' : '新建接口关键字'">
       <el-button v-if="hasPermission('project:keyword:edit')" type="primary" @click="handleSubmit">保存</el-button>
       <el-button @click="router.back()">取消</el-button>
     </EditPageHeader>
@@ -946,13 +946,13 @@ function openApiDetail() {
               <el-table-column label="引用类型" width="120">
                 <template #default="{ row }">
                   <el-tag :type="row.refType === 'ACTION' ? 'primary' : 'success'" size="small">
-                    {{ row.refType === 'ACTION' ? 'Action关键字' : '测试用例' }}
+                    {{ row.refType === 'ACTION' ? 'Action关键字' : '自动化用例' }}
                   </el-tag>
                 </template>
               </el-table-column>
               <el-table-column prop="refName" label="名称" min-width="200">
                 <template #default="{ row }">
-                  <el-button link type="primary" @click="router.push(`/project/${projectId}/${row.refType === 'ACTION' ? 'actions' : 'cases'}/${row.refId}/edit`)">
+                  <el-button link type="primary" @click="router.push(`/project/${projectId}/${row.refType === 'ACTION' ? 'actions' : 'auto-cases'}/${row.refId}/edit`)">
                     {{ row.refName }}
                   </el-button>
                 </template>

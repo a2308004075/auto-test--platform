@@ -1,17 +1,17 @@
 <!--
  @author HXN
  @date 2026-08-30
- @description 用例选择弹窗（手动用例 + 自动用例，搜索 + 分页 + 勾选）
+ @description 用例选择弹窗（手动用例 + 自动化用例，搜索 + 分页 + 勾选）
 -->
 <script setup lang="ts">
 /**
  * 用例选择弹窗
- * 通过 Tab 切换手动用例/自动用例，支持关键字搜索、分页浏览、多选/单选
+ * 通过 Tab 切换手动用例/自动化用例，支持关键字搜索、分页浏览、多选/单选
  * 确认后 emit 选中行数组（含 caseType 字段标识来源）
  */
 import { ref, reactive, computed, watch } from 'vue'
 import { getManualCases } from '@/api/manualCase'
-import { getCases } from '@/api/case'
+import { getAutoCases } from '@/api/autoCase'
 import ProPagination from '@/components/ProPagination/index.vue'
 import { useDict } from '@/composables/useDict'
 
@@ -78,7 +78,7 @@ async function fetchList() {
       }))
       pagination.total = res.data?.total || 0
     } else {
-      const res: any = await getCases(props.projectId, {
+      const res: any = await getAutoCases(props.projectId, {
         keyword: keyword.value || undefined,
         page: pagination.current,
         pageSize: pagination.pageSize,
@@ -140,7 +140,7 @@ function handleConfirm() {
     <div style="display: flex; gap: 8px; margin-bottom: 12px">
       <el-input
         v-model="keyword"
-        :placeholder="activeTab === 'MANUAL_CASE' ? '搜索用例标题' : '搜索用例名称'"
+        :placeholder="activeTab === 'MANUAL_CASE' ? '搜索用例标题' : '搜索自动化用例名称'"
         clearable
         style="width: 260px"
         @keyup.enter="handleSearch"

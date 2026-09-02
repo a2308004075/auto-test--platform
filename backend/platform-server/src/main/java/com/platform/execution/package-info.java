@@ -6,14 +6,14 @@
 /**
  * M8/M9/M10 - 执行与报告模块
  *
- * <p>职责：测试套件、用例编排、执行调度、实时推送、报告分析
+ * <p>职责：自动化套件、自动化用例编排、执行调度、实时推送、报告分析
  *
  * <p>子包结构：
  * <ul>
- *   <li>controller - SuiteController, CaseController, PlanController, ExecutionController, AnalyticsController</li>
- *   <li>service - SuiteService, CaseService, ExecutionService, AnalyticsService, ReportService</li>
+ *   <li>controller - AutoSuiteController, AutoCaseController, PlanController, ExecutionController, AnalyticsController</li>
+ *   <li>service - AutoSuiteService, AutoCaseService, ExecutionService, AnalyticsService, ReportService</li>
  *   <li>mapper - 各实体 Mapper</li>
- *   <li>entity - TestSuite, TestCase, TestPlan, Execution 等</li>
+ *   <li>entity - AutoSuite, AutoCase, TestPlan, Execution 等</li>
  *   <li>dto - 请求/响应 DTO</li>
  *   <li>engine - 执行引擎核心包（KeywordExecutor, HttpClientEngine, AssertionEngine 等）</li>
  *   <li>context - ExecutionContext（运行时变量上下文）</li>

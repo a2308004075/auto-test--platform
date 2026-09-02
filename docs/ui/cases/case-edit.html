@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title id="pageTitle">编辑用例 - Postman Platform</title>
+  <title id="pageTitle">编辑自动化用例 - Postman Platform</title>
   <link rel="stylesheet" href="../common/shared-styles.css">
   <style>
     .orchestrator{display:flex;height:380px;border:1px solid var(--border-color);border-radius:var(--border-radius);overflow:hidden;}
@@ -64,7 +64,7 @@
     <div class="header-breadcrumb">
       <span>测试管理</span>
       <span class="sep">&#8250;</span>
-      <span class="current" id="breadcrumbCurrent">编辑用例</span>
+      <span class="current" id="breadcrumbCurrent">编辑自动化用例</span>
     </div>
     <div class="header-right">
       <div class="header-user">
@@ -109,8 +109,8 @@
         <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
-            <li class="menu-item active"><a href="../cases/case-list.html">测试用例</a></li>
-            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item active"><a href="../cases/case-list.html">自动化用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">自动化套件</a></li>
             <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
             <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
           </ul>
@@ -120,7 +120,7 @@
   <main class="layout-main">
 
     <div class="page-header">
-      <h1 id="pageHeading">编辑用例</h1>
+      <h1 id="pageHeading">编辑自动化用例</h1>
       <div class="flex gap-8"><button class="btn" onclick="window.location.href='case-list.html'">返回</button><button class="btn btn-primary" id="btnSave" onclick="alert('保存成功！')">保存</button></div>
     </div>
 
@@ -135,7 +135,7 @@
     <div class="tab-content active" id="tab-basic">
     <div class="card" style="margin-bottom:12px;">
       <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 20px;">
-        <div class="form-group"><label class="form-label" for="caseName">用例名称 <span class="required">*</span></label><input type="text" class="input w-full" id="caseName" value="电池入仓测试"></div>
+        <div class="form-group"><label class="form-label" for="caseName">自动化用例名称 <span class="required">*</span></label><input type="text" class="input w-full" id="caseName" value="电池入仓测试"></div>
         <div class="form-group"><label class="form-label" for="casePriority">优先级</label><select class="select w-full" id="casePriority"><option>P0</option><option selected>P1</option><option>P2</option><option>P3</option></select></div>
         <div class="form-group"><label class="form-label" for="标签">标签</label><div id="caseTags" style="display:flex;gap:4px;"><span class="tag tag-purple">电池</span><span class="tag tag-blue">核心</span><input type="text" class="input" placeholder="+" aria-label="添加标签" style="width:50px;height:30px;font-size:12px;" id="标签"></div></div>
         <div class="form-group" style="grid-column:1/-1;"><label class="form-label" for="casePrecondition">前置条件</label><input type="text" class="input w-full" id="casePrecondition" value="用户已登录，系统有可用空仓位" style="font-size:12px;"></div>
@@ -150,7 +150,7 @@
         <!-- Test Setup -->
         <div class="st-section">
           <div class="st-section-header open" onclick="toggleCaseST(this)">
-            <span><span style="color:#52c41a;margin-right:4px;">&#9654;</span> Test Setup <span style="font-size:11px;color:var(--text-tertiary);font-weight:400;margin-left:4px;">用例执行前调用的关键字与逻辑控制序列</span></span>
+            <span><span style="color:#52c41a;margin-right:4px;">&#9654;</span> Test Setup <span style="font-size:11px;color:var(--text-tertiary);font-weight:400;margin-left:4px;">自动化用例执行前调用的关键字与逻辑控制序列</span></span>
             <span class="st-arrow">&#9654;</span>
           </div>
           <div class="st-section-body open" id="setupBody">
@@ -202,7 +202,7 @@
         <!-- Test Teardown -->
         <div class="st-section" style="border-bottom:none;border-top:1px solid var(--border-color);">
           <div class="st-section-header" onclick="toggleCaseST(this)">
-            <span><span style="color:#f5222d;margin-right:4px;">&#9632;</span> Test Teardown <span style="font-size:11px;color:var(--text-tertiary);font-weight:400;margin-left:4px;">用例执行后调用的关键字与逻辑控制序列</span></span>
+            <span><span style="color:#f5222d;margin-right:4px;">&#9632;</span> Test Teardown <span style="font-size:11px;color:var(--text-tertiary);font-weight:400;margin-left:4px;">自动化用例执行后调用的关键字与逻辑控制序列</span></span>
             <span class="st-arrow">&#9654;</span>
           </div>
           <div class="st-section-body" id="teardownBody">
@@ -251,14 +251,14 @@
 
     function initPageMode() {
       if (pageMode === 'create') {
-        document.title = '新建用例 - Postman Platform';
-        document.getElementById('pageTitle').textContent = '新建用例 - Postman Platform';
-        document.getElementById('breadcrumbCurrent').textContent = '新建用例';
-        document.getElementById('pageHeading').textContent = '新建用例';
+        document.title = '新建自动化用例 - Postman Platform';
+        document.getElementById('pageTitle').textContent = '新建自动化用例 - Postman Platform';
+        document.getElementById('breadcrumbCurrent').textContent = '新建自动化用例';
+        document.getElementById('pageHeading').textContent = '新建自动化用例';
         document.getElementById('btnSave').textContent = '创建';
         // 清空表单
         document.getElementById('caseName').value = '';
-        document.getElementById('caseName').placeholder = '请输入用例名称';
+        document.getElementById('caseName').placeholder = '请输入自动化用例名称';
         var prioritySelect = document.getElementById('casePriority');
         if (prioritySelect) prioritySelect.selectedIndex = 1; // 默认 P1
         var tagsContainer = document.getElementById('caseTags');
@@ -267,7 +267,7 @@
           tagSpans.forEach(function(t) { t.remove(); });
         }
         document.getElementById('casePrecondition').value = '';
-        document.getElementById('casePrecondition').placeholder = '可选，描述用例执行的前置条件';
+        document.getElementById('casePrecondition').placeholder = '可选，描述自动化用例执行的前置条件';
         // 清空编排器画布（静态展示区）
         var canvas = document.querySelector('.canvas');
         if (canvas) canvas.innerHTML = '<div style="text-align:center;color:var(--text-tertiary);padding:80px 20px;font-size:13px;">从左侧拖拽步骤类型到此处开始编排</div>';

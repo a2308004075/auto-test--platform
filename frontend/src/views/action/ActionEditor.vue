@@ -144,6 +144,7 @@ const nodeTypeConfig: Record<string, { color: string; icon: string; iconBg: stri
 
 // ===== 加载数据 =====
 async function fetchAction() {
+  if (!projectId.value || !actionId.value) return
   loading.value = true
   try {
     const res: any = await getAction(projectId.value, actionId.value)
@@ -163,6 +164,7 @@ async function fetchAction() {
 }
 
 async function fetchElementData() {
+  if (!projectId.value) return
   try {
     const [kwRes, toolRes, actionRes]: any[] = await Promise.all([
       getKeywords(projectId.value, { page: 1, pageSize: 100 }),

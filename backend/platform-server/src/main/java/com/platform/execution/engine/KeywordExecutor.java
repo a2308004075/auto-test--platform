@@ -15,8 +15,8 @@ import com.platform.apidoc.mapper.ApiMapper;
 import com.platform.apidoc.service.ApiModuleService;
 import com.platform.common.util.SpringContextHolder;
 import com.platform.project.entity.ApiModule;
-import com.platform.execution.entity.TestCase;
-import com.platform.execution.mapper.TestCaseMapper;
+import com.platform.execution.entity.AutoCase;
+import com.platform.execution.mapper.AutoCaseMapper;
 import com.platform.keyword.entity.ApiKeyword;
 import com.platform.keyword.entity.Keyword;
 import com.platform.keyword.mapper.ApiKeywordMapper;
@@ -41,7 +41,7 @@ import java.util.regex.Pattern;
  *   <li>API → HttpClientEngine（查 ApiKeyword → Api → 发送 HTTP 请求）</li>
  *   <li>TOOL → GroovySandboxExecutor（查 ToolMethod → 执行 Groovy 代码）</li>
  *   <li>ACTION → ActionExecutor（查 Action → 执行节点树）</li>
- *   <li>TEST_CASE → CaseExecutor（查 TestCase → 执行嵌套用例）</li>
+ *   <li>AUTO_CASE → AutoCaseExecutor（查 AutoCase → 执行嵌套自动化用例）</li>
  * </ul>
  */
 @Component
@@ -51,7 +51,7 @@ public class KeywordExecutor {
 
     /**
      * $ref{参数名} 占位符：接口关键字内声明的参数接收点，
-     * 执行时用引用方（Action/测试用例）传入的同名实参替换
+     * 执行时用引用方（Action/自动化用例）传入的同名实参替换
      */
     private static final Pattern REF_PATTERN = Pattern.compile("\\$ref\\{([^}]+)}");
 
@@ -61,7 +61,7 @@ public class KeywordExecutor {
     private final ApiModuleService apiModuleService;
     private final ToolMethodMapper toolMethodMapper;
     private final ActionMapper actionMapper;
-    private final TestCaseMapper testCaseMapper;
+    private final AutoCaseMapper autoCaseMapper;
     private final HttpClientEngine httpClientEngine;
     private final AssertionEngine assertionEngine;
     private final GroovySandboxExecutor groovySandboxExecutor;
@@ -92,8 +92,8 @@ public class KeywordExecutor {
                 return executeToolKeyword(step, keyword, context);
             case "ACTION":
                 return executeActionKeyword(step, keyword, context);
-            case "TEST_CASE":
-                return executeTestCaseKeyword(step, keyword, context);
+            case "AUTO_CASE":
+                return executeAutoCaseKeyword(step, keyword, context);
             default:
                 return StepResult.error("未知关键字类型：" + type);
         }
@@ -331,25 +331,25 @@ public class KeywordExecutor {
     }
 
     /**
-     * 执行 TEST_CASE 类型关键字
+     * 执行 AUTO_CASE 类型关键字
      *
-     * <p>查 TestCase 实体，委托 CaseExecutor 执行嵌套用例。
-     * 使用 SpringContextHolder 获取 CaseExecutor 避免循环依赖。
+     * <p>查 AutoCase 实体，委托 AutoCaseExecutor 执行嵌套自动化用例。
+     * 使用 SpringContextHolder 获取 AutoCaseExecutor 避免循环依赖。
      */
-    private StepResult executeTestCaseKeyword(StepNode step, Keyword keyword, ExecutionContext context) {
+    private StepResult executeAutoCaseKeyword(StepNode step, Keyword keyword, ExecutionContext context) {
         Long refId = keyword.getRefId();
         if (refId == null) {
-            return StepResult.error("TEST_CASE 关键字缺少 refId：" + keyword.getName());
+            return StepResult.error("AUTO_CASE 关键字缺少 refId：" + keyword.getName());
         }
 
-        TestCase testCase = testCaseMapper.selectById(refId);
-        if (testCase == null) {
-            return StepResult.error("测试用例不存在：" + refId);
+        AutoCase autoCase = autoCaseMapper.selectById(refId);
+        if (autoCase == null) {
+            return StepResult.error("自动化用例不存在：" + refId);
         }
 
-        // 使用 SpringContextHolder 获取 CaseExecutor 避免循环依赖
-        CaseExecutor caseExecutor = SpringContextHolder.getBean(CaseExecutor.class);
-        return caseExecutor.execute(testCase, context);
+        // 使用 SpringContextHolder 获取 AutoCaseExecutor 避免循环依赖
+        AutoCaseExecutor autoCaseExecutor = SpringContextHolder.getBean(AutoCaseExecutor.class);
+        return autoCaseExecutor.execute(autoCase, context);
     }
 
     /**

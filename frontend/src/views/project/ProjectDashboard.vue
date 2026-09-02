@@ -46,9 +46,9 @@ function circleDash(score: number) {
 
 // 健康度维度数据（tooltip 对齐原型）
 const healthDimensions = computed(() => [
-  { label: '通过率得分', value: stats.value.passRateScore || 0, tip: '基于所有测试用例的通过率计算，权重 35%。通过率越高，该项得分越高' },
+  { label: '通过率得分', value: stats.value.passRateScore || 0, tip: '基于所有自动化用例的通过率计算，权重 35%。通过率越高，该项得分越高' },
   { label: '覆盖率得分', value: stats.value.coverageScore || 0, tip: '基于接口覆盖率和模块覆盖率加权计算，权重 25%。覆盖率越高，该项得分越高' },
-  { label: '稳定性得分', value: stats.value.stabilityScore || 0, tip: '基于用例回归通过率和缺陷逃逸率综合计算，权重 25%。回归通过率越高、逃逸率越低，该项得分越高' },
+  { label: '稳定性得分', value: stats.value.stabilityScore || 0, tip: '基于自动化用例回归通过率和缺陷逃逸率综合计算，权重 25%。回归通过率越高、逃逸率越低，该项得分越高' },
   { label: '效率得分', value: stats.value.efficiencyScore || 0, tip: '基于缺陷修复时效和测试执行频次综合计算，权重 15%。修复越快、执行越频繁，该项得分越高' },
 ])
 
@@ -58,18 +58,18 @@ const kpiCards = computed(() => {
 
   return [
     {
-      icon: '✓', iconBg: '#f0f9eb', label: '用例通过率',
+      icon: '✓', iconBg: '#f0f9eb', label: '自动化用例通过率',
       value: `${s.passRate || 0}%`, color: '#67c23a',
       trend: s.passRateWeekDelta != null ? { delta: Math.abs(s.passRateWeekDelta), isUp: s.passRateWeekDelta >= 0, label: 'vs 上周' } : null,
       footer: '',
-      tip: '所有测试用例在最近一次完整执行中的通过比例。计算公式：通过用例数 / 总执行用例数 × 100%',
+      tip: '所有自动化用例在最近一次完整执行中的通过比例。计算公式：通过自动化用例数 / 总执行自动化用例数 × 100%',
     },
     {
       icon: '◎', iconBg: '#ecf5ff', label: '接口覆盖率',
       value: `${s.apiCoverageRate || 0}%`, color: '',
       trend: null,
       footer: `${s.coveredApiCount || 0}/${s.apiCount || 0} 个接口`,
-      tip: '已有测试用例覆盖的 API 接口占项目总接口数的比例。计算公式：已覆盖接口数 / 总接口数 × 100%',
+      tip: '已有自动化用例覆盖的 API 接口占项目总接口数的比例。计算公式：已覆盖接口数 / 总接口数 × 100%',
     },
     {
       icon: '⚠', iconBg: '#fef0f0', label: '缺陷密度',
@@ -93,11 +93,11 @@ const kpiCards = computed(() => {
       tip: '从缺陷发现到修复确认的平均耗时，用于衡量团队响应速度。计算方式：所有缺陷修复耗时之和 / 已修复缺陷总数',
     },
     {
-      icon: '📋', iconBg: '#f4ecff', label: '套件完成率',
+      icon: '📋', iconBg: '#f4ecff', label: '自动化套件完成率',
       value: `${s.suiteCompletionRate || 0}%`, color: '',
       trend: null,
-      footer: `${s.completedSuiteCount || 0}/${s.suiteCount || 0} 个套件`,
-      tip: '已完成执行的测试套件占总测试套件的比例。计算公式：已执行套件数 / 总套件数 × 100%',
+      footer: `${s.completedSuiteCount || 0}/${s.suiteCount || 0} 个自动化套件`,
+      tip: '已完成执行的自动化套件占总自动化套件的比例。计算公式：已执行自动化套件数 / 总自动化套件数 × 100%',
     },
     {
       icon: '🐛', iconBg: '#fef0f0', label: '缺陷逃逸率',
@@ -111,7 +111,7 @@ const kpiCards = computed(() => {
       value: `${s.regressionPassRate || 0}%`, color: '#67c23a',
       trend: s.passRateWeekDelta != null ? { delta: Math.abs(s.passRateWeekDelta), isUp: s.passRateWeekDelta >= 0, label: 'vs 上周' } : null,
       footer: '',
-      tip: '回归测试套件的用例通过率，用于评估版本迭代对已有功能的影响程度。回归通过率越高，说明版本变更对存量功能的破坏越小',
+      tip: '回归自动化套件的自动化用例通过率，用于评估版本迭代对已有功能的影响程度。回归通过率越高，说明版本变更对存量功能的破坏越小',
     },
   ]
 })
@@ -392,7 +392,7 @@ watch(projectId, fetchDashboard)
             <div class="coverage-item" v-for="m in trend.moduleCoverage" :key="m.moduleName">
               <span class="coverage-module">
                 {{ m.moduleName }}
-                <el-tooltip content="该模块的接口被测试用例覆盖的比例" placement="top">
+                <el-tooltip content="该模块的接口被自动化用例覆盖的比例" placement="top">
                   <span class="metric-help-btn">ⓘ</span>
                 </el-tooltip>
               </span>
@@ -410,7 +410,7 @@ watch(projectId, fetchDashboard)
       <div class="card">
         <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
           <span>质量风险 Top 5</span>
-          <a style="font-size:12px;font-weight:normal;color:#409eff;cursor:pointer;" @click="router.push(`/project/${projectId}/cases`)">查看全部 →</a>
+          <a style="font-size:12px;font-weight:normal;color:#409eff;cursor:pointer;" @click="router.push(`/project/${projectId}/auto-cases`)">查看全部 →</a>
         </div>
         <div class="card-body">
           <div v-if="trend.qualityRiskTop5?.length">
@@ -423,9 +423,9 @@ watch(projectId, fetchDashboard)
               <div class="unstable-fail">{{ r.failRate }}%</div>
             </div>
             <div class="risk-monitor-footer">
-              <span>持续失败用例：</span>
+              <span>持续失败自动化用例：</span>
               <span class="risk-count">{{ trend.continuousFailCount || 0 }}</span>
-              <span>个用例连续 3 次以上执行失败</span>
+              <span>个自动化用例连续 3 次以上执行失败</span>
             </div>
           </div>
           <el-empty v-else description="暂无风险数据" :image-size="60" />

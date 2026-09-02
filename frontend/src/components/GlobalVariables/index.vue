@@ -108,7 +108,7 @@ watch(() => props.projectId, fetchVariables, { immediate: true })
           <template #content>
             <div style="max-width: 360px; line-height: 1.7;">
               <div style="font-weight: 600; margin-bottom: 4px;">如何引用全局变量</div>
-              <div>在测试用例、接口调试、关键字、执行计划中，使用 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${变量名}</code> 语法引用。</div>
+              <div>在自动化用例、接口调试、关键字、执行计划中，使用 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${变量名}</code> 语法引用。</div>
               <div style="margin-top: 6px; color: #999;">示例：<code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${token}</code> 替换为全局变量 token 的值</div>
               <div style="margin-top: 6px; color: #999;">全局变量在所有环境下均可引用；当环境变量与全局变量同名时，环境变量优先</div>
             </div>

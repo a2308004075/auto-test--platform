@@ -200,7 +200,7 @@ onMounted(() => {
 
 <template>
   <div>
-    <EditPageHeader title="Swagger 同步配置" :back-route="`/project/${projectId}/apis`">
+    <EditPageHeader title="Swagger 同步配置">
       <el-button v-if="hasPermission('project:api:swagger')" type="primary" :loading="syncAllLoading" @click="handleSyncAll">全部同步</el-button>
       <el-button v-if="hasPermission('project:api:swagger')" @click="openAdd">+ 新增配置</el-button>
     </EditPageHeader>

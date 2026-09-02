@@ -29,7 +29,10 @@ public class TestResult implements Serializable {
 
     private Long executionId;
 
-    private Long caseId;
+    /**
+     * 所属自动化用例 ID
+     */
+    private Long autoCaseId;
 
     /**
      * 用例执行结果：PASSED / FAILED / SKIPPED / ERROR

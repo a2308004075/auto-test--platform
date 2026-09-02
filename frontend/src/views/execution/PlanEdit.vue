@@ -1,20 +1,20 @@
 <!--
  @author HXN
  @date 2026-08-20 15:34
- @description 测试计划编辑视图（三卡片布局：基础信息 + 关联套件 + 执行策略）
+ @description 测试计划编辑视图（三卡片布局：基础信息 + 关联自动化套件 + 执行策略）
 -->
 <script setup lang="ts">
 /**
  * 测试计划编辑 - M9
  * 卡片一：基础信息（名称 + 环境 + 分组 + 描述）
- * 卡片二：关联测试套件（checkbox 卡片布局）
+ * 卡片二：关联自动化套件（checkbox 卡片布局）
  * 卡片三：执行策略（触发方式 + Cron 配置 + 启停 + 预览）
  */
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getPlan, createPlan, updatePlan, getPlanGroups } from '@/api/plan'
-import { getSuites } from '@/api/suite'
+import { getAutoSuites } from '@/api/autoSuite'
 import { getEnvironments } from '@/api/environment'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
@@ -27,7 +27,7 @@ const isEdit = computed(() => !!planId.value)
 const form = reactive({
   name: '',
   description: '',
-  suiteIds: [] as number[],
+  autoSuiteIds: [] as number[],
   environmentId: null as number | null,
   scheduleCron: '',
   triggerType: 'MANUAL',
@@ -41,7 +41,7 @@ const groups = ref<any[]>([])
 
 async function loadSuites() {
   try {
-    const res: any = await getSuites(projectId.value, { pageSize: 200 })
+    const res: any = await getAutoSuites(projectId.value, { pageSize: 200 })
     suites.value = res.data?.items || []
   } catch { suites.value = [] }
 }
@@ -68,7 +68,7 @@ async function loadPlan() {
     Object.assign(form, {
       name: p.name || '',
       description: p.description || '',
-      suiteIds: p.suiteIds || [],
+      autoSuiteIds: p.autoSuiteIds || [],
       environmentId: p.environmentId ?? null,
       scheduleCron: p.scheduleCron || '',
       triggerType: p.triggerType || 'MANUAL',
@@ -92,7 +92,7 @@ async function handleSave() {
     } else {
       await createPlan(projectId.value, { ...form })
       ElMessage.success('创建成功')
-      router.push(`/project/${projectId}/plans`)
+      router.push(`/project/${projectId.value}/plans`)
     }
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '保存失败')
@@ -138,17 +138,17 @@ const nextExecutions = computed(() => {
   } catch { return [] }
 })
 
-// ===== 套件切换样式 =====
-function isSuiteSelected(suiteId: number): boolean {
-  return form.suiteIds.includes(suiteId)
+// ===== 自动化套件切换样式 =====
+function isSuiteSelected(autoSuiteId: number): boolean {
+  return form.autoSuiteIds.includes(autoSuiteId)
 }
 
-function toggleSuite(suiteId: number) {
-  const idx = form.suiteIds.indexOf(suiteId)
+function toggleSuite(autoSuiteId: number) {
+  const idx = form.autoSuiteIds.indexOf(autoSuiteId)
   if (idx >= 0) {
-    form.suiteIds.splice(idx, 1)
+    form.autoSuiteIds.splice(idx, 1)
   } else {
-    form.suiteIds.push(suiteId)
+    form.autoSuiteIds.push(autoSuiteId)
   }
 }
 
@@ -199,9 +199,9 @@ onMounted(() => {
       </el-form>
     </el-card>
 
-    <!-- 卡片二：关联测试套件 -->
+    <!-- 卡片二：关联自动化套件 -->
     <el-card style="margin-bottom:16px">
-      <template #header><span>关联测试套件</span></template>
+      <template #header><span>关联自动化套件</span></template>
       <div class="suite-grid">
         <div v-for="suite in suites" :key="suite.id"
           class="suite-card"
@@ -214,7 +214,7 @@ onMounted(() => {
         </div>
       </div>
       <div v-if="suites.length === 0" style="text-align:center;color:#909399;padding:20px">
-        暂无可用套件，请先创建测试套件
+        暂无可用自动化套件，请先创建自动化套件
       </div>
     </el-card>
 

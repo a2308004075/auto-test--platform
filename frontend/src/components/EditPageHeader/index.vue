@@ -6,38 +6,20 @@
 <script setup lang="ts">
 /**
  * 编辑/详情页统一页头
- * 左侧：← 返回按钮 + 标题
+ * 左侧：标题
  * 右侧：操作区（slot）
  */
-import { useRouter } from 'vue-router'
-
 interface Props {
   /** 页面标题 */
   title: string
-  /** 返回路由（可选，不传则 router.back()） */
-  backRoute?: string
-  /** 是否显示返回按钮（默认显示） */
-  showBack?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  showBack: true,
-})
-const router = useRouter()
-
-function handleBack() {
-  if (props.backRoute) {
-    router.push(props.backRoute)
-  } else {
-    router.back()
-  }
-}
+defineProps<Props>()
 </script>
 
 <template>
   <div class="edit-page-header">
     <div class="edit-page-header-left">
-      <el-button v-if="showBack" type="primary" link @click="handleBack">← 返回</el-button>
       <h2 class="edit-page-title">{{ title }}</h2>
     </div>
     <div class="edit-page-header-right">
@@ -56,7 +38,6 @@ function handleBack() {
 .edit-page-header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
   min-width: 0;
 }
 .edit-page-title {

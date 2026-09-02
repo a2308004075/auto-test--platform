@@ -16,7 +16,7 @@ import lombok.EqualsAndHashCode;
  * 需求-用例关联实体
  *
  * <p>对应数据库 requirement_case_relation 表。记录需求条目与用例（手动/自动）的多对多关联。
- * 用例类型：MANUAL_CASE（手动用例）、TEST_CASE（自动用例）。
+ * 用例类型：MANUAL_CASE（手动用例）、AUTO_CASE（自动化用例）。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -29,7 +29,7 @@ public class RequirementCaseRelation extends BaseEntity {
     private Long requirementItemId;
 
     /**
-     * 用例类型：MANUAL_CASE-手动用例，TEST_CASE-自动用例
+     * 用例类型：MANUAL_CASE-手动用例，AUTO_CASE-自动化用例
      */
     private String caseType;
 

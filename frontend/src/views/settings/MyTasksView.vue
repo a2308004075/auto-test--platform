@@ -60,10 +60,10 @@ function handleView(row: any) {
       break
     case 'CASE_REVIEW':
     case 'CASE_MODIFY':
-      router.push(`/project/${projectId}/cases`)
+      router.push(`/project/${projectId}/auto-cases`)
       break
     case 'CASE_EXECUTION':
-      router.push(`/project/${projectId}/execution`)
+      router.push(`/project/${projectId}/executions`)
       break
     case 'DEFECT_HANDLING':
       router.push(`/project/${projectId}/defects/${bizId || ''}`)

@@ -120,13 +120,18 @@ export function addSupplementaryRoutes(router: Router, layoutName: string): void
     { path: 'project/:id/tools/:toolId/edit',     component: 'tool/ToolEdit',  title: '编辑工具方法' },
 
     // ===== Action 模块 =====
+    { path: 'project/:id/actions/new',             component: 'action/ActionCreate',   title: '新建Action关键字' },
     { path: 'project/:id/actions/:actionId/edit',  component: 'action/ActionEditor',  title: '编辑Action' },
     { path: 'project/:id/actions/:actionId/debug', component: 'action/ActionDebug',   title: '调试Action' },
 
-    // ===== 测试用例/套件模块 =====
-    { path: 'project/:id/cases/new',                component: 'cases/CaseEdit',   title: '新建用例' },
-    { path: 'project/:id/cases/:caseId/edit',       component: 'cases/CaseEdit',   title: '编辑用例' },
-    { path: 'project/:id/suites/:suiteId/edit',     component: 'cases/SuiteEdit',  title: '步骤配置' },
+    // ===== 自动化用例/自动化套件模块 =====
+    { path: 'project/:id/auto-cases/new',                component: 'cases/AutoCaseEdit',    title: '新建自动化用例' },
+    { path: 'project/:id/auto-cases/:autoCaseId/edit',   component: 'cases/AutoCaseEdit',    title: '编辑自动化用例' },
+    { path: 'project/:id/auto-suites/:autoSuiteId/edit', component: 'cases/AutoSuiteEdit',   title: '步骤配置' },
+
+    // ===== 手动用例模块 =====
+    { path: 'project/:id/manual-cases/new',          component: 'manualcase/ManualCaseEdit', title: '新建手动用例' },
+    { path: 'project/:id/manual-cases/:caseId/edit', component: 'manualcase/ManualCaseEdit', title: '编辑手动用例' },
 
     // ===== 缺陷管理模块 =====
     { path: 'project/:id/defects/new',              component: 'defect/DefectEdit',   title: '新建缺陷' },

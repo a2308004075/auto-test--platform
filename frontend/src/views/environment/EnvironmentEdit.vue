@@ -144,7 +144,7 @@ onMounted(fetchDetail)
 <template>
   <div>
     <!-- 页面头部 -->
-    <EditPageHeader title="编辑环境变量" :back-route="`/project/${projectId}/environments`">
+    <EditPageHeader title="编辑环境变量">
       <el-button @click="handleCancel">取消</el-button>
       <el-button type="primary" :loading="saving" @click="handleSave">保存</el-button>
     </EditPageHeader>
@@ -172,7 +172,7 @@ onMounted(fetchDetail)
           <template #content>
             <div style="max-width: 360px; line-height: 1.7;">
               <div style="font-weight: 600; margin-bottom: 4px;">如何引用环境变量</div>
-              <div>在测试用例、接口调试、关键字、执行计划中，使用 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${变量名}</code> 语法引用。</div>
+              <div>在自动化用例、接口调试、关键字、执行计划中，使用 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${变量名}</code> 语法引用。</div>
               <div style="margin-top: 6px; color: #999;">示例：<code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">${host}</code> 替换为当前环境的 host 值</div>
               <div style="margin-top: 6px; color: #999;">环境变量仅在选中此环境时生效；项目全局变量在所有环境下均可引用，同名时环境变量优先</div>
             </div>

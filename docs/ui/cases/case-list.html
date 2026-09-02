@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>用例列表 - Postman Platform</title>
+  <title>自动化用例列表 - Postman Platform</title>
   <link rel="stylesheet" href="../common/shared-styles.css">
   <style>
     .case-layout { display: flex; background: #fff; border-radius: var(--border-radius-lg); border: 1px solid var(--border-color-secondary); overflow: hidden; min-height: calc(100vh - 180px); }
@@ -30,7 +30,7 @@
     <div class="header-breadcrumb">
       <span>测试管理</span>
       <span class="sep">&#8250;</span>
-      <span class="current">测试用例</span>
+      <span class="current">自动化用例</span>
     </div>
     <div class="header-right">
       <div class="header-user">
@@ -75,8 +75,8 @@
         <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
-            <li class="menu-item active"><a href="../cases/case-list.html">测试用例</a></li>
-            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item active"><a href="../cases/case-list.html">自动化用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">自动化套件</a></li>
             <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
             <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
           </ul>
@@ -85,7 +85,7 @@
     </nav></aside>
   <main class="layout-main">
 
-    <div class="page-header"><h1>用例列表</h1><button class="btn btn-primary" onclick="window.location.href='case-edit.html?mode=create'">+ 新建用例</button></div>
+    <div class="page-header"><h1>自动化用例列表</h1><button class="btn btn-primary" onclick="window.location.href='case-edit.html?mode=create'">+ 新建自动化用例</button></div>
 
     <div class="case-layout">
       <!-- Left: Group Tree -->
@@ -102,12 +102,12 @@
           <div class="search-form">
             <div class="search-row">
               <div class="search-item">
-                <label class="filter-label" for="searchCaseName">用例名称</label>
-                <input type="text" class="input input-search" id="searchCaseName" placeholder="搜索用例名称">
+                <label class="filter-label" for="searchCaseName">自动化用例名称</label>
+                <input type="text" class="input input-search" id="searchCaseName" placeholder="搜索自动化用例名称">
               </div>
               <div class="search-item">
-                <label class="filter-label" for="searchSuite">所属套件</label>
-                <select class="select" id="searchSuite"><option>全部套件</option><option>冒烟测试套件</option><option>回归测试套件</option><option>电池管理测试</option></select>
+                <label class="filter-label" for="searchSuite">所属自动化套件</label>
+                <select class="select" id="searchSuite"><option>全部自动化套件</option><option>冒烟自动化套件</option><option>回归自动化套件</option><option>电池管理测试</option></select>
               </div>
               <div class="search-item">
                 <label class="filter-label" for="searchPriority">优先级</label>
@@ -140,7 +140,7 @@
         <div class="card">
           <div class="table-wrapper">
             <table>
-              <thead><tr><th style="width:40px;"><input type="checkbox" aria-label="选择"></th><th>用例名称</th><th style="width:140px;">所属套件</th><th style="width:70px;">优先级</th><th style="width:70px;">状态</th><th>标签</th><th style="width:100px;">最近执行</th><th style="width:160px;">操作</th></tr></thead>
+              <thead><tr><th style="width:40px;"><input type="checkbox" aria-label="选择"></th><th>自动化用例名称</th><th style="width:140px;">所属自动化套件</th><th style="width:70px;">优先级</th><th style="width:70px;">状态</th><th>标签</th><th style="width:100px;">最近执行</th><th style="width:160px;">操作</th></tr></thead>
               <tbody id="caseTableBody"></tbody>
             </table>
           </div>
@@ -179,7 +179,7 @@
     <div class="modal" style="width:360px;">
       <div class="modal-header"><h3>删除分组</h3><button class="modal-close" onclick="closeDeleteGroupModal()">&#10005;</button></div>
       <div class="modal-body">
-        <p style="font-size:14px;color:var(--text-secondary);line-height:1.6;">确定删除分组 <strong id="deleteGroupName"></strong> 吗？<br><span id="deleteGroupHint">删除后，该分组下的用例将自动归入「未分组」。</span></p>
+        <p style="font-size:14px;color:var(--text-secondary);line-height:1.6;">确定删除分组 <strong id="deleteGroupName"></strong> 吗？<br><span id="deleteGroupHint">删除后，该分组下的自动化用例将自动归入「未分组」。</span></p>
       </div>
       <div class="modal-footer"><button class="btn" onclick="closeDeleteGroupModal()">取消</button><button class="btn btn-primary" style="background:var(--error);border-color:var(--error);" onclick="confirmDeleteGroup()">确认删除</button></div>
     </div>
@@ -203,7 +203,7 @@
     <div class="modal" style="width:420px;">
       <div class="modal-header"><h3>批量修改分组</h3><button class="modal-close" onclick="closeBatchGroupModal()">&#10005;</button></div>
       <div class="modal-body">
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">将已选中的 <b id="batchModalCount" style="color:var(--primary);">0</b> 条用例的分组修改为：</p>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">将已选中的 <b id="batchModalCount" style="color:var(--primary);">0</b> 条自动化用例的分组修改为：</p>
         <div class="form-group">
           <label class="form-label" for="batchGroupTarget">目标分组 <span class="required">*</span></label>
           <select class="select w-full" id="batchGroupTarget"><option value="">请选择分组</option></select>
@@ -219,29 +219,29 @@
 
     /* ===== Test Case Data ===== */
     var cases = [
-      { id: 1, name: '用户登录验证', suite: '冒烟测试套件', priority: 'P0', pTag: 'tag-red', status: '启用', sTag: 'tag-green', tags: [{t:'核心',c:'tag-blue'}], lastExec: '通过', execCls: 'success', groupId: '1' },
-      { id: 2, name: '创建订单流程', suite: '冒烟测试套件', priority: 'P0', pTag: 'tag-red', status: '启用', sTag: 'tag-green', tags: [{t:'核心',c:'tag-blue'}], lastExec: '通过', execCls: 'success', groupId: '2' },
+      { id: 1, name: '用户登录验证', suite: '冒烟自动化套件', priority: 'P0', pTag: 'tag-red', status: '启用', sTag: 'tag-green', tags: [{t:'核心',c:'tag-blue'}], lastExec: '通过', execCls: 'success', groupId: '1' },
+      { id: 2, name: '创建订单流程', suite: '冒烟自动化套件', priority: 'P0', pTag: 'tag-red', status: '启用', sTag: 'tag-green', tags: [{t:'核心',c:'tag-blue'}], lastExec: '通过', execCls: 'success', groupId: '2' },
       { id: 3, name: '电池入仓操作', suite: '电池管理测试', priority: 'P1', pTag: 'tag-orange', status: '启用', sTag: 'tag-green', tags: [{t:'电池',c:'tag-purple'}], lastExec: '失败', execCls: 'error', groupId: '3' },
       { id: 4, name: '电池出仓换电', suite: '电池管理测试', priority: 'P1', pTag: 'tag-orange', status: '启用', sTag: 'tag-green', tags: [{t:'电池',c:'tag-purple'},{t:'换电',c:'tag-orange'}], lastExec: '通过', execCls: 'success', groupId: '3' },
-      { id: 5, name: '充电桩状态查询', suite: '回归测试套件', priority: 'P2', pTag: 'tag-blue', status: '启用', sTag: 'tag-green', tags: [{t:'充电',c:'tag-green'}], lastExec: '通过', execCls: 'success', groupId: '4' },
-      { id: 6, name: '异常断电恢复', suite: '回归测试套件', priority: 'P3', pTag: 'tag-gray', status: '禁用', sTag: 'tag-gray', tags: [{t:'异常',c:'tag-red'}], lastExec: '-', execCls: '', groupId: '4' },
-      { id: 7, name: '用户注册验证', suite: '冒烟测试套件', priority: 'P1', pTag: 'tag-orange', status: '启用', sTag: 'tag-green', tags: [{t:'认证',c:'tag-blue'}], lastExec: '通过', execCls: 'success', groupId: '1' },
-      { id: 8, name: '密码重置流程', suite: '冒烟测试套件', priority: 'P1', pTag: 'tag-orange', status: '启用', sTag: 'tag-green', tags: [{t:'认证',c:'tag-blue'}], lastExec: '通过', execCls: 'success', groupId: '1' },
-      { id: 9, name: '订单支付验证', suite: '冒烟测试套件', priority: 'P0', pTag: 'tag-red', status: '启用', sTag: 'tag-green', tags: [{t:'核心',c:'tag-blue'},{t:'支付',c:'tag-cyan'}], lastExec: '通过', execCls: 'success', groupId: '2' },
-      { id: 10, name: '订单取消流程', suite: '冒烟测试套件', priority: 'P1', pTag: 'tag-orange', status: '启用', sTag: 'tag-green', tags: [{t:'订单',c:'tag-blue'}], lastExec: '失败', execCls: 'error', groupId: '2' },
+      { id: 5, name: '充电桩状态查询', suite: '回归自动化套件', priority: 'P2', pTag: 'tag-blue', status: '启用', sTag: 'tag-green', tags: [{t:'充电',c:'tag-green'}], lastExec: '通过', execCls: 'success', groupId: '4' },
+      { id: 6, name: '异常断电恢复', suite: '回归自动化套件', priority: 'P3', pTag: 'tag-gray', status: '禁用', sTag: 'tag-gray', tags: [{t:'异常',c:'tag-red'}], lastExec: '-', execCls: '', groupId: '4' },
+      { id: 7, name: '用户注册验证', suite: '冒烟自动化套件', priority: 'P1', pTag: 'tag-orange', status: '启用', sTag: 'tag-green', tags: [{t:'认证',c:'tag-blue'}], lastExec: '通过', execCls: 'success', groupId: '1' },
+      { id: 8, name: '密码重置流程', suite: '冒烟自动化套件', priority: 'P1', pTag: 'tag-orange', status: '启用', sTag: 'tag-green', tags: [{t:'认证',c:'tag-blue'}], lastExec: '通过', execCls: 'success', groupId: '1' },
+      { id: 9, name: '订单支付验证', suite: '冒烟自动化套件', priority: 'P0', pTag: 'tag-red', status: '启用', sTag: 'tag-green', tags: [{t:'核心',c:'tag-blue'},{t:'支付',c:'tag-cyan'}], lastExec: '通过', execCls: 'success', groupId: '2' },
+      { id: 10, name: '订单取消流程', suite: '冒烟自动化套件', priority: 'P1', pTag: 'tag-orange', status: '启用', sTag: 'tag-green', tags: [{t:'订单',c:'tag-blue'}], lastExec: '失败', execCls: 'error', groupId: '2' },
       { id: 11, name: '电池电量检测', suite: '电池管理测试', priority: 'P1', pTag: 'tag-orange', status: '启用', sTag: 'tag-green', tags: [{t:'电池',c:'tag-purple'}], lastExec: '通过', execCls: 'success', groupId: '3' },
-      { id: 12, name: '充电桩连接测试', suite: '回归测试套件', priority: 'P2', pTag: 'tag-blue', status: '启用', sTag: 'tag-green', tags: [{t:'充电',c:'tag-green'}], lastExec: '通过', execCls: 'success', groupId: '4' }
+      { id: 12, name: '充电桩连接测试', suite: '回归自动化套件', priority: 'P2', pTag: 'tag-blue', status: '启用', sTag: 'tag-green', tags: [{t:'充电',c:'tag-green'}], lastExec: '通过', execCls: 'success', groupId: '4' }
     ];
 
     /* ===== Group Data ===== */
     var groups = [
       { id: 'all', name: '全部', count: 0, isSystem: true, icon: '📂' },
       { id: 'ungrouped', name: '未分组', count: 0, isSystem: true, icon: '📁' },
-      { id: '1', name: '用户认证测试', count: 0, isSystem: false, parentId: null, desc: '登录、注册、密码等认证相关用例' },
-      { id: '2', name: '订单流程测试', count: 0, isSystem: false, parentId: null, desc: '订单创建、支付、取消等流程用例' },
-      { id: '3', name: '电池管理测试', count: 0, isSystem: false, parentId: null, desc: '电池入仓、出仓、电量等管理用例' },
-      { id: '4', name: '设备状态测试', count: 0, isSystem: false, parentId: null, desc: '充电桩等设备状态相关用例' },
-      { id: '5', name: '回归测试集', count: 0, isSystem: false, parentId: null, desc: '版本回归验证用例' }
+      { id: '1', name: '用户认证测试', count: 0, isSystem: false, parentId: null, desc: '登录、注册、密码等认证相关自动化用例' },
+      { id: '2', name: '订单流程测试', count: 0, isSystem: false, parentId: null, desc: '订单创建、支付、取消等流程自动化用例' },
+      { id: '3', name: '电池管理测试', count: 0, isSystem: false, parentId: null, desc: '电池入仓、出仓、电量等管理自动化用例' },
+      { id: '4', name: '设备状态测试', count: 0, isSystem: false, parentId: null, desc: '充电桩等设备状态相关自动化用例' },
+      { id: '5', name: '回归测试集', count: 0, isSystem: false, parentId: null, desc: '版本回归验证自动化用例' }
     ];
     var activeGroupId = 'all';
     var contextGroupId = null;
@@ -357,8 +357,8 @@
       document.getElementById('deleteGroupName').textContent = group.name;
       var childGroups = getChildren(group.id);
       document.getElementById('deleteGroupHint').textContent = childGroups.length > 0
-        ? '删除后，子分组将一并删除，所有用例将自动归入「未分组」。'
-        : '删除后，该分组下的用例将自动归入「未分组」。';
+        ? '删除后，子分组将一并删除，所有自动化用例将自动归入「未分组」。'
+        : '删除后，该分组下的自动化用例将自动归入「未分组」。';
       document.getElementById('deleteGroupModal').style.display = 'flex';
       hideAllMenus();
     }
@@ -429,7 +429,7 @@
         else if (activeGroupId !== 'all') matchGroup = getDescendantIds(activeGroupId).indexOf(c.groupId) !== -1;
         return matchGroup &&
           (!nameKw || c.name.toLowerCase().indexOf(nameKw) !== -1) &&
-          (suite === '全部套件' || c.suite === suite) &&
+          (suite === '全部自动化套件' || c.suite === suite) &&
           (priority === '全部' || c.priority === priority) &&
           (status === '全部状态' || c.status === status);
       });
@@ -441,7 +441,7 @@
       var pageItems = filteredCases.slice(start, start + casePageSize);
       var html = '';
       if (pageItems.length === 0) {
-        html = '<tr><td colspan="8" style="text-align:center;padding:48px 20px;color:var(--text-tertiary);"><div style="font-size:32px;margin-bottom:8px;opacity:.4;">📋</div><div>暂无匹配的用例数据</div></td></tr>';
+        html = '<tr><td colspan="8" style="text-align:center;padding:48px 20px;color:var(--text-tertiary);"><div style="font-size:32px;margin-bottom:8px;opacity:.4;">📋</div><div>暂无匹配的自动化用例数据</div></td></tr>';
       }
       pageItems.forEach(function(c) {
         var tagsHtml = c.tags.map(function(t) { return '<span class="tag ' + t.c + '" style="font-size:11px;">' + t.t + '</span>'; }).join(' ');
@@ -519,7 +519,7 @@
     }
     function handleCaseDelete(btn) {
       var caseName = btn.closest('tr').querySelector('td a').textContent;
-      if (confirm('确定删除用例「' + caseName + '」？')) {
+      if (confirm('确定删除自动化用例「' + caseName + '」？')) {
         var row = btn.closest('tr'); row.style.transition = 'opacity .3s'; row.style.opacity = '0';
         setTimeout(function() { row.remove(); }, 300);
       }

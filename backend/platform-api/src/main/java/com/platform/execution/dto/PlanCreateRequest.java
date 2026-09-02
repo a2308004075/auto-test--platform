@@ -29,9 +29,9 @@ public class PlanCreateRequest {
     private Long groupId;
 
     /**
-     * 关联的测试套件 ID 列表
+     * 关联的自动化套件 ID 列表
      */
-    private List<Long> suiteIds;
+    private List<Long> autoSuiteIds;
 
     /**
      * 默认执行环境 ID

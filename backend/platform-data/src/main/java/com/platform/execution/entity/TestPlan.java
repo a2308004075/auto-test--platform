@@ -14,7 +14,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 测试计划实体
  *
- * <p>对应数据库 test_plan 表。suite_ids 以 JSON 数组字符串存储。
+ * <p>对应数据库 test_plan 表。auto_suite_ids 以 JSON 数组字符串存储。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -33,9 +33,9 @@ public class TestPlan extends BaseEntity {
     private Long groupId;
 
     /**
-     * 关联的测试套件 ID 列表（JSON 数组字符串）
+     * 关联的自动化套件 ID 列表（JSON 数组字符串）
      */
-    private String suiteIds;
+    private String autoSuiteIds;
 
     /**
      * 默认执行环境 ID

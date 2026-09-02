@@ -57,8 +57,8 @@
         <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
-            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
-            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../cases/case-list.html">自动化用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">自动化套件</a></li>
             <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
             <li class="menu-item active"><a href="../execution/execution-list.html">执行记录</a></li>
           </ul>
@@ -79,7 +79,7 @@
     </div>
     <!-- Summary Stats -->
     <div style="display:grid;grid-template-columns:repeat(4,1fr) auto;gap:12px;margin-bottom:16px;">
-      <div class="stat-card"><div class="label">总用例</div><div class="value">12</div></div>
+      <div class="stat-card"><div class="label">总自动化用例</div><div class="value">12</div></div>
       <div class="stat-card"><div class="label">通过</div><div class="value" style="color:var(--success);">11</div></div>
       <div class="stat-card"><div class="label">失败</div><div class="value" style="color:var(--error);">1</div></div>
       <div class="stat-card"><div class="label">跳过</div><div class="value">0</div></div>
@@ -94,7 +94,7 @@
     </div>
     <!-- Case Results -->
     <div class="card" style="margin-bottom:16px;">
-      <div class="card-header">用例执行结果
+      <div class="card-header">自动化用例执行结果
         <div style="display:flex;gap:4px;">
           <button class="btn btn-sm active" style="opacity:1;" onclick="filterCaseResults(this,'all')">全部 (12)</button>
           <button class="btn btn-sm" style="color:var(--success);" onclick="filterCaseResults(this,'pass')">通过 (11)</button>
@@ -103,7 +103,7 @@
       </div>
       <div class="card-body" style="padding:0;">
         <table>
-          <thead><tr><th>用例名称</th><th style="width:80px;">状态</th><th style="width:80px;">耗时</th><th>错误摘要</th></tr></thead>
+          <thead><tr><th>自动化用例名称</th><th style="width:80px;">状态</th><th style="width:80px;">耗时</th><th>错误摘要</th></tr></thead>
           <tbody>
             <tr data-status="pass"><td>用户登录验证</td><td><span class="status-dot success">通过</span></td><td>1.2s</td><td style="color:var(--text-tertiary);">-</td></tr>
             <tr data-status="pass"><td>创建订单流程</td><td><span class="status-dot success">通过</span></td><td>3.5s</td><td style="color:var(--text-tertiary);">-</td></tr>
@@ -121,7 +121,7 @@
       <div class="card-body" style="padding:0;">
         <div class="code-editor" style="min-height:160px;padding:12px;font-size:11px;line-height:1.8;">
 <span class="comment">[2024-01-15 08:00:01] INFO</span> 开始执行冒烟测试-v2.1 #38
-<span class="comment">[2024-01-15 08:00:01] INFO</span> 环境：开发环境 | 用例数：12
+<span class="comment">[2024-01-15 08:00:01] INFO</span> 环境：开发环境 | 自动化用例数：12
 <span class="comment">[2024-01-15 08:00:02] INFO</span> ✓ 用户登录验证 - 通过 (1.2s)
 <span class="comment">[2024-01-15 08:00:05] INFO</span> ✓ 创建订单流程 - 通过 (3.5s)
 <span class="comment">[2024-01-15 08:00:13] ERROR</span> ✗ 电池入仓操作 - 失败 (8.2s)

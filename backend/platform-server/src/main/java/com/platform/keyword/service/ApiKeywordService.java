@@ -20,8 +20,8 @@ import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
 import com.platform.common.dto.ReferenceDetailResponse;
 import com.platform.common.response.PageResponse;
-import com.platform.execution.entity.TestCase;
-import com.platform.execution.mapper.TestCaseMapper;
+import com.platform.execution.entity.AutoCase;
+import com.platform.execution.mapper.AutoCaseMapper;
 import com.platform.keyword.dto.ApiKeywordCreateRequest;
 import com.platform.keyword.dto.ApiKeywordDebugRequest;
 import com.platform.keyword.dto.ApiKeywordResponse;
@@ -63,7 +63,7 @@ public class ApiKeywordService {
     private final ApiMapper apiMapper;
     private final ApiModuleMapper apiModuleMapper;
     private final ActionMapper actionMapper;
-    private final TestCaseMapper testCaseMapper;
+    private final AutoCaseMapper autoCaseMapper;
     private final ProjectService projectService;
     private final ObjectMapper objectMapper;
     private final ApiService apiService;
@@ -222,11 +222,11 @@ public class ApiKeywordService {
                     "关键字被 " + actionRefCount + " 个 Action 节点引用，无法删除");
         }
 
-        // 删除保护检查 - 被 test_case_step 引用时不可删除
-        long caseRefCount = countTestCaseReferences(keywordId);
+        // 删除保护检查 - 被自动化用例引用时不可删除
+        long caseRefCount = countAutoCaseReferences(keywordId);
         if (caseRefCount > 0) {
             throw new BusinessException(ErrorCode.KEYWORD_DEPENDENCY_CONFLICT,
-                    "关键字被 " + caseRefCount + " 个测试用例引用，无法删除");
+                    "关键字被 " + caseRefCount + " 个自动化用例引用，无法删除");
         }
 
         // 删除 api_keyword 绑定记录
@@ -263,7 +263,7 @@ public class ApiKeywordService {
     }
 
     /**
-     * 批量删除未被引用的关键字，被 Action 节点或测试用例引用的跳过
+     * 批量删除未被引用的关键字，被 Action 节点或自动化用例引用的跳过
      */
     private void deleteUnreferenced(List<Keyword> keywords) {
         if (keywords.isEmpty()) {
@@ -271,7 +271,7 @@ public class ApiKeywordService {
         }
         // ponytail: 引用检查为 JSON 列 like 查询只能逐条计数；量大时可引入冗余引用计数列
         for (Keyword kw : keywords) {
-            if (countActionReferences(kw.getId()) > 0 || countTestCaseReferences(kw.getId()) > 0) {
+            if (countActionReferences(kw.getId()) > 0 || countAutoCaseReferences(kw.getId()) > 0) {
                 continue;
             }
             LambdaQueryWrapper<ApiKeyword> apiKwWrapper = new LambdaQueryWrapper<>();
@@ -390,7 +390,7 @@ public class ApiKeywordService {
     }
 
     /**
-     * 查询关键字引用关系详情（被哪些 Action 和测试用例引用）
+     * 查询关键字引用关系详情（被哪些 Action 和自动化用例引用）
      */
     public List<ReferenceDetailResponse> getDependencies(Long keywordId) {
         findKeywordById(keywordId);
@@ -407,16 +407,16 @@ public class ApiKeywordService {
             result.add(ref);
         }
 
-        // 查询测试用例引用
-        LambdaQueryWrapper<TestCase> caseWrapper = new LambdaQueryWrapper<>();
+        // 查询自动化用例引用
+        LambdaQueryWrapper<AutoCase> caseWrapper = new LambdaQueryWrapper<>();
         String kwIdStr = String.valueOf(keywordId);
-        caseWrapper.and(w -> w.like(TestCase::getSteps, kwIdStr)
-                .or().like(TestCase::getSetupSteps, kwIdStr)
-                .or().like(TestCase::getTeardownSteps, kwIdStr));
-        List<TestCase> cases = testCaseMapper.selectList(caseWrapper);
-        for (TestCase tc : cases) {
+        caseWrapper.and(w -> w.like(AutoCase::getSteps, kwIdStr)
+                .or().like(AutoCase::getSetupSteps, kwIdStr)
+                .or().like(AutoCase::getTeardownSteps, kwIdStr));
+        List<AutoCase> cases = autoCaseMapper.selectList(caseWrapper);
+        for (AutoCase tc : cases) {
             ReferenceDetailResponse ref = new ReferenceDetailResponse();
-            ref.setRefType("TEST_CASE");
+            ref.setRefType("AUTO_CASE");
             ref.setRefId(tc.getId());
             ref.setRefName(tc.getName());
             ref.setRefDescription(tc.getDescription());
@@ -526,14 +526,14 @@ public class ApiKeywordService {
     }
 
     /**
-     * 统计引用指定关键字的测试用例数量（搜索 steps / setup_steps / teardown_steps JSON）
+     * 统计引用指定关键字的自动化用例数量（搜索 steps / setup_steps / teardown_steps JSON）
      */
-    private long countTestCaseReferences(Long keywordId) {
-        LambdaQueryWrapper<TestCase> wrapper = new LambdaQueryWrapper<>();
-        wrapper.and(w -> w.like(TestCase::getSteps, keywordId)
-                .or().like(TestCase::getSetupSteps, keywordId)
-                .or().like(TestCase::getTeardownSteps, keywordId));
-        return testCaseMapper.selectCount(wrapper);
+    private long countAutoCaseReferences(Long keywordId) {
+        LambdaQueryWrapper<AutoCase> wrapper = new LambdaQueryWrapper<>();
+        wrapper.and(w -> w.like(AutoCase::getSteps, keywordId)
+                .or().like(AutoCase::getSetupSteps, keywordId)
+                .or().like(AutoCase::getTeardownSteps, keywordId));
+        return autoCaseMapper.selectCount(wrapper);
     }
 
     private ApiKeywordResponse buildResponse(Keyword kw) {
@@ -550,9 +550,9 @@ public class ApiKeywordService {
         resp.setUpdatedBy(kw.getUpdatedBy());
         resp.setCreatedAt(kw.getCreatedAt());
         resp.setUpdatedAt(kw.getUpdatedAt());
-        // 计算引用次数：Action 节点引用 + test_case 步骤引用
+        // 计算引用次数：Action 节点引用 + auto_case 步骤引用
         long actionRefCount = countActionReferences(kw.getId());
-        long caseRefCount = countTestCaseReferences(kw.getId());
+        long caseRefCount = countAutoCaseReferences(kw.getId());
         resp.setReferenceCount((int) (actionRefCount + caseRefCount));
 
         // 关联查询 api_keyword

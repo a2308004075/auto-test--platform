@@ -50,8 +50,8 @@ public class DefectService {
     private final DefectAttachmentMapper defectAttachmentMapper;
     private final DefectHistoryMapper defectHistoryMapper;
     private final ManualCaseMapper manualCaseMapper;
-    private final TestCaseMapper testCaseMapper;
-    private final TestSuiteMapper testSuiteMapper;
+    private final AutoCaseMapper autoCaseMapper;
+    private final AutoSuiteMapper autoSuiteMapper;
     private final UserMapper userMapper;
     private final ProjectService projectService;
     private final EnvironmentMapper environmentMapper;
@@ -428,7 +428,7 @@ public class DefectService {
 
         // 用例类目标：校验存在性、同项目，并回填标题快照
         String targetTitle = request.getTargetTitle();
-        if ("MANUAL_CASE".equals(targetType) || "TEST_CASE".equals(targetType)) {
+        if ("MANUAL_CASE".equals(targetType) || "AUTO_CASE".equals(targetType)) {
             if ("MANUAL_CASE".equals(targetType)) {
                 ManualCase manualCase = manualCaseMapper.selectById(request.getTargetId());
                 if (manualCase == null) {
@@ -439,15 +439,15 @@ public class DefectService {
                 }
                 targetTitle = manualCase.getTitle();
             } else {
-                TestCase testCase = testCaseMapper.selectById(request.getTargetId());
-                if (testCase == null) {
-                    throw new BusinessException(ErrorCode.CASE_NOT_FOUND, "自动用例不存在：" + request.getTargetId());
+                AutoCase autoCase = autoCaseMapper.selectById(request.getTargetId());
+                if (autoCase == null) {
+                    throw new BusinessException(ErrorCode.AUTO_CASE_NOT_FOUND, "自动化用例不存在：" + request.getTargetId());
                 }
-                TestSuite suite = testSuiteMapper.selectById(testCase.getSuiteId());
+                AutoSuite suite = autoSuiteMapper.selectById(autoCase.getAutoSuiteId());
                 if (suite == null || !Objects.equals(suite.getProjectId(), defect.getProjectId())) {
                     throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "用例与缺陷不属于同一项目");
                 }
-                targetTitle = testCase.getName();
+                targetTitle = autoCase.getName();
             }
 
             // 防重复

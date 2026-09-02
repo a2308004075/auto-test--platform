@@ -8,16 +8,16 @@ package com.platform.execution.engine;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.platform.execution.entity.AutoCase;
+import com.platform.execution.entity.AutoSuite;
 import com.platform.execution.entity.TestExecution;
 import com.platform.execution.entity.TestPlan;
 import com.platform.execution.entity.TestResult;
-import com.platform.execution.entity.TestSuite;
-import com.platform.execution.entity.TestCase;
+import com.platform.execution.mapper.AutoCaseMapper;
+import com.platform.execution.mapper.AutoSuiteMapper;
 import com.platform.execution.mapper.TestExecutionMapper;
 import com.platform.execution.mapper.TestPlanMapper;
 import com.platform.execution.mapper.TestResultMapper;
-import com.platform.execution.mapper.TestSuiteMapper;
-import com.platform.execution.mapper.TestCaseMapper;
 import com.platform.execution.websocket.ExecutionWebSocketHandler;
 import com.platform.environment.service.EnvironmentService;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +34,7 @@ import java.util.*;
  * <ol>
  *   <li>加载 TestExecution + TestPlan</li>
  *   <li>创建 ExecutionContext（加载环境配置）</li>
- *   <li>遍历套件 → 遍历用例 → 执行</li>
+ *   <li>遍历自动化套件 → 遍历自动化用例 → 执行</li>
  *   <li>保存 TestResult + 更新 TestExecution 统计</li>
  * </ol>
  */
@@ -43,12 +43,12 @@ import java.util.*;
 @Slf4j
 public class PlanExecutor {
 
-    private final SuiteExecutor suiteExecutor;
+    private final AutoSuiteExecutor autoSuiteExecutor;
     private final TestPlanMapper testPlanMapper;
     private final TestExecutionMapper testExecutionMapper;
     private final TestResultMapper testResultMapper;
-    private final TestSuiteMapper testSuiteMapper;
-    private final TestCaseMapper testCaseMapper;
+    private final AutoSuiteMapper autoSuiteMapper;
+    private final AutoCaseMapper autoCaseMapper;
     private final EnvironmentService environmentService;
     private final ObjectMapper objectMapper;
     private final ExecutionWebSocketHandler executionWebSocketHandler;
@@ -59,8 +59,8 @@ public class PlanExecutor {
      * <p>执行流程：
      * <ol>
      *   <li>更新状态为 RUNNING</li>
-     *   <li>预计算总用例数（用于进度百分比）</li>
-     *   <li>遍历套件，推送 suite_start / per-case / suite_end 事件</li>
+     *   <li>预计算总自动化用例数（用于进度百分比）</li>
+     *   <li>遍历自动化套件，推送 suite_start / per-case / suite_end 事件</li>
      *   <li>汇总统计并推送 plan_end 事件</li>
      * </ol>
      *
@@ -97,20 +97,20 @@ public class PlanExecutor {
             ExecutionContext context = buildContext(execution, plan);
             log.info("开始执行计划: plan={}, execution={}, env={}", plan.getName(), executionId, context.getEnvironmentId());
 
-            // 解析 suiteIds
-            List<Long> suiteIds = parseSuiteIds(plan.getSuiteIds());
-            if (suiteIds.isEmpty()) {
-                log.warn("计划未关联任何套件: {}", plan.getName());
+            // 解析 autoSuiteIds
+            List<Long> autoSuiteIds = parseAutoSuiteIds(plan.getAutoSuiteIds());
+            if (autoSuiteIds.isEmpty()) {
+                log.warn("计划未关联任何自动化套件: {}", plan.getName());
             }
 
-            // 预计算总用例数（用于进度百分比）
-            int expectedTotal = countExpectedCases(suiteIds);
+            // 预计算总自动化用例数（用于进度百分比）
+            int expectedTotal = countExpectedCases(autoSuiteIds);
 
-            // 遍历套件执行
-            for (Long suiteId : suiteIds) {
-                TestSuite suite = testSuiteMapper.selectById(suiteId);
+            // 遍历自动化套件执行
+            for (Long autoSuiteId : autoSuiteIds) {
+                AutoSuite suite = autoSuiteMapper.selectById(autoSuiteId);
                 if (suite == null) {
-                    log.warn("套件不存在，跳过: {}", suiteId);
+                    log.warn("自动化套件不存在，跳过: {}", autoSuiteId);
                     continue;
                 }
 
@@ -119,16 +119,16 @@ public class PlanExecutor {
                         (int) (System.currentTimeMillis() - startMs),
                         calcPercent(totalCases, expectedTotal),
                         calcPassRate(passedCases, totalCases),
-                        null, "开始执行套件「" + suite.getName() + "」");
+                        null, "开始执行自动化套件「" + suite.getName() + "」");
 
-                SuiteExecutor.SuiteExecutionResult suiteResult = suiteExecutor.execute(suite, context);
+                AutoSuiteExecutor.AutoSuiteExecutionResult suiteResult = autoSuiteExecutor.execute(suite, context);
 
                 // 处理套件结果，逐条保存并推送进度
-                for (SuiteExecutor.CaseExecutionSummary caseSummary : suiteResult.getCaseResults()) {
+                for (AutoSuiteExecutor.AutoCaseExecutionSummary caseSummary : suiteResult.getCaseResults()) {
                     // 保存 TestResult
                     TestResult testResult = new TestResult();
                     testResult.setExecutionId(executionId);
-                    testResult.setCaseId(caseSummary.getCaseId());
+                    testResult.setAutoCaseId(caseSummary.getAutoCaseId());
                     testResult.setStatus(caseSummary.getStatus());
                     testResult.setActualResult(caseSummary.getMessage());
                     testResult.setDurationMs((int) caseSummary.getDurationMs());
@@ -155,13 +155,13 @@ public class PlanExecutor {
                             skippedCases++;
                     }
 
-                    // 推送每条用例完成事件
+                    // 推送每条自动化用例完成事件
                     sendProgress(executionId, "RUNNING", totalCases, passedCases, failedCases, skippedCases,
                             (int) (System.currentTimeMillis() - startMs),
                             calcPercent(totalCases, expectedTotal),
                             calcPassRate(passedCases, totalCases),
                             caseSummary.getCaseName(),
-                            "用例「" + caseSummary.getCaseName() + "」" + caseSummary.getStatus());
+                            "自动化用例「" + caseSummary.getCaseName() + "」" + caseSummary.getStatus());
                 }
 
                 // 推送套件完成事件
@@ -169,7 +169,7 @@ public class PlanExecutor {
                         (int) (System.currentTimeMillis() - startMs),
                         calcPercent(totalCases, expectedTotal),
                         calcPassRate(passedCases, totalCases),
-                        null, "套件「" + suite.getName() + "」执行完成");
+                        null, "自动化套件「" + suite.getName() + "」执行完成");
             }
 
         } catch (Throwable e) {
@@ -199,15 +199,15 @@ public class PlanExecutor {
     }
 
     /**
-     * 预计算所有套件下启用的用例总数
+     * 预计算所有自动化套件下启用的自动化用例总数
      */
-    private int countExpectedCases(List<Long> suiteIds) {
+    private int countExpectedCases(List<Long> autoSuiteIds) {
         int total = 0;
-        for (Long suiteId : suiteIds) {
-            LambdaQueryWrapper<TestCase> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(TestCase::getSuiteId, suiteId)
-                    .eq(TestCase::getIsActive, true);
-            total += testCaseMapper.selectCount(wrapper);
+        for (Long autoSuiteId : autoSuiteIds) {
+            LambdaQueryWrapper<AutoCase> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(AutoCase::getAutoSuiteId, autoSuiteId)
+                    .eq(AutoCase::getIsActive, true);
+            total += autoCaseMapper.selectCount(wrapper);
         }
         return total;
     }
@@ -264,16 +264,16 @@ public class PlanExecutor {
     }
 
     /**
-     * 解析套件 ID 列表
+     * 解析自动化套件 ID 列表
      */
-    private List<Long> parseSuiteIds(String suiteIdsJson) {
-        if (suiteIdsJson == null || suiteIdsJson.trim().isEmpty()) {
+    private List<Long> parseAutoSuiteIds(String autoSuiteIdsJson) {
+        if (autoSuiteIdsJson == null || autoSuiteIdsJson.trim().isEmpty()) {
             return Collections.emptyList();
         }
         try {
-            return objectMapper.readValue(suiteIdsJson, new TypeReference<List<Long>>() {});
+            return objectMapper.readValue(autoSuiteIdsJson, new TypeReference<List<Long>>() {});
         } catch (Exception e) {
-            log.warn("解析 suiteIds 失败: {}", e.getMessage());
+            log.warn("解析 autoSuiteIds 失败: {}", e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -283,14 +283,14 @@ public class PlanExecutor {
      *
      * @param executionId      执行记录 ID
      * @param status           执行状态
-     * @param totalCases       总用例数
+     * @param totalCases       总自动化用例数
      * @param passedCases      通过数
      * @param failedCases      失败数
      * @param skippedCases     跳过数
      * @param durationMs       耗时（毫秒）
      * @param progressPercent  进度百分比（0-100）
      * @param passRate         通过率（0-100，保留1位小数）
-     * @param currentCaseName  当前用例名称
+     * @param currentCaseName  当前自动化用例名称
      * @param message          消息
      */
     private void sendProgress(Long executionId, String status, int totalCases,

@@ -50,10 +50,10 @@ const workLogForm = reactive({ logDate: '', hours: 0, workType: 'ACTUAL', descri
 const workLogVisible = ref(false)
 
 // 关联
-const relationForm = reactive({ relationType: 'RELATED', targetType: 'TEST_CASE', targetId: undefined as number | undefined, targetTitle: '' })
+const relationForm = reactive({ relationType: 'RELATED', targetType: 'AUTO_CASE', targetId: undefined as number | undefined, targetTitle: '' })
 const relationVisible = ref(false)
-// 用例类目标（手动/自动用例）支持搜索选择，其余类型手动输入
-const isCaseTarget = computed(() => ['MANUAL_CASE', 'TEST_CASE'].includes(relationForm.targetType))
+// 用例类目标（手动/自动化用例）支持搜索选择，其余类型手动输入
+const isCaseTarget = computed(() => ['MANUAL_CASE', 'AUTO_CASE'].includes(relationForm.targetType))
 const caseSelectVisible = ref(false)
 
 function handleTargetTypeChange() {
@@ -94,10 +94,6 @@ async function fetchDetail() {
   } finally {
     loading.value = false
   }
-}
-
-function handleBack() {
-  router.push(`/project/${projectId.value}/defects`)
 }
 
 function handleEdit() {
@@ -157,7 +153,7 @@ async function handleAddRelation() {
     await addDefectRelation(projectId.value, defectId.value, relationForm)
     ElMessage.success('添加成功')
     relationVisible.value = false
-    Object.assign(relationForm, { relationType: 'RELATED', targetType: 'TEST_CASE', targetId: undefined, targetTitle: '' })
+    Object.assign(relationForm, { relationType: 'RELATED', targetType: 'AUTO_CASE', targetId: undefined, targetTitle: '' })
     fetchDetail()
   } catch (e: any) { ElMessage.error(e?.response?.data?.message || '添加失败') }
 }
@@ -210,7 +206,6 @@ onMounted(() => {
 <template>
   <div>
     <PageHeader :title="detail.defectNo || '缺陷详情'">
-      <el-button @click="handleBack">返回</el-button>
       <el-button type="primary" @click="handleEdit">编辑</el-button>
       <el-dropdown split-button type="primary" @command="handleTransition">
         状态流转

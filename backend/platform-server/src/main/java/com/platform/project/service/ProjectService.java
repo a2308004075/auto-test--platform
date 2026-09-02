@@ -18,16 +18,16 @@ import com.platform.apidoc.mapper.ApiMapper;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
 import com.platform.common.response.PageResponse;
+import com.platform.execution.entity.AutoCase;
+import com.platform.execution.entity.AutoSuite;
 import com.platform.execution.entity.TestExecution;
-import com.platform.execution.entity.TestCase;
 import com.platform.execution.entity.TestPlan;
 import com.platform.execution.entity.TestResult;
-import com.platform.execution.entity.TestSuite;
+import com.platform.execution.mapper.AutoCaseMapper;
+import com.platform.execution.mapper.AutoSuiteMapper;
 import com.platform.execution.mapper.TestExecutionMapper;
 import com.platform.execution.mapper.TestPlanMapper;
 import com.platform.execution.mapper.TestResultMapper;
-import com.platform.execution.mapper.TestCaseMapper;
-import com.platform.execution.mapper.TestSuiteMapper;
 import com.platform.keyword.entity.ApiKeyword;
 import com.platform.keyword.entity.ApiKeywordGroup;
 import com.platform.keyword.entity.Keyword;
@@ -68,8 +68,8 @@ public class ProjectService {
     private final ActionMapper actionMapper;
     private final ActionGroupMapper actionGroupMapper;
     private final ApiKeywordGroupMapper apiKeywordGroupMapper;
-    private final TestSuiteMapper testSuiteMapper;
-    private final TestCaseMapper testCaseMapper;
+    private final AutoSuiteMapper autoSuiteMapper;
+    private final AutoCaseMapper autoCaseMapper;
     private final TestPlanMapper testPlanMapper;
     private final TestExecutionMapper testExecutionMapper;
     private final TestResultMapper testResultMapper;
@@ -103,25 +103,25 @@ public class ProjectService {
         Map<Long, Long> apiCountMap = countByKey(projectIds, apiMapper, Api::getProjectId);
         Map<Long, Long> kwCountMap = countByKey(projectIds, keywordMapper, Keyword::getProjectId);
         Map<Long, Long> actionCountMap = countByKey(projectIds, actionMapper, Action::getProjectId);
-        Map<Long, Long> suiteCountMap = countByKey(projectIds, testSuiteMapper, TestSuite::getProjectId);
+        Map<Long, Long> suiteCountMap = countByKey(projectIds, autoSuiteMapper, AutoSuite::getProjectId);
         Map<Long, Long> planCountMap = countByKey(projectIds, testPlanMapper, TestPlan::getProjectId);
 
-        // 用例数：一次查所有项目的 suite，再一次查 case 按套件分组
+        // 自动化用例数：一次查所有项目的自动化套件，再一次查 case 按套件分组
         Map<Long, List<Long>> suiteIdsByProject = new HashMap<>();
         List<Long> allSuiteIds = new ArrayList<>();
         if (!projectIds.isEmpty()) {
-            List<TestSuite> allSuites = testSuiteMapper.selectList(
-                    new LambdaQueryWrapper<TestSuite>()
-                            .select(TestSuite::getId, TestSuite::getProjectId)
-                            .in(TestSuite::getProjectId, projectIds));
-            for (TestSuite s : allSuites) {
+            List<AutoSuite> allSuites = autoSuiteMapper.selectList(
+                    new LambdaQueryWrapper<AutoSuite>()
+                            .select(AutoSuite::getId, AutoSuite::getProjectId)
+                            .in(AutoSuite::getProjectId, projectIds));
+            for (AutoSuite s : allSuites) {
                 if (s.getProjectId() != null && s.getId() != null) {
                     suiteIdsByProject.computeIfAbsent(s.getProjectId(), k -> new ArrayList<>()).add(s.getId());
                     allSuiteIds.add(s.getId());
                 }
             }
         }
-        Map<Long, Long> caseCountBySuite = countByKey(allSuiteIds, testCaseMapper, TestCase::getSuiteId);
+        Map<Long, Long> caseCountBySuite = countByKey(allSuiteIds, autoCaseMapper, AutoCase::getAutoSuiteId);
 
         for (Project p : records) {
             ProjectResponse resp = toResponse(p);
@@ -234,7 +234,7 @@ public class ProjectService {
         DashboardTrendResponse trend = new DashboardTrendResponse();
 
         // ── 基本计数 ──
-        List<Long> suiteIds = getSuiteIds(projectId);
+        List<Long> suiteIds = getAutoSuiteIds(projectId);
         List<Long> planIds = getPlanIds(projectId);
 
         LambdaQueryWrapper<Api> apiWrapper = new LambdaQueryWrapper<>();
@@ -253,9 +253,9 @@ public class ProjectService {
         stats.setSuiteCount((long) suiteIds.size());
 
         if (!suiteIds.isEmpty()) {
-            LambdaQueryWrapper<TestCase> caseWrapper = new LambdaQueryWrapper<>();
-            caseWrapper.in(TestCase::getSuiteId, suiteIds);
-            stats.setCaseCount(testCaseMapper.selectCount(caseWrapper));
+            LambdaQueryWrapper<AutoCase> caseWrapper = new LambdaQueryWrapper<>();
+            caseWrapper.in(AutoCase::getAutoSuiteId, suiteIds);
+            stats.setCaseCount(autoCaseMapper.selectCount(caseWrapper));
         }
 
         stats.setPlanCount((long) planIds.size());
@@ -304,14 +304,14 @@ public class ProjectService {
             stats.setApiCoverageRate(Math.round(coveredCount * 1000.0 / totalApiCount) / 10.0);
         }
 
-        // ── 套件完成率 ──
+        // ── 自动化套件完成率 ──
         if (!suiteIds.isEmpty()) {
             Set<Long> executedSuiteIds = new HashSet<>();
             for (TestExecution exec : allExecutions) {
                 TestPlan plan = planMap.get(exec.getPlanId());
-                if (plan != null && plan.getSuiteIds() != null) {
-                    // suiteIds 是 JSON 数组字符串，简单解析
-                    String sids = plan.getSuiteIds().replaceAll("[\\[\\]\"']", "");
+                if (plan != null && plan.getAutoSuiteIds() != null) {
+                    // autoSuiteIds 是 JSON 数组字符串，简单解析
+                    String sids = plan.getAutoSuiteIds().replaceAll("[\\[\\]\"']", "");
                     for (String sid : sids.split(",")) {
                         try { executedSuiteIds.add(Long.parseLong(sid.trim())); } catch (NumberFormatException ignored) {}
                     }
@@ -426,11 +426,11 @@ public class ProjectService {
                 .collect(Collectors.groupingBy(k -> k, Collectors.counting()));
     }
 
-    private List<Long> getSuiteIds(Long projectId) {
-        LambdaQueryWrapper<TestSuite> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(TestSuite::getProjectId, projectId).select(TestSuite::getId);
-        return testSuiteMapper.selectList(wrapper).stream()
-                .map(TestSuite::getId).collect(Collectors.toList());
+    private List<Long> getAutoSuiteIds(Long projectId) {
+        LambdaQueryWrapper<AutoSuite> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AutoSuite::getProjectId, projectId).select(AutoSuite::getId);
+        return autoSuiteMapper.selectList(wrapper).stream()
+                .map(AutoSuite::getId).collect(Collectors.toList());
     }
 
     private List<Long> getPlanIds(Long projectId) {
@@ -572,13 +572,13 @@ public class ProjectService {
     }
 
     /**
-     * 构建质量风险 Top 5（近 30 天失败最多的用例）
+     * 构建质量风险 Top 5（近 30 天失败最多的自动化用例）
      */
     private List<DashboardTrendResponse.QualityRisk> buildQualityRiskTop5(
-            Long projectId, List<Long> suiteIds) {
+            Long projectId, List<Long> autoSuiteIds) {
         List<DashboardTrendResponse.QualityRisk> risks = new ArrayList<>();
 
-        if (suiteIds.isEmpty()) return risks;
+        if (autoSuiteIds.isEmpty()) return risks;
 
         // 查询近 30 天的执行记录
         LocalDateTime thirtyDaysAgo = LocalDate.now().minusDays(30).atStartOfDay();
@@ -594,16 +594,16 @@ public class ProjectService {
 
         List<Long> execIds = recentExecs.stream().map(TestExecution::getId).collect(Collectors.toList());
 
-        // 查询这些执行记录中失败的用例
+        // 查询这些执行记录中失败的自动化用例
         LambdaQueryWrapper<TestResult> resultWrapper = new LambdaQueryWrapper<>();
         resultWrapper.in(TestResult::getExecutionId, execIds)
                 .in(TestResult::getStatus, Arrays.asList("FAILED", "ERROR"));
         List<TestResult> failedResults = testResultMapper.selectList(resultWrapper);
 
-        // 按用例分组统计失败次数
+        // 按自动化用例分组统计失败次数
         Map<Long, Integer> failCountMap = new HashMap<>();
         for (TestResult r : failedResults) {
-            failCountMap.merge(r.getCaseId(), 1, Integer::sum);
+            failCountMap.merge(r.getAutoCaseId(), 1, Integer::sum);
         }
 
         // 排序取 Top 5
@@ -614,15 +614,15 @@ public class ProjectService {
 
         int rank = 1;
         for (Map.Entry<Long, Integer> entry : sorted) {
-            TestCase tc = testCaseMapper.selectById(entry.getKey());
+            AutoCase tc = autoCaseMapper.selectById(entry.getKey());
             if (tc == null) continue;
-            TestSuite suite = testSuiteMapper.selectById(tc.getSuiteId());
-            String suiteName = suite != null ? suite.getName() : "未知套件";
+            AutoSuite suite = autoSuiteMapper.selectById(tc.getAutoSuiteId());
+            String suiteName = suite != null ? suite.getName() : "未知自动化套件";
 
-            // 计算该用例的总执行次数和失败率
+            // 计算该自动化用例的总执行次数和失败率
             LambdaQueryWrapper<TestResult> totalWrapper = new LambdaQueryWrapper<>();
             totalWrapper.in(TestResult::getExecutionId, execIds)
-                    .eq(TestResult::getCaseId, entry.getKey());
+                    .eq(TestResult::getAutoCaseId, entry.getKey());
             long totalExecs = testResultMapper.selectCount(totalWrapper);
             double failRate = totalExecs > 0 ? Math.round(entry.getValue() * 1000.0 / totalExecs) / 10.0 : 0.0;
 
@@ -636,7 +636,7 @@ public class ProjectService {
     /**
      * 构建缺陷趋势（近 4 周，按周聚合新增/已修复缺陷数）
      *
-     * <p>新增缺陷：该周首次失败的用例数；已修复：之前失败但本周通过的用例数
+     * <p>新增缺陷：该周首次失败的自动化用例数；已修复：之前失败但本周通过的自动化用例数
      */
     private List<DashboardTrendResponse.DefectTrendItem> buildDefectTrend(
             Long projectId, List<Long> planIds) {
@@ -689,45 +689,45 @@ public class ProjectService {
                 }
             }
 
-            // 本周新增缺陷：首次失败的用例
+            // 本周新增缺陷：首次失败的自动化用例
             Set<Long> weekFailedCases = new HashSet<>();
             for (TestResult r : allResults) {
                 if (weekExecIds.contains(r.getExecutionId())
                         && ("FAILED".equals(r.getStatus()) || "ERROR".equals(r.getStatus()))) {
-                    weekFailedCases.add(r.getCaseId());
+                    weekFailedCases.add(r.getAutoCaseId());
                 }
             }
 
-            // 统计本周之前失败的用例
+            // 统计本周之前失败的自动化用例
             Set<Long> prevFailedCases = new HashSet<>();
             for (TestResult r : allResults) {
                 LocalDateTime execTime = execTimeMap.get(r.getExecutionId());
                 if (execTime != null && execTime.isBefore(ws)
                         && ("FAILED".equals(r.getStatus()) || "ERROR".equals(r.getStatus()))) {
-                    prevFailedCases.add(r.getCaseId());
+                    prevFailedCases.add(r.getAutoCaseId());
                 }
             }
 
-            // 本周通过的用例
+            // 本周通过的自动化用例
             Set<Long> weekPassedCases = new HashSet<>();
             for (TestResult r : allResults) {
                 if (weekExecIds.contains(r.getExecutionId()) && "PASSED".equals(r.getStatus())) {
-                    weekPassedCases.add(r.getCaseId());
+                    weekPassedCases.add(r.getAutoCaseId());
                 }
             }
 
-            // 已修复 = 之前失败但本周通过的用例
+            // 已修复 = 之前失败但本周通过的自动化用例
             int fixedCount = 0;
-            for (Long caseId : weekPassedCases) {
-                if (prevFailedCases.contains(caseId) && !weekFailedCases.contains(caseId)) {
+            for (Long autoCaseId : weekPassedCases) {
+                if (prevFailedCases.contains(autoCaseId) && !weekFailedCases.contains(autoCaseId)) {
                     fixedCount++;
                 }
             }
 
-            // 新增缺陷 = 本周新失败的用例（排除之前已失败的，取首次出现）
+            // 新增缺陷 = 本周新失败的自动化用例（排除之前已失败的，取首次出现）
             int newCount = 0;
-            for (Long caseId : weekFailedCases) {
-                if (!prevFailedCases.contains(caseId)) {
+            for (Long autoCaseId : weekFailedCases) {
+                if (!prevFailedCases.contains(autoCaseId)) {
                     newCount++;
                 }
             }

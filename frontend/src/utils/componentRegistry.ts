@@ -49,14 +49,15 @@ export const componentMap: Record<string, () => Promise<any>> = {
 
   // ===== Action 模块 =====
   'action/ActionList': () => import('@/views/action/ActionList.vue'),
+  'action/ActionCreate': () => import('@/views/action/ActionCreate.vue'),
   'action/ActionEditor': () => import('@/views/action/ActionEditor.vue'),
   'action/ActionDebug': () => import('@/views/action/ActionDebug.vue'),
 
-  // ===== 测试套件/用例模块 =====
-  'cases/SuiteList': () => import('@/views/cases/SuiteList.vue'),
-  'cases/SuiteEdit': () => import('@/views/cases/SuiteEdit.vue'),
-  'cases/CaseList': () => import('@/views/cases/CaseList.vue'),
-  'cases/CaseEdit': () => import('@/views/cases/CaseEdit.vue'),
+  // ===== 自动化套件/自动化用例模块 =====
+  'cases/AutoSuiteList': () => import('@/views/cases/AutoSuiteList.vue'),
+  'cases/AutoSuiteEdit': () => import('@/views/cases/AutoSuiteEdit.vue'),
+  'cases/AutoCaseList': () => import('@/views/cases/AutoCaseList.vue'),
+  'cases/AutoCaseEdit': () => import('@/views/cases/AutoCaseEdit.vue'),
 
   // ===== 手动用例模块 =====
   'manualcase/ManualCaseList': () => import('@/views/manualcase/ManualCaseList.vue'),

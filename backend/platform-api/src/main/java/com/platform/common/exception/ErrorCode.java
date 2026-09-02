@@ -18,7 +18,7 @@ package com.platform.common.exception;
  *   <li>1500-1599: M5 接口关键字</li>
  *   <li>1600-1699: M6 工具方法</li>
  *   <li>1700-1799: M7 Action</li>
- *   <li>1800-1899: M8 测试用例</li>
+ *   <li>1800-1899: M8 自动化用例</li>
  *   <li>1900-1999: M9 测试执行</li>
  *   <li>2100-2199: 系统管理</li>
  *   <li>2200-2299: M11 测试代码库</li>
@@ -106,18 +106,19 @@ public final class ErrorCode {
     public static final int ACTION_GROUP_NOT_FOUND = 1705;
     public static final int ACTION_GROUP_SYSTEM = 1706;
 
-    // ===== M8 测试用例 (1800-1899) =====
+    // ===== M8 自动化用例 (1800-1899) =====
     public static final int STEP_VALIDATION_FAILED = 1800;
     public static final int PARAM_DATA_INVALID = 1801;
-    public static final int SUITE_NOT_FOUND = 1802;
-    public static final int SUITE_NAME_DUPLICATE = 1803;
-    public static final int CASE_NOT_FOUND = 1804;
-    public static final int CASE_NAME_DUPLICATE = 1805;
-    public static final int SUITE_GROUP_NOT_FOUND = 1806;
-    public static final int SUITE_GROUP_NAME_DUPLICATE = 1807;
-    public static final int SUITE_GROUP_HAS_CHILDREN = 1808;
-    public static final int CASE_GROUP_NOT_FOUND = 1809;
-    public static final int CASE_GROUP_SYSTEM = 1810;
+    public static final int AUTO_SUITE_NOT_FOUND = 1802;
+    public static final int AUTO_SUITE_NAME_DUPLICATE = 1803;
+    public static final int AUTO_CASE_NOT_FOUND = 1804;
+    public static final int AUTO_CASE_NAME_DUPLICATE = 1805;
+    public static final int AUTO_SUITE_GROUP_NOT_FOUND = 1806;
+    public static final int AUTO_SUITE_GROUP_NAME_DUPLICATE = 1807;
+    public static final int AUTO_SUITE_GROUP_HAS_CHILDREN = 1808;
+    public static final int AUTO_CASE_GROUP_NOT_FOUND = 1809;
+    public static final int AUTO_CASE_GROUP_SYSTEM = 1810;
+    public static final int AUTO_CASE_NOT_IN_SUITE = 1811;
     public static final int MANUAL_CASE_NOT_FOUND = 1820;
     public static final int MANUAL_CASE_GROUP_NOT_FOUND = 1821;
     public static final int MANUAL_CASE_GROUP_SYSTEM = 1822;
@@ -155,7 +156,7 @@ public final class ErrorCode {
 
     // ===== 业务错误码 → HTTP 状态码映射 =====
     private static final int[] UNAUTHORIZED_CODES = {UNAUTHORIZED, ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED};
-    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, CASE_GROUP_SYSTEM, ACTION_GROUP_SYSTEM, KEYWORD_GROUP_SYSTEM, MANUAL_CASE_GROUP_SYSTEM, DEFECT_GROUP_SYSTEM, PROJECT_DOC_GROUP_SYSTEM};
+    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, AUTO_CASE_GROUP_SYSTEM, ACTION_GROUP_SYSTEM, KEYWORD_GROUP_SYSTEM, MANUAL_CASE_GROUP_SYSTEM, DEFECT_GROUP_SYSTEM, PROJECT_DOC_GROUP_SYSTEM};
 
     public static int toHttpStatus(int errorCode) {
         for (int code : UNAUTHORIZED_CODES) {
@@ -171,14 +172,15 @@ public final class ErrorCode {
             case PASSWORD_INCORRECT:
             case EXCEL_IMPORT_FAILED:
             case UI_ELEMENT_IMPORT_FAILED:
+            case AUTO_CASE_NOT_IN_SUITE:
                 return 400;
             case RESOURCE_NOT_FOUND:
             case TASK_NOT_FOUND:
-            case SUITE_NOT_FOUND:
-            case CASE_NOT_FOUND:
+            case AUTO_SUITE_NOT_FOUND:
+            case AUTO_CASE_NOT_FOUND:
             case PLAN_NOT_FOUND:
-            case SUITE_GROUP_NOT_FOUND:
-            case CASE_GROUP_NOT_FOUND:
+            case AUTO_SUITE_GROUP_NOT_FOUND:
+            case AUTO_CASE_GROUP_NOT_FOUND:
             case MANUAL_CASE_NOT_FOUND:
             case MANUAL_CASE_GROUP_NOT_FOUND:
             case DEFECT_NOT_FOUND:
@@ -202,10 +204,10 @@ public final class ErrorCode {
             case API_PATH_DUPLICATE:
             case KEYWORD_NAME_DUPLICATE:
             case KEYWORD_GROUP_NAME_DUPLICATE:
-            case SUITE_NAME_DUPLICATE:
-            case CASE_NAME_DUPLICATE:
-            case SUITE_GROUP_NAME_DUPLICATE:
-            case SUITE_GROUP_HAS_CHILDREN:
+            case AUTO_SUITE_NAME_DUPLICATE:
+            case AUTO_CASE_NAME_DUPLICATE:
+            case AUTO_SUITE_GROUP_NAME_DUPLICATE:
+            case AUTO_SUITE_GROUP_HAS_CHILDREN:
             case PLAN_NAME_DUPLICATE:
             case ROLE_CODE_DUPLICATE:
             case ROLE_HAS_USERS:

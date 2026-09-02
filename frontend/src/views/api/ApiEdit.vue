@@ -415,7 +415,7 @@ onMounted(() => {
 
 <template>
   <div v-loading="loading">
-    <EditPageHeader :title="isEdit ? '编辑接口' : '新建接口'" :show-back="false">
+    <EditPageHeader :title="isEdit ? '编辑接口' : '新建接口'">
         <el-button v-if="hasPermission('project:api:edit')" type="primary" @click="handleSubmit">保存</el-button>
         <el-button @click="router.back()">取消</el-button>
     </EditPageHeader>

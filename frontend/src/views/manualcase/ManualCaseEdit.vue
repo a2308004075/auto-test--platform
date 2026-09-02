@@ -121,63 +121,56 @@ onMounted(() => {
 
     <div v-loading="loading" class="edit-form">
       <el-form label-position="top" :model="form">
-        <!-- 基本信息 -->
-        <div class="form-section">
-          <div class="form-section-title">基本信息</div>
-          <el-form-item label="用例标题" required>
-            <el-input v-model="form.title" placeholder="请输入用例标题" maxlength="200" show-word-limit />
-          </el-form-item>
+        <el-form-item label="用例标题" required>
+          <el-input v-model="form.title" placeholder="请输入用例标题" maxlength="200" show-word-limit />
+        </el-form-item>
+        <el-form-item label="前置条件">
+          <el-input v-model="form.preconditions" type="textarea" :rows="3" placeholder="执行该用例前需要满足的条件" />
+        </el-form-item>
+        <el-form-item label="操作步骤">
+          <el-input v-model="form.operationSteps" type="textarea" :rows="5" placeholder="详细的操作步骤描述" />
+        </el-form-item>
+        <el-form-item label="预期结果">
+          <el-input v-model="form.expectedResult" type="textarea" :rows="3" placeholder="执行操作步骤后预期的结果" />
+        </el-form-item>
 
-          <div class="form-row">
-            <el-form-item label="用例类型" style="flex: 1">
-              <el-select v-model="form.caseType" style="width: 100%">
-                <el-option v-for="opt in caseTypeOptions" :key="opt.value" :value="opt.value" :label="opt.label" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="优先级" style="flex: 1">
-              <el-select v-model="form.priority" style="width: 100%">
-                <el-option v-for="p in priorityOptions" :key="p.value" :value="p.value" :label="p.label" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="所属分组" style="flex: 1">
-              <el-select v-model="form.groupId" placeholder="未分组" clearable filterable style="width: 100%">
-                <el-option v-for="g in userGroups" :key="g.id" :value="g.id" :label="g.name" />
-              </el-select>
-            </el-form-item>
-          </div>
-        </div>
-
-        <!-- 用例内容 -->
-        <div class="form-section">
-          <div class="form-section-title">用例内容</div>
-          <el-form-item label="前置条件">
-            <el-input v-model="form.preconditions" type="textarea" :rows="3" placeholder="执行该用例前需要满足的条件" />
+        <div class="form-row">
+          <el-form-item label="用例类型" style="flex: 1">
+            <el-select v-model="form.caseType" style="width: 100%">
+              <el-option v-for="opt in caseTypeOptions" :key="opt.value" :value="opt.value" :label="opt.label" />
+            </el-select>
           </el-form-item>
-          <el-form-item label="操作步骤">
-            <el-input v-model="form.operationSteps" type="textarea" :rows="5" placeholder="详细的操作步骤描述" />
+          <el-form-item label="优先级" style="flex: 1">
+            <el-select v-model="form.priority" style="width: 100%">
+              <el-option v-for="p in priorityOptions" :key="p.value" :value="p.value" :label="p.label" />
+            </el-select>
           </el-form-item>
-          <el-form-item label="预期结果">
-            <el-input v-model="form.expectedResult" type="textarea" :rows="3" placeholder="执行操作步骤后预期的结果" />
+          <el-form-item label="所属分组" style="flex: 1">
+            <el-select v-model="form.groupId" placeholder="未分组" clearable filterable style="width: 100%">
+              <el-option v-for="g in userGroups" :key="g.id" :value="g.id" :label="g.name" />
+            </el-select>
           </el-form-item>
         </div>
 
-        <!-- 执行环境 -->
-        <div class="form-section">
-          <div class="form-section-title">执行环境</div>
-          <div class="form-row">
-            <el-form-item label="测试环境是否执行" style="flex: 1">
-              <el-switch v-model="form.runInTestEnv" :active-value="1" :inactive-value="0" active-text="是" inactive-text="否" />
-            </el-form-item>
-            <el-form-item label="生产环境是否执行" style="flex: 1">
-              <el-switch v-model="form.runInProdEnv" :active-value="1" :inactive-value="0" active-text="是" inactive-text="否" />
-            </el-form-item>
-            <el-form-item label="用例状态" style="flex: 1">
-              <el-radio-group v-model="form.caseStatus">
-                <el-radio :value="1">使用</el-radio>
-                <el-radio :value="0">废弃</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </div>
+        <div class="form-row">
+          <el-form-item label="测试环境是否执行" style="flex: 1">
+            <el-select v-model="form.runInTestEnv" placeholder="请选择" style="width: 100%">
+              <el-option :value="1" label="是" />
+              <el-option :value="0" label="否" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="生产环境是否执行" style="flex: 1">
+            <el-select v-model="form.runInProdEnv" placeholder="请选择" style="width: 100%">
+              <el-option :value="1" label="是" />
+              <el-option :value="0" label="否" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="用例状态" style="flex: 1">
+            <el-select v-model="form.caseStatus" placeholder="请选择" style="width: 100%">
+              <el-option :value="1" label="使用" />
+              <el-option :value="0" label="废弃" />
+            </el-select>
+          </el-form-item>
         </div>
       </el-form>
     </div>
@@ -191,20 +184,6 @@ onMounted(() => {
   border-radius: 6px;
   padding: 20px 24px;
   max-width: 900px;
-}
-.form-section {
-  margin-bottom: 24px;
-}
-.form-section:last-child {
-  margin-bottom: 0;
-}
-.form-section-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #ebeef5;
 }
 .form-row {
   display: flex;

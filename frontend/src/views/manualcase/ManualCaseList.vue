@@ -1,11 +1,11 @@
 <!--
  @author HXN
  @date 2026-08-30
- @description 手动用例列表视图
+ @description 手动化用例列表视图
 -->
 <script setup lang="ts">
 /**
- * 手动用例列表
+ * 手动化用例列表
  * 左侧分组树 + 右侧高级搜索 + 批量操作 + 分页表格
  */
 import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
@@ -177,10 +177,10 @@ function contextClear() {
   const isUngrouped = g.id === -1
   ElMessageBox.confirm(
     isAll
-      ? '确定清空项目下的所有手动用例？此操作不可恢复。'
+      ? '确定清空项目下的所有手动化用例？此操作不可恢复。'
       : isUngrouped
-        ? '确定清空「未分组」中的所有手动用例？此操作不可恢复。'
-        : `确定清空分组「${g.name}」及其子分组中的所有手动用例？此操作不可恢复。`,
+        ? '确定清空「未分组」中的所有手动化用例？此操作不可恢复。'
+        : `确定清空分组「${g.name}」及其子分组中的所有手动化用例？此操作不可恢复。`,
     '确认清空',
     { type: 'warning', confirmButtonText: '清空', cancelButtonText: '取消' }
   )
@@ -364,7 +364,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <PageHeader title="手动用例">
+    <PageHeader title="手动化用例">
       <el-button v-if="hasPermission('project:manual-case:add')" type="primary" @click="openCreate">+ 新建用例</el-button>
     </PageHeader>
 
@@ -501,7 +501,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- 手动用例详情抽屉 -->
+    <!-- 手动化用例详情抽屉 -->
     <BizDetailDrawer
       v-model:visible="detailDrawerVisible"
       :title="`用例详情 - ${detailCase?.title || ''}`"

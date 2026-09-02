@@ -1,7 +1,7 @@
 /**
  * @author HXN
  * @date 2026-08-30
- * @description 手动用例管理控制器
+ * @description 手动化用例管理控制器
  */
 package com.platform.execution.controller;
 
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 
 /**
- * 手动用例管理接口
+ * 手动化用例管理接口
  */
 @RestController
 @RequestMapping("/api/v1/projects/{projectId}/manual-cases")
@@ -27,7 +27,7 @@ public class ManualCaseController {
     private final ManualCaseService manualCaseService;
 
     /**
-     * 分页查询手动用例
+     * 分页查询手动化用例
      */
     @GetMapping
     public ApiResponse<PageResponse<ManualCaseResponse>> list(@PathVariable Long projectId,
@@ -42,7 +42,7 @@ public class ManualCaseController {
     }
 
     /**
-     * 创建手动用例
+     * 创建手动化用例
      */
     @PostMapping
     public ApiResponse<ManualCaseResponse> create(@PathVariable Long projectId,
@@ -60,7 +60,7 @@ public class ManualCaseController {
     }
 
     /**
-     * 更新手动用例
+     * 更新手动化用例
      */
     @PostMapping("/{caseId}")
     public ApiResponse<ManualCaseResponse> update(@PathVariable Long projectId,
@@ -70,7 +70,7 @@ public class ManualCaseController {
     }
 
     /**
-     * 删除手动用例
+     * 删除手动化用例
      */
     @PostMapping("/{caseId}/delete")
     public ApiResponse<Void> delete(@PathVariable Long projectId,
@@ -80,7 +80,7 @@ public class ManualCaseController {
     }
 
     /**
-     * 启用/废弃手动用例
+     * 启用/废弃手动化用例
      */
     @PostMapping("/{caseId}/status")
     public ApiResponse<ManualCaseResponse> toggleStatus(@PathVariable Long projectId,

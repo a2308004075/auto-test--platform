@@ -23,7 +23,7 @@ public class ChangeLog extends BaseEntity {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 业务类型：REQUIREMENT_ITEM-需求条目，MANUAL_CASE-手动用例
+     * 业务类型：REQUIREMENT_ITEM-需求条目，MANUAL_CASE-手动化用例
      */
     private String bizType;
 

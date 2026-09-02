@@ -1,11 +1,11 @@
 <!--
  @author HXN
  @date 2026-08-30
- @description 手动用例编辑视图
+ @description 手动化用例编辑视图
 -->
 <script setup lang="ts">
 /**
- * 手动用例编辑
+ * 手动化用例编辑
  * 表单：标题、前置条件、操作步骤、预期结果、用例类型、优先级、环境执行、用例状态
  */
 import { ref, reactive, onMounted, computed } from 'vue'
@@ -114,7 +114,7 @@ onMounted(() => {
 
 <template>
   <div>
-    <PageHeader :title="isNew ? '新建手动用例' : '编辑手动用例'">
+    <PageHeader :title="isNew ? '新建手动化用例' : '编辑手动化用例'">
       <el-button @click="handleCancel">取消</el-button>
       <el-button v-if="hasPermission('project:manual-case:edit') || isNew" type="primary" :loading="saving" @click="handleSave">保存</el-button>
     </PageHeader>

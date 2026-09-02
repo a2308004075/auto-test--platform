@@ -1,7 +1,7 @@
 /**
  * @author HXN
  * @date 2026-08-30
- * @description 手动用例分组管理服务
+ * @description 手动化用例分组管理服务
  */
 package com.platform.execution.service;
 
@@ -29,7 +29,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 手动用例分组管理服务
+ * 手动化用例分组管理服务
  */
 @Service
 @RequiredArgsConstructor

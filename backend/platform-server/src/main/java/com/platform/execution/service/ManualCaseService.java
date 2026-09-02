@@ -1,7 +1,7 @@
 /**
  * @author HXN
  * @date 2026-08-30
- * @description 手动用例管理服务
+ * @description 手动化用例管理服务
  */
 package com.platform.execution.service;
 
@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 手动用例管理服务
+ * 手动化用例管理服务
  */
 @Service
 @RequiredArgsConstructor
@@ -54,7 +54,7 @@ public class ManualCaseService {
     private final DefectRelationMapper defectRelationMapper;
 
     /**
-     * 分页查询手动用例
+     * 分页查询手动化用例
      *
      * @param projectId 项目 ID
      * @param groupId   分组 ID（null=不过滤，0=未分组，正数=指定分组含子孙分组）
@@ -106,13 +106,13 @@ public class ManualCaseService {
     public ManualCaseResponse getCase(Long caseId) {
         ManualCase c = manualCaseMapper.selectById(caseId);
         if (c == null) {
-            throw new BusinessException(ErrorCode.MANUAL_CASE_NOT_FOUND, "手动用例不存在：" + caseId);
+            throw new BusinessException(ErrorCode.MANUAL_CASE_NOT_FOUND, "手动化用例不存在：" + caseId);
         }
         return toResponse(c);
     }
 
     /**
-     * 创建手动用例
+     * 创建手动化用例
      */
     @Transactional(rollbackFor = Exception.class)
     public ManualCaseResponse createCase(Long projectId, ManualCaseCreateRequest request) {
@@ -142,13 +142,13 @@ public class ManualCaseService {
     }
 
     /**
-     * 更新手动用例
+     * 更新手动化用例
      */
     @Transactional(rollbackFor = Exception.class)
     public ManualCaseResponse updateCase(Long caseId, ManualCaseUpdateRequest request) {
         ManualCase c = manualCaseMapper.selectById(caseId);
         if (c == null) {
-            throw new BusinessException(ErrorCode.MANUAL_CASE_NOT_FOUND, "手动用例不存在：" + caseId);
+            throw new BusinessException(ErrorCode.MANUAL_CASE_NOT_FOUND, "手动化用例不存在：" + caseId);
         }
 
         // 记录变更前值
@@ -213,13 +213,13 @@ public class ManualCaseService {
     }
 
     /**
-     * 删除手动用例（同步清理评论、变更记录、需求关联与缺陷关联）
+     * 删除手动化用例（同步清理评论、变更记录、需求关联与缺陷关联）
      */
     @Transactional(rollbackFor = Exception.class)
     public void deleteCase(Long caseId) {
         ManualCase c = manualCaseMapper.selectById(caseId);
         if (c == null) {
-            throw new BusinessException(ErrorCode.MANUAL_CASE_NOT_FOUND, "手动用例不存在：" + caseId);
+            throw new BusinessException(ErrorCode.MANUAL_CASE_NOT_FOUND, "手动化用例不存在：" + caseId);
         }
         commentService.deleteByBiz(BizType.MANUAL_CASE, caseId);
         changeLogService.deleteByBiz(BizType.MANUAL_CASE, caseId);
@@ -229,13 +229,13 @@ public class ManualCaseService {
     }
 
     /**
-     * 启用/废弃手动用例
+     * 启用/废弃手动化用例
      */
     @Transactional(rollbackFor = Exception.class)
     public ManualCaseResponse toggleStatus(Long caseId) {
         ManualCase c = manualCaseMapper.selectById(caseId);
         if (c == null) {
-            throw new BusinessException(ErrorCode.MANUAL_CASE_NOT_FOUND, "手动用例不存在：" + caseId);
+            throw new BusinessException(ErrorCode.MANUAL_CASE_NOT_FOUND, "手动化用例不存在：" + caseId);
         }
         Integer oldCaseStatus = c.getCaseStatus();
         c.setCaseStatus(Integer.valueOf(1).equals(c.getCaseStatus()) ? 0 : 1);
@@ -250,7 +250,7 @@ public class ManualCaseService {
     }
 
     /**
-     * 清空分组及其子孙分组中的所有手动用例（同步清理评论与变更记录）
+     * 清空分组及其子孙分组中的所有手动化用例（同步清理评论与变更记录）
      */
     @Transactional(rollbackFor = Exception.class)
     public void clearByGroup(Long projectId, Long groupId) {
@@ -265,7 +265,7 @@ public class ManualCaseService {
     }
 
     /**
-     * 清空项目下所有手动用例（同步清理评论与变更记录）
+     * 清空项目下所有手动化用例（同步清理评论与变更记录）
      */
     @Transactional(rollbackFor = Exception.class)
     public void clearByProject(Long projectId) {
@@ -286,7 +286,7 @@ public class ManualCaseService {
     }
 
     /**
-     * 删除某手动用例的缺陷关联记录
+     * 删除某手动化用例的缺陷关联记录
      */
     private void deleteDefectRelations(Long caseId) {
         LambdaQueryWrapper<DefectRelation> wrapper = new LambdaQueryWrapper<>();

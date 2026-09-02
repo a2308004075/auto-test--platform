@@ -59,7 +59,7 @@ export const componentMap: Record<string, () => Promise<any>> = {
   'cases/AutoCaseList': () => import('@/views/cases/AutoCaseList.vue'),
   'cases/AutoCaseEdit': () => import('@/views/cases/AutoCaseEdit.vue'),
 
-  // ===== 手动用例模块 =====
+  // ===== 手动化用例模块 =====
   'manualcase/ManualCaseList': () => import('@/views/manualcase/ManualCaseList.vue'),
   'manualcase/ManualCaseEdit': () => import('@/views/manualcase/ManualCaseEdit.vue'),
 

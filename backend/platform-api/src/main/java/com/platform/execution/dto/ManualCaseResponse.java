@@ -1,7 +1,7 @@
 /**
  * @author HXN
  * @date 2026-08-30
- * @description 手动用例响应 DTO
+ * @description 手动化用例响应 DTO
  */
 package com.platform.execution.dto;
 
@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 手动用例响应
+ * 手动化用例响应
  */
 @Data
 public class ManualCaseResponse implements Serializable {

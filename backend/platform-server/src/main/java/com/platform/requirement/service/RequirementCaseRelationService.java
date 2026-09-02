@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 public class RequirementCaseRelationService {
 
     /**
-     * 用例类型：手动用例
+     * 用例类型：手动化用例
      */
     public static final String CASE_TYPE_MANUAL = "MANUAL_CASE";
 
@@ -119,7 +119,7 @@ public class RequirementCaseRelationService {
         if (CASE_TYPE_MANUAL.equals(caseType)) {
             ManualCase manualCase = manualCaseMapper.selectById(request.getCaseId());
             if (manualCase == null) {
-                throw new BusinessException(ErrorCode.MANUAL_CASE_NOT_FOUND, "手动用例不存在：" + request.getCaseId());
+                throw new BusinessException(ErrorCode.MANUAL_CASE_NOT_FOUND, "手动化用例不存在：" + request.getCaseId());
             }
             if (!Objects.equals(manualCase.getProjectId(), getProjectIdByItem(item))) {
                 throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "用例与需求条目不属于同一项目");

@@ -1,7 +1,7 @@
 /**
  * @author HXN
  * @date 2026-08-30
- * @description 手动用例分组实体类
+ * @description 手动化用例分组实体类
  */
 package com.platform.execution.entity;
 
@@ -11,7 +11,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 手动用例分组实体
+ * 手动化用例分组实体
  *
  * <p>对应数据库 manual_case_group 表。支持树形结构（parentId），
  * 区分系统分组和用户自定义分组。

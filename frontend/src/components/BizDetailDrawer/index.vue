@@ -19,7 +19,7 @@ export interface BizDetailDrawerProps {
   statusFieldName: string
   fieldLabelMap?: Record<string, string>
   valueLabelMap?: Record<string, Record<string, string>>
-  /** 项目 ID（需求条目/手动用例传入后展示关联 Tab） */
+  /** 项目 ID（需求条目/手动化用例传入后展示关联 Tab） */
   projectId?: number
 }
 

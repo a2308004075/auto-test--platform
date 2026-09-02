@@ -1,7 +1,7 @@
 /**
  * @author HXN
  * @date 2026-08-30
- * @description 手动用例实体类
+ * @description 手动化用例实体类
  */
 package com.platform.execution.entity;
 
@@ -11,7 +11,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 手动用例实体
+ * 手动化用例实体
  *
  * <p>对应数据库 manual_case 表。用户手动编写的测试用例，
  * 包含标题、前置条件、操作步骤、预期结果等字段。

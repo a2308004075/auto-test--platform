@@ -20,7 +20,7 @@ import { useDict } from '@/composables/useDict'
 
 const props = defineProps<{
   projectId: number
-  /** MANUAL_CASE-手动用例，AUTO_CASE-自动化用例 */
+  /** MANUAL_CASE-手动化用例，AUTO_CASE-自动化用例 */
   caseType: string
   caseId: number | null | undefined
 }>()

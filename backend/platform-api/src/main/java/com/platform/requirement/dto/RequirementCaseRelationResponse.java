@@ -26,7 +26,7 @@ public class RequirementCaseRelationResponse implements Serializable {
     private Long requirementItemId;
 
     /**
-     * 用例类型：MANUAL_CASE-手动用例，AUTO_CASE-自动化用例
+     * 用例类型：MANUAL_CASE-手动化用例，AUTO_CASE-自动化用例
      */
     private String caseType;
 

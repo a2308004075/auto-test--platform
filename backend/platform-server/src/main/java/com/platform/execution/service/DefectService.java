@@ -432,7 +432,7 @@ public class DefectService {
             if ("MANUAL_CASE".equals(targetType)) {
                 ManualCase manualCase = manualCaseMapper.selectById(request.getTargetId());
                 if (manualCase == null) {
-                    throw new BusinessException(ErrorCode.MANUAL_CASE_NOT_FOUND, "手动用例不存在：" + request.getTargetId());
+                    throw new BusinessException(ErrorCode.MANUAL_CASE_NOT_FOUND, "手动化用例不存在：" + request.getTargetId());
                 }
                 if (!Objects.equals(manualCase.getProjectId(), defect.getProjectId())) {
                     throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "用例与缺陷不属于同一项目");

@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
  * 评论实体
  *
  * <p>对应数据库 comment 表。支持按业务类型（biz_type）+ 业务对象 ID（biz_id）
- * 进行通用关联，可用于需求条目、手动用例等业务对象的评论功能。
+ * 进行通用关联，可用于需求条目、手动化用例等业务对象的评论功能。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -23,7 +23,7 @@ public class Comment extends BaseEntity {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 业务类型：REQUIREMENT_ITEM-需求条目，MANUAL_CASE-手动用例
+     * 业务类型：REQUIREMENT_ITEM-需求条目，MANUAL_CASE-手动化用例
      */
     private String bizType;
 

@@ -129,9 +129,9 @@ export function addSupplementaryRoutes(router: Router, layoutName: string): void
     { path: 'project/:id/auto-cases/:autoCaseId/edit',   component: 'cases/AutoCaseEdit',    title: '编辑自动化用例' },
     { path: 'project/:id/auto-suites/:autoSuiteId/edit', component: 'cases/AutoSuiteEdit',   title: '步骤配置' },
 
-    // ===== 手动用例模块 =====
-    { path: 'project/:id/manual-cases/new',          component: 'manualcase/ManualCaseEdit', title: '新建手动用例' },
-    { path: 'project/:id/manual-cases/:caseId/edit', component: 'manualcase/ManualCaseEdit', title: '编辑手动用例' },
+    // ===== 手动化用例模块 =====
+    { path: 'project/:id/manual-cases/new',          component: 'manualcase/ManualCaseEdit', title: '新建手动化用例' },
+    { path: 'project/:id/manual-cases/:caseId/edit', component: 'manualcase/ManualCaseEdit', title: '编辑手动化用例' },
 
     // ===== 缺陷管理模块 =====
     { path: 'project/:id/defects/new',              component: 'defect/DefectEdit',   title: '新建缺陷' },

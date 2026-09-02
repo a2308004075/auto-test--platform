@@ -1,7 +1,7 @@
 /**
  * @author HXN
  * @date 2026-08-30
- * @description 手动用例创建请求 DTO
+ * @description 手动化用例创建请求 DTO
  */
 package com.platform.execution.dto;
 
@@ -12,7 +12,7 @@ import javax.validation.constraints.Size;
 import java.io.Serializable;
 
 /**
- * 手动用例创建请求
+ * 手动化用例创建请求
  */
 @Data
 public class ManualCaseCreateRequest implements Serializable {

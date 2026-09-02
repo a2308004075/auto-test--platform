@@ -1,12 +1,12 @@
 <!--
  @author HXN
  @date 2026-08-30
- @description 用例选择弹窗（手动用例 + 自动化用例，搜索 + 分页 + 勾选）
+ @description 用例选择弹窗（手动化用例 + 自动化用例，搜索 + 分页 + 勾选）
 -->
 <script setup lang="ts">
 /**
  * 用例选择弹窗
- * 通过 Tab 切换手动用例/自动化用例，支持关键字搜索、分页浏览、多选/单选
+ * 通过 Tab 切换手动化用例/自动化用例，支持关键字搜索、分页浏览、多选/单选
  * 确认后 emit 选中行数组（含 caseType 字段标识来源）
  */
 import { ref, reactive, computed, watch } from 'vue'

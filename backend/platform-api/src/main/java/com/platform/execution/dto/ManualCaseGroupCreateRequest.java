@@ -1,7 +1,7 @@
 /**
  * @author HXN
  * @date 2026-08-30
- * @description 手动用例分组创建请求 DTO
+ * @description 手动化用例分组创建请求 DTO
  */
 package com.platform.execution.dto;
 
@@ -11,7 +11,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
 /**
- * 创建手动用例分组请求
+ * 创建手动化用例分组请求
  */
 @Data
 public class ManualCaseGroupCreateRequest {

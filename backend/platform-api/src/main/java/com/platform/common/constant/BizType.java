@@ -19,7 +19,7 @@ public final class BizType {
     public static final String REQUIREMENT_ITEM = "REQUIREMENT_ITEM";
 
     /**
-     * 手动用例
+     * 手动化用例
      */
     public static final String MANUAL_CASE = "MANUAL_CASE";
 }

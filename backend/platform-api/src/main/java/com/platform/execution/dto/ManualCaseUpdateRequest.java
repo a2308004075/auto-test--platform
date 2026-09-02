@@ -1,7 +1,7 @@
 /**
  * @author HXN
  * @date 2026-08-30
- * @description 手动用例更新请求 DTO
+ * @description 手动化用例更新请求 DTO
  */
 package com.platform.execution.dto;
 
@@ -11,7 +11,7 @@ import javax.validation.constraints.Size;
 import java.io.Serializable;
 
 /**
- * 手动用例更新请求（支持部分更新）
+ * 手动化用例更新请求（支持部分更新）
  */
 @Data
 public class ManualCaseUpdateRequest implements Serializable {

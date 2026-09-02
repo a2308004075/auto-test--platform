@@ -1,11 +1,11 @@
 /**
  * @author HXN
  * @date 2026-08-30
- * @description 手动用例模块 API
+ * @description 手动化用例模块 API
  */
 import request from './request'
 
-// ===== 手动用例 API =====
+// ===== 手动化用例 API =====
 
 export function getManualCases(projectId: number, params?: {
   groupId?: number; keyword?: string; priority?: string;
@@ -34,7 +34,7 @@ export function toggleManualCaseStatus(projectId: number, caseId: number) {
   return request.post(`/v1/projects/${projectId}/manual-cases/${caseId}/status`)
 }
 
-// ===== 手动用例分组 API =====
+// ===== 手动化用例分组 API =====
 
 export function getManualCaseGroups(projectId: number) {
   return request.get(`/v1/projects/${projectId}/manual-case-groups`)

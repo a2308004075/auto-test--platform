@@ -1,7 +1,7 @@
 /**
  * @author HXN
  * @date 2026-08-30
- * @description 手动用例分组管理控制器
+ * @description 手动化用例分组管理控制器
  */
 package com.platform.execution.controller;
 
@@ -18,7 +18,7 @@ import javax.validation.Valid;
 import java.util.List;
 
 /**
- * 手动用例分组管理接口
+ * 手动化用例分组管理接口
  */
 @RestController
 @RequestMapping("/api/v1/projects/{projectId}/manual-case-groups")
@@ -67,7 +67,7 @@ public class ManualCaseGroupController {
     }
 
     /**
-     * 清空分组及其子孙分组中的所有手动用例
+     * 清空分组及其子孙分组中的所有手动化用例
      */
     @PostMapping("/{groupId}/clear-cases")
     public ApiResponse<Void> clearCases(@PathVariable Long projectId,
@@ -77,7 +77,7 @@ public class ManualCaseGroupController {
     }
 
     /**
-     * 清空项目下所有手动用例
+     * 清空项目下所有手动化用例
      */
     @PostMapping("/clear-all-cases")
     public ApiResponse<Void> clearAllCases(@PathVariable Long projectId) {

@@ -30,12 +30,22 @@ public class TestResult implements Serializable {
     private Long executionId;
 
     /**
-     * 所属自动化用例 ID
+     * 所属自动化用例 ID（case_type=AUTO 时有值）
      */
     private Long autoCaseId;
 
     /**
-     * 用例执行结果：PASSED / FAILED / SKIPPED / ERROR
+     * 所属手动化用例 ID（case_type=MANUAL 时有值）
+     */
+    private Long manualCaseId;
+
+    /**
+     * 用例类型：AUTO / MANUAL
+     */
+    private String caseType;
+
+    /**
+     * 用例执行结果：PASSED / FAILED / SKIPPED / ERROR / PENDING
      */
     private String status;
 

@@ -12,7 +12,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getExecution, getExecutionResults, cancelExecution, startExecution } from '@/api/execution'
+import { getExecution, getExecutionResults, cancelExecution, startExecution, updateManualCaseResult } from '@/api/execution'
 import { useExecutionWebSocket } from '@/composables/useExecutionWebSocket'
 import { useDict, type DictOption } from '@/composables/useDict'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
@@ -24,6 +24,7 @@ const executionId = computed(() => Number(route.params.executionId))
 const execution = ref<any>({})
 const results = ref<any[]>([])
 const loading = ref(false)
+const updatingResultId = ref<number | null>(null)
 
 // 用例结果过滤
 const caseFilter = ref('all')
@@ -67,12 +68,12 @@ const { options: _statusOptions } = useDict('execution_status')
 const { options: triggerOptions } = useDict('trigger_type')
 
 const statusTypeMap: Record<string, string> = {
-  PENDING: 'info', QUEUED: 'info', RUNNING: '', COMPLETED: 'success',
+  PENDING: 'info', QUEUED: 'info', RUNNING: '', WAITING_MANUAL: 'warning', COMPLETED: 'success',
   FAILED: 'danger', CANCELLED: 'warning',
   PASSED: 'success', SKIPPED: 'info', ERROR: 'danger',
 }
 const statusLabels: Record<string, string> = {
-  PENDING: '等待中', QUEUED: '排队中', RUNNING: '执行中', COMPLETED: '已完成',
+  PENDING: '等待中', QUEUED: '排队中', RUNNING: '执行中', WAITING_MANUAL: '待手动处理', COMPLETED: '已完成',
   FAILED: '执行失败', CANCELLED: '已取消',
   PASSED: '通过', SKIPPED: '跳过', ERROR: '错误',
 }
@@ -154,12 +155,40 @@ async function loadData() {
 
 // 监听 WebSocket 进度，终态时自动刷新结果
 watch(() => progress.value?.status, (status) => {
-  if (status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED') {
+  if (status === 'WAITING_MANUAL' || status === 'COMPLETED' || status === 'FAILED' || status === 'CANCELLED') {
     loadData()
   }
 })
 
 function refresh() { loadData() }
+
+async function handleManualResult(row: any, status: 'PASSED' | 'FAILED' | 'SKIPPED') {
+  if (updatingResultId.value !== null) return
+
+  const statusLabels: Record<string, string> = {
+    PASSED: '通过',
+    FAILED: '失败',
+    SKIPPED: '跳过',
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定将手动化用例「${row.caseName || '-'}」标记为${statusLabels[status]}吗？`,
+      '确认测试结果',
+      { type: status === 'FAILED' ? 'warning' : 'info' },
+    )
+    updatingResultId.value = row.id
+    await updateManualCaseResult(executionId.value, { resultId: row.id, status })
+    ElMessage.success(`已标记为${statusLabels[status]}`)
+    await loadData()
+  } catch (e: any) {
+    if (e !== 'cancel' && e !== 'close') {
+      ElMessage.error(e?.response?.data?.message || '更新测试结果失败')
+    }
+  } finally {
+    updatingResultId.value = null
+  }
+}
 
 async function handleCancel() {
   try {
@@ -285,12 +314,32 @@ onMounted(loadData)
       </template>
       <el-table :data="filteredResults" row-key="id" :border="false" style="width:100%"
         :row-class-name="({ row }: any) => (row.status === 'FAILED' || row.status === 'ERROR') ? 'fail-row' : ''">
-        <el-table-column prop="caseName" label="用例名称" />
+        <el-table-column prop="caseName" label="用例名称" min-width="160" />
+        <el-table-column label="用例类型" width="90">
+          <template #default="{ row }">
+            <el-tag :type="row.caseType === 'MANUAL' ? 'warning' : 'primary'" size="small">
+              {{ row.caseType === 'MANUAL' ? '手动化' : '自动化' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
             <el-tag :type="(statusTypeMap[row.status] || 'info') as any" size="small">
-              {{ statusLabels[row.status] || row.status }}
+              {{ row.status === 'PENDING' && row.caseType === 'MANUAL' ? '待处理' : (statusLabels[row.status] || row.status) }}
             </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="185">
+          <template #default="{ row }">
+            <template v-if="row.caseType === 'MANUAL' && row.status === 'PENDING'">
+              <el-button type="success" link size="small" :loading="updatingResultId === row.id"
+                @click="handleManualResult(row, 'PASSED')">通过</el-button>
+              <el-button type="danger" link size="small" :loading="updatingResultId === row.id"
+                @click="handleManualResult(row, 'FAILED')">失败</el-button>
+              <el-button type="info" link size="small" :loading="updatingResultId === row.id"
+                @click="handleManualResult(row, 'SKIPPED')">跳过</el-button>
+            </template>
+            <span v-else style="color:#c0c4cc">-</span>
           </template>
         </el-table-column>
         <el-table-column label="耗时" width="80">

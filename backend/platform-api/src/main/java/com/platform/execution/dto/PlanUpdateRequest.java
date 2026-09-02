@@ -31,6 +31,8 @@ public class PlanUpdateRequest {
 
     private List<Long> autoSuiteIds;
 
+    private List<Long> manualCaseIds;
+
     private Long environmentId;
 
     private String scheduleCron;

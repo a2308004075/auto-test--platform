@@ -51,6 +51,7 @@ public class PlanService {
     private final TestExecutionMapper testExecutionMapper;
     private final AutoSuiteMapper autoSuiteMapper;
     private final AutoCaseMapper autoCaseMapper;
+    private final ManualCaseMapper manualCaseMapper;
     private final ObjectMapper objectMapper;
 
     /**
@@ -177,7 +178,8 @@ public class PlanService {
 
         TestPlan plan = new TestPlan();
         BeanUtils.copyProperties(request, plan);
-        plan.setAutoSuiteIds(serializeAutoSuiteIds(request.getAutoSuiteIds()));
+        plan.setAutoSuiteIds(serializeIdList(request.getAutoSuiteIds()));
+        plan.setManualCaseIds(serializeIdList(request.getManualCaseIds()));
         plan.setTriggerType(request.getTriggerType() != null ? request.getTriggerType() : "MANUAL");
         plan.setIsActive(1);
         plan.setCreatedBy(getCurrentUserId());
@@ -212,7 +214,10 @@ public class PlanService {
             plan.setGroupId(request.getGroupId());
         }
         if (request.getAutoSuiteIds() != null) {
-            plan.setAutoSuiteIds(serializeAutoSuiteIds(request.getAutoSuiteIds()));
+            plan.setAutoSuiteIds(serializeIdList(request.getAutoSuiteIds()));
+        }
+        if (request.getManualCaseIds() != null) {
+            plan.setManualCaseIds(serializeIdList(request.getManualCaseIds()));
         }
         if (request.getEnvironmentId() != null) {
             plan.setEnvironmentId(request.getEnvironmentId());
@@ -280,7 +285,8 @@ public class PlanService {
     private PlanResponse toResponse(TestPlan plan) {
         PlanResponse resp = new PlanResponse();
         BeanUtils.copyProperties(plan, resp);
-        resp.setAutoSuiteIds(parseAutoSuiteIds(plan.getAutoSuiteIds()));
+        resp.setAutoSuiteIds(parseIdList(plan.getAutoSuiteIds()));
+        resp.setManualCaseIds(parseIdList(plan.getManualCaseIds()));
 
         // 获取环境名称
         if (plan.getEnvironmentId() != null) {
@@ -308,6 +314,18 @@ public class PlanService {
         resp.setAutoSuiteNames(autoSuiteNames);
         resp.setCaseCount(caseCount);
 
+        // 获取手动化用例名称列表
+        List<Long> manualCaseIdList = resp.getManualCaseIds();
+        List<String> manualCaseNames = new ArrayList<>();
+        for (Long manualCaseId : manualCaseIdList) {
+            ManualCase manualCase = manualCaseMapper.selectById(manualCaseId);
+            if (manualCase != null) {
+                manualCaseNames.add(manualCase.getTitle());
+            }
+        }
+        resp.setManualCaseNames(manualCaseNames);
+        resp.setManualCaseCount(manualCaseNames.size());
+
         // 获取最近一次执行记录（COMPLETED 状态）
         LambdaQueryWrapper<TestExecution> execWrapper = new LambdaQueryWrapper<>();
         execWrapper.eq(TestExecution::getPlanId, plan.getId())
@@ -332,7 +350,7 @@ public class PlanService {
     }
 
     @SuppressWarnings("unchecked")
-    private List<Long> parseAutoSuiteIds(String json) {
+    private List<Long> parseIdList(String json) {
         if (json == null || json.trim().isEmpty()) {
             return Collections.emptyList();
         }
@@ -343,14 +361,14 @@ public class PlanService {
         }
     }
 
-    private String serializeAutoSuiteIds(List<Long> autoSuiteIds) {
-        if (autoSuiteIds == null || autoSuiteIds.isEmpty()) {
+    private String serializeIdList(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
             return "[]";
         }
         try {
-            return objectMapper.writeValueAsString(autoSuiteIds);
+            return objectMapper.writeValueAsString(ids);
         } catch (JsonProcessingException e) {
-            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "序列化 autoSuiteIds 失败");
+            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "序列化 ID 列表失败");
         }
     }
 

@@ -7,23 +7,28 @@ package com.platform.execution.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.platform.auth.entity.User;
 import com.platform.common.exception.BusinessException;
 import com.platform.common.exception.ErrorCode;
 import com.platform.common.response.PageResponse;
 import com.platform.execution.dto.ExecutionResponse;
 import com.platform.execution.dto.ExecutionStartRequest;
+import com.platform.execution.dto.ManualCaseResultUpdateRequest;
 import com.platform.execution.dto.TestResultResponse;
+import com.platform.execution.entity.AutoCase;
+import com.platform.execution.entity.ManualCase;
 import com.platform.execution.entity.TestExecution;
 import com.platform.execution.entity.TestPlan;
 import com.platform.execution.entity.TestResult;
+import com.platform.execution.mapper.AutoCaseMapper;
+import com.platform.execution.mapper.ManualCaseMapper;
 import com.platform.execution.mapper.TestExecutionMapper;
 import com.platform.execution.mapper.TestPlanMapper;
 import com.platform.execution.mapper.TestResultMapper;
 import com.platform.execution.mq.ExecutionMessage;
 import com.platform.execution.mq.ExecutionProducer;
-import com.platform.execution.entity.AutoCase;
-import com.platform.execution.mapper.AutoCaseMapper;
 import com.platform.environment.entity.Environment;
 import com.platform.environment.mapper.EnvironmentMapper;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +47,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -61,8 +67,10 @@ public class ExecutionService {
     private final TestPlanMapper testPlanMapper;
     private final TestResultMapper testResultMapper;
     private final AutoCaseMapper autoCaseMapper;
+    private final ManualCaseMapper manualCaseMapper;
     private final EnvironmentMapper environmentMapper;
     private final ExecutionProducer executionProducer;
+    private final ObjectMapper objectMapper;
 
     /**
      * 分页查询项目下的执行记录（支持多条件过滤）
@@ -166,7 +174,7 @@ public class ExecutionService {
                 ? request.getEnvironmentId() : plan.getEnvironmentId());
         execution.setTriggerType(request.getTriggerType() != null
                 ? request.getTriggerType() : "MANUAL");
-        execution.setTotalCases(0);
+        execution.setTotalCases(countPlannedCases(plan));
         execution.setPassedCases(0);
         execution.setFailedCases(0);
         execution.setSkippedCases(0);
@@ -265,6 +273,37 @@ public class ExecutionService {
     }
 
     /**
+     * 计算计划实际会执行的自动化与手动化用例总数。
+     */
+    private int countPlannedCases(TestPlan plan) {
+        int total = 0;
+        for (Long autoSuiteId : parseIdList(plan.getAutoSuiteIds())) {
+            LambdaQueryWrapper<AutoCase> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(AutoCase::getAutoSuiteId, autoSuiteId)
+                    .eq(AutoCase::getIsActive, true);
+            total += autoCaseMapper.selectCount(wrapper);
+        }
+        for (Long manualCaseId : parseIdList(plan.getManualCaseIds())) {
+            if (manualCaseMapper.selectById(manualCaseId) != null) {
+                total++;
+            }
+        }
+        return total;
+    }
+
+    private List<Long> parseIdList(String idListJson) {
+        if (!StringUtils.hasText(idListJson)) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(idListJson, new TypeReference<List<Long>>() {});
+        } catch (Exception e) {
+            log.warn("解析计划关联用例 ID 列表失败: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
      * 发送执行消息到 MQ
      */
     private void sendExecutionMessage(TestExecution execution, Long planId) {
@@ -312,14 +351,104 @@ public class ExecutionService {
         return resp;
     }
 
+    /**
+     * 更新手动化用例执行结果
+     *
+     * <p>仅允许更新状态为 PENDING 的手动化用例结果，更新后同步调整执行记录统计。
+     * 当该执行记录下所有手动化用例均已标记时，自动将执行状态置为 COMPLETED。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public TestResultResponse updateManualCaseResult(Long executionId, ManualCaseResultUpdateRequest request) {
+        TestResult result = testResultMapper.selectById(request.getResultId());
+        if (result == null) {
+            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "测试结果不存在");
+        }
+        if (!Objects.equals(result.getExecutionId(), executionId)) {
+            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "结果与执行记录不匹配");
+        }
+        if (!"MANUAL".equalsIgnoreCase(result.getCaseType())) {
+            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "仅支持更新手动化用例结果");
+        }
+        if (!"PENDING".equalsIgnoreCase(result.getStatus())) {
+            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "手动化用例结果已标记，不可重复更新");
+        }
+
+        String status = request.getStatus().toUpperCase();
+        if (!"PASSED".equals(status) && !"FAILED".equals(status) && !"SKIPPED".equals(status)) {
+            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "无效的执行结果状态");
+        }
+
+        result.setStatus(status);
+        result.setActualResult(request.getActualResult());
+        result.setErrorMessage(request.getErrorMessage());
+        result.setFinishedAt(LocalDateTime.now());
+        testResultMapper.updateById(result);
+
+        // 总用例数在触发执行时已按自动化与手动化用例总数预先计算，此处只更新结果统计。
+        TestExecution execution = testExecutionMapper.selectById(executionId);
+        if (execution != null) {
+            switch (status) {
+                case "PASSED":
+                    execution.setPassedCases((execution.getPassedCases() != null ? execution.getPassedCases() : 0) + 1);
+                    break;
+                case "FAILED":
+                case "ERROR":
+                    execution.setFailedCases((execution.getFailedCases() != null ? execution.getFailedCases() : 0) + 1);
+                    break;
+                default:
+                    execution.setSkippedCases((execution.getSkippedCases() != null ? execution.getSkippedCases() : 0) + 1);
+            }
+
+            // 自动化部分结束并进入 WAITING_MANUAL 后，所有手动化用例均标记完成才结束测试记录。
+            if ("WAITING_MANUAL".equals(execution.getStatus()) && isAllManualCasesMarked(executionId)) {
+                execution.setStatus("COMPLETED");
+                execution.setFinishedAt(LocalDateTime.now());
+                if (execution.getStartedAt() != null) {
+                    execution.setDurationMs((int) (System.currentTimeMillis() - execution.getStartedAt()
+                            .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()));
+                }
+            }
+            testExecutionMapper.updateById(execution);
+        }
+
+        return toResultResponse(result);
+    }
+
+    /**
+     * 判断指定执行记录下所有手动化用例是否均已标记
+     */
+    private boolean isAllManualCasesMarked(Long executionId) {
+        LambdaQueryWrapper<TestResult> totalWrapper = new LambdaQueryWrapper<>();
+        totalWrapper.eq(TestResult::getExecutionId, executionId)
+                .eq(TestResult::getCaseType, "MANUAL");
+        long total = testResultMapper.selectCount(totalWrapper);
+        if (total == 0) {
+            return true;
+        }
+
+        LambdaQueryWrapper<TestResult> pendingWrapper = new LambdaQueryWrapper<>();
+        pendingWrapper.eq(TestResult::getExecutionId, executionId)
+                .eq(TestResult::getCaseType, "MANUAL")
+                .eq(TestResult::getStatus, "PENDING");
+        long pending = testResultMapper.selectCount(pendingWrapper);
+        return pending == 0;
+    }
+
     private TestResultResponse toResultResponse(TestResult result) {
         TestResultResponse resp = new TestResultResponse();
         BeanUtils.copyProperties(result, resp);
 
-        // 获取自动化用例名称
-        AutoCase autoCase = autoCaseMapper.selectById(result.getAutoCaseId());
-        if (autoCase != null) {
-            resp.setCaseName(autoCase.getName());
+        // 获取用例名称
+        if ("MANUAL".equalsIgnoreCase(result.getCaseType())) {
+            ManualCase manualCase = manualCaseMapper.selectById(result.getManualCaseId());
+            if (manualCase != null) {
+                resp.setCaseName(manualCase.getTitle());
+            }
+        } else {
+            AutoCase autoCase = autoCaseMapper.selectById(result.getAutoCaseId());
+            if (autoCase != null) {
+                resp.setCaseName(autoCase.getName());
+            }
         }
 
         return resp;

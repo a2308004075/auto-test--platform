@@ -15,6 +15,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getPlan, createPlan, updatePlan, getPlanGroups } from '@/api/plan'
 import { getAutoSuites } from '@/api/autoSuite'
+import { getManualCases } from '@/api/manualCase'
 import { getEnvironments } from '@/api/environment'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
 
@@ -28,6 +29,7 @@ const form = reactive({
   name: '',
   description: '',
   autoSuiteIds: [] as number[],
+  manualCaseIds: [] as number[],
   environmentId: null as number | null,
   scheduleCron: '',
   triggerType: 'MANUAL',
@@ -36,6 +38,7 @@ const form = reactive({
 })
 
 const suites = ref<any[]>([])
+const manualCases = ref<any[]>([])
 const environments = ref<any[]>([])
 const groups = ref<any[]>([])
 
@@ -44,6 +47,13 @@ async function loadSuites() {
     const res: any = await getAutoSuites(projectId.value, { pageSize: 200 })
     suites.value = res.data?.items || []
   } catch { suites.value = [] }
+}
+
+async function loadManualCases() {
+  try {
+    const res: any = await getManualCases(projectId.value, { pageSize: 200 })
+    manualCases.value = res.data?.items || []
+  } catch { manualCases.value = [] }
 }
 
 async function loadEnvironments() {
@@ -69,6 +79,7 @@ async function loadPlan() {
       name: p.name || '',
       description: p.description || '',
       autoSuiteIds: p.autoSuiteIds || [],
+      manualCaseIds: p.manualCaseIds || [],
       environmentId: p.environmentId ?? null,
       scheduleCron: p.scheduleCron || '',
       triggerType: p.triggerType || 'MANUAL',
@@ -152,8 +163,22 @@ function toggleSuite(autoSuiteId: number) {
   }
 }
 
+function isManualCaseSelected(manualCaseId: number): boolean {
+  return form.manualCaseIds.includes(manualCaseId)
+}
+
+function toggleManualCase(manualCaseId: number) {
+  const idx = form.manualCaseIds.indexOf(manualCaseId)
+  if (idx >= 0) {
+    form.manualCaseIds.splice(idx, 1)
+  } else {
+    form.manualCaseIds.push(manualCaseId)
+  }
+}
+
 onMounted(() => {
   loadSuites()
+  loadManualCases()
   loadEnvironments()
   loadGroups()
   if (isEdit.value) loadPlan()
@@ -218,7 +243,26 @@ onMounted(() => {
       </div>
     </el-card>
 
-    <!-- 卡片三：执行策略 -->
+    <!-- 卡片三：关联手动化用例 -->
+    <el-card style="margin-bottom:16px">
+      <template #header><span>关联手动化用例</span></template>
+      <div class="suite-grid">
+        <div v-for="mc in manualCases" :key="mc.id"
+          class="suite-card"
+          :class="{ selected: isManualCaseSelected(mc.id) }"
+          @click="toggleManualCase(mc.id)">
+          <el-checkbox :model-value="isManualCaseSelected(mc.id)" @click.stop
+            @change="toggleManualCase(mc.id)" style="pointer-events:none" />
+          <span class="suite-name">{{ mc.title }}</span>
+          <span class="suite-count">{{ mc.priority || '' }}</span>
+        </div>
+      </div>
+      <div v-if="manualCases.length === 0" style="text-align:center;color:#909399;padding:20px">
+        暂无可用手动化用例，请先创建手动化用例
+      </div>
+    </el-card>
+
+    <!-- 卡片四：执行策略 -->
     <el-card style="margin-bottom:16px">
       <template #header><span>执行策略</span></template>
 

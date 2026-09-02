@@ -50,6 +50,7 @@ const statusTypeMap: Record<string, string> = {
   PENDING: 'info',
   QUEUED: 'info',
   RUNNING: '',
+  WAITING_MANUAL: 'warning',
   COMPLETED: 'success',
   FAILED: 'danger',
   CANCELLED: 'warning',
@@ -132,7 +133,7 @@ onMounted(() => { loadEnvironments(); fetchList() })
 <template>
   <div>
     <!-- 页头 -->
-    <PageHeader title="执行记录" />
+    <PageHeader title="测试记录" />
 
     <!-- 搜索卡片 -->
     <ProSearchCard :loading="loading" @search="handleSearch" @reset="handleReset">

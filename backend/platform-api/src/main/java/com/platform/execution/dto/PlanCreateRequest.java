@@ -34,6 +34,11 @@ public class PlanCreateRequest {
     private List<Long> autoSuiteIds;
 
     /**
+     * 关联的手动化用例 ID 列表
+     */
+    private List<Long> manualCaseIds;
+
+    /**
      * 默认执行环境 ID
      */
     private Long environmentId;

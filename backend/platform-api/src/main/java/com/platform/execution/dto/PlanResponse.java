@@ -39,6 +39,16 @@ public class PlanResponse {
      */
     private List<String> autoSuiteNames;
 
+    /**
+     * 关联的手动化用例 ID 列表
+     */
+    private List<Long> manualCaseIds;
+
+    /**
+     * 关联的手动化用例名称列表（表格展示用）
+     */
+    private List<String> manualCaseNames;
+
     private Long environmentId;
 
     private String environmentName;
@@ -72,4 +82,9 @@ public class PlanResponse {
      * 关联自动化套件下的自动化用例总数
      */
     private Integer caseCount;
+
+    /**
+     * 关联的手动化用例数量
+     */
+    private Integer manualCaseCount;
 }

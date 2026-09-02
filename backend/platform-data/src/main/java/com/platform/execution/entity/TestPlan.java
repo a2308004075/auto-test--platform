@@ -38,6 +38,11 @@ public class TestPlan extends BaseEntity {
     private String autoSuiteIds;
 
     /**
+     * 关联的手动化用例 ID 列表（JSON 数组字符串）
+     */
+    private String manualCaseIds;
+
+    /**
      * 默认执行环境 ID
      */
     private Long environmentId;

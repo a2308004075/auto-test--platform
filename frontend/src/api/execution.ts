@@ -39,3 +39,12 @@ export function getExecutionResults(executionId: number) {
 export function cancelExecution(executionId: number) {
   return request.post(`/v1/executions/${executionId}/cancel`)
 }
+
+export function updateManualCaseResult(executionId: number, data: {
+  resultId: number
+  status: 'PASSED' | 'FAILED' | 'SKIPPED'
+  actualResult?: string
+  errorMessage?: string
+}) {
+  return request.post(`/v1/executions/${executionId}/manual-results`, data)
+}

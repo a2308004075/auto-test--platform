@@ -9,6 +9,7 @@ import com.platform.common.response.ApiResponse;
 import com.platform.common.response.PageResponse;
 import com.platform.execution.dto.ExecutionResponse;
 import com.platform.execution.dto.ExecutionStartRequest;
+import com.platform.execution.dto.ManualCaseResultUpdateRequest;
 import com.platform.execution.dto.TestResultResponse;
 import com.platform.execution.service.ExecutionService;
 import lombok.RequiredArgsConstructor;
@@ -79,5 +80,14 @@ public class ExecutionController {
     @PostMapping("/api/v1/executions/{executionId}/cancel")
     public ApiResponse<ExecutionResponse> cancel(@PathVariable Long executionId) {
         return ApiResponse.ok(executionService.cancelExecution(executionId));
+    }
+
+    /**
+     * 更新手动化用例执行结果
+     */
+    @PostMapping("/api/v1/executions/{executionId}/manual-results")
+    public ApiResponse<TestResultResponse> updateManualCaseResult(@PathVariable Long executionId,
+                                                                   @Valid @RequestBody ManualCaseResultUpdateRequest request) {
+        return ApiResponse.ok(executionService.updateManualCaseResult(executionId, request));
     }
 }

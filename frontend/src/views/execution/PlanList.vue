@@ -472,16 +472,15 @@ onBeforeUnmount(() => {
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="关联套件" min-width="160">
+          <el-table-column label="关联内容" min-width="180">
             <template #default="{ row }">
-              <template v-if="row.suiteNames && row.suiteNames.length > 0">
-                <el-tag v-for="(name, idx) in row.suiteNames" :key="idx" size="small" type="info"
-                  style="margin:2px 4px 2px 0">{{ name }}</el-tag>
-              </template>
-              <span v-else style="color:#999">-</span>
+              <div style="display:flex;flex-direction:column;gap:3px;font-size:12px">
+                <span>自动化套件：{{ row.autoSuiteIds?.length || 0 }}</span>
+                <span>手动化用例：{{ row.manualCaseCount ?? row.manualCaseIds?.length ?? 0 }}</span>
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="用例数" width="70" align="center">
+          <el-table-column label="自动化用例数" width="100" align="center">
             <template #default="{ row }">{{ row.caseCount || 0 }}</template>
           </el-table-column>
           <el-table-column prop="environmentName" label="环境" width="100" show-overflow-tooltip />

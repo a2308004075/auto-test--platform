@@ -21,13 +21,20 @@ public class TestResultResponse {
 
     private Long autoCaseId;
 
+    private Long manualCaseId;
+
     /**
-     * 自动化用例名称
+     * 用例类型：AUTO / MANUAL
+     */
+    private String caseType;
+
+    /**
+     * 用例名称
      */
     private String caseName;
 
     /**
-     * 自动化用例执行结果：PASSED / FAILED / SKIPPED / ERROR
+     * 用例执行结果：PASSED / FAILED / SKIPPED / ERROR / PENDING
      */
     private String status;
 

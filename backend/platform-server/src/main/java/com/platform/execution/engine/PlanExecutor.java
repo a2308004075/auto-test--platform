@@ -10,11 +10,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.platform.execution.entity.AutoCase;
 import com.platform.execution.entity.AutoSuite;
+import com.platform.execution.entity.ManualCase;
 import com.platform.execution.entity.TestExecution;
 import com.platform.execution.entity.TestPlan;
 import com.platform.execution.entity.TestResult;
 import com.platform.execution.mapper.AutoCaseMapper;
 import com.platform.execution.mapper.AutoSuiteMapper;
+import com.platform.execution.mapper.ManualCaseMapper;
 import com.platform.execution.mapper.TestExecutionMapper;
 import com.platform.execution.mapper.TestPlanMapper;
 import com.platform.execution.mapper.TestResultMapper;
@@ -49,6 +51,7 @@ public class PlanExecutor {
     private final TestResultMapper testResultMapper;
     private final AutoSuiteMapper autoSuiteMapper;
     private final AutoCaseMapper autoCaseMapper;
+    private final ManualCaseMapper manualCaseMapper;
     private final EnvironmentService environmentService;
     private final ObjectMapper objectMapper;
     private final ExecutionWebSocketHandler executionWebSocketHandler;
@@ -85,6 +88,7 @@ public class PlanExecutor {
         int failedCases = 0;
         int skippedCases = 0;
         boolean hasError = false;
+        int manualCaseTotal = 0;
 
         try {
             // 查测试计划
@@ -97,14 +101,32 @@ public class PlanExecutor {
             ExecutionContext context = buildContext(execution, plan);
             log.info("开始执行计划: plan={}, execution={}, env={}", plan.getName(), executionId, context.getEnvironmentId());
 
-            // 解析 autoSuiteIds
-            List<Long> autoSuiteIds = parseAutoSuiteIds(plan.getAutoSuiteIds());
-            if (autoSuiteIds.isEmpty()) {
-                log.warn("计划未关联任何自动化套件: {}", plan.getName());
+            // 解析 autoSuiteIds 与 manualCaseIds
+            List<Long> autoSuiteIds = parseIdList(plan.getAutoSuiteIds());
+            List<Long> manualCaseIds = parseIdList(plan.getManualCaseIds());
+            if (autoSuiteIds.isEmpty() && manualCaseIds.isEmpty()) {
+                log.warn("计划未关联任何自动化套件或手动化用例: {}", plan.getName());
             }
 
-            // 预计算总自动化用例数（用于进度百分比）
-            int expectedTotal = countExpectedCases(autoSuiteIds);
+            // 预计算自动化用例数量，并为手动化用例预创建 PENDING 结果记录。
+            // 仅统计实际存在的手动化用例，保证总数与可更新的结果记录一致。
+            int expectedAutoTotal = countExpectedAutoCases(autoSuiteIds);
+            for (Long manualCaseId : manualCaseIds) {
+                ManualCase manualCase = manualCaseMapper.selectById(manualCaseId);
+                if (manualCase == null) {
+                    log.warn("手动化用例不存在，跳过: {}", manualCaseId);
+                    continue;
+                }
+                TestResult testResult = new TestResult();
+                testResult.setExecutionId(executionId);
+                testResult.setManualCaseId(manualCaseId);
+                testResult.setCaseType("MANUAL");
+                testResult.setStatus("PENDING");
+                testResult.setStartedAt(LocalDateTime.now());
+                testResultMapper.insert(testResult);
+                manualCaseTotal++;
+            }
+            int expectedTotal = expectedAutoTotal + manualCaseTotal;
 
             // 遍历自动化套件执行
             for (Long autoSuiteId : autoSuiteIds) {
@@ -129,6 +151,7 @@ public class PlanExecutor {
                     TestResult testResult = new TestResult();
                     testResult.setExecutionId(executionId);
                     testResult.setAutoCaseId(caseSummary.getAutoCaseId());
+                    testResult.setCaseType("AUTO");
                     testResult.setStatus(caseSummary.getStatus());
                     testResult.setActualResult(caseSummary.getMessage());
                     testResult.setDurationMs((int) caseSummary.getDurationMs());
@@ -179,29 +202,49 @@ public class PlanExecutor {
             hasError = true;
         }
 
-        // 更新执行记录
+        // 汇总已生成的自动化和手动化结果，避免人工标记与自动化执行并行时覆盖统计值。
         long elapsed = System.currentTimeMillis() - startMs;
-        execution.setTotalCases(totalCases);
-        execution.setPassedCases(passedCases);
-        execution.setFailedCases(failedCases);
-        execution.setSkippedCases(skippedCases);
+        TestResultStatistics statistics = collectResultStatistics(executionId);
+        int completedCases = statistics.passedCases + statistics.failedCases + statistics.skippedCases;
+        execution.setTotalCases(statistics.totalCases);
+        execution.setPassedCases(statistics.passedCases);
+        execution.setFailedCases(statistics.failedCases);
+        execution.setSkippedCases(statistics.skippedCases);
         execution.setDurationMs((int) elapsed);
-        execution.setFinishedAt(LocalDateTime.now());
-        execution.setStatus(hasError ? "FAILED" : "COMPLETED");
+
+        String finalStatus;
+        String finalMessage;
+        if (hasError) {
+            finalStatus = "FAILED";
+            finalMessage = "执行失败";
+            execution.setFinishedAt(LocalDateTime.now());
+        } else if (statistics.pendingManualCases > 0) {
+            finalStatus = "WAITING_MANUAL";
+            finalMessage = "自动化部分执行完成，等待手动化用例标记结果";
+            execution.setFinishedAt(null);
+        } else {
+            finalStatus = "COMPLETED";
+            finalMessage = "执行完成";
+            execution.setFinishedAt(LocalDateTime.now());
+        }
+        execution.setStatus(finalStatus);
         testExecutionMapper.updateById(execution);
 
-        // 推送计划完成事件
-        sendProgress(executionId, hasError ? "FAILED" : "COMPLETED", totalCases, passedCases, failedCases,
-                skippedCases, (int) elapsed, 100, calcPassRate(passedCases, totalCases),
-                null, "执行完成");
+        // 手动化用例仍待处理时，进度按已完成结果计算；其他终态保持 100%。
+        int progressPercent = "WAITING_MANUAL".equals(finalStatus)
+                ? calcPercent(completedCases, statistics.totalCases) : 100;
+        sendProgress(executionId, finalStatus, statistics.totalCases, statistics.passedCases, statistics.failedCases,
+                statistics.skippedCases, (int) elapsed, progressPercent,
+                calcPassRate(statistics.passedCases, statistics.totalCases), null, finalMessage);
         log.info("执行完成: execution={}, total={}, passed={}, failed={}, skipped={}, duration={}ms",
-                executionId, totalCases, passedCases, failedCases, skippedCases, elapsed);
+                executionId, statistics.totalCases, statistics.passedCases, statistics.failedCases,
+                statistics.skippedCases, elapsed);
     }
 
     /**
      * 预计算所有自动化套件下启用的自动化用例总数
      */
-    private int countExpectedCases(List<Long> autoSuiteIds) {
+    private int countExpectedAutoCases(List<Long> autoSuiteIds) {
         int total = 0;
         for (Long autoSuiteId : autoSuiteIds) {
             LambdaQueryWrapper<AutoCase> wrapper = new LambdaQueryWrapper<>();
@@ -210,6 +253,39 @@ public class PlanExecutor {
             total += autoCaseMapper.selectCount(wrapper);
         }
         return total;
+    }
+
+    /**
+     * 汇总当前执行记录下的测试结果。
+     */
+    private TestResultStatistics collectResultStatistics(Long executionId) {
+        LambdaQueryWrapper<TestResult> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(TestResult::getExecutionId, executionId);
+
+        TestResultStatistics statistics = new TestResultStatistics();
+        for (TestResult result : testResultMapper.selectList(wrapper)) {
+            statistics.totalCases++;
+            if ("PENDING".equals(result.getStatus()) && "MANUAL".equalsIgnoreCase(result.getCaseType())) {
+                statistics.pendingManualCases++;
+                continue;
+            }
+            if ("PASSED".equals(result.getStatus())) {
+                statistics.passedCases++;
+            } else if ("FAILED".equals(result.getStatus()) || "ERROR".equals(result.getStatus())) {
+                statistics.failedCases++;
+            } else if (!"PENDING".equals(result.getStatus())) {
+                statistics.skippedCases++;
+            }
+        }
+        return statistics;
+    }
+
+    private static class TestResultStatistics {
+        private int totalCases;
+        private int passedCases;
+        private int failedCases;
+        private int skippedCases;
+        private int pendingManualCases;
     }
 
     /**
@@ -264,16 +340,16 @@ public class PlanExecutor {
     }
 
     /**
-     * 解析自动化套件 ID 列表
+     * 解析 ID 列表 JSON
      */
-    private List<Long> parseAutoSuiteIds(String autoSuiteIdsJson) {
-        if (autoSuiteIdsJson == null || autoSuiteIdsJson.trim().isEmpty()) {
+    private List<Long> parseIdList(String idListJson) {
+        if (idListJson == null || idListJson.trim().isEmpty()) {
             return Collections.emptyList();
         }
         try {
-            return objectMapper.readValue(autoSuiteIdsJson, new TypeReference<List<Long>>() {});
+            return objectMapper.readValue(idListJson, new TypeReference<List<Long>>() {});
         } catch (Exception e) {
-            log.warn("解析 autoSuiteIds 失败: {}", e.getMessage());
+            log.warn("解析 ID 列表失败: {}", e.getMessage());
             return Collections.emptyList();
         }
     }

@@ -20,7 +20,6 @@ import PageHeader from '@/components/PageHeader/index.vue'
 import ProSearchCard from '@/components/ProSearchCard/index.vue'
 import BatchBar from '@/components/BatchBar/index.vue'
 import ProPagination from '@/components/ProPagination/index.vue'
-import BizDetailDrawer from '@/components/BizDetailDrawer/index.vue'
 import { useDict } from '@/composables/useDict'
 import { usePermission } from '@/composables/usePermission'
 
@@ -320,36 +319,6 @@ const priorityTypeMap: Record<string, string> = { '高': 'danger', '中': 'warni
 const caseTypeLabel: Record<string, string> = { NORMAL: '正常', EXCEPTION: '异常' }
 const caseTypeTagType: Record<string, string> = { NORMAL: 'success', EXCEPTION: 'warning' }
 
-// ===== 详情抽屉 =====
-const detailDrawerVisible = ref(false)
-const detailCase = ref<any>(null)
-
-const manualCaseFieldLabelMap: Record<string, string> = {
-  title: '用例标题',
-  preconditions: '前置条件',
-  operationSteps: '操作步骤',
-  expectedResult: '预期结果',
-  caseType: '用例类型',
-  priority: '优先级',
-  groupId: '所属分组',
-  runInTestEnv: '测试环境执行',
-  runInProdEnv: '生产环境执行',
-  caseStatus: '用例状态',
-}
-
-const manualCaseValueLabelMap: Record<string, Record<string, string>> = {
-  caseType: { NORMAL: '正常', EXCEPTION: '异常' },
-  priority: { '高': '高', '中': '中', '低': '低' },
-  runInTestEnv: { '0': '否', '1': '是' },
-  runInProdEnv: { '0': '否', '1': '是' },
-  caseStatus: { '0': '废弃', '1': '使用' },
-}
-
-function openDetailDrawer(record: any) {
-  detailCase.value = record
-  detailDrawerVisible.value = true
-}
-
 // ===== 生命周期 =====
 const treeRef = ref()
 function onDocClick() { closeContextMenu() }
@@ -477,9 +446,8 @@ onBeforeUnmount(() => {
               <el-tag :type="row.caseStatus === 1 ? 'success' : 'danger'" size="small">{{ row.caseStatus === 1 ? '使用' : '废弃' }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="240" fixed="right">
+          <el-table-column label="操作" width="180" fixed="right">
             <template #default="{ row }">
-              <el-button type="primary" link size="small" @click="openDetailDrawer(row)">详情</el-button>
               <el-button v-if="hasPermission('project:manual-case:edit')" type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
               <el-button v-if="hasPermission('project:manual-case:toggle')" type="primary" link size="small" @click="handleToggleStatus(row)">{{ row.caseStatus === 1 ? '废弃' : '启用' }}</el-button>
               <el-button v-if="hasPermission('project:manual-case:delete')" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
@@ -500,18 +468,6 @@ onBeforeUnmount(() => {
         />
       </div>
     </div>
-
-    <!-- 手动化用例详情抽屉 -->
-    <BizDetailDrawer
-      v-model:visible="detailDrawerVisible"
-      :title="`用例详情 - ${detailCase?.title || ''}`"
-      biz-type="MANUAL_CASE"
-      :biz-id="detailCase?.id"
-      status-field-name="caseStatus"
-      :field-label-map="manualCaseFieldLabelMap"
-      :value-label-map="manualCaseValueLabelMap"
-      :project-id="projectId"
-    />
 
     <!-- 分组新建/编辑弹窗 -->
     <el-dialog v-model="groupModalVisible" :title="editingGroupId ? '编辑分组' : '新建分组'" width="460px">

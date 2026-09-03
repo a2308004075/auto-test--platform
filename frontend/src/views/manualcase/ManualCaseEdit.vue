@@ -159,7 +159,7 @@ onMounted(() => {
 <template>
   <div>
     <PageHeader :title="isNew ? '新建手动化用例' : '编辑手动化用例'">
-      <el-button @click="handleBack">返回</el-button>
+      <el-button v-if="!isNew" @click="handleBack">返回</el-button>
     </PageHeader>
 
     <div class="edit-layout">

@@ -1,5 +1,6 @@
 .idea
 backend/data/repos
+docker/
 
 # Maven 构建产物
 backend/target/

@@ -9,7 +9,7 @@
  * 从弹窗迁移为独立页面，支持新增/编辑/删除/单条同步/全部同步
  */
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { QuestionFilled } from '@element-plus/icons-vue'
 import {
@@ -20,6 +20,7 @@ import EditPageHeader from '@/components/EditPageHeader/index.vue'
 import { usePermission } from '@/composables/usePermission'
 
 const route = useRoute()
+const router = useRouter()
 const projectId = computed(() => Number(route.params.id))
 const { hasPermission } = usePermission()
 
@@ -201,6 +202,7 @@ onMounted(() => {
 <template>
   <div>
     <EditPageHeader title="Swagger 同步配置">
+      <el-button @click="router.push(`/project/${projectId}/apis`)">返回</el-button>
       <el-button v-if="hasPermission('project:api:swagger')" type="primary" :loading="syncAllLoading" @click="handleSyncAll">全部同步</el-button>
       <el-button v-if="hasPermission('project:api:swagger')" @click="openAdd">+ 新增配置</el-button>
     </EditPageHeader>

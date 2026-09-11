@@ -12,6 +12,7 @@
 import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { ArrowDown } from '@element-plus/icons-vue'
 import { getPlans, deletePlan, getPlanGroups, createPlanGroup, updatePlanGroup, deletePlanGroup, clearGroupPlans, clearProjectPlans } from '@/api/plan'
 import { startExecution } from '@/api/execution'
 import { getEnvironments } from '@/api/environment'
@@ -27,6 +28,7 @@ const { hasPermission } = usePermission()
 const projectId = computed(() => Number(route.params.id))
 const { options: triggerTypeOptions } = useDict('trigger_type')
 const { options: statusOptions } = useDict('is_active')
+const { options: planTypeOptions } = useDict('plan_type')
 
 // ===== 分组树 =====
 const groups = ref<any[]>([])
@@ -243,6 +245,7 @@ async function handleDeleteGroup(group: any) {
 const searchForm = reactive({
   name: '',
   triggerType: '',
+  planType: '',
   environmentId: null as number | null,
   status: '' as string,
   suiteKeyword: '',
@@ -267,6 +270,7 @@ function handleReset() {
   Object.assign(searchForm, {
     name: '',
     triggerType: '',
+    planType: '',
     environmentId: null,
     status: '',
     suiteKeyword: '',
@@ -297,6 +301,8 @@ async function fetchList() {
 
     // 触发方式
     if (searchForm.triggerType) params.triggerType = searchForm.triggerType
+    // 计划类型
+    if (searchForm.planType) params.planType = searchForm.planType
     // 环境
     if (searchForm.environmentId) params.environmentId = searchForm.environmentId
     // 状态
@@ -314,6 +320,10 @@ async function fetchList() {
 }
 
 // ===== 操作 =====
+function handleCreate(planType: string) {
+  router.push(`/project/${projectId.value}/plans/new?planType=${planType}`)
+}
+
 function handleEdit(record: any) {
   router.push(`/project/${projectId.value}/plans/${record.id}/edit`)
 }
@@ -342,6 +352,15 @@ async function handleRun(record: any) {
 }
 
 // ===== 辅助 =====
+const planTypeTagMap: Record<string, string> = {
+  AUTO: 'success',
+  MANUAL: 'warning',
+}
+
+function planTypeLabel(type: string) {
+  return planTypeOptions.value.find((t: any) => t.value === type)?.label || type
+}
+
 const triggerTypeTagMap: Record<string, string> = {
   MANUAL: '',
   SCHEDULED: 'success',
@@ -380,8 +399,15 @@ onBeforeUnmount(() => {
 <template>
   <div>
     <PageHeader title="测试计划">
-      <el-button v-if="hasPermission('project:plan:add')" type="primary"
-        @click="router.push(`/project/${projectId}/plans/new`)">+ 新建计划</el-button>
+      <el-dropdown v-if="hasPermission('project:plan:add')" @command="handleCreate">
+        <el-button type="primary">+ 新建计划<el-icon style="margin-left:4px"><ArrowDown /></el-icon></el-button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="AUTO">自动测试计划</el-dropdown-item>
+            <el-dropdown-item command="MANUAL">手动测试计划</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
     </PageHeader>
 
     <div class="plan-layout">
@@ -432,6 +458,12 @@ onBeforeUnmount(() => {
             </el-select>
           </div>
           <div class="pro-search-field">
+            <span class="pro-search-label">计划类型</span>
+            <el-select v-model="searchForm.planType" placeholder="全部类型" clearable style="width: 140px">
+              <el-option v-for="t in planTypeOptions" :key="t.value" :value="t.value" :label="t.label" />
+            </el-select>
+          </div>
+          <div class="pro-search-field">
             <span class="pro-search-label">环境</span>
             <el-select v-model="searchForm.environmentId" placeholder="全部环境" clearable style="width: 150px">
               <el-option v-for="env in environments" :key="env.id" :value="env.id" :label="env.name" />
@@ -464,6 +496,13 @@ onBeforeUnmount(() => {
               <a style="font-weight:500;color:var(--color-primary);cursor:pointer" @click="handleEdit(row)">{{ row.name }}</a>
             </template>
           </el-table-column>
+          <el-table-column label="计划类型" width="120" align="center">
+            <template #default="{ row }">
+              <el-tag :type="(planTypeTagMap[row.planType] || '') as any" size="small">
+                {{ planTypeLabel(row.planType) }}
+              </el-tag>
+            </template>
+          </el-table-column>
           <el-table-column prop="description" label="描述" min-width="160" show-overflow-tooltip />
           <el-table-column label="触发方式" width="90" align="center">
             <template #default="{ row }">
@@ -475,13 +514,16 @@ onBeforeUnmount(() => {
           <el-table-column label="关联内容" min-width="180">
             <template #default="{ row }">
               <div style="display:flex;flex-direction:column;gap:3px;font-size:12px">
-                <span>自动化套件：{{ row.autoSuiteIds?.length || 0 }}</span>
-                <span>手动化用例：{{ row.manualCaseCount ?? row.manualCaseIds?.length ?? 0 }}</span>
+                <span v-if="row.planType === 'AUTO'">自动化套件：{{ row.autoSuiteIds?.length || 0 }}</span>
+                <span v-if="row.planType === 'MANUAL'">手动化用例：{{ row.manualCaseCount ?? row.manualCaseIds?.length ?? 0 }}</span>
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="自动化用例数" width="100" align="center">
-            <template #default="{ row }">{{ row.caseCount || 0 }}</template>
+          <el-table-column label="用例数" width="100" align="center">
+            <template #default="{ row }">
+              <span v-if="row.planType === 'AUTO'">{{ row.caseCount || 0 }}</span>
+              <span v-else>{{ row.manualCaseCount ?? row.manualCaseIds?.length ?? 0 }}</span>
+            </template>
           </el-table-column>
           <el-table-column prop="environmentName" label="环境" width="100" show-overflow-tooltip />
           <el-table-column label="状态" width="70" align="center">

@@ -25,6 +25,11 @@ public class PlanResponse {
     private String description;
 
     /**
+     * 计划类型：MANUAL-手动测试计划，AUTO-自动测试计划
+     */
+    private String planType;
+
+    /**
      * 所属分组 ID
      */
     private Long groupId;

@@ -24,6 +24,12 @@ public class PlanCreateRequest {
     private String description;
 
     /**
+     * 计划类型：MANUAL-手动测试计划，AUTO-自动测试计划
+     */
+    @NotBlank(message = "计划类型不能为空")
+    private String planType;
+
+    /**
      * 所属分组 ID
      */
     private Long groupId;

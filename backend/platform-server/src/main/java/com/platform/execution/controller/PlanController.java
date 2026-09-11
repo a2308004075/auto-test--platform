@@ -41,10 +41,11 @@ public class PlanController {
                                                          @RequestParam(required = false) String updateBegin,
                                                          @RequestParam(required = false) String updateEnd,
                                                          @RequestParam(required = false) String suiteKeyword,
+                                                         @RequestParam(required = false) String planType,
                                                          @RequestParam(defaultValue = "1") int page,
                                                          @RequestParam(defaultValue = "20") int pageSize) {
         return ApiResponse.ok(planService.listPlans(projectId, keyword, groupId,
-                triggerType, environmentId, status, updateBegin, updateEnd, suiteKeyword, page, pageSize));
+                triggerType, environmentId, status, updateBegin, updateEnd, suiteKeyword, planType, page, pageSize));
     }
 
     /**

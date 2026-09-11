@@ -24,10 +24,12 @@ const router = useRouter()
 const projectId = computed(() => Number(route.params.id))
 const planId = computed(() => Number(route.params.planId))
 const isEdit = computed(() => !!planId.value)
+const planType = computed(() => form.planType)
 
 const form = reactive({
   name: '',
   description: '',
+  planType: 'AUTO' as string,
   autoSuiteIds: [] as number[],
   manualCaseIds: [] as number[],
   environmentId: null as number | null,
@@ -78,6 +80,7 @@ async function loadPlan() {
     Object.assign(form, {
       name: p.name || '',
       description: p.description || '',
+      planType: p.planType || 'AUTO',
       autoSuiteIds: p.autoSuiteIds || [],
       manualCaseIds: p.manualCaseIds || [],
       environmentId: p.environmentId ?? null,
@@ -177,6 +180,10 @@ function toggleManualCase(manualCaseId: number) {
 }
 
 onMounted(() => {
+  // 新建时从路由参数读取计划类型
+  if (!isEdit.value && route.query.planType) {
+    form.planType = route.query.planType as string
+  }
   loadSuites()
   loadManualCases()
   loadEnvironments()
@@ -187,7 +194,7 @@ onMounted(() => {
 
 <template>
   <div>
-    <EditPageHeader :title="isEdit ? `编辑测试计划：${form.name || '加载中...'}` : '新建测试计划'">
+    <EditPageHeader :title="isEdit ? `编辑${form.planType === 'MANUAL' ? '手动' : '自动'}测试计划：${form.name || '加载中...'}` : `新建${form.planType === 'MANUAL' ? '手动' : '自动'}测试计划`">
       <el-button @click="router.back()">取消</el-button>
       <el-button type="primary" @click="handleSave">保存</el-button>
     </EditPageHeader>
@@ -202,7 +209,7 @@ onMounted(() => {
               <el-input v-model="form.name" placeholder="请输入计划名称" />
             </el-form-item>
           </el-col>
-          <el-col :span="8">
+          <el-col v-if="planType === 'AUTO'" :span="8">
             <el-form-item label="绑定环境">
               <el-select v-model="form.environmentId" placeholder="选择执行环境" clearable style="width:100%">
                 <el-option v-for="env in environments" :key="env.id" :value="env.id"
@@ -224,8 +231,8 @@ onMounted(() => {
       </el-form>
     </el-card>
 
-    <!-- 卡片二：关联自动化套件 -->
-    <el-card style="margin-bottom:16px">
+    <!-- 卡片二：关联自动化套件（仅自动测试计划） -->
+    <el-card v-if="planType === 'AUTO'" style="margin-bottom:16px">
       <template #header><span>关联自动化套件</span></template>
       <div class="suite-grid">
         <div v-for="suite in suites" :key="suite.id"
@@ -243,8 +250,8 @@ onMounted(() => {
       </div>
     </el-card>
 
-    <!-- 卡片三：关联手动化用例 -->
-    <el-card style="margin-bottom:16px">
+    <!-- 卡片三：关联手动化用例（仅手动测试计划） -->
+    <el-card v-if="planType === 'MANUAL'" style="margin-bottom:16px">
       <template #header><span>关联手动化用例</span></template>
       <div class="suite-grid">
         <div v-for="mc in manualCases" :key="mc.id"
@@ -262,8 +269,8 @@ onMounted(() => {
       </div>
     </el-card>
 
-    <!-- 卡片四：执行策略 -->
-    <el-card style="margin-bottom:16px">
+    <!-- 卡片四：执行策略（仅自动测试计划） -->
+    <el-card v-if="planType === 'AUTO'" style="margin-bottom:16px">
       <template #header><span>执行策略</span></template>
 
       <!-- 触发方式选择 -->

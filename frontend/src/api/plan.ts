@@ -18,6 +18,7 @@ export function getPlans(projectId: number, params?: {
   updateBegin?: string
   updateEnd?: string
   suiteKeyword?: string
+  planType?: string
   page?: number
   pageSize?: number
 }) {

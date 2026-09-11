@@ -20,6 +20,11 @@ public class PlanUpdateRequest {
     private String description;
 
     /**
+     * 计划类型：MANUAL-手动测试计划，AUTO-自动测试计划（创建后不可更改）
+     */
+    private String planType;
+
+    /**
      * 所属分组 ID
      */
     private Long groupId;

@@ -64,12 +64,13 @@ public class PlanService {
      * @param updateBegin   更新日期起（yyyy-MM-dd，null=不过滤）
      * @param updateEnd     更新日期止（yyyy-MM-dd，null=不过滤）
      * @param suiteKeyword  关联自动化套件名称关键字（null=不过滤，按项目下自动化套件名称模糊匹配）
+     * @param planType      计划类型（null=不过滤，AUTO=自动测试计划，MANUAL=手动测试计划）
      */
     public PageResponse<PlanResponse> listPlans(Long projectId, String keyword,
                                                  Long groupId, String triggerType,
                                                  Long environmentId, Integer status,
                                                  String updateBegin, String updateEnd,
-                                                 String suiteKeyword,
+                                                 String suiteKeyword, String planType,
                                                  int page, int pageSize) {
         LambdaQueryWrapper<TestPlan> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TestPlan::getProjectId, projectId);
@@ -120,6 +121,11 @@ public class PlanService {
         // 按触发方式过滤
         if (StringUtils.hasText(triggerType)) {
             wrapper.eq(TestPlan::getTriggerType, triggerType);
+        }
+
+        // 按计划类型过滤
+        if (StringUtils.hasText(planType)) {
+            wrapper.eq(TestPlan::getPlanType, planType);
         }
 
         // 按环境 ID 过滤
@@ -180,6 +186,7 @@ public class PlanService {
         BeanUtils.copyProperties(request, plan);
         plan.setAutoSuiteIds(serializeIdList(request.getAutoSuiteIds()));
         plan.setManualCaseIds(serializeIdList(request.getManualCaseIds()));
+        plan.setPlanType(request.getPlanType());
         plan.setTriggerType(request.getTriggerType() != null ? request.getTriggerType() : "MANUAL");
         plan.setIsActive(1);
         plan.setCreatedBy(getCurrentUserId());

@@ -485,8 +485,8 @@ onBeforeUnmount(() => {
         <el-table :data="list" v-loading="loading" border stripe style="width: 100%" @selection-change="handleSelectionChange">
           <el-table-column type="selection" width="45" />
           <el-table-column v-if="isColVisible('id')" prop="id" label="ID" width="70" />
-          <el-table-column v-if="isColVisible('name')" prop="name" label="接口名称" width="180" show-overflow-tooltip />
-          <el-table-column v-if="isColVisible('path')" label="路径" width="220" show-overflow-tooltip>
+          <el-table-column v-if="isColVisible('name')" prop="name" label="接口名称" width="240" show-overflow-tooltip />
+          <el-table-column v-if="isColVisible('path')" label="路径" min-width="280" show-overflow-tooltip>
             <template #default="{ row }">
               <span style="font-family: monospace">{{ (row.path || '').replace(/^\$\{[^}]*\}/, '') }}</span>
             </template>

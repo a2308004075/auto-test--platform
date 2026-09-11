@@ -127,6 +127,7 @@ async function handleSave() {
       variables: variables.value,
     })
     ElMessage.success('保存成功')
+    router.push(`/project/${projectId.value}/environments`)
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '保存失败')
   } finally {

@@ -116,6 +116,9 @@ public class ApiModuleService {
     public ApiModuleResponse create(ApiModuleCreateRequest request) {
         projectService.findActiveById(request.getProjectId());
 
+        // 检查同项目下是否存在同名分组
+        checkNameDuplicate(request.getProjectId(), request.getName(), null);
+
         ApiModule module = new ApiModule();
         module.setProjectId(request.getProjectId());
         module.setParentId(request.getParentId());
@@ -140,6 +143,7 @@ public class ApiModuleService {
         }
 
         if (StringUtils.hasText(request.getName())) {
+            checkNameDuplicate(module.getProjectId(), request.getName(), moduleId);
             module.setName(request.getName());
         }
         if (request.getServicePrefix() != null) {
@@ -148,9 +152,18 @@ public class ApiModuleService {
         if (request.getDescription() != null) {
             module.setDescription(request.getDescription());
         }
-        if (request.getParentId() != null) {
-            module.setParentId(request.getParentId());
+        // parentId：始终应用（null = 移到根级）
+        Long newParentId = request.getParentId();
+        if (newParentId != null && newParentId.equals(module.getId())) {
+            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "不能将分组设为自身的子分组");
         }
+        if (newParentId != null && getDescendantModuleIds(module.getId()).contains(newParentId)) {
+            throw new BusinessException(ErrorCode.PARAM_VALIDATION_ERROR, "不能将分组移动到其子分组下");
+        }
+        if (!Objects.equals(newParentId, module.getParentId())) {
+            checkNameDuplicate(module.getProjectId(), module.getName(), module.getId());
+        }
+        module.setParentId(newParentId);
 
         apiModuleMapper.updateById(module);
         return toResponse(module);
@@ -222,6 +235,22 @@ public class ApiModuleService {
         for (ApiModule child : children) {
             collected.add(child.getId());
             collectDescendants(child.getId(), collected);
+        }
+    }
+
+    /**
+     * 检查同项目下是否存在同名分组（排除指定 ID）
+     */
+    private void checkNameDuplicate(Long projectId, String name, Long excludeId) {
+        LambdaQueryWrapper<ApiModule> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ApiModule::getProjectId, projectId);
+        wrapper.eq(ApiModule::getName, name);
+        if (excludeId != null) {
+            wrapper.ne(ApiModule::getId, excludeId);
+        }
+        if (apiModuleMapper.selectCount(wrapper) > 0) {
+            throw new BusinessException(ErrorCode.API_MODULE_NAME_DUPLICATE,
+                    "分组名称已存在：" + name);
         }
     }
 

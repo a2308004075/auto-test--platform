@@ -132,6 +132,34 @@ function handleReset() {
   handleSearch()
 }
 
+// ===== 分组拖拽 =====
+function allowDrag(node: any) {
+  // 系统分组不可拖拽（全部、未分组等）
+  return node.data.isSystem !== 1
+}
+function allowDrop(_draggingNode: any, dropNode: any, dropType: string) {
+  const target = dropNode.data
+  // 不允许放入系统分组内部（全部、未分组等）
+  if (dropType === 'inner' && target.isSystem === 1) return false
+  return true
+}
+async function onNodeDrop(draggingNode: any, dropNode: any, dropType: string) {
+  let parentId: number | null
+  if (dropType === 'inner') {
+    parentId = dropNode.data.id
+  } else {
+    // before / after → 与目标节点同级
+    parentId = dropNode.data.parentId ?? null
+  }
+  try {
+    await updateModule(projectId.value, draggingNode.data.id, { parentId })
+    fetchModules()
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '移动失败')
+    fetchModules()
+  }
+}
+
 // ===== 右键菜单 =====
 const contextMenuVisible = ref(false)
 const contextMenuPos = reactive({ x: 0, y: 0 })
@@ -391,7 +419,11 @@ onBeforeUnmount(() => {
             :default-expand-all="true"
             :expand-on-click-node="false"
             :filter-node-method="filterNode"
+            :draggable="true"
+            :allow-drag="allowDrag"
+            :allow-drop="allowDrop"
             @node-click="onModuleNodeClick"
+            @node-drop="onNodeDrop"
           >
             <template #default="{ data }">
               <div

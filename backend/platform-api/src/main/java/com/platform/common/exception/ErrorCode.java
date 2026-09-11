@@ -81,6 +81,7 @@ public final class ErrorCode {
     public static final int API_MODULE_NOT_FOUND = 1410;
     public static final int API_MODULE_SYSTEM = 1411;
     public static final int API_MODULE_HAS_APIS = 1412;
+    public static final int API_MODULE_NAME_DUPLICATE = 1413;
 
     // ===== M5 接口关键字 (1500-1599) =====
     public static final int KEYWORD_NOT_FOUND = 1500;
@@ -212,6 +213,7 @@ public final class ErrorCode {
             case ROLE_CODE_DUPLICATE:
             case ROLE_HAS_USERS:
             case REPOSITORY_NAME_DUPLICATE:
+            case API_MODULE_NAME_DUPLICATE:
                 return 409;
             case EXECUTION_QUEUE_FULL:
                 return 429;

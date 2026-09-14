@@ -19,6 +19,7 @@ import {
   pullRepository,
   getPullLogs,
   copyRepository,
+  getRepositoryBranches,
 } from '@/api/repository'
 import { useProjectStore } from '@/stores/modules/project'
 import { usePermission } from '@/composables/usePermission'
@@ -68,6 +69,36 @@ const rules = reactive<FormRules>({
   branch: [{ max: 100, message: '分支长度不能超过 100 个字符', trigger: 'blur' }],
 })
 
+// 分支下拉选项（由远程仓库 lsRemote 获取，可搜索、可手动输入）
+const branchOptions = ref<string[]>([])
+const branchLoading = ref(false)
+const defaultBranch = ref('')
+
+async function handleFetchBranches() {
+  if (!form.gitUrl.trim()) {
+    ElMessage.warning('请先填写 Git 地址')
+    return
+  }
+  branchLoading.value = true
+  try {
+    const res: any = await getRepositoryBranches(projectId.value, {
+      gitUrl: form.gitUrl.trim(),
+      authUsername: form.authUsername || '',
+      authPassword: form.authPassword || '',
+      repositoryId: isEdit.value && editingId.value ? editingId.value : null,
+    })
+    branchOptions.value = res.data?.branches || []
+    defaultBranch.value = res.data?.defaultBranch || ''
+    ElMessage.success(`获取成功，共 ${branchOptions.value.length} 个分支`)
+  } catch (e: any) {
+    branchOptions.value = []
+    defaultBranch.value = ''
+    ElMessage.error(e?.response?.data?.message || '获取分支失败')
+  } finally {
+    branchLoading.value = false
+  }
+}
+
 // 行级拉取 loading（防止同一仓库重复点击拉取）
 const pullingIds = ref<number[]>([])
 
@@ -96,6 +127,8 @@ function openCreate() {
   isEdit.value = false
   editingId.value = null
   Object.assign(form, { name: '', gitUrl: '', branch: '', authUsername: '', authPassword: '', description: '' })
+  branchOptions.value = []
+  defaultBranch.value = ''
   modalVisible.value = true
 }
 
@@ -110,6 +143,8 @@ function openEdit(record: any) {
     authPassword: '',
     description: record.description || '',
   })
+  branchOptions.value = []
+  defaultBranch.value = ''
   modalVisible.value = true
 }
 
@@ -356,7 +391,22 @@ onMounted(fetchList)
           <el-input v-model="form.gitUrl" placeholder="https://github.com/user/repo.git" maxlength="500" />
         </el-form-item>
         <el-form-item label="分支" prop="branch">
-          <el-input v-model="form.branch" placeholder="留空使用仓库默认分支" maxlength="100" />
+          <div class="branch-field">
+            <el-select
+              v-model="form.branch"
+              filterable
+              allow-create
+              default-first-option
+              clearable
+              :loading="branchLoading"
+              placeholder="点击「获取」加载分支，留空使用仓库默认分支"
+              style="flex: 1"
+            >
+              <el-option v-for="item in branchOptions" :key="item" :label="item" :value="item" />
+            </el-select>
+            <el-button :loading="branchLoading" @click="handleFetchBranches">获取</el-button>
+          </div>
+          <div v-if="defaultBranch" class="branch-hint">仓库默认分支：{{ defaultBranch }}</div>
         </el-form-item>
         <el-form-item label="认证用户名" prop="authUsername">
           <el-input v-model="form.authUsername" placeholder="私有仓库填写用户名（Token 场景填 Token 用户名）" maxlength="200" />
@@ -485,5 +535,18 @@ onMounted(fetchList)
 
 .empty-text-inline {
   color: rgba(0, 0, 0, 0.25);
+}
+
+.branch-field {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.branch-hint {
+  width: 100%;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  line-height: 1.4;
 }
 </style>

@@ -670,6 +670,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 #### 职责
 
 - Git 仓库登记 CRUD（项目内名称唯一，名称/Git 地址/分支/认证凭证/描述）
+- 远程分支列表查询：lsRemote 实时查询远程仓库分支（不克隆代码），供新建/编辑仓库时下拉选择；凭证优先级：请求携带密码 > 编辑仓库已保存凭证 > 匿名访问
 - 仓库复制：一步生成副本（名称追加「（副本）」后缀，重名时追加序号（（副本2）、（副本3）…）；凭证密文直接复制；拉取状态/本地目录/拉取历史不复制）
 - 基于 JGit 的代码拉取：本地目录不存在执行克隆（CLONE），已存在执行增量更新（PULL，先 fetch 同步远程引用、必要时切换分支）
 - 私有仓库认证：UsernamePasswordCredentialsProvider（用户名 + 密码/Token）
@@ -691,6 +692,7 @@ auth ←─── project ←─── api ←─── keyword ←─── exe
 |---|---|---|---|
 | 仓库列表 | GET | `/api/v1/projects/:pid/repositories` | 项目下所有仓库（含 hasAuth） |
 | 新建仓库 | POST | `/api/v1/projects/:pid/repositories` | 密码 AES 加密入库 |
+| 获取分支 | POST | `/api/v1/projects/:pid/repositories/branches` | lsRemote 查询远程分支列表与默认分支（不克隆代码），凭证：请求密码 > repositoryId 已存凭证 > 匿名 |
 | 编辑仓库 | POST | `/api/v1/projects/:pid/repositories/:id` | 密码留空保持不变 |
 | 复制仓库 | POST | `/api/v1/projects/:pid/repositories/:id/copy` | 一步生成副本：名称追加「（副本）」后缀（重名时依次（副本2）、（副本3）…），凭证密文直接复制，拉取状态不复制 |
 | 删除仓库 | POST | `/api/v1/projects/:pid/repositories/:id/delete` | 物理删除 + 清理本地目录 |

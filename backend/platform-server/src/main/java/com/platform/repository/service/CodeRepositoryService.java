@@ -13,6 +13,8 @@ import com.platform.common.util.AesCryptoUtil;
 import com.platform.project.service.ProjectService;
 import com.platform.repository.dto.PullLogResponse;
 import com.platform.repository.dto.PullResultResponse;
+import com.platform.repository.dto.RepositoryBranchListRequest;
+import com.platform.repository.dto.RepositoryBranchListResponse;
 import com.platform.repository.dto.RepositoryCreateRequest;
 import com.platform.repository.dto.RepositoryResponse;
 import com.platform.repository.dto.RepositoryUpdateRequest;
@@ -25,8 +27,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.CreateBranchCommand;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.LsRemoteCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -37,6 +41,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -99,6 +104,11 @@ public class CodeRepositoryService {
     private static final String REFS_HEADS_PREFIX = "refs/heads/";
 
     /**
+     * HEAD 引用名（用于解析仓库默认分支）
+     */
+    private static final String REF_HEAD = "HEAD";
+
+    /**
      * 拉取历史信息字段最大长度（与表字段一致）
      */
     private static final int MESSAGE_MAX_LENGTH = 2000;
@@ -137,6 +147,70 @@ public class CodeRepositoryService {
             result.add(toResponse(repo));
         }
         return result;
+    }
+
+    /**
+     * 获取远程仓库分支列表（lsRemote 查询，不克隆代码）
+     *
+     * <p>凭证优先级：请求中的 authPassword &gt; repositoryId 对应仓库已保存凭证 &gt; 匿名访问。
+     */
+    public RepositoryBranchListResponse listRemoteBranches(Long projectId, RepositoryBranchListRequest request) {
+        projectService.findActiveById(projectId);
+
+        UsernamePasswordCredentialsProvider credentialsProvider = buildRequestCredentialsProvider(projectId, request);
+
+        List<String> branches = new ArrayList<>();
+        String defaultBranch = null;
+        try {
+            LsRemoteCommand command = Git.lsRemoteRepository()
+                    .setRemote(request.getGitUrl())
+                    .setTimeout(cloneTimeoutSeconds);
+            if (credentialsProvider != null) {
+                command.setCredentialsProvider(credentialsProvider);
+            }
+            for (Ref ref : command.call()) {
+                String name = ref.getName();
+                if (name.startsWith(REFS_HEADS_PREFIX)) {
+                    branches.add(name.substring(REFS_HEADS_PREFIX.length()));
+                } else if (REF_HEAD.equals(name) && ref.isSymbolic()
+                        && ref.getTarget().getName().startsWith(REFS_HEADS_PREFIX)) {
+                    // 服务器通告 symref 时，HEAD 指向的分支即默认分支
+                    defaultBranch = ref.getTarget().getName().substring(REFS_HEADS_PREFIX.length());
+                }
+            }
+        } catch (GitAPIException e) {
+            log.warn("仓库地址 [{}] 获取远程分支失败: {}", request.getGitUrl(), e.getMessage());
+            throw new BusinessException(ErrorCode.REPOSITORY_BRANCH_FETCH_FAILED,
+                    "获取分支失败：" + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+        }
+        Collections.sort(branches);
+
+        RepositoryBranchListResponse response = new RepositoryBranchListResponse();
+        response.setBranches(branches);
+        response.setDefaultBranch(defaultBranch);
+        return response;
+    }
+
+    /**
+     * 解析分支查询凭证：请求密码优先，其次编辑仓库已保存凭证，均无则匿名访问
+     */
+    private UsernamePasswordCredentialsProvider buildRequestCredentialsProvider(Long projectId,
+                                                                                RepositoryBranchListRequest request) {
+        if (StringUtils.hasText(request.getAuthPassword())) {
+            if (!StringUtils.hasText(request.getAuthUsername())) {
+                return null;
+            }
+            return new UsernamePasswordCredentialsProvider(request.getAuthUsername(), request.getAuthPassword());
+        }
+        if (request.getRepositoryId() != null) {
+            CodeRepository repo = findById(request.getRepositoryId());
+            if (!repo.getProjectId().equals(projectId)) {
+                throw new BusinessException(ErrorCode.REPOSITORY_NOT_FOUND,
+                        "仓库不存在：" + request.getRepositoryId());
+            }
+            return buildCredentialsProvider(repo);
+        }
+        return null;
     }
 
     /**

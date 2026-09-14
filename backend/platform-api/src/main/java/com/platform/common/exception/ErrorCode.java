@@ -145,6 +145,7 @@ public final class ErrorCode {
     public static final int REPOSITORY_NOT_FOUND = 2200;
     public static final int REPOSITORY_NAME_DUPLICATE = 2201;
     public static final int REPOSITORY_CRYPTO_ERROR = 2202;
+    public static final int REPOSITORY_BRANCH_FETCH_FAILED = 2203;
 
     // ===== M12 界面元素 (2300-2399) =====
     public static final int UI_ELEMENT_IMPORT_FAILED = 2300;
@@ -174,6 +175,7 @@ public final class ErrorCode {
             case EXCEL_IMPORT_FAILED:
             case UI_ELEMENT_IMPORT_FAILED:
             case AUTO_CASE_NOT_IN_SUITE:
+            case REPOSITORY_BRANCH_FETCH_FAILED:
                 return 400;
             case RESOURCE_NOT_FOUND:
             case TASK_NOT_FOUND:

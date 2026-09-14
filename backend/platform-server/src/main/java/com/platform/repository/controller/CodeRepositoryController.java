@@ -8,6 +8,8 @@ package com.platform.repository.controller;
 import com.platform.common.response.ApiResponse;
 import com.platform.repository.dto.PullLogResponse;
 import com.platform.repository.dto.PullResultResponse;
+import com.platform.repository.dto.RepositoryBranchListRequest;
+import com.platform.repository.dto.RepositoryBranchListResponse;
 import com.platform.repository.dto.RepositoryCreateRequest;
 import com.platform.repository.dto.RepositoryResponse;
 import com.platform.repository.dto.RepositoryUpdateRequest;
@@ -44,6 +46,15 @@ public class CodeRepositoryController {
                                                   @Valid @RequestBody RepositoryCreateRequest request) {
         request.setProjectId(projectId);
         return ApiResponse.ok(repositoryService.create(request));
+    }
+
+    /**
+     * 获取远程仓库分支列表（lsRemote 查询，不克隆代码，供新建/编辑时选择分支）
+     */
+    @PostMapping("/branches")
+    public ApiResponse<RepositoryBranchListResponse> listBranches(@PathVariable Long projectId,
+                                                                   @Valid @RequestBody RepositoryBranchListRequest request) {
+        return ApiResponse.ok(repositoryService.listRemoteBranches(projectId, request));
     }
 
     /**

@@ -17,6 +17,15 @@ export function createRepository(projectId: number, data: any) {
   return request.post(`/v1/projects/${projectId}/repositories`, data)
 }
 
+/**
+ * 获取远程仓库分支列表（lsRemote 查询，不克隆代码），供新建/编辑时选择分支
+ */
+export function getRepositoryBranches(projectId: number, data: any) {
+  return request.post(`/v1/projects/${projectId}/repositories/branches`, data, {
+    timeout: 60000,
+  })
+}
+
 export function updateRepository(projectId: number, repoId: number, data: any) {
   return request.post(`/v1/projects/${projectId}/repositories/${repoId}`, data)
 }

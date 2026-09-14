@@ -8,7 +8,7 @@
  * 界面元素 - 前端源码交互元素解析与 XPath 管理
  * 左侧文件树（仓库 → 目录 → 文件），右侧选中文件的元素列表
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
@@ -203,7 +203,69 @@ async function copyText(text: string, tip: string) {
   }
 }
 
-onMounted(fetchTree)
+// ===== 右键菜单（仓库节点） =====
+const contextMenuVisible = ref(false)
+const contextMenuPos = reactive({ x: 0, y: 0 })
+const contextRepo = ref<any>(null)
+const syncLoading = ref(false)
+
+function handleRepoContextmenu(e: MouseEvent, data: any) {
+  if (data.nodeType !== 'REPO') return
+  e.preventDefault()
+  e.stopPropagation()
+  contextRepo.value = data
+  contextMenuPos.x = e.clientX
+  contextMenuPos.y = e.clientY
+  contextMenuVisible.value = true
+}
+
+function closeContextMenu() {
+  contextMenuVisible.value = false
+  contextRepo.value = null
+}
+
+function contextSync() {
+  if (!contextRepo.value) return
+  const repo = contextRepo.value
+  closeContextMenu()
+  ElMessageBox.confirm(
+    `确定同步仓库「${repo.name}」的界面元素？将重新解析仓库源码并覆盖现有数据。`,
+    '确认同步',
+    { type: 'warning', confirmButtonText: '确认同步', cancelButtonText: '取消' },
+  )
+    .then(async () => {
+      syncLoading.value = true
+      try {
+        const res: any = await importUiElements(projectId.value, repo.repositoryId)
+        const d = res.data || {}
+        ElMessage.success(`同步完成：${d.message || '解析成功'}`)
+        selectedFile.value = null
+        elements.value = []
+        fetchTree()
+      } catch (e: any) {
+        ElMessage.error(e?.response?.data?.message || '同步失败')
+      } finally {
+        syncLoading.value = false
+      }
+    })
+    .catch(() => {})
+}
+
+function contextDelete() {
+  if (!contextRepo.value) return
+  const repo = contextRepo.value
+  closeContextMenu()
+  handleDeleteNode(repo)
+}
+
+function onDocClick() { closeContextMenu() }
+onMounted(() => {
+  fetchTree()
+  document.addEventListener('click', onDocClick)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
+})
 </script>
 
 <template>
@@ -239,7 +301,10 @@ onMounted(fetchTree)
             @node-click="handleNodeClick"
           >
             <template #default="{ data }">
-              <div class="tree-node">
+              <div
+                class="tree-node"
+                @contextmenu.stop="handleRepoContextmenu($event, data)"
+              >
                 <span class="tree-label" :class="{ 'tree-repo': data.nodeType === 'REPO' }">
                   {{ data.name }}
                 </span>
@@ -342,6 +407,32 @@ onMounted(fetchTree)
         </div>
       </div>
     </div>
+
+    <!-- 仓库节点右键菜单 -->
+    <Teleport to="body">
+      <div
+        v-if="contextMenuVisible"
+        class="context-menu"
+        :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
+        @click.stop
+      >
+        <div
+          v-if="hasPermission('project:ui:sync')"
+          class="context-menu-item"
+          :class="{ disabled: syncLoading }"
+          @click="contextSync"
+        >
+          同步
+        </div>
+        <div
+          v-if="hasPermission('project:ui:delete')"
+          class="context-menu-item danger"
+          @click="contextDelete"
+        >
+          删除
+        </div>
+      </div>
+    </Teleport>
 
     <!-- 导入界面元素弹窗 -->
     <el-dialog v-model="importVisible" title="导入界面元素" width="560px">
@@ -564,5 +655,40 @@ onMounted(fetchTree)
   margin-top: 10px;
   font-size: 13px;
   color: #e6a23c;
+}
+
+/* ===== 右键上下文菜单 ===== */
+.context-menu {
+  position: fixed;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px 0;
+  min-width: 130px;
+  z-index: 9999;
+}
+.context-menu-item {
+  padding: 7px 14px;
+  font-size: 13px;
+  color: #303133;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+}
+.context-menu-item:hover:not(.disabled) {
+  background: #f5f7fa;
+}
+.context-menu-item.danger {
+  color: #f56c6c;
+}
+.context-menu-item.danger:hover {
+  background: #fef0f0;
+}
+.context-menu-item.disabled {
+  color: #c0c4cc;
+  cursor: not-allowed;
 }
 </style>

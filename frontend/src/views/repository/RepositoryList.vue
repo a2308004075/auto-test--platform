@@ -437,7 +437,7 @@ function handleSubmit() {
         ElMessage.success('创建成功')
       }
       modalVisible.value = false
-      fetchList()
+      fetchGroups(); fetchList()
     } catch (e: any) {
       ElMessage.error(e?.response?.data?.message || '保存失败')
     }
@@ -486,7 +486,7 @@ async function handleCopy(record: any) {
   try {
     const res: any = await copyRepository(projectId.value, record.id)
     ElMessage.success(`复制成功，新仓库「${res.data?.name}」`)
-    fetchList()
+    fetchGroups(); fetchList()
   } catch (e: any) {
     ElMessage.error(e?.response?.data?.message || '复制失败')
   } finally {
@@ -503,7 +503,7 @@ function handleDelete(record: any) {
     .then(async () => {
       await deleteRepository(projectId.value, record.id)
       ElMessage.success('删除成功')
-      fetchList()
+      fetchGroups(); fetchList()
     })
     .catch(() => {})
 }

@@ -21,6 +21,8 @@ public class RepositoryResponse {
 
     private Long projectId;
 
+    private Long groupId;
+
     private String name;
 
     private String gitUrl;

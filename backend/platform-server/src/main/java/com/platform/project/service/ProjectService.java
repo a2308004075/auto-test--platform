@@ -41,6 +41,8 @@ import com.platform.project.mapper.ApiModuleMapper;
 import com.platform.project.mapper.ProjectMapper;
 import com.platform.projectdoc.entity.ProjectDocGroup;
 import com.platform.projectdoc.mapper.ProjectDocGroupMapper;
+import com.platform.repository.entity.CodeRepositoryGroup;
+import com.platform.repository.mapper.CodeRepositoryGroupMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -75,6 +77,7 @@ public class ProjectService {
     private final TestResultMapper testResultMapper;
     private final ApiKeywordMapper apiKeywordMapper;
     private final ProjectDocGroupMapper projectDocGroupMapper;
+    private final CodeRepositoryGroupMapper codeRepositoryGroupMapper;
 
     /**
      * 分页查询项目列表（含卡片统计）
@@ -169,6 +172,9 @@ public class ProjectService {
 
         createSystemDocGroup(project.getId(), "全部", null, "系统默认分组，包含所有项目文档");
         createSystemDocGroup(project.getId(), "未分组", null, "未分组的项目文档");
+
+        createSystemRepositoryGroup(project.getId(), "全部", null, "系统默认分组，包含所有仓库");
+        createSystemRepositoryGroup(project.getId(), "未分组", null, "未分组的仓库");
 
         return toResponse(project);
     }
@@ -479,6 +485,16 @@ public class ProjectService {
         group.setDescription(description);
         group.setIsSystem(1);
         projectDocGroupMapper.insert(group);
+    }
+
+    private void createSystemRepositoryGroup(Long projectId, String name, Long parentId, String description) {
+        CodeRepositoryGroup group = new CodeRepositoryGroup();
+        group.setProjectId(projectId);
+        group.setParentId(parentId);
+        group.setName(name);
+        group.setDescription(description);
+        group.setIsSystem(1);
+        codeRepositoryGroupMapper.insert(group);
     }
 
     private ProjectResponse toResponse(Project project) {

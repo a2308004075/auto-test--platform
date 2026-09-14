@@ -32,10 +32,13 @@ public class CodeRepositoryController {
 
     /**
      * 查询项目下的仓库列表
+     *
+     * @param groupId 分组 ID（不传=全部；正数=指定分组含子孙分组）
      */
     @GetMapping
-    public ApiResponse<List<RepositoryResponse>> list(@PathVariable Long projectId) {
-        return ApiResponse.ok(repositoryService.listByProject(projectId));
+    public ApiResponse<List<RepositoryResponse>> list(@PathVariable Long projectId,
+                                                      @RequestParam(required = false) Long groupId) {
+        return ApiResponse.ok(repositoryService.listByProject(projectId, groupId));
     }
 
     /**
@@ -74,6 +77,27 @@ public class CodeRepositoryController {
     public ApiResponse<RepositoryResponse> copy(@PathVariable Long projectId,
                                                 @PathVariable Long repoId) {
         return ApiResponse.ok(repositoryService.copy(repoId));
+    }
+
+    /**
+     * 批量删除仓库（同时删除本地代码目录）
+     */
+    @PostMapping("/batch-delete")
+    public ApiResponse<Void> batchDelete(@PathVariable Long projectId,
+                                          @RequestBody List<Long> repoIds) {
+        repositoryService.batchDelete(repoIds);
+        return ApiResponse.ok();
+    }
+
+    /**
+     * 批量移动仓库到指定分组
+     */
+    @PostMapping("/batch-move")
+    public ApiResponse<Void> batchMove(@PathVariable Long projectId,
+                                       @RequestParam Long targetGroupId,
+                                       @RequestBody List<Long> repoIds) {
+        repositoryService.batchMove(projectId, repoIds, targetGroupId);
+        return ApiResponse.ok();
     }
 
     /**

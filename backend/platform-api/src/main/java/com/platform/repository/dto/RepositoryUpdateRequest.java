@@ -18,6 +18,11 @@ import javax.validation.constraints.Size;
 @Data
 public class RepositoryUpdateRequest {
 
+    /**
+     * 所属分组 ID（为空时默认归属项目「未分组」系统分组）
+     */
+    private Long groupId;
+
     @NotBlank(message = "仓库名称不能为空")
     @Size(max = 50, message = "仓库名称长度不能超过 50")
     private String name;

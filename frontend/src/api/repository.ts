@@ -9,8 +9,47 @@ import request from './request'
  * 测试代码库模块 API
  */
 
-export function getRepositories(projectId: number) {
-  return request.get(`/v1/projects/${projectId}/repositories`)
+/**
+ * 查询项目下仓库列表（groupId 不传=全部；正数=指定分组含子孙分组）
+ */
+export function getRepositories(projectId: number, groupId?: number) {
+  return request.get(`/v1/projects/${projectId}/repositories`, {
+    params: groupId ? { groupId } : undefined,
+  })
+}
+
+/**
+ * 批量删除仓库
+ */
+export function batchDeleteRepositories(projectId: number, repoIds: number[]) {
+  return request.post(`/v1/projects/${projectId}/repositories/batch-delete`, repoIds)
+}
+
+/**
+ * 批量移动仓库到指定分组
+ */
+export function batchMoveRepositories(projectId: number, targetGroupId: number, repoIds: number[]) {
+  return request.post(`/v1/projects/${projectId}/repositories/batch-move`, repoIds, {
+    params: { targetGroupId },
+  })
+}
+
+// ===== 仓库分组 =====
+
+export function getRepositoryGroups(projectId: number) {
+  return request.get(`/v1/projects/${projectId}/repository-groups`)
+}
+
+export function createRepositoryGroup(projectId: number, data: any) {
+  return request.post(`/v1/projects/${projectId}/repository-groups`, data)
+}
+
+export function updateRepositoryGroup(projectId: number, groupId: number, data: any) {
+  return request.post(`/v1/projects/${projectId}/repository-groups/${groupId}`, data)
+}
+
+export function deleteRepositoryGroup(projectId: number, groupId: number) {
+  return request.post(`/v1/projects/${projectId}/repository-groups/${groupId}/delete`)
 }
 
 export function createRepository(projectId: number, data: any) {

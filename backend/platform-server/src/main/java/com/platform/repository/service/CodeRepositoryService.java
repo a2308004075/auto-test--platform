@@ -19,6 +19,7 @@ import com.platform.repository.dto.RepositoryCreateRequest;
 import com.platform.repository.dto.RepositoryResponse;
 import com.platform.repository.dto.RepositoryUpdateRequest;
 import com.platform.repository.entity.CodeRepository;
+import com.platform.repository.entity.CodeRepositoryGroup;
 import com.platform.repository.entity.CodeRepositoryPullLog;
 import com.platform.repository.mapper.CodeRepositoryMapper;
 import com.platform.repository.mapper.CodeRepositoryPullLogMapper;
@@ -43,6 +44,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * 测试代码仓库管理服务
@@ -58,6 +61,7 @@ public class CodeRepositoryService {
     private final CodeRepositoryMapper repositoryMapper;
     private final CodeRepositoryPullLogMapper pullLogMapper;
     private final ProjectService projectService;
+    private final CodeRepositoryGroupService repositoryGroupService;
 
     @Value("${repository.storage-path}")
     private String storagePath;
@@ -135,10 +139,18 @@ public class CodeRepositoryService {
 
     /**
      * 查询项目下的仓库列表
+     *
+     * @param projectId 项目 ID
+     * @param groupId   分组 ID（null=全部；正数=指定分组含子孙分组，含「未分组」系统分组实体 ID）
      */
-    public List<RepositoryResponse> listByProject(Long projectId) {
+    public List<RepositoryResponse> listByProject(Long projectId, Long groupId) {
         LambdaQueryWrapper<CodeRepository> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(CodeRepository::getProjectId, projectId);
+        if (groupId != null) {
+            // 查询该分组及其所有子孙分组的仓库
+            Set<Long> groupIds = repositoryGroupService.getDescendantGroupIds(groupId);
+            wrapper.in(CodeRepository::getGroupId, groupIds);
+        }
         wrapper.orderByDesc(CodeRepository::getCreatedAt);
 
         List<CodeRepository> list = repositoryMapper.selectList(wrapper);
@@ -147,6 +159,13 @@ public class CodeRepositoryService {
             result.add(toResponse(repo));
         }
         return result;
+    }
+
+    /**
+     * 查询项目下的仓库全量列表
+     */
+    public List<RepositoryResponse> listByProject(Long projectId) {
+        return listByProject(projectId, null);
     }
 
     /**
@@ -223,6 +242,7 @@ public class CodeRepositoryService {
 
         CodeRepository repo = new CodeRepository();
         repo.setProjectId(request.getProjectId());
+        repo.setGroupId(resolveGroupId(request.getProjectId(), request.getGroupId()));
         repo.setName(request.getName());
         repo.setGitUrl(request.getGitUrl());
         repo.setBranch(normalizeToNull(request.getBranch()));
@@ -244,6 +264,7 @@ public class CodeRepositoryService {
         CodeRepository repo = findById(repoId);
         checkNameDuplicate(repo.getProjectId(), request.getName(), repoId);
 
+        repo.setGroupId(resolveGroupId(repo.getProjectId(), request.getGroupId()));
         repo.setName(request.getName());
         repo.setGitUrl(request.getGitUrl());
         repo.setBranch(normalizeToNull(request.getBranch()));
@@ -269,6 +290,7 @@ public class CodeRepositoryService {
 
         CodeRepository copyEntity = new CodeRepository();
         copyEntity.setProjectId(source.getProjectId());
+        copyEntity.setGroupId(source.getGroupId());
         copyEntity.setName(buildCopyName(source.getProjectId(), source.getName()));
         copyEntity.setGitUrl(source.getGitUrl());
         copyEntity.setBranch(source.getBranch());
@@ -376,6 +398,40 @@ public class CodeRepositoryService {
     }
 
     /**
+     * 批量删除仓库（循环调用单条删除，同步清理本地代码目录）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void batchDelete(List<Long> repoIds) {
+        for (Long repoId : repoIds) {
+            delete(repoId);
+        }
+    }
+
+    /**
+     * 批量移动仓库到指定分组
+     *
+     * @param projectId     项目 ID（校验仓库与目标分组归属）
+     * @param repoIds       仓库 ID 列表
+     * @param targetGroupId 目标分组 ID（必须属于当前项目）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void batchMove(Long projectId, List<Long> repoIds, Long targetGroupId) {
+        // 校验目标分组存在且属于当前项目
+        Map<Long, CodeRepositoryGroup> groupMap = repositoryGroupService.getGroupMap(projectId);
+        if (!groupMap.containsKey(targetGroupId)) {
+            throw new BusinessException(ErrorCode.REPOSITORY_GROUP_NOT_FOUND, "分组不存在：" + targetGroupId);
+        }
+        for (Long repoId : repoIds) {
+            CodeRepository repo = findById(repoId);
+            if (!repo.getProjectId().equals(projectId)) {
+                throw new BusinessException(ErrorCode.REPOSITORY_NOT_FOUND, "仓库不存在：" + repoId);
+            }
+            repo.setGroupId(targetGroupId);
+            repositoryMapper.updateById(repo);
+        }
+    }
+
+    /**
      * 查询仓库拉取历史（最近 20 条）
      */
     public List<PullLogResponse> listPullLogs(Long repoId) {
@@ -395,6 +451,27 @@ public class CodeRepositoryService {
     }
 
     // ───────────────────── 私有方法 ─────────────────────
+
+    /**
+     * 解析仓库归属分组：为空时默认项目「未分组」系统分组；
+     * 非空时校验分组存在且属于当前项目（防止跨项目错挂）
+     */
+    private Long resolveGroupId(Long projectId, Long groupId) {
+        Map<Long, CodeRepositoryGroup> groupMap = repositoryGroupService.getGroupMap(projectId);
+        if (groupId == null) {
+            for (CodeRepositoryGroup group : groupMap.values()) {
+                if (Integer.valueOf(1).equals(group.getIsSystem()) && "未分组".equals(group.getName())) {
+                    return group.getId();
+                }
+            }
+            throw new BusinessException(ErrorCode.REPOSITORY_GROUP_NOT_FOUND, "项目「未分组」系统分组缺失：" + projectId);
+        }
+        CodeRepositoryGroup group = groupMap.get(groupId);
+        if (group == null) {
+            throw new BusinessException(ErrorCode.REPOSITORY_GROUP_NOT_FOUND, "分组不存在：" + groupId);
+        }
+        return group.getId();
+    }
 
     private CodeRepository findById(Long repoId) {
         CodeRepository repo = repositoryMapper.selectById(repoId);
@@ -593,6 +670,7 @@ public class CodeRepositoryService {
         RepositoryResponse response = new RepositoryResponse();
         response.setId(repo.getId());
         response.setProjectId(repo.getProjectId());
+        response.setGroupId(repo.getGroupId());
         response.setName(repo.getName());
         response.setGitUrl(repo.getGitUrl());
         response.setBranch(repo.getBranch());

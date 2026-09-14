@@ -146,6 +146,10 @@ public final class ErrorCode {
     public static final int REPOSITORY_NAME_DUPLICATE = 2201;
     public static final int REPOSITORY_CRYPTO_ERROR = 2202;
     public static final int REPOSITORY_BRANCH_FETCH_FAILED = 2203;
+    public static final int REPOSITORY_GROUP_NOT_FOUND = 2204;
+    public static final int REPOSITORY_GROUP_NAME_DUPLICATE = 2205;
+    public static final int REPOSITORY_GROUP_SYSTEM = 2206;
+    public static final int REPOSITORY_GROUP_NOT_EMPTY = 2207;
 
     // ===== M12 界面元素 (2300-2399) =====
     public static final int UI_ELEMENT_IMPORT_FAILED = 2300;
@@ -158,7 +162,7 @@ public final class ErrorCode {
 
     // ===== 业务错误码 → HTTP 状态码映射 =====
     private static final int[] UNAUTHORIZED_CODES = {UNAUTHORIZED, ACCESS_TOKEN_EXPIRED, REFRESH_TOKEN_EXPIRED};
-    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, AUTO_CASE_GROUP_SYSTEM, ACTION_GROUP_SYSTEM, KEYWORD_GROUP_SYSTEM, MANUAL_CASE_GROUP_SYSTEM, DEFECT_GROUP_SYSTEM, PROJECT_DOC_GROUP_SYSTEM};
+    private static final int[] FORBIDDEN_CODES = {FORBIDDEN, ADMIN_PROTECTED, ROLE_IS_BUILTIN, AUTO_CASE_GROUP_SYSTEM, ACTION_GROUP_SYSTEM, KEYWORD_GROUP_SYSTEM, MANUAL_CASE_GROUP_SYSTEM, DEFECT_GROUP_SYSTEM, PROJECT_DOC_GROUP_SYSTEM, REPOSITORY_GROUP_SYSTEM};
 
     public static int toHttpStatus(int errorCode) {
         for (int code : UNAUTHORIZED_CODES) {
@@ -197,6 +201,7 @@ public final class ErrorCode {
             case DICT_NOT_FOUND:
             case CACHE_KEY_NOT_FOUND:
             case REPOSITORY_NOT_FOUND:
+            case REPOSITORY_GROUP_NOT_FOUND:
                 return 404;
             case RESOURCE_CONFLICT:
             case API_DEPENDENCY_CONFLICT:
@@ -215,6 +220,8 @@ public final class ErrorCode {
             case ROLE_CODE_DUPLICATE:
             case ROLE_HAS_USERS:
             case REPOSITORY_NAME_DUPLICATE:
+            case REPOSITORY_GROUP_NAME_DUPLICATE:
+            case REPOSITORY_GROUP_NOT_EMPTY:
             case API_MODULE_NAME_DUPLICATE:
                 return 409;
             case EXECUTION_QUEUE_FULL:

@@ -103,7 +103,7 @@
               <th>最近拉取状态</th>
               <th>最近拉取时间</th>
               <th>最近 Commit</th>
-              <th style="width: 220px;">操作</th>
+              <th style="width: 270px;">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -119,6 +119,7 @@
                 <button class="btn btn-link btn-sm" onclick="handlePull('bms-backend')">拉取</button>
                 <button class="btn btn-link btn-sm" onclick="handleShowLogs('bms-backend')">记录</button>
                 <button class="btn btn-link btn-sm" onclick="handleRepoEdit('bms-backend')">编辑</button>
+                <button class="btn btn-link btn-sm" onclick="handleRepoCopy('bms-backend')">复制</button>
                 <button class="btn btn-link btn-sm btn-danger" onclick="handleRepoDelete('bms-backend')">删除</button>
               </td>
             </tr>
@@ -134,6 +135,7 @@
                 <button class="btn btn-link btn-sm" onclick="handlePull('bms-web')">拉取</button>
                 <button class="btn btn-link btn-sm" onclick="handleShowLogs('bms-web')">记录</button>
                 <button class="btn btn-link btn-sm" onclick="handleRepoEdit('bms-web')">编辑</button>
+                <button class="btn btn-link btn-sm" onclick="handleRepoCopy('bms-web')">复制</button>
                 <button class="btn btn-link btn-sm btn-danger" onclick="handleRepoDelete('bms-web')">删除</button>
               </td>
             </tr>
@@ -149,6 +151,7 @@
                 <button class="btn btn-link btn-sm" onclick="handlePull('bms-algorithms')">拉取</button>
                 <button class="btn btn-link btn-sm" onclick="handleShowLogs('bms-algorithms')">记录</button>
                 <button class="btn btn-link btn-sm" onclick="handleRepoEdit('bms-algorithms')">编辑</button>
+                <button class="btn btn-link btn-sm" onclick="handleRepoCopy('bms-algorithms')">复制</button>
                 <button class="btn btn-link btn-sm btn-danger" onclick="handleRepoDelete('bms-algorithms')">删除</button>
               </td>
             </tr>
@@ -305,6 +308,10 @@
 
     function handlePull(repoName) {
       alert('开始拉取仓库「' + repoName + '」代码，大仓库耗时较长，请稍候…');
+    }
+
+    function handleRepoCopy(repoName) {
+      alert('已复制仓库「' + repoName + '」，新仓库「' + repoName + '（副本）」已创建（认证凭证已同步，拉取状态重置）');
     }
 
   </script>

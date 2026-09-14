@@ -55,6 +55,10 @@ export function updateSyncConfig(projectId: number, configId: number, data: { na
   return request.post(`/v1/projects/${projectId}/apis/sync-configs/${configId}`, data)
 }
 
+export function copySyncConfig(projectId: number, configId: number) {
+  return request.post(`/v1/projects/${projectId}/apis/sync-configs/${configId}/copy`)
+}
+
 export function deleteSyncConfig(projectId: number, configId: number) {
   return request.post(`/v1/projects/${projectId}/apis/sync-configs/${configId}/delete`)
 }

@@ -29,7 +29,6 @@ const router = useRouter()
 const projectId = computed(() => Number(route.params.id))
 const { hasPermission } = usePermission()
 
-const methodColors: Record<string, string> = { GET: '', POST: 'success', PUT: 'warning', DELETE: 'danger', PATCH: 'info' }
 const { options: httpMethodOptions } = useDict('http_method')
 const { options: sourceTypeOptions } = useDict('source_type')
 
@@ -491,11 +490,7 @@ onBeforeUnmount(() => {
               <span style="font-family: monospace">{{ (row.path || '').replace(/^\$\{[^}]*\}/, '') }}</span>
             </template>
           </el-table-column>
-          <el-table-column v-if="isColVisible('method')" label="方法" width="80">
-            <template #default="{ row }">
-              <el-tag :type="methodColors[row.httpMethod] || 'info'" size="small">{{ row.httpMethod }}</el-tag>
-            </template>
-          </el-table-column>
+          <el-table-column v-if="isColVisible('method')" prop="httpMethod" label="方法" width="80" />
           <el-table-column v-if="isColVisible('group')" label="分组" width="120">
             <template #default="{ row }">{{ row.moduleName || moduleMap[row.moduleId]?.name || '--' }}</template>
           </el-table-column>

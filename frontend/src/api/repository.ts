@@ -26,6 +26,13 @@ export function deleteRepository(projectId: number, repoId: number) {
 }
 
 /**
+ * 复制仓库（一步生成副本，名称自动追加「（副本）」后缀，重名时追加序号）
+ */
+export function copyRepository(projectId: number, repoId: number) {
+  return request.post(`/v1/projects/${projectId}/repositories/${repoId}/copy`)
+}
+
+/**
  * 拉取仓库代码（克隆/增量更新），大仓库耗时较长，单独放宽超时时间
  */
 export function pullRepository(projectId: number, repoId: number) {

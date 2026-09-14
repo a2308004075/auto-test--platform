@@ -109,6 +109,21 @@ public class CodeRepositoryService {
     private static final int DEFAULT_LOG_LIMIT = 20;
 
     /**
+     * 仓库名称最大长度（与表字段一致）
+     */
+    private static final int NAME_MAX_LENGTH = 50;
+
+    /**
+     * 复制副本名称后缀（首个副本）
+     */
+    private static final String COPY_NAME_SUFFIX = "（副本）";
+
+    /**
+     * 复制副本名称序号后缀格式（重名时：第二个及之后副本）
+     */
+    private static final String COPY_NAME_SEQ_FORMAT = "（副本%d）";
+
+    /**
      * 查询项目下的仓库列表
      */
     public List<RepositoryResponse> listByProject(Long projectId) {
@@ -166,6 +181,30 @@ public class CodeRepositoryService {
 
         repositoryMapper.updateById(repo);
         return toResponse(repo);
+    }
+
+    /**
+     * 复制仓库（一步生成副本）
+     *
+     * <p>名称自动追加「（副本）」后缀，重名时追加序号（（副本2）、（副本3）…）；认证凭证密文直接复制；
+     * 拉取状态、本地目录与拉取历史不复制，副本保持全新未拉取状态。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public RepositoryResponse copy(Long repoId) {
+        CodeRepository source = findById(repoId);
+
+        CodeRepository copyEntity = new CodeRepository();
+        copyEntity.setProjectId(source.getProjectId());
+        copyEntity.setName(buildCopyName(source.getProjectId(), source.getName()));
+        copyEntity.setGitUrl(source.getGitUrl());
+        copyEntity.setBranch(source.getBranch());
+        copyEntity.setDescription(source.getDescription());
+        copyEntity.setAuthUsername(source.getAuthUsername());
+        copyEntity.setAuthPassword(source.getAuthPassword());
+
+        repositoryMapper.insert(copyEntity);
+        log.info("复制仓库成功: sourceRepoId={}, newRepoId={}", source.getId(), copyEntity.getId());
+        return toResponse(copyEntity);
     }
 
     /**
@@ -305,6 +344,47 @@ public class CodeRepositoryService {
         if (count != null && count > 0) {
             throw new BusinessException(ErrorCode.REPOSITORY_NAME_DUPLICATE, "仓库名称已存在：" + name);
         }
+    }
+
+    /**
+     * 生成仓库副本名称：首个追加「（副本）」，重名时依次追加「（副本2）」「（副本3）」…
+     */
+    private String buildCopyName(Long projectId, String sourceName) {
+        int seq = 1;
+        String candidate = buildSuffixedName(sourceName, buildCopySuffix(seq));
+        while (isNameExists(projectId, candidate)) {
+            seq++;
+            candidate = buildSuffixedName(sourceName, buildCopySuffix(seq));
+        }
+        return candidate;
+    }
+
+    /**
+     * 构建副本名称后缀：seq=1 为「（副本）」，seq>=2 为「（副本N）」
+     */
+    private String buildCopySuffix(int seq) {
+        return seq == 1 ? COPY_NAME_SUFFIX : String.format(COPY_NAME_SEQ_FORMAT, seq);
+    }
+
+    /**
+     * 原名追加后缀，超出名称最大长度时先截断原名
+     */
+    private String buildSuffixedName(String sourceName, String suffix) {
+        if (sourceName.length() + suffix.length() <= NAME_MAX_LENGTH) {
+            return sourceName + suffix;
+        }
+        return sourceName.substring(0, NAME_MAX_LENGTH - suffix.length()) + suffix;
+    }
+
+    /**
+     * 判断项目内仓库名称是否已存在
+     */
+    private boolean isNameExists(Long projectId, String name) {
+        LambdaQueryWrapper<CodeRepository> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(CodeRepository::getProjectId, projectId)
+                .eq(CodeRepository::getName, name);
+        Long count = repositoryMapper.selectCount(wrapper);
+        return count != null && count > 0;
     }
 
     /**

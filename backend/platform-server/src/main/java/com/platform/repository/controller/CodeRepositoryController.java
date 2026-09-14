@@ -57,6 +57,15 @@ public class CodeRepositoryController {
     }
 
     /**
+     * 复制仓库（一步生成副本，名称自动追加「（副本）」后缀，重名时追加「（副本N）」序号）
+     */
+    @PostMapping("/{repoId}/copy")
+    public ApiResponse<RepositoryResponse> copy(@PathVariable Long projectId,
+                                                @PathVariable Long repoId) {
+        return ApiResponse.ok(repositoryService.copy(repoId));
+    }
+
+    /**
      * 删除仓库（同时删除本地代码目录）
      */
     @PostMapping("/{repoId}/delete")

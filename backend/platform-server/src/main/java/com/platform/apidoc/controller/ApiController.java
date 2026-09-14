@@ -160,6 +160,15 @@ public class ApiController {
     }
 
     /**
+     * 复制同步配置
+     */
+    @PostMapping("/sync-configs/{configId}/copy")
+    public ApiResponse<ApiSyncConfigResponse> copySyncConfig(@PathVariable Long projectId,
+                                                              @PathVariable Long configId) {
+        return ApiResponse.ok(apiService.copySyncConfig(configId));
+    }
+
+    /**
      * 同步单条配置
      */
     @PostMapping("/sync-configs/{configId}/sync")

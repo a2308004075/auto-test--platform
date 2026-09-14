@@ -13,7 +13,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { QuestionFilled } from '@element-plus/icons-vue'
 import {
-  getSyncConfigs, createSyncConfig, updateSyncConfig, deleteSyncConfig,
+  getSyncConfigs, createSyncConfig, updateSyncConfig, deleteSyncConfig, copySyncConfig,
   syncOneConfig, syncAllConfigs, getModules,
 } from '@/api/apidoc'
 import EditPageHeader from '@/components/EditPageHeader/index.vue'
@@ -147,6 +147,16 @@ async function handleSave() {
   }
 }
 
+async function handleCopy(row: any) {
+  try {
+    await copySyncConfig(projectId.value, row.id)
+    ElMessage.success(`已复制配置「${row.name}」`)
+    await fetchList()
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '复制失败')
+  }
+}
+
 async function handleDelete(row: any) {
   try {
     await ElMessageBox.confirm(`确定删除配置「${row.name}」？`, '提示', { type: 'warning' })
@@ -216,10 +226,11 @@ onMounted(() => {
       <el-table-column label="最后同步" width="160">
         <template #default="{ row }">{{ row.lastSyncAt?.replace('T', ' ').substring(0, 19) || '未同步' }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link size="small" :loading="syncOneLoadingId === row.id" @click="handleSyncOne(row)">同步</el-button>
           <el-button v-if="hasPermission('project:api:swagger')" type="primary" link size="small" @click="openEdit(row)">编辑</el-button>
+          <el-button v-if="hasPermission('project:api:swagger')" type="primary" link size="small" @click="handleCopy(row)">复制</el-button>
           <el-button v-if="hasPermission('project:api:swagger')" type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>

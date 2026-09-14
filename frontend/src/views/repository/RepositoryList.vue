@@ -18,6 +18,7 @@ import {
   deleteRepository,
   pullRepository,
   getPullLogs,
+  copyRepository,
 } from '@/api/repository'
 import { useProjectStore } from '@/stores/modules/project'
 import { usePermission } from '@/composables/usePermission'
@@ -69,6 +70,9 @@ const rules = reactive<FormRules>({
 
 // 行级拉取 loading（防止同一仓库重复点击拉取）
 const pullingIds = ref<number[]>([])
+
+// 行级复制 loading（防止同一仓库重复点击复制）
+const copyingIds = ref<number[]>([])
 
 // 拉取记录抽屉
 const logsDrawerVisible = ref(false)
@@ -162,6 +166,19 @@ async function handleShowLogs(record: any) {
     logsList.value = []
   } finally {
     logsLoading.value = false
+  }
+}
+
+async function handleCopy(record: any) {
+  copyingIds.value.push(record.id)
+  try {
+    const res: any = await copyRepository(projectId.value, record.id)
+    ElMessage.success(`复制成功，新仓库「${res.data?.name}」`)
+    fetchList()
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '复制失败')
+  } finally {
+    copyingIds.value = copyingIds.value.filter((id) => id !== record.id)
   }
 }
 
@@ -267,7 +284,7 @@ onMounted(fetchList)
             {{ formatCommit(row.lastCommitId) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="230" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button
               v-if="hasPermission('project:repo:pull')"
@@ -296,6 +313,16 @@ onMounted(fetchList)
               @click="openEdit(row)"
             >
               编辑
+            </el-button>
+            <el-button
+              v-if="hasPermission('project:repo:add')"
+              type="primary"
+              link
+              size="small"
+              :loading="copyingIds.includes(row.id)"
+              @click="handleCopy(row)"
+            >
+              复制
             </el-button>
             <el-button
               v-if="hasPermission('project:repo:delete')"

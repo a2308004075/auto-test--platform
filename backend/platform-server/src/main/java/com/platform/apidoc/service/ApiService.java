@@ -838,6 +838,24 @@ public class ApiService {
     }
 
     /**
+     * 复制同步配置
+     */
+    public ApiSyncConfigResponse copySyncConfig(Long configId) {
+        ApiSyncConfig source = findSyncConfigById(configId);
+        ApiSyncConfig copy = new ApiSyncConfig();
+        copy.setProjectId(source.getProjectId());
+        copy.setName(source.getName() + " (副本)");
+        copy.setUrl(source.getUrl());
+        copy.setModuleId(source.getModuleId());
+        copy.setHeaders(source.getHeaders());
+        copy.setHostPrefix(source.getHostPrefix());
+        copy.setAuthUsername(source.getAuthUsername());
+        copy.setAuthPassword(source.getAuthPassword());
+        apiSyncConfigMapper.insert(copy);
+        return toSyncConfigResponse(copy);
+    }
+
+    /**
      * 同步单条配置
      */
     @Transactional(rollbackFor = Exception.class)

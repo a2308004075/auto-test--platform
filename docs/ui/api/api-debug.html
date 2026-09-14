@@ -61,17 +61,23 @@
         <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
       </ul>
       <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
-        <li class="menu-item active"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
-      </ul>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🗂</span><span class="label">项目资料</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../repository/repository-list.html">项目源代码</a></li>
+            <li class="menu-item active"><a href="../api/api-list.html">接口文档</a></li>
+          </ul>
+        </div>
+      </div>
       <div class="sidebar-divider"></div>
       <div class="menu-group">
         <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
-            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -80,8 +86,8 @@
         <div class="menu-group-header"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
-            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
-            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../cases/case-list.html">自动化用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">自动化套件</a></li>
             <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
             <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
           </ul>
@@ -109,16 +115,16 @@
           <table class="param-table">
             <thead><tr><th>参数名</th><th>值</th></tr></thead>
             <tbody>
-              <tr><td><input type="text" class="input font-mono" value="page" style="width: 100%;" readonly></td><td><input type="text" class="input" value="1" style="width: 100%;"></td></tr>
-              <tr><td><input type="text" class="input font-mono" value="page_size" style="width: 100%;" readonly></td><td><input type="text" class="input" value="20" style="width: 100%;"></td></tr>
-              <tr><td><input type="text" class="input font-mono" value="keyword" style="width: 100%;" readonly></td><td><input type="text" class="input" value="" placeholder="搜索关键字" style="width: 100%;"></td></tr>
+              <tr><td><input type="text" class="input font-mono" value="page" aria-label="Query参数名" style="width: 100%;" readonly></td><td><input type="text" class="input" value="1" aria-label="page参数值" style="width: 100%;"></td></tr>
+              <tr><td><input type="text" class="input font-mono" value="page_size" aria-label="Query参数名" style="width: 100%;" readonly></td><td><input type="text" class="input" value="20" aria-label="page_size参数值" style="width: 100%;"></td></tr>
+              <tr><td><input type="text" class="input font-mono" value="keyword" aria-label="Query参数名" style="width: 100%;" readonly></td><td><input type="text" class="input" value="" placeholder="搜索关键字" aria-label="keyword参数值" style="width: 100%;"></td></tr>
             </tbody>
           </table>
           <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary);">Header 参数</div>
           <table class="param-table">
             <thead><tr><th>参数名</th><th>值</th></tr></thead>
             <tbody>
-              <tr><td><input type="text" class="input font-mono" value="Authorization" style="width: 100%;" readonly></td><td><input type="text" class="input" value="Bearer eyJhbGci..." style="width: 100%;"></td></tr>
+              <tr><td><input type="text" class="input font-mono" value="Authorization" aria-label="Header参数名" style="width: 100%;" readonly></td><td><input type="text" class="input" value="Bearer eyJhbGci..." aria-label="Authorization参数值" style="width: 100%;"></td></tr>
             </tbody>
           </table>
         </div>

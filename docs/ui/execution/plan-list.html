@@ -50,17 +50,23 @@
         <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
       </ul>
       <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
-        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
-      </ul>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🗂</span><span class="label">项目资料</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../repository/repository-list.html">项目源代码</a></li>
+            <li class="menu-item"><a href="../api/api-list.html">接口文档</a></li>
+          </ul>
+        </div>
+      </div>
       <div class="sidebar-divider"></div>
       <div class="menu-group">
         <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
-            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -69,8 +75,8 @@
         <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
-            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
-            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../cases/case-list.html">自动化用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">自动化套件</a></li>
             <li class="menu-item active"><a href="../execution/plan-list.html">测试计划</a></li>
             <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
           </ul>
@@ -85,7 +91,7 @@
       <!-- Left: Group Tree -->
       <div class="tree-panel" id="treePanel" oncontextmenu="showBlankContextMenu(event)">
         <div class="tree-search">
-          <input type="text" class="input input-search w-full" placeholder="搜索分组..." style="height: 28px; font-size: 13px;">
+          <input type="text" class="input input-search w-full" placeholder="搜索分组..." style="height: 28px; font-size: 13px;" aria-label="搜索分组...">
         </div>
         <div id="groupTree"></div>
       </div>
@@ -97,17 +103,17 @@
           <div class="search-form">
             <div class="search-row">
               <div class="search-item">
-                <span class="filter-label">计划名称</span>
+                <label class="filter-label" for="searchPlanName">计划名称</label>
                 <input type="text" class="input input-search" id="searchPlanName" placeholder="模糊查询">
               </div>
               <div class="search-item">
-                <span class="filter-label">触发方式</span>
+                <label class="filter-label" for="searchTrigger">触发方式</label>
                 <select class="select" id="searchTrigger">
                   <option>全部触发方式</option><option>定时执行</option><option>手动触发</option><option>CI 触发</option>
                 </select>
               </div>
               <div class="search-item">
-                <span class="filter-label">环境</span>
+                <label class="filter-label" for="searchEnv">环境</label>
                 <select class="select" id="searchEnv">
                   <option>全部环境</option><option>开发环境</option><option>测试环境</option><option>预发布环境</option><option>生产环境</option>
                 </select>
@@ -123,19 +129,19 @@
             </div>
             <div class="search-row collapse-row">
               <div class="search-item">
-                <span class="filter-label">状态</span>
+                <label class="filter-label" for="searchStatus">状态</label>
                 <select class="select" id="searchStatus"><option>全部状态</option><option>启用</option><option>禁用</option></select>
               </div>
               <div class="search-item">
-                <span class="filter-label">关联套件</span>
-                <input type="text" class="input input-search" id="searchSuite" placeholder="套件名称">
+                <label class="filter-label" for="searchSuite">关联自动化套件</label>
+                <input type="text" class="input input-search" id="searchSuite" placeholder="自动化套件名称">
               </div>
               <div class="search-item">
-                <span class="filter-label">最近更新</span>
+                <label class="filter-label" for="searchUpdateBegin">最近更新</label>
                 <div class="date-range">
-                  <input type="date" class="input" value="2024-01-01">
+                  <input type="date" id="searchUpdateBegin" class="input" value="2024-01-01" aria-label="最近更新-起">
                   <span class="separator">至</span>
-                  <input type="date" class="input" value="2024-01-15">
+                  <input type="date" id="searchUpdateEnd" class="input" value="2024-01-15" aria-label="最近更新-止">
                 </div>
               </div>
             </div>
@@ -145,7 +151,7 @@
         <div class="card">
           <div class="table-wrapper">
             <table>
-              <thead><tr><th style="width:200px;">计划名称</th><th style="width:200px;">描述</th><th style="width:90px;">触发方式</th><th style="width:160px;">关联套件</th><th style="width:70px;">用例数</th><th style="width:100px;">环境</th><th style="width:70px;">状态</th><th style="width:160px;">最近执行</th><th style="width:70px;">通过率</th><th style="width:140px;">操作</th></tr></thead>
+              <thead><tr><th style="width:200px;">计划名称</th><th style="width:200px;">描述</th><th style="width:90px;">触发方式</th><th style="width:160px;">关联自动化套件</th><th style="width:70px;">自动化用例数</th><th style="width:100px;">环境</th><th style="width:70px;">状态</th><th style="width:160px;">最近执行</th><th style="width:70px;">通过率</th><th style="width:140px;">操作</th></tr></thead>
               <tbody id="planTableBody"></tbody>
             </table>
           </div>
@@ -160,8 +166,8 @@
     <div class="modal">
       <div class="modal-header"><h3 id="createGroupTitle">新建分组</h3><button class="modal-close" onclick="closeCreateGroupModal()">&#10005;</button></div>
       <div class="modal-body">
-        <div class="form-group"><label class="form-label">分组名称 <span class="required">*</span></label><input type="text" class="input w-full" id="groupName" placeholder="请输入分组名称，如「日常测试」"></div>
-        <div class="form-group"><label class="form-label">描述</label><input type="text" class="input w-full" id="groupDesc" placeholder="可选，分组描述"></div>
+        <div class="form-group"><label class="form-label" for="groupName">分组名称 <span class="required">*</span></label><input type="text" class="input w-full" id="groupName" placeholder="请输入分组名称，如「日常测试」"></div>
+        <div class="form-group"><label class="form-label" for="groupDesc">描述</label><input type="text" class="input w-full" id="groupDesc" placeholder="可选，分组描述"></div>
       </div>
       <div class="modal-footer"><button class="btn" onclick="closeCreateGroupModal()">取消</button><button class="btn btn-primary" onclick="confirmCreateGroup()">确认创建</button></div>
     </div>
@@ -172,8 +178,8 @@
     <div class="modal">
       <div class="modal-header"><h3>编辑分组</h3><button class="modal-close" onclick="closeEditGroupModal()">&#10005;</button></div>
       <div class="modal-body">
-        <div class="form-group"><label class="form-label">分组名称 <span class="required">*</span></label><input type="text" class="input w-full" id="editGroupName" placeholder="请输入分组名称"></div>
-        <div class="form-group"><label class="form-label">描述</label><input type="text" class="input w-full" id="editGroupDesc" placeholder="可选，分组描述"></div>
+        <div class="form-group"><label class="form-label" for="editGroupName">分组名称 <span class="required">*</span></label><input type="text" class="input w-full" id="editGroupName" placeholder="请输入分组名称"></div>
+        <div class="form-group"><label class="form-label" for="editGroupDesc">描述</label><input type="text" class="input w-full" id="editGroupDesc" placeholder="可选，分组描述"></div>
       </div>
       <div class="modal-footer"><button class="btn" onclick="closeEditGroupModal()">取消</button><button class="btn btn-primary" onclick="confirmEditGroup()">确认保存</button></div>
     </div>
@@ -205,11 +211,11 @@
 
     /* ===== Plan Data ===== */
     var plans = [
-      { id: 1, name: '每日冒烟测试', desc: '每日自动执行冒烟用例，确保核心功能正常', trigger: '定时', triggerTag: 'tag-green', suites: ['冒烟测试套件'], caseCount: 12, env: '开发环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-15 08:00', cron: 'Cron: 0 8 * * *', passRate: '95%', passCls: 'var(--success)', groupId: '1' },
-      { id: 2, name: '每周回归测试', desc: '每周五下午全量回归，发布前验证', trigger: '定时', triggerTag: 'tag-green', suites: ['回归测试套件','电池管理测试'], caseCount: 63, env: '测试环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-12 14:00', cron: 'Cron: 0 14 * * 5', passRate: '92%', passCls: 'var(--success)', groupId: '4' },
-      { id: 3, name: '手动验证计划', desc: '临时验证用，按需手动触发执行', trigger: '手动', triggerTag: 'tag-blue', suites: ['冒烟测试套件'], caseCount: 12, env: '开发环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-10 16:30', cron: '', passRate: '88%', passCls: '', groupId: '1' },
-      { id: 4, name: 'CI/CD 集成测试', desc: 'Jenkins 部署后自动触发回归测试', trigger: 'CI', triggerTag: 'tag-purple', suites: ['回归测试套件'], caseCount: 28, env: '预发布环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-14 20:15', cron: '', passRate: '96%', passCls: 'var(--success)', groupId: '3' },
-      { id: 5, name: '接口全量回归', desc: '版本发布前全量接口回归验证', trigger: '手动', triggerTag: 'tag-blue', suites: ['冒烟测试套件','回归测试套件'], caseCount: 40, env: '测试环境', status: '禁用', statusTag: 'tag-gray', lastExec: '2024-01-08 11:20', cron: '', passRate: '72%', passCls: 'var(--error)', groupId: '4' }
+      { id: 1, name: '每日冒烟测试', desc: '每日自动执行冒烟自动化用例，确保核心功能正常', trigger: '定时', triggerTag: 'tag-green', suites: ['冒烟自动化套件'], caseCount: 12, env: '开发环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-15 08:00', cron: 'Cron: 0 8 * * *', passRate: '95%', passCls: 'var(--success)', groupId: '1' },
+      { id: 2, name: '每周回归测试', desc: '每周五下午全量回归，发布前验证', trigger: '定时', triggerTag: 'tag-green', suites: ['回归自动化套件','电池管理测试'], caseCount: 63, env: '测试环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-12 14:00', cron: 'Cron: 0 14 * * 5', passRate: '92%', passCls: 'var(--success)', groupId: '4' },
+      { id: 3, name: '手动验证计划', desc: '临时验证用，按需手动触发执行', trigger: '手动', triggerTag: 'tag-blue', suites: ['冒烟自动化套件'], caseCount: 12, env: '开发环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-10 16:30', cron: '', passRate: '88%', passCls: '', groupId: '1' },
+      { id: 4, name: 'CI/CD 集成测试', desc: 'Jenkins 部署后自动触发回归测试', trigger: 'CI', triggerTag: 'tag-purple', suites: ['回归自动化套件'], caseCount: 28, env: '预发布环境', status: '启用', statusTag: 'tag-green', lastExec: '2024-01-14 20:15', cron: '', passRate: '96%', passCls: 'var(--success)', groupId: '3' },
+      { id: 5, name: '接口全量回归', desc: '版本发布前全量接口回归验证', trigger: '手动', triggerTag: 'tag-blue', suites: ['冒烟自动化套件','回归自动化套件'], caseCount: 40, env: '测试环境', status: '禁用', statusTag: 'tag-gray', lastExec: '2024-01-08 11:20', cron: '', passRate: '72%', passCls: 'var(--error)', groupId: '4' }
     ];
 
     /* ===== Group Data ===== */

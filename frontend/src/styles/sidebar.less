@@ -1,0 +1,91 @@
+/**
+ * 侧边栏样式
+ * 参考 svc-manager-web 的侧边栏方案
+ */
+.sidebar-container {
+  transition: width 0.28s;
+  width: 180px;
+  background-color: #001529;
+  height: 100%;
+  font-size: 0;
+  overflow: hidden;
+
+  // 重置 Element Plus 折叠过渡
+  .horizontal-collapse-transition {
+    transition: 0s width ease-in-out, 0s padding-left ease-in-out,
+      0s padding-right ease-in-out;
+  }
+
+  .el-scrollbar {
+    height: calc(100% - 50px);
+  }
+
+  .scrollbar-wrapper {
+    overflow-x: hidden !important;
+  }
+
+  .el-scrollbar__bar.is-vertical {
+    right: 0;
+  }
+
+  .el-menu {
+    border-right: none;
+    height: 100%;
+    width: 100% !important;
+  }
+
+  .el-menu-item {
+    height: 50px;
+    line-height: 50px;
+
+    &:hover {
+      background-color: #263445 !important;
+    }
+
+    &.is-active {
+      color: #fff !important;
+      background-color: #409eff !important;
+    }
+  }
+}
+
+.sidebar-logo {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  background-color: #00284d;
+
+  h1 {
+    margin: 0;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 20px;
+  }
+}
+
+// 折叠状态
+.hide-sidebar {
+  .sidebar-container {
+    width: 50px;
+  }
+
+  .el-menu--collapse {
+    width: 50px;
+  }
+
+  .el-submenu {
+    overflow: hidden;
+
+    & > .el-submenu__title {
+      padding: 0 !important;
+
+      .el-submenu__icon-arrow {
+        display: none;
+      }
+    }
+  }
+}

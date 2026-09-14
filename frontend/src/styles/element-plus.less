@@ -1,0 +1,129 @@
+/**
+ * Element Plus 全局样式覆盖
+ * 对齐 svc-manager-web 的 element-ui.scss
+ */
+
+// 弹窗打开时隐藏溢出
+.el-popup-parent--hidden {
+  overflow: hidden;
+}
+
+// 对话框标题加粗
+.el-message-box__title {
+  font-weight: bold;
+}
+
+// 表格表头样式（对齐 svc-manager-web：背景色 #f5f5f5）
+.el-table th.el-table__cell {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background-color: #f5f5f5;
+}
+
+// 表格行悬浮背景色（对齐 svc-manager-web：#eaf3fd）
+.el-table__body tr.hover-row.current-row > td.el-table__cell,
+.el-table__body tr.hover-row.el-table__row--striped.current-row > td.el-table__cell,
+.el-table__body tr.hover-row.el-table__row--striped > td.el-table__cell,
+.el-table__body tr.hover-row > td.el-table__cell,
+.el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell,
+.el-table__body tr.current-row > td.el-table__cell {
+  background-color: #eaf3fd;
+}
+
+// 隐藏表格底部边框线
+.el-table::before {
+  width: 0;
+}
+
+// 弹窗大小限制（对齐 svc-manager-web：min-width 50%, max-width 80%）
+.el-dialog {
+  min-width: 50%;
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 50px;
+
+  .el-dialog__body {
+    flex: 1;
+    overflow: auto;
+  }
+}
+
+// 固定宽度弹窗公共 reset（覆盖全局 min/max-width 限制）
+.fixed-dialog() {
+  min-width: auto !important;
+  max-width: none !important;
+}
+
+// 登录弹窗固定宽度
+.login-dialog {
+  --el-dialog-width: 420px !important;
+  width: 420px !important;
+  .fixed-dialog();
+}
+
+// 保存成功提示弹窗固定宽度
+.save-success-dialog {
+  --el-dialog-width: 500px !important;
+  width: 500px !important;
+  .fixed-dialog();
+}
+
+// 工具方法保存成功弹窗固定宽度
+.tool-save-success-dialog {
+  --el-dialog-width: 300px !important;
+  width: 300px !important;
+  .fixed-dialog();
+}
+
+// 弹窗标题样式（对齐 svc-manager-web：底边框）
+.el-dialog__header {
+  border-bottom: 1px solid var(--border-color-base);
+}
+
+// 弹窗底部样式（对齐 svc-manager-web：上边框）
+.el-dialog__footer {
+  border-top: 1px solid var(--border-color-base);
+}
+
+// 卡片阴影统一
+.el-card {
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  box-shadow: none;
+  transition: box-shadow 0.3s;
+
+  &:hover {
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  }
+}
+
+// 表单标签对齐
+.el-form--label-top .el-form-item__label {
+  padding-bottom: 4px;
+  font-weight: 500;
+}
+
+// 标签页样式
+.el-tabs__header {
+  margin-bottom: 16px;
+}
+
+// 分页器 total 左浮动（对齐 svc-manager-web）
+.el-pagination__total {
+  float: left;
+}
+
+// 分割线外间距（对齐 svc-manager-web）
+.el-divider--horizontal {
+  margin-block: 16px;
+}
+
+// 栅格布局在 flex 布局下自动换行
+.el-row--flex[wrap] {
+  flex-wrap: wrap;
+
+  > .el-form-item {
+    flex-grow: 1;
+  }
+}

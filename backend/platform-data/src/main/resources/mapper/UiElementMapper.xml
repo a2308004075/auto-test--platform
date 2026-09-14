@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.platform.uielement.mapper.UiElementMapper">
+
+    <!-- 批量插入界面元素（导入解析结果） -->
+    <insert id="insertBatch">
+        INSERT INTO `ui_element`
+            (`project_id`, `repository_id`, `file_path`, `element_tag`, `element_id`, `element_name`,
+             `element_class`, `element_text`, `element_placeholder`, `element_type`, `smart_xpath`,
+             `absolute_xpath`, `sort_no`)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.projectId}, #{item.repositoryId}, #{item.filePath}, #{item.elementTag},
+             #{item.elementId}, #{item.elementName}, #{item.elementClass}, #{item.elementText},
+             #{item.elementPlaceholder}, #{item.elementType}, #{item.smartXPath},
+             #{item.absoluteXPath}, #{item.sortNo})
+        </foreach>
+    </insert>
+
+</mapper>

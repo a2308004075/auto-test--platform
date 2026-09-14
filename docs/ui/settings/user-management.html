@@ -42,9 +42,9 @@
 
     <div class="page-header"><h1>用户列表</h1><button class="btn btn-primary" onclick="document.getElementById('userModal').style.display='flex'">+ 新建用户</button></div>
     <div class="toolbar">
-      <input type="text" class="input input-search" id="searchAccount" placeholder="搜索账号" style="width:160px;" oninput="userFilterAndRender()">
-      <input type="text" class="input input-search" id="searchDisplayName" placeholder="搜索用户名" style="width:160px;" oninput="userFilterAndRender()">
-      <select class="select" id="filterRole" style="width:120px;" onchange="userFilterAndRender()"><option value="">全部角色</option><option value="admin">管理员</option><option value="tester">测试人员</option></select>
+      <input type="text" class="input input-search" id="searchAccount" placeholder="搜索账号" style="width:160px;" oninput="userFilterAndRender()" aria-label="搜索账号">
+      <input type="text" class="input input-search" id="searchDisplayName" placeholder="搜索用户名" style="width:160px;" oninput="userFilterAndRender()" aria-label="搜索用户名">
+      <select class="select" id="filterRole" style="width:120px;" onchange="userFilterAndRender()" aria-label="filter Role"><option value="">全部角色</option><option value="admin">管理员</option><option value="tester">测试人员</option></select>
     </div>
     <div class="card">
       <div class="table-wrapper">
@@ -132,10 +132,10 @@
     <div class="modal" style="width:440px;">
       <div class="modal-header"><h3>新建用户</h3><button class="modal-close" onclick="this.closest('.modal-overlay').style.display='none'">×</button></div>
       <div class="modal-body">
-        <div class="form-group" id="createAccountGroup"><label class="form-label">账号 <span class="required">*</span></label><input type="text" class="input w-full" id="createAccountInput" placeholder="请输入账号（登录用）" oninput="clearCreateError('createAccountGroup')"><div class="error-msg" id="createAccountError" style="display:none;"></div></div>
-        <div class="form-group" id="createDisplayNameGroup"><label class="form-label">用户名 <span class="required">*</span></label><input type="text" class="input w-full" id="createDisplayNameInput" placeholder="请输入用户名（显示名称）" oninput="clearCreateError('createDisplayNameGroup')"><div class="error-msg" id="createDisplayNameError" style="display:none;"></div></div>
-        <div class="form-group" id="createPasswordGroup"><label class="form-label">密码 <span class="required">*</span></label><input type="password" class="input w-full" id="createPasswordInput" placeholder="请输入密码"><div class="error-msg" id="createPasswordError" style="display:none;"></div></div>
-        <div class="form-group"><label class="form-label">角色</label><select class="select w-full"><option value="tester">测试人员（tester）</option><option value="admin">管理员（admin）</option></select></div>
+        <div class="form-group" id="createAccountGroup"><label class="form-label" for="createAccountInput">账号 <span class="required">*</span></label><input type="text" class="input w-full" id="createAccountInput" placeholder="请输入账号（登录用）" oninput="clearCreateError('createAccountGroup')"><div class="error-msg" id="createAccountError" style="display:none;"></div></div>
+        <div class="form-group" id="createDisplayNameGroup"><label class="form-label" for="createDisplayNameInput">用户名 <span class="required">*</span></label><input type="text" class="input w-full" id="createDisplayNameInput" placeholder="请输入用户名（显示名称）" oninput="clearCreateError('createDisplayNameGroup')"><div class="error-msg" id="createDisplayNameError" style="display:none;"></div></div>
+        <div class="form-group" id="createPasswordGroup"><label class="form-label" for="createPasswordInput">密码 <span class="required">*</span></label><input type="password" class="input w-full" id="createPasswordInput" placeholder="请输入密码"><div class="error-msg" id="createPasswordError" style="display:none;"></div></div>
+        <div class="form-group"><label class="form-label" for="角色">角色</label><select class="select w-full" id="角色"><option value="tester">测试人员（tester）</option><option value="admin">管理员（admin）</option></select></div>
       </div>
       <div class="modal-footer"><button class="btn" onclick="this.closest('.modal-overlay').style.display='none'">取消</button><button class="btn btn-primary" onclick="handleCreateUser()">确定</button></div>
     </div>
@@ -145,8 +145,8 @@
     <div class="modal" style="width:400px;">
       <div class="modal-header"><h3>分配角色</h3><button class="modal-close" onclick="this.closest('.modal-overlay').style.display='none'">×</button></div>
       <div class="modal-body">
-        <div class="form-group"><label class="form-label">当前用户</label><input type="text" class="input w-full" value="" id="roleUserName" readonly style="background:var(--bg-secondary);"></div>
-        <div class="form-group"><label class="form-label">分配角色</label><select class="select w-full" id="roleSelect"><option value="tester">测试人员（tester）</option><option value="admin">管理员（admin）</option></select></div>
+        <div class="form-group"><label class="form-label" for="roleUserName">当前用户</label><input type="text" class="input w-full" value="" id="roleUserName" readonly style="background:var(--bg-secondary);"></div>
+        <div class="form-group"><label class="form-label" for="roleSelect">分配角色</label><select class="select w-full" id="roleSelect"><option value="tester">测试人员（tester）</option><option value="admin">管理员（admin）</option></select></div>
       </div>
       <div class="modal-footer"><button class="btn" onclick="this.closest('.modal-overlay').style.display='none'">取消</button><button class="btn btn-primary" onclick="handleRoleAssign()">确定</button></div>
     </div>
@@ -156,9 +156,9 @@
     <div class="modal" style="width:440px;">
       <div class="modal-header"><h3>编辑用户</h3><button class="modal-close" onclick="closeEditModal()">×</button></div>
       <div class="modal-body">
-        <div class="form-group"><label class="form-label">账号</label><input type="text" class="input w-full" id="editAccountInput" readonly style="background:var(--bg-body);cursor:not-allowed;"></div>
-        <div class="form-group" id="editDisplayNameGroup"><label class="form-label">用户名 <span class="required">*</span></label><input type="text" class="input w-full" id="editDisplayNameInput" placeholder="请输入用户名（显示名称）" oninput="clearEditError('editDisplayNameGroup')"><div class="error-msg" id="editDisplayNameError" style="display:none;"></div></div>
-        <div class="form-group"><label class="form-label">角色</label><select class="select w-full" id="editRoleSelect"><option value="tester">测试人员（tester）</option><option value="admin">管理员（admin）</option></select></div>
+        <div class="form-group"><label class="form-label" for="editAccountInput">账号</label><input type="text" class="input w-full" id="editAccountInput" readonly style="background:var(--bg-body);cursor:not-allowed;"></div>
+        <div class="form-group" id="editDisplayNameGroup"><label class="form-label" for="editDisplayNameInput">用户名 <span class="required">*</span></label><input type="text" class="input w-full" id="editDisplayNameInput" placeholder="请输入用户名（显示名称）" oninput="clearEditError('editDisplayNameGroup')"><div class="error-msg" id="editDisplayNameError" style="display:none;"></div></div>
+        <div class="form-group"><label class="form-label" for="editRoleSelect">角色</label><select class="select w-full" id="editRoleSelect"><option value="tester">测试人员（tester）</option><option value="admin">管理员（admin）</option></select></div>
       </div>
       <div class="modal-footer"><button class="btn" onclick="closeEditModal()">取消</button><button class="btn btn-primary" onclick="handleEditUser()">确定</button></div>
     </div>
@@ -171,8 +171,8 @@
         <div style="margin-bottom:16px;padding:10px 14px;background:var(--warning-bg);border:1px solid #ffe58f;border-radius:4px;font-size:13px;color:#874d00;">
           <span style="margin-right:4px;">⚠</span> 即将重置用户 <b id="resetPwdUserName"></b> 的登录密码
         </div>
-        <div class="form-group" id="resetPwdGroup"><label class="form-label">新密码 <span class="required">*</span></label><input type="password" class="input w-full" id="resetPwdInput" placeholder="请输入新密码（至少6位）" oninput="clearResetPwdError()"><div class="error-msg" id="resetPwdError" style="display:none;"></div></div>
-        <div class="form-group" id="resetPwdConfirmGroup"><label class="form-label">确认密码 <span class="required">*</span></label><input type="password" class="input w-full" id="resetPwdConfirmInput" placeholder="请再次输入新密码" oninput="clearResetPwdConfirmError()"><div class="error-msg" id="resetPwdConfirmError" style="display:none;"></div></div>
+        <div class="form-group" id="resetPwdGroup"><label class="form-label" for="resetPwdInput">新密码 <span class="required">*</span></label><input type="password" class="input w-full" id="resetPwdInput" placeholder="请输入新密码（至少6位）" oninput="clearResetPwdError()"><div class="error-msg" id="resetPwdError" style="display:none;"></div></div>
+        <div class="form-group" id="resetPwdConfirmGroup"><label class="form-label" for="resetPwdConfirmInput">确认密码 <span class="required">*</span></label><input type="password" class="input w-full" id="resetPwdConfirmInput" placeholder="请再次输入新密码" oninput="clearResetPwdConfirmError()"><div class="error-msg" id="resetPwdConfirmError" style="display:none;"></div></div>
       </div>
       <div class="modal-footer"><button class="btn" onclick="closeResetPwdModal()">取消</button><button class="btn btn-primary" onclick="handleResetPassword()">确定</button></div>
     </div>
@@ -536,7 +536,7 @@
       closeDeleteUserModal();
     }
 
-    /* ===== Action Button Builders ===== */
+    /* ===== Action关键字 Button Builders ===== */
     function buildActionButtons(role) {
       return '<button class="btn-link" data-action="edit">编辑</button> ' +
         '<button class="btn-link" data-action="role">分配角色</button> ' +
@@ -553,7 +553,7 @@
         '<button class="btn-link" data-action="delete" style="color:var(--error);">删除</button>';
     }
 
-    /* ===== Bind Row Action Events ===== */
+    /* ===== Bind Row Action关键字 Events ===== */
     function bindRowActions(row) {
       var btns = row.querySelectorAll('.btn-link[data-action]');
       btns.forEach(function(btn) {

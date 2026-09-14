@@ -40,9 +40,9 @@
   <header class="layout-header">
     <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
     <div class="header-breadcrumb">
-      <span><a href="suite-list.html">测试套件</a></span>
+      <span><a href="suite-list.html">自动化套件</a></span>
       <span class="sep">&#8250;</span>
-      <span>冒烟测试套件</span>
+      <span>冒烟自动化套件</span>
       <span class="sep">&#8250;</span>
       <span class="current" id="breadcrumbTitle">Setup/Teardown 配置</span>
     </div>
@@ -64,17 +64,23 @@
         <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
       </ul>
       <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
-        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
-      </ul>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🗂</span><span class="label">项目资料</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../repository/repository-list.html">项目源代码</a></li>
+            <li class="menu-item"><a href="../api/api-list.html">接口文档</a></li>
+          </ul>
+        </div>
+      </div>
       <div class="sidebar-divider"></div>
       <div class="menu-group">
         <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
-            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item"><a href="../keywords/tool-list.html">工具方法</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -83,8 +89,8 @@
         <div class="menu-group-header open"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
-            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
-            <li class="menu-item active"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../cases/case-list.html">自动化用例</a></li>
+            <li class="menu-item active"><a href="../cases/suite-list.html">自动化套件</a></li>
             <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
             <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
           </ul>
@@ -104,7 +110,7 @@
     <!-- 上下文信息条 -->
     <div class="context-bar" id="contextBar">
       <span class="ctx-icon">ℹ</span>
-      <span id="contextText">套件级 · 整体 — 整个套件执行前后各调用一次</span>
+      <span id="contextText">自动化套件级 · 整体 — 整个自动化套件执行前后各调用一次</span>
     </div>
 
     <!-- Tabs: Setup / Teardown -->
@@ -121,7 +127,7 @@
             <h4>节点类型</h4>
             <div class="node-drag" onclick="addNode('setup','api')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> 接口关键字</div>
             <div class="node-drag" onclick="addNode('setup','tool')"><div class="nd-icon" style="background:#fff7e6;color:#fa8c16;">T</div> 工具方法</div>
-            <div class="node-drag" onclick="addNode('setup','action')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> Action 关键字</div>
+            <div class="node-drag" onclick="addNode('setup','action')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> Action关键字</div>
             <div class="node-drag" onclick="addNode('setup','wait')"><div class="nd-icon" style="background:#fff1f0;color:#f5222d;">⏱</div> 等待节点</div>
             <div class="node-drag" onclick="addNode('setup','condition')"><div class="nd-icon" style="background:#f9f0ff;color:#722ed1;">?</div> 条件节点</div>
           </div>
@@ -139,7 +145,7 @@
             <h4>节点类型</h4>
             <div class="node-drag" onclick="addNode('teardown','api')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> 接口关键字</div>
             <div class="node-drag" onclick="addNode('teardown','tool')"><div class="nd-icon" style="background:#fff7e6;color:#fa8c16;">T</div> 工具方法</div>
-            <div class="node-drag" onclick="addNode('teardown','action')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> Action 关键字</div>
+            <div class="node-drag" onclick="addNode('teardown','action')"><div class="nd-icon" style="background:#e6f7ff;color:#1890ff;">A</div> Action关键字</div>
             <div class="node-drag" onclick="addNode('teardown','wait')"><div class="nd-icon" style="background:#fff1f0;color:#f5222d;">⏱</div> 等待节点</div>
             <div class="node-drag" onclick="addNode('teardown','condition')"><div class="nd-icon" style="background:#f9f0ff;color:#722ed1;">?</div> 条件节点</div>
           </div>
@@ -160,16 +166,16 @@
 
     /* ===== 上下文初始化 ===== */
     var contextMap = {
-      once: { title: '套件级 · 整体 Setup/Teardown', text: '套件级 · 整体 — 整个套件执行前后各调用一次' },
-      per:  { title: '套件级 · 每条用例 Setup/Teardown', text: '套件级 · 每条用例 — 每条用例执行前后各调用一次' },
-      'case': { title: '差异化 Setup/Teardown', text: '用例级差异化 — 仅在当前套件中生效，不影响用例自身的配置' }
+      once: { title: '自动化套件级 · 整体 Setup/Teardown', text: '自动化套件级 · 整体 — 整个自动化套件执行前后各调用一次' },
+      per:  { title: '自动化套件级 · 每条自动化用例 Setup/Teardown', text: '自动化套件级 · 每条自动化用例 — 每条自动化用例执行前后各调用一次' },
+      'case': { title: '差异化 Setup/Teardown', text: '自动化用例级差异化 — 仅在当前自动化套件中生效，不影响自动化用例自身的配置' }
     };
     var ctx = contextMap[editType] || contextMap.once;
     document.getElementById('pageTitle').textContent = ctx.title;
     document.getElementById('breadcrumbTitle').textContent = ctx.title;
     document.getElementById('contextText').textContent = ctx.text;
     if (editType === 'case' && caseName) {
-      document.getElementById('contextText').textContent = '用例「' + caseName + '」差异化配置 — 仅在当前套件（冒烟测试套件）中生效';
+      document.getElementById('contextText').textContent = '自动化用例「' + caseName + '」差异化配置 — 仅在当前自动化套件（冒烟自动化套件）中生效';
     }
 
     /* ===== Tab 切换 ===== */
@@ -184,7 +190,7 @@
     var kwConfigs = {
       api:    { icon: 'A', color: '#1890ff', bg: '#e6f7ff', badge: 'tag-blue',   label: 'API' },
       tool:   { icon: 'T', color: '#fa8c16', bg: '#fff7e6', badge: 'tag-orange', label: 'TOOL' },
-      action: { icon: 'A', color: '#1890ff', bg: '#e6f7ff', badge: 'tag-blue',   label: 'Action' }
+      action: { icon: 'A', color: '#1890ff', bg: '#e6f7ff', badge: 'tag-blue',   label: 'Action关键字' }
     };
     var logicConfigs = {
       wait:      { icon: '⏱', color: '#f5222d', bg: '#fff1f0', badge: 'tag-red',    label: '等待' },
@@ -311,7 +317,7 @@
       if (!node) { panel.innerHTML = '<h4>节点属性</h4>'; return; }
       if (node.type === 'keyword') {
         var cfg = kwConfigs[node.kwType] || kwConfigs.action;
-        var labels = { api: '接口关键字', tool: '工具方法关键字', action: 'Action 关键字' };
+        var labels = { api: '接口关键字', tool: '工具方法', action: 'Action关键字' };
         panel.innerHTML =
           '<h4>节点属性：关键字</h4>' +
           '<div class="form-group"><label class="form-label">关键字名称</label><input class="input" value="' + node.name + '" readonly></div>' +

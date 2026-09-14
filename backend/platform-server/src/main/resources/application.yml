@@ -1,0 +1,79 @@
+spring:
+  profiles:
+    active: dev
+
+  # 数据库连接（基础配置，由 profile 覆盖具体值）
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
+
+  # RabbitMQ 消费行为（连接配置由 profile 覆盖）
+  # default-requeue-rejected=false：消费失败/消息格式错误的消息直接丢弃，
+  # 防止毒丸消息无限 requeue 重投递刷爆日志并阻塞整个执行队列
+  rabbitmq:
+    listener:
+      simple:
+        default-requeue-rejected: false
+
+  # 文件上传大小限制（项目文档不限类型与大小）
+  servlet:
+    multipart:
+      max-file-size: -1
+      max-request-size: -1
+
+  # Flyway 数据库迁移
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    placeholder-replacement: false
+
+server:
+  port: 8080
+
+# 应用基础配置
+application:
+  name: auto-test-platform
+
+# MyBatis-Plus 全局配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-value: 0
+      logic-not-delete-value: 1
+
+# JWT 配置（有效期为回退默认值，运行时以 global_settings 中 session.login_validity_days 为准，默认 5 天）
+jwt:
+  access-token-expire-ms: 432000000
+  refresh-token-expire-ms: 432000000
+
+# 执行引擎配置
+execution:
+  max-concurrent: 3
+
+# 测试代码库配置（M11）
+repository:
+  # 代码存储根目录（相对启动目录）
+  storage-path: ./data/repos
+  # 凭证 AES 加密密钥（16 字节，可覆盖）
+  crypto-key: AutoTestRepo2026
+  # JGit 拉取超时（秒）
+  clone-timeout-seconds: 300
+
+# 项目文档配置（M13）
+doc:
+  # 文档存储根目录（相对启动目录，按项目 ID 分目录）
+  storage-path: ./data/docs
+

@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>编辑工具方法关键字 - Postman Platform</title>
+  <title>编辑工具方法 - Postman Platform</title>
   <link rel="stylesheet" href="../common/shared-styles.css">
   <style>
     .edit-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
@@ -18,9 +18,9 @@
   <header class="layout-header">
     <button class="header-hamburger" title="&#25240;&#21463;&#33756;&#21333;">&#9776;</button>
     <div class="header-breadcrumb">
-      <span><a href="tool-list.html">工具方法关键字</a></span>
+      <span><a href="tool-list.html">工具方法</a></span>
       <span class="sep">&#8250;</span>
-      <span class="current">编辑工具方法关键字</span>
+      <span class="current">编辑工具方法</span>
     </div>
     <div class="header-right">
       <div class="header-user">
@@ -40,17 +40,23 @@
         <li class="menu-item"><a href="../environment/environment-config.html"><span class="icon">🌐</span> 环境配置</a></li>
       </ul>
       <div class="sidebar-divider"></div>
-      <ul class="sidebar-menu">
-        <li class="menu-item"><a href="../api/api-list.html"><span class="icon">📄</span> 接口文档</a></li>
-      </ul>
+      <div class="menu-group">
+        <div class="menu-group-header"><span class="icon">🗂</span><span class="label">项目资料</span><span class="arrow"></span></div>
+        <div class="menu-group-items">
+          <ul class="sidebar-menu">
+            <li class="menu-item"><a href="../repository/repository-list.html">项目源代码</a></li>
+            <li class="menu-item"><a href="../api/api-list.html">接口文档</a></li>
+          </ul>
+        </div>
+      </div>
       <div class="sidebar-divider"></div>
       <div class="menu-group">
         <div class="menu-group-header"><span class="icon">🔑</span><span class="label">关键字管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
             <li class="menu-item"><a href="../keywords/keyword-list.html">接口关键字</a></li>
-            <li class="menu-item active"><a href="../keywords/tool-list.html">工具方法关键字</a></li>
-            <li class="menu-item"><a href="../keywords/action-list.html">Action 关键字</a></li>
+            <li class="menu-item active"><a href="../keywords/tool-list.html">工具方法</a></li>
+            <li class="menu-item"><a href="../keywords/action-list.html">Action关键字</a></li>
           </ul>
         </div>
       </div>
@@ -59,8 +65,8 @@
         <div class="menu-group-header"><span class="icon">📋</span><span class="label">测试管理</span><span class="arrow"></span></div>
         <div class="menu-group-items">
           <ul class="sidebar-menu">
-            <li class="menu-item"><a href="../cases/case-list.html">测试用例</a></li>
-            <li class="menu-item"><a href="../cases/suite-list.html">测试套件</a></li>
+            <li class="menu-item"><a href="../cases/case-list.html">自动化用例</a></li>
+            <li class="menu-item"><a href="../cases/suite-list.html">自动化套件</a></li>
             <li class="menu-item"><a href="../execution/plan-list.html">测试计划</a></li>
             <li class="menu-item"><a href="../execution/execution-list.html">执行记录</a></li>
           </ul>
@@ -70,7 +76,7 @@
   <main class="layout-main">
 
     <div class="edit-header">
-      <h1 style="font-size: 18px;">编辑工具方法关键字</h1>
+      <h1 style="font-size: 18px;">编辑工具方法</h1>
       <div class="actions">
         <button id="testBtn" class="btn" onclick="openTestModal()">测试</button>
         <button id="saveBtn" class="btn btn-primary" onclick="handleSave()">保存</button>
@@ -89,21 +95,21 @@
       <div class="card"><div class="card-body">
         <div class="edit-form-row">
           <div class="form-group">
-            <label class="form-label">ID</label>
+            <label class="form-label" for="idInput">ID</label>
             <input id="idInput" type="text" class="input w-full" readonly style="background:#f5f5f5;color:var(--text-tertiary);cursor:not-allowed;">
           </div>
           <div class="form-group">
-            <label class="form-label">工具方法关键字 <span class="required">*</span></label>
+            <label class="form-label" for="keywordInput">工具方法 <span class="required">*</span></label>
             <input id="keywordInput" type="text" class="input w-full" maxlength="20" placeholder="最多20个字符">
           </div>
         </div>
         <div class="edit-form-row">
           <div class="form-group">
-            <label class="form-label">分组 <span class="required">*</span></label>
+            <label class="form-label" for="categorySelect">分组 <span class="required">*</span></label>
             <select id="categorySelect" class="select w-full"><option value="" disabled>请选择分组</option><option>自定义</option><option>加密</option><option>字符串</option><option>时间</option><option>数据转换</option></select>
           </div>
           <div class="form-group">
-            <label class="form-label">描述</label>
+            <label class="form-label" for="descInput">描述</label>
             <input id="descInput" type="text" class="input w-full" maxlength="200" placeholder="最多200个字符">
           </div>
         </div>
@@ -115,11 +121,17 @@
       <div class="card">
         <div class="card-header"><span class="form-label" style="margin-bottom:0;">代码编辑 <span class="required">*</span></span><span style="display:flex;gap:4px;margin-left:auto;"><span style="font-size:11px;background:#306998;color:#FFD43B;padding:1px 8px;border-radius:3px;font-weight:600;margin-right:8px;line-height:20px;">Python</span><button class="btn btn-sm" onclick="insertTemplate()">插入模板</button><button class="btn btn-sm" onclick="formatCode()">格式化</button></span></div>
         <div class="card-body" style="padding:0;">
+          <!-- 入参/出参说明 -->
+          <div style="padding:12px 16px;background:#f0f7ff;border-bottom:1px solid var(--border);font-size:12px;line-height:1.8;color:var(--text-secondary);">
+            <div style="font-weight:600;color:var(--text-primary);margin-bottom:4px;">入参与出参说明</div>
+            <div><b>入参：</b>以 <code style="background:#f0f2f5;padding:0 4px;border-radius:3px;">def</code> 函数编写，形参即入参，参数名与类型自动识别，测试时按参数名填值；带 <code style="background:#f0f2f5;padding:0 4px;border-radius:3px;">= 默认值</code> 的参数自动视为可选。</div>
+            <div><b>出参：</b>函数 <code style="background:#f0f2f5;padding:0 4px;border-radius:3px;">return</code> 的值（或脚本最后一个表达式的值）即为返回结果，执行后在"执行结果"中查看。</div>
+          </div>
           <div class="py-editor-wrap" style="display:flex;min-height:240px;background:#1e1e1e;border-radius:0 0 6px 6px;overflow:hidden;">
             <div id="lineNumbers" style="padding:16px 0;text-align:right;user-select:none;color:#858585;font:13px/1.6 Consolas,'Courier New',monospace;min-width:40px;background:#1e1e1e;border-right:1px solid #333;"></div>
             <div style="position:relative;flex:1;min-height:240px;">
               <pre id="pyHighlight" style="position:absolute;top:0;left:0;right:0;bottom:0;margin:0;padding:16px 16px 16px 12px;font:13px/1.6 Consolas,'Courier New',monospace;white-space:pre;overflow:auto;pointer-events:none;color:#d4d4d4;tab-size:4;"></pre>
-              <textarea id="pyEditor" spellcheck="false" style="position:absolute;top:0;left:0;width:100%;height:100%;min-height:240px;padding:16px 16px 16px 12px;background:transparent;color:transparent;caret-color:#d4d4d4;border:none;outline:none;resize:none;font:13px/1.6 Consolas,'Courier New',monospace;tab-size:4;white-space:pre;overflow:auto;z-index:1;"></textarea>
+              <textarea id="pyEditor" spellcheck="false" style="position:absolute;top:0;left:0;width:100%;height:100%;min-height:240px;padding:16px 16px 16px 12px;background:transparent;color:transparent;caret-color:#d4d4d4;border:none;outline:none;resize:none;font:13px/1.6 Consolas,'Courier New',monospace;tab-size:4;white-space:pre;overflow:auto;z-index:1;" aria-label="py Editor"></textarea>
             </div>
           </div>
         </div>
@@ -144,7 +156,7 @@
             </tr>
             <tr>
               <td><a href="action-editor.html">电池入仓操作</a></td>
-              <td><span class="tag tag-purple">Action 关键字</span></td>
+              <td><span class="tag tag-purple">Action关键字</span></td>
               <td style="color:var(--text-tertiary);font-size:12px;">2024-11-15</td>
               <td><a href="action-editor.html" class="btn-link">查看</a></td>
             </tr>

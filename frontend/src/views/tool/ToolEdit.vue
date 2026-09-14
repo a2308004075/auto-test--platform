@@ -1,0 +1,614 @@
+<!--
+ @author HXN
+ @date 2026-08-23
+ @description 工具方法新建/编辑视图（对齐原型 tool-create.html / tool-edit.html）
+-->
+<script setup lang="ts">
+/**
+ * 工具方法新建/编辑 - M6
+ * 3 Tab：基础信息 / 代码编辑 / 引用关系（仅编辑模式）
+ * 对齐原型 tool-create.html、tool-edit.html
+ */
+import { ref, reactive, onMounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { getTool, createTool, updateTool, testTool, getTools, getToolDependencies } from '@/api/tool'
+import { InfoFilled } from '@element-plus/icons-vue'
+import CodeEditor from '@/components/CodeEditor/index.vue'
+import { usePermission } from '@/composables/usePermission'
+import { useRouteTab } from '@/composables/useRouteTab'
+import EditPageHeader from '@/components/EditPageHeader/index.vue'
+
+const route = useRoute()
+const router = useRouter()
+const { hasPermission } = usePermission()
+const projectId = computed(() => Number(route.params.id))
+
+// ===== 路由参数 =====
+const toolId = ref(Number(route.params.toolId) || 0)
+const isEdit = computed(() => toolId.value > 0)
+const loading = ref(false)
+// Tab 状态（与 URL ?tab= 参数同步，刷新后停留在当前选项卡；引用关系 tab 仅编辑模式存在）
+const activeTab = useRouteTab(
+  isEdit.value ? ['basic', 'code', 'refs'] : ['basic', 'code'],
+  'basic',
+)
+
+// ===== 已有分组列表（从已有工具方法中提取） =====
+const categoryOptions = ref<string[]>([])
+async function fetchCategoryOptions() {
+  try {
+    const res: any = await getTools(projectId.value, { page: 1, pageSize: 10000 })
+    const items = res.data?.items || []
+    const categories = new Set<string>()
+    items.forEach((t: any) => {
+      if (t.category && t.category !== 'CUSTOM' && t.category !== 'BUILTIN') {
+        categories.add(t.category)
+      }
+    })
+    categoryOptions.value = Array.from(categories)
+  } catch { categoryOptions.value = [] }
+}
+
+// ===== 表单 =====
+const referenceList = ref<any[]>([])
+const referenceLoading = ref(false)
+const DEFAULT_CODE = '// 在此编写 Groovy 代码\n// 入参：def 函数的形参，如 def add(int a, int b)\n// 出参：函数 return 的值即返回结果\n\ndef execute() {\n    return "Hello"\n}'
+const form = reactive({
+  name: '',
+  category: '',
+  description: '',
+  code: DEFAULT_CODE,
+  returnType: '',
+  paramDefinitions: '[]',
+})
+
+// ===== 在线测试 =====
+const testVisible = ref(false)
+const testLoading = ref(false)
+const testResult = ref<any>(null)
+const testParams = ref<any[]>([])
+const testValues = reactive<Record<string, string>>({})
+
+// ===== Groovy 代码模板 =====
+const TEMPLATE = `def generate_sn(String prefix, int length) {
+    def chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    def random = new Random()
+    def sb = new StringBuilder()
+    def remaining = length - prefix.length()
+    for (int i = 0; i < remaining; i++) {
+        sb.append(chars.charAt(random.nextInt(chars.length())))
+    }
+    return prefix + sb.toString()
+}`
+
+function insertTemplate() {
+  form.code = TEMPLATE
+  activeTab.value = 'code'
+}
+
+// ===== Groovy 代码格式化 =====
+function formatCode() {
+  const lines = form.code.split('\n')
+  const out: string[] = []
+  let indent = 0
+  for (const raw of lines) {
+    const trimmed = raw.trim()
+    if (!trimmed) { out.push(''); continue }
+    // 减少缩进：以 } 开头
+    if (trimmed.startsWith('}')) indent = Math.max(0, indent - 1)
+    out.push('    '.repeat(indent) + trimmed)
+    // 增加缩进：以 { 结尾
+    if (trimmed.endsWith('{')) indent++
+  }
+  form.code = out.join('\n').replace(/\n{3,}/g, '\n\n').replace(/\n+$/, '\n')
+}
+
+// ===== 从 Groovy 代码提取参数 =====
+interface ParamInfo {
+  name: string
+  type: string
+  required: boolean
+  defaultValue: string
+}
+
+function extractParams(code: string): ParamInfo[] {
+  // 匹配: def methodName(params) {  或  ReturnType methodName(params) {
+  const match = code.match(/def\s+(\w+)\s*\(([\s\S]*?)\)\s*\{/)
+  if (!match) return []
+  const paramsPart = match[2].trim()
+  if (!paramsPart) return []
+
+  return paramsPart.split(',').map((p) => {
+    p = p.trim()
+    if (!p) return null
+    let name = '', type = '', required = true, defaultValue = ''
+    const eqIndex = p.indexOf('=')
+    let leftPart = p
+    if (eqIndex !== -1) {
+      leftPart = p.substring(0, eqIndex).trim()
+      defaultValue = p.substring(eqIndex + 1).trim()
+      required = false
+      // 去除引号
+      if ((defaultValue.startsWith('"') && defaultValue.endsWith('"')) ||
+          (defaultValue.startsWith("'") && defaultValue.endsWith("'"))) {
+        defaultValue = defaultValue.slice(1, -1)
+      }
+    }
+    const parts = leftPart.split(/\s+/)
+    if (parts.length >= 2) {
+      type = parts[0]
+      name = parts[1]
+    } else {
+      name = parts[0]
+    }
+    return { name, type, required, defaultValue }
+  }).filter((p): p is ParamInfo => p !== null)
+}
+
+function generateParamDefinitions(code: string): string {
+  return JSON.stringify(extractParams(code))
+}
+
+// ===== 在线测试 =====
+function openTestModal() {
+  testParams.value = extractParams(form.code)
+  testResult.value = null
+  Object.keys(testValues).forEach((k) => delete testValues[k])
+  testParams.value.forEach((p) => {
+    testValues[p.name] = p.defaultValue || ''
+  })
+  testVisible.value = true
+}
+
+async function saveForTest(): Promise<boolean> {
+  if (!form.name) { ElMessage.warning('请填写工具方法名称'); activeTab.value = 'basic'; return false }
+  if (!form.code.trim()) { ElMessage.warning('代码编辑内容不能为空'); activeTab.value = 'code'; return false }
+  try {
+    const payload = {
+      ...form,
+      paramDefinitions: generateParamDefinitions(form.code),
+      projectId: projectId.value,
+    }
+    if (toolId.value) {
+      await updateTool(projectId.value, toolId.value, payload)
+    } else {
+      const res: any = await createTool(projectId.value, payload)
+      toolId.value = res.data?.id || 0
+    }
+    return true
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '保存失败')
+    return false
+  }
+}
+
+async function handleTest() {
+  const ok = await saveForTest()
+  if (!ok) return
+  openTestModal()
+}
+
+async function runTest() {
+  if (!toolId.value) return
+  testLoading.value = true
+  testResult.value = null
+  try {
+    const res: any = await testTool(projectId.value, toolId.value, {
+      testInput: JSON.stringify(testValues),
+    })
+    testResult.value = res.data
+  } catch (e: any) {
+    testResult.value = { success: 0, error: e?.response?.data?.message || e?.message }
+  } finally { testLoading.value = false }
+}
+
+// ===== 保存成功弹窗（新建模式） =====
+const saveModalVisible = ref(false)
+const saveModalName = ref('')
+function continueCreate() {
+  saveModalVisible.value = false
+  form.name = ''
+  form.description = ''
+  form.code = DEFAULT_CODE
+  toolId.value = 0
+  activeTab.value = 'basic'
+  fetchCategoryOptions()
+}
+
+// ===== 保存 =====
+async function handleSubmit() {
+  if (!form.name) { ElMessage.warning('请填写工具方法名称'); activeTab.value = 'basic'; return }
+  if (!form.code.trim()) { ElMessage.warning('代码编辑内容不能为空'); activeTab.value = 'code'; return }
+  try {
+    const payload = {
+      ...form,
+      paramDefinitions: generateParamDefinitions(form.code),
+      projectId: projectId.value,
+    }
+    if (toolId.value) {
+      await updateTool(projectId.value, toolId.value, payload)
+      ElMessage.success('更新成功')
+      router.push(`/project/${projectId.value}/tools`)
+    } else {
+      await createTool(projectId.value, payload)
+      saveModalName.value = form.name
+      saveModalVisible.value = true
+    }
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || '操作失败')
+  }
+}
+
+// ===== 加载工具数据 =====
+async function fetchTool() {
+  if (!toolId.value) return
+  loading.value = true
+  try {
+    const res: any = await getTool(projectId.value, toolId.value)
+    const data = res.data
+    Object.assign(form, {
+      name: data.name || '',
+      category: data.category || '',
+      description: data.description || '',
+      code: data.code || DEFAULT_CODE,
+      returnType: data.returnType || '',
+      paramDefinitions: data.paramDefinitions || '[]',
+    })
+  } catch { ElMessage.error('加载工具方法失败') } finally { loading.value = false }
+}
+
+async function fetchDependencies() {
+  if (!toolId.value) return
+  referenceLoading.value = true
+  try {
+    const res: any = await getToolDependencies(projectId.value, toolId.value)
+    referenceList.value = res.data || []
+  } catch { referenceList.value = [] } finally { referenceLoading.value = false }
+}
+
+onMounted(() => {
+  fetchCategoryOptions()
+  if (toolId.value) {
+    fetchTool()
+    fetchDependencies()
+  }
+})
+</script>
+
+<template>
+  <div v-loading="loading">
+    <EditPageHeader :title="isEdit ? '编辑工具方法' : '新建工具方法'">
+      <el-button v-if="hasPermission('project:tool:test')" @click="handleTest">测试</el-button>
+      <el-button v-if="hasPermission('project:tool:edit')" type="primary" @click="handleSubmit">保存</el-button>
+      <el-button @click="router.push(`/project/${projectId}/tools`)">取消</el-button>
+    </EditPageHeader>
+
+    <el-tabs v-model="activeTab">
+      <!-- Tab: 基础信息 -->
+      <el-tab-pane label="基础信息" name="basic">
+        <el-form label-position="top" style="max-width: 800px">
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item v-if="isEdit" label="ID">
+                <el-input :model-value="toolId" disabled />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="工具方法" required>
+                <el-input v-model="form.name" placeholder="请输入工具方法名称" maxlength="100" show-word-limit />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="分组">
+                <el-select
+                  v-model="form.category"
+                  placeholder="请选择或输入分组名称"
+                  filterable
+                  allow-create
+                  default-first-option
+                  style="width: 100%"
+                >
+                  <el-option v-for="cat in categoryOptions" :key="cat" :value="cat" :label="cat" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-form-item label="描述">
+            <el-input v-model="form.description" type="textarea" :rows="2" placeholder="请输入描述" maxlength="500"
+              show-word-limit />
+          </el-form-item>
+        </el-form>
+      </el-tab-pane>
+
+      <!-- Tab: 代码编辑 -->
+      <el-tab-pane label="代码编辑" name="code">
+        <el-card shadow="never">
+          <template #header>
+            <div class="code-card-header">
+              <span class="code-card-title">代码编辑 <span style="color: var(--el-color-danger)">*</span></span>
+              <div class="code-card-actions">
+                <span class="lang-badge">Groovy</span>
+                <el-button size="small" @click="insertTemplate">插入模板</el-button>
+                <el-button size="small" @click="formatCode">格式化</el-button>
+              </div>
+            </div>
+          </template>
+          <!-- 入参/出参说明：标题 + 悬浮查看详情 -->
+          <el-alert type="info" :closable="false" class="param-receive-alert">
+            <template #title>
+              <span>入参与出参说明</span>
+              <el-tooltip placement="bottom" effect="light">
+                <template #content>
+                  <div style="max-width: 400px; line-height: 1.8; padding: 2px 0;">
+                    <div style="font-weight: 600; margin-bottom: 6px;">入参：外部传入的测试参数</div>
+                    <div>• 用 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">def</code> 函数定义形参，例如 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">def add(a, b)</code></div>
+                    <div>• 带默认值的参数为可选，例如 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">def add(a, b = 0)</code></div>
+                    <div>• 也可不定义函数，直接解析内置变量 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">input</code>（JSON 字符串）</div>
+                    <div style="margin-top: 12px; font-weight: 600; margin-bottom: 6px;">出参：脚本的返回结果</div>
+                    <div>• 函数 <code style="background:#f5f5f5; padding:1px 4px; border-radius:3px;">return</code> 的值即为返回结果</div>
+                    <div>• 没写 return 时，脚本最后一个表达式的值作为返回结果</div>
+                  </div>
+                </template>
+                <el-icon class="param-help-icon"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </template>
+          </el-alert>
+          <CodeEditor v-model="form.code" :min-height="320" language="groovy"
+            placeholder="请输入 Groovy 代码..." />
+        </el-card>
+      </el-tab-pane>
+
+      <!-- Tab: 引用关系 -->
+      <el-tab-pane v-if="isEdit" label="引用关系" name="refs">
+        <div class="refs-header">
+          <h4 style="margin: 0; font-size: 14px; font-weight: 600">引用关系详情</h4>
+          <el-tag type="primary" size="small">{{ referenceList.length }} 个引用</el-tag>
+        </div>
+        <el-table v-loading="referenceLoading" :data="referenceList" size="small" style="max-width: 800px">
+          <el-table-column label="引用类型" width="120">
+            <template #default>
+              <el-tag type="primary" size="small">Action关键字</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="refName" label="名称" min-width="200">
+            <template #default="{ row }">
+              <el-button link type="primary" @click="router.push(`/project/${projectId}/actions/${row.refId}/edit`)">
+                {{ row.refName }}
+              </el-button>
+            </template>
+          </el-table-column>
+          <el-table-column prop="refDescription" label="描述" min-width="200" show-overflow-tooltip>
+            <template #default="{ row }">
+              {{ row.refDescription || '-' }}
+            </template>
+          </el-table-column>
+          <template #empty>
+            <div style="padding: 24px 0; color: #c0c4cc; font-size: 13px">暂无引用关系</div>
+          </template>
+        </el-table>
+      </el-tab-pane>
+    </el-tabs>
+
+    <!-- 保存成功弹窗（新建模式） -->
+    <el-dialog v-model="saveModalVisible" title="保存工具方法" width="300px" class="tool-save-success-dialog" :close-on-click-modal="false">
+      <p style="font-size: 14px; color: var(--el-text-color-secondary, #606266); line-height: 1.6;">
+        工具方法 <strong style="color: var(--el-color-primary, #409eff);">{{ saveModalName }}</strong> 保存成功！
+      </p>
+      <template #footer>
+        <el-button @click="router.push(`/project/${projectId}/tools`)">返回列表</el-button>
+        <el-button type="primary" @click="continueCreate">继续新建</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 在线测试弹窗 -->
+    <el-dialog v-model="testVisible" title="在线调试" width="720px">
+      <!-- 基础信息 -->
+      <div class="test-info-section">
+        <h4 class="test-section-title">基础信息</h4>
+        <div class="test-info-grid">
+          <div class="test-info-item">
+            <span class="test-info-label">工具方法：</span>
+            {{ form.name }}
+          </div>
+          <div class="test-info-item">
+            <span class="test-info-label">分组：</span>
+            {{ form.category && form.category !== 'CUSTOM' && form.category !== 'BUILTIN' ? form.category : '未分组' }}
+          </div>
+          <div v-if="form.description" class="test-info-item full">
+            <span class="test-info-label">描述：</span>
+            {{ form.description }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 代码预览 -->
+      <div v-if="form.code" class="test-code-section">
+        <h4 class="test-section-title">代码</h4>
+        <div class="test-code-viewer">
+          <pre><code>{{ form.code }}</code></pre>
+        </div>
+      </div>
+
+      <!-- 测试参数 -->
+      <div v-if="testParams.length > 0" class="test-params-section">
+        <h4 class="test-section-title">测试参数</h4>
+        <el-table :data="testParams" border size="small">
+          <el-table-column label="参数名" width="160">
+            <template #default="{ row }">
+              <code>{{ row.name }}</code>
+              <span v-if="row.required" style="color: var(--el-color-danger); margin-left: 4px">*</span>
+              <el-tag v-if="row.type" size="small" type="info" style="margin-left: 6px">{{ row.type }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="测试值">
+            <template #default="{ row }">
+              <el-input v-model="testValues[row.name]" :placeholder="row.required ? '必填' : '可选'"
+                size="small" style="width: 240px" />
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- 执行结果 -->
+      <div v-if="testResult" class="test-result-section">
+        <h4 class="test-section-title">执行结果</h4>
+        <div class="test-result-meta">
+          <span v-if="testResult.executionTimeMs != null">耗时：<b style="color: var(--el-color-success)">{{ testResult.executionTimeMs }}ms</b></span>
+          <span>状态：<el-tag :type="testResult.success === 1 ? 'success' : 'danger'" size="small">{{ testResult.success === 1 ? '成功' : '失败' }}</el-tag></span>
+        </div>
+        <div class="test-output">
+          <pre>{{ testResult.output || testResult.error }}</pre>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="testVisible = false">关闭</el-button>
+        <el-button type="primary" :loading="testLoading" @click="runTest">▶ 执行测试</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<style scoped>
+.code-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.code-card-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+.code-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.param-receive-alert {
+  margin-bottom: 12px;
+}
+.param-receive-alert :deep(p) {
+  margin: 4px 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.param-receive-alert :deep(ul) {
+  margin: 4px 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.param-receive-alert :deep(code) {
+  background: #f0f2f5;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+.param-help-icon {
+  color: #909399;
+  cursor: pointer;
+  font-size: 15px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.lang-badge {
+  font-size: 11px;
+  background: #4299d7;
+  color: #fff;
+  padding: 1px 8px;
+  border-radius: 3px;
+  font-weight: 600;
+  line-height: 20px;
+}
+.empty-state {
+  text-align: center;
+  padding: 48px;
+  color: var(--el-text-color-secondary, #909399);
+}
+.empty-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+  opacity: 0.4;
+}
+.test-info-section {
+  margin-bottom: 16px;
+}
+.test-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+}
+.test-info-item {
+  display: flex;
+  align-items: baseline;
+  font-size: 13px;
+}
+.test-info-item.full {
+  grid-column: 1 / -1;
+}
+.test-info-label {
+  color: var(--el-text-color-secondary, #909399);
+  flex-shrink: 0;
+  min-width: 56px;
+}
+.test-code-section {
+  margin-bottom: 16px;
+}
+.test-code-viewer {
+  background: #1e1e1e;
+  border-radius: 4px;
+  padding: 12px;
+  max-height: 200px;
+  overflow: auto;
+}
+.test-code-viewer pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.test-code-viewer code {
+  color: #d4d4d4;
+  font-size: 12px;
+  font-family: Consolas, 'Courier New', monospace;
+}
+.test-params-section {
+  margin-bottom: 16px;
+}
+.test-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+.test-result-section {
+  margin-top: 16px;
+}
+.test-result-meta {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.test-output {
+  background: #1e1e1e;
+  border-radius: 4px;
+  padding: 12px;
+  min-height: 60px;
+}
+.test-output pre {
+  margin: 0;
+  color: #d4d4d4;
+  font-size: 12px;
+  font-family: Consolas, 'Courier New', monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.refs-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+</style>

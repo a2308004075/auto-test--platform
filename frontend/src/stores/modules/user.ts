@@ -1,0 +1,142 @@
+/**
+ * @author HXN
+ * @date 2026-08-18 17:31
+ * @description 用户状态 Store
+ */
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { getCurrentUser } from '@/api/auth'
+
+/**
+ * 权限详情（含控制模式）
+ */
+export interface PermissionDetail {
+  code: string
+  type?: string
+  controlMode?: string
+}
+
+/**
+ * 用户状态管理
+ */
+export const useUserStore = defineStore('user', () => {
+  const token = ref<string>(localStorage.getItem('token') || '')
+  const refreshTokenValue = ref<string>(localStorage.getItem('refreshToken') || '')
+  const username = ref<string>(localStorage.getItem('username') || '')
+  const displayName = ref<string>(localStorage.getItem('displayName') || '')
+  const role = ref<string>(localStorage.getItem('role') || '')
+  const userId = ref<number>(Number(localStorage.getItem('userId')) || 0)
+  const permissions = ref<string[]>(JSON.parse(localStorage.getItem('permissions') || '[]'))
+  const permissionDetails = ref<PermissionDetail[]>(
+    JSON.parse(localStorage.getItem('permissionDetails') || '[]'),
+  )
+  const isLoggedIn = computed(() => !!token.value)
+  const isAdmin = computed(() => {
+    const r = (role.value || '').toUpperCase()
+    return r === 'SUPER_ADMIN' || r === 'ADMIN'
+  })
+
+  // ===== 记住密码 =====
+  const REMEMBER_KEY = 'rememberedCredentials'
+
+  function setToken(newToken: string) {
+    token.value = newToken
+    localStorage.setItem('token', newToken)
+  }
+
+  function setRefreshToken(rt: string) {
+    refreshTokenValue.value = rt
+    localStorage.setItem('refreshToken', rt)
+  }
+
+  function setUserInfo(info: { id: number; username: string; displayName?: string; role?: string; permissions?: string[]; permissionDetails?: PermissionDetail[] }) {
+    userId.value = info.id
+    username.value = info.username
+    displayName.value = info.displayName || info.username
+    role.value = info.role || 'TESTER'
+    permissions.value = info.permissions || []
+    permissionDetails.value = info.permissionDetails || []
+    localStorage.setItem('username', info.username)
+    localStorage.setItem('displayName', info.displayName || info.username)
+    localStorage.setItem('role', role.value)
+    localStorage.setItem('userId', String(info.id))
+    localStorage.setItem('permissions', JSON.stringify(permissions.value))
+    localStorage.setItem('permissionDetails', JSON.stringify(permissionDetails.value))
+  }
+
+  /**
+   * 从后端获取当前用户信息并更新 store
+   * 页面刷新后恢复用户信息时调用
+   */
+  async function fetchCurrentUser() {
+    if (!token.value) return
+    try {
+      const res: any = await getCurrentUser()
+      if (res.data) {
+        setUserInfo({
+          id: res.data.id,
+          username: res.data.username,
+          displayName: res.data.displayName,
+          role: res.data.role,
+          permissions: res.data.permissions,
+          permissionDetails: res.data.permissionDetails,
+        })
+      }
+    } catch {
+      // Token 无效时清除
+      logout()
+    }
+  }
+
+  function logout() {
+    token.value = ''
+    refreshTokenValue.value = ''
+    username.value = ''
+    displayName.value = ''
+    role.value = ''
+    userId.value = 0
+    permissions.value = []
+    permissionDetails.value = []
+    localStorage.removeItem('token')
+    localStorage.removeItem('refreshToken')
+    localStorage.removeItem('username')
+    localStorage.removeItem('displayName')
+    localStorage.removeItem('role')
+    localStorage.removeItem('userId')
+    localStorage.removeItem('permissions')
+    localStorage.removeItem('permissionDetails')
+  }
+
+  /**
+   * 加载已记住的登录凭据
+   */
+  function loadRememberedCredentials(): { username: string; password: string } | null {
+    const raw = localStorage.getItem(REMEMBER_KEY)
+    if (!raw) return null
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * 保存登录凭据（记住密码）
+   */
+  function saveRememberedCredentials(username: string, password: string) {
+    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ username, password }))
+  }
+
+  /**
+   * 清除已记住的登录凭据
+   */
+  function clearRememberedCredentials() {
+    localStorage.removeItem(REMEMBER_KEY)
+  }
+
+  return {
+    token, refreshTokenValue, username, displayName, role, userId, isLoggedIn, isAdmin, permissions, permissionDetails,
+    setToken, setRefreshToken, setUserInfo, fetchCurrentUser, logout,
+    loadRememberedCredentials, saveRememberedCredentials, clearRememberedCredentials,
+  }
+})

@@ -1,1 +1,44 @@
 .idea
+backend/data/repos
+docker/
+
+# Maven 构建产物
+backend/target/
+*target
+
+# IDE 构建产物
+out/
+*.iml
+
+# ===== 前端 =====
+
+# 依赖
+frontend/node_modules/
+
+# 构建产物
+frontend/dist/
+frontend/dist-ssr/
+
+# 本地环境变量
+frontend/*.local
+
+# 日志
+backend/log/
+frontend/logs/
+frontend/*.log
+frontend/npm-debug.log*
+frontend/pnpm-debug.log*
+*.log
+
+# 数据库备份（reset-and-build.bat 自动生成）
+backend/scripts/backup/
+
+# 编辑器临时文件
+frontend/.vscode/*
+!frontend/.vscode/extensions.json
+frontend/.DS_Store
+frontend/*.suo
+frontend/*.ntvs*
+frontend/*.njsproj
+frontend/*.sln
+frontend/*.sw?
